@@ -5,12 +5,17 @@ type: project
 tags:
   - project
 ai-first: true
+aliases: []
 status: active
 context: work
 area:
+company:
 goal:
+goals: []
 start:
 due:
+milestones:
+anti-goal:
 people: []
 parent:
 subprojects: []
@@ -85,3 +90,10 @@ views:
 ## Холбоос
 
 - Гарын авлага: [[_BRAIN]]
+
+<!--
+status: active | planning | on-hold | completed | cancelled (хавтас нь дагана)
+context: work | home
+area: "[[байгууллага эсвэл хүрээ]]" · company: "[[байгууллага]]" · goals: ["[[<он> Goals]]"]
+people: ["[[Хүн]]"] — хүний note-д `projects:` нь энэ төсөл рүү заана.
+-->

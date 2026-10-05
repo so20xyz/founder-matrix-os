@@ -1,8 +1,8 @@
 {
   "name": "fm",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "displayName": "Founder Matrix Second Brain",
-  "description": "Хэрэглэгч бүрийн хувийн Obsidian vault-ийг GTD + PARA + атом тэмдэглэлээр ажиллуулах хөдөлгүүр: дүр (Agent), даалгавар, inbox, хадгалах, хувийн санхүү. / Founder Matrix OS: personal Obsidian vault engine (GTD, PARA, atomic notes, agent roles, private finance) for the Founder Matrix team and Second Brain Season 2.",
+  "description": "Хэрэглэгч бүрийн хувийн Obsidian vault-ийг GTD + PARA + атом тэмдэглэлээр ажиллуулах хөдөлгүүр: 7 Agent (Project, Area, Resource, Research, Developer, Creative, Finance), 10 үндсэн skill + 6 хэрэгсэл, fm_doctor суулгалт. / Founder Matrix Second Brain: personal Obsidian vault engine (GTD, PARA, atomic notes, agents, private finance) with guided setup.",
   "author": {
     "name": "itge.e / Founder Matrix"
   },
@@ -34,20 +34,20 @@
     },
     "discord_token": {
       "type": "string",
-      "title": "Discord bot token (v0.2)",
-      "description": "v0.2-т ашиглана. Одоо хоосон үлдээж болно (Optional, used from v0.2)",
+      "title": "Discord bot token (optional)",
+      "description": "Заавал биш: Discord relay (/fm:relay) token-оо ~/.fmos_discord_token-д хадгалдаг тул энд хоосон үлдээж болно (Optional; the relay reads ~/.fmos_discord_token)",
       "sensitive": true
     },
     "notion_token": {
       "type": "string",
-      "title": "Notion token (v0.2)",
-      "description": "v0.2-т ашиглана. Одоо хоосон үлдээж болно (Optional, used from v0.2)",
+      "title": "Notion token (optional)",
+      "description": "Заавал биш: /fm:notion-д (эсвэл NOTION_TOKEN, ~/.fmos/notion_token) (Optional Notion integration token for /fm:notion)",
       "sensitive": true
     },
     "figma_token": {
       "type": "string",
-      "title": "Figma token (v0.2)",
-      "description": "v0.2-т ашиглана. Одоо хоосон үлдээж болно (Optional, used from v0.2)",
+      "title": "Figma token (optional)",
+      "description": "Заавал биш: Figma REST (figma.py) ~/.figma_token эсвэл FIGMA_TOKEN уншина; bridge-д хэрэггүй (Optional; only for Figma REST exports)",
       "sensitive": true
     }
   }

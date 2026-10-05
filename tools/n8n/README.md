@@ -15,8 +15,8 @@ Import: `docker compose exec n8n n8n import:workflow --input=/workflows/<file>.j
 Export: `docker compose exec n8n n8n export:workflow --all --output=/workflows/ --separate`
 
 ## Order
-1. Notion comment → Discord (replaces `tools/relay/notion_watch.py`; run both 2 days, then disable the script)
+1. Notion comment → Discord (replaces `notion_watch.py` of `/fm:relay`; fill the LINKS node with your own channel/page ids)
 2. Gmail → Discord · 3. Calendar 07:30 brief · 4. Telegram → Inbox · 5. IG/Meta
 
-## Secrets (itge.e enters in n8n UI, never in repo)
+## Secrets (each member enters them in the n8n UI, never in the repo)
 Discord bot token · Notion integration token · Google OAuth · Telegram bot token · Meta app.

@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "sessions": {},
+  "roles": {
+    "project": {
+      "note": "04-Areas/AI Team/ai-workers/01 Project.md",
+      "channel": "01-project",
+      "group": "projects",
+      "folders": [
+        "03-Projects/"
+      ],
+      "skills": [
+        "fm:project",
+        "fm:task",
+        "fm:save",
+        "fm:update",
+        "fm:people",
+        "superpowers:brainstorming",
+        "superpowers:writing-plans"
+      ],
+      "private": false,
+      "active": true
+    },
+    "area": {
+      "note": "04-Areas/AI Team/ai-workers/02 Area.md",
+      "channel": "02-area",
+      "group": "areas",
+      "folders": [
+        "00-Inbox/",
+        "02-GTD/",
+        "04-Areas/",
+        "01-Soul/",
+        "07-Goals/",
+        "99-Archive/",
+        "_system/",
+        "Home.md"
+      ],
+      "skills": [
+        "fm:inbox",
+        "fm:task",
+        "fm:update",
+        "fm:people",
+        "fm:save",
+        "fm:setup",
+        "fm:role",
+        "fm:vault",
+        "fm:relay",
+        "fm:notion",
+        "obsidian:obsidian-bases"
+      ],
+      "private": false,
+      "active": true
+    },
+    "resource": {
+      "note": "04-Areas/AI Team/ai-workers/03 Resource.md",
+      "channel": "03-resource",
+      "group": "resources",
+      "folders": [
+        "05-Resources/",
+        "06-Atomic/"
+      ],
+      "skills": [
+        "fm:save",
+        "fm:vault",
+        "fm:watch",
+        "obsidian:defuddle",
+        "obsidian:json-canvas"
+      ],
+      "private": false,
+      "active": true
+    },
+    "research": {
+      "note": "04-Areas/AI Team/ai-workers/04 Research.md",
+      "channel": "04-research",
+      "group": "research",
+      "folders": [
+        "05-Resources/sources/"
+      ],
+      "skills": [
+        "fm:save",
+        "fm:watch",
+        "exa"
+      ],
+      "private": false,
+      "active": true
+    },
+    "developer": {
+      "note": "04-Areas/AI Team/ai-workers/05 Developer.md",
+      "channel": "05-developer",
+      "group": "development",
+      "folders": [
+        "04-Areas/AI Team/skills/"
+      ],
+      "skills": [
+        "fm:vault",
+        "fm:relay",
+        "superpowers:subagent-driven-development",
+        "superpowers:systematic-debugging",
+        "superpowers:writing-skills",
+        "skill-creator"
+      ],
+      "private": false,
+      "active": true
+    },
+    "creative": {
+      "note": "04-Areas/AI Team/ai-workers/06 Creative.md",
+      "channel": "06-creative",
+      "group": "development",
+      "folders": [],
+      "skills": [
+        "fm:post",
+        "fm:figma",
+        "fm:framer",
+        "fm:watch",
+        "fm:save"
+      ],
+      "private": false,
+      "active": true
+    },
+    "finance": {
+      "note": "04-Areas/AI Team/ai-workers/07 Finance.md",
+      "channel": "",
+      "group": "areas",
+      "folders": [
+        "04-Areas/Business/finances/"
+      ],
+      "skills": [
+        "fm:finance",
+        "fm:task",
+        "finance:financial-statements",
+        "finance:variance-analysis"
+      ],
+      "private": true,
+      "active": true
+    }
+  }
+}

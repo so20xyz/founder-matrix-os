@@ -3,7 +3,6 @@ name: project
 description: Төсөл үүсгэх, шинэчлэх, төлөв солих (Active / Planning / On-hold / Archive), төсөл хаах шалгах жагсаалт, kanban самбарын цэгцлэл (hygiene). «төсөл», «шинэ төсөл», «төсөл үүсгэ», «төслийн төлөв», «төслийг зогсоо», «төсөл хаа», «архивла», «on-hold болго», «төслүүдийг харуул», «самбар цэгцэл», «board hygiene», «хуучирсан картууд» гэвэл энэ skill-ийг ашигла.
 argument-hint: "[нэр] [new|status|close|hygiene]"
 ---
-<!-- Ideas adapted from third-party MIT work by Eugeniu Ghelbur (project and board-hygiene commands). Rewritten. See THIRD_PARTY_NOTICES.md -->
 
 # /fm:project — төсөл ба самбар
 
@@ -60,7 +59,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${use
 - Скрипт хавтсыг зөөж, `status`-ыг тавьж, vault доторх бүх `03-Projects/<хуучин>/<Нэр>` холбоосыг шинэ зам руу солино (`.obsidian/`, `_trash/`-ийг хөндөхгүй).
 - **Obsidian нээлттэй бол** түүний «Move file to…» командаар зөөх нь илүү найдвартай (Obsidian холбоосыг өөрөө шинэчилнэ) — дараа нь зөвхөн `status`-ыг засна.
 - Хоёр машин зэрэг бичиж байгаа бол зөөхгүй (Drive `(1)` давхардал үүсгэнэ).
-- Active/Planning биш төлөв рүү шилжсэн төсөлд ажиллаж буй сешн байвал → `/fm:spawn`-ийн «хаах» алхам.
+- Active/Planning биш төлөв рүү шилжсэн төсөлд Project agent-ийн сешн байвал гишүүнд мэдэгдэ - сешнийг архивлах эсэхийг гишүүн шийднэ (өөрөө хаахгүй).
 
 ## 4. Хаах шалгах жагсаалт (Archive руу)
 
@@ -74,7 +73,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${use
 | 4 | **Handoff тэмдэглэл** төслийн хавтсанд: юу хийгдсэн · юу үлдсэн · мэдлэг хаана · шударга «бүртгэгдээгүй» | файлын зам |
 | 5 | **Шийдвэрийн атом** (`06-Atomic/decisions/`) — яагаад хаагдсан. Resource дүрд task болгож өгч болно | атомын зам |
 | 6 | `status: completed` (эсвэл `cancelled`) → `move … archive --status completed --apply` | скриптийн гаралт |
-| 7 | Энэ төсөлд холбогдсон **сешн** байвал хаах нэр дэвшигч → `/fm:spawn` | registry мөр |
+| 7 | Энэ төсөлд холбогдсон **сешн** (Project agent) байвал архивлах нэр дэвшигч - `_system/fm/registry.json`-оос ол, гишүүнээр шийдүүл | registry мөр |
 | 8 | **Гишүүний зөвшөөрөл** — archive уу, `_trash` уу гэдгийг гишүүн шийднэ | гишүүний үг |
 
 ## 5. Самбарын цэгцлэл (hygiene горим)

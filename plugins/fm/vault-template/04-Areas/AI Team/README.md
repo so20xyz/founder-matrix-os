@@ -6,9 +6,15 @@
 - `skills/` — skill-ийн каталог.
 - Бүх дүр: `_system/bases/Agents.base`.
 
-| Бүс | Дүр |
-|---|---|
-| `0x` | PARA дүрүүд: [[00 GTD]] · [[01 Project]] · [[02 Area]] · [[03 Resource]] |
-| `1x` | Төслийн дүрүүд (та өөрөө нэмнэ, жишээ `10 <Төсөл>`) |
-| `2x` | Ур чадварын дүрүүд: [[20 Content Writer]] · [[21 Creative Director]] · [[22 Tool Developer]] |
-| `3x` | 🔒 Хувийн дүрүүд: [[30 Санхүү]] |
+| Дугаар | Agent | Юу хийдэг | Sidebar бүлэг |
+|---|---|---|---|
+| `01` | [[01 Project]] | Төсөл бүрт нэг тогтмол сешн; task-ууд тэр сешн дотор; мэргэжлийн ажлыг subagent-аар | Projects |
+| `02` | [[02 Area]] | Inbox/GTD, өдөр, хүмүүс, хүрээ, систем (хуучин «GTD») | Areas |
+| `03` | [[03 Resource]] | Лавлагаа, атом, fact-check | Resources |
+| `04` | [[04 Research]] | Гүн судалгаа (built-in Research эсвэл `exa`) → `/fm:save` | Research |
+| `05` | [[05 Developer]] | Код, хэрэгсэл, plugin (`superpowers`) | Development |
+| `06` | [[06 Creative]] | Creative Director + контент: moodboard (Pinterest → Soulcatcher), Figma, пост | Development |
+| `07` | [[07 Finance]] 🔒 | Хувийн санхүү + бизнесийн тайлан (CSV); хөрөнгө оруулалтын зөвлөгөө, төлбөр хийхгүй | Areas (private) |
+| `10+` | Төслийн дүрүүд | Төсөл бүрийн Project агент (`/fm:setup` эсвэл [[01 Project]] нэмнэ) | Projects |
+
+Claude Code-д эдгээр нь `fm` plugin-ий agent (`fm:project`, `fm:area`, … `fm:finance`) хэлбэрээр subagent болж дуудагдана — agent файл нь нимгэн заагч, дүрэм нь энд.

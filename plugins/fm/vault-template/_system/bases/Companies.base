@@ -1,0 +1,40 @@
+filters:
+  and:
+    - file.ext == "md"
+    - type == "company"
+    - '!file.inFolder("_system/templates")'
+formulas:
+  status_icon: 'if(status == "active", "🟢", if(status == "paused", "⏸️", "⚫"))'
+properties:
+  formula.status_icon:
+    displayName: " "
+  kind:
+    displayName: Төрөл
+  my_role:
+    displayName: Миний үүрэг
+  website:
+    displayName: Вэб
+  people:
+    displayName: Хүмүүс
+  projects:
+    displayName: Төслүүд
+views:
+  - type: table
+    name: Байгууллагууд
+    order:
+      - formula.status_icon
+      - file.basename
+      - kind
+      - my_role
+      - people
+      - projects
+      - website
+  - type: table
+    name: Төрлөөр
+    groupBy:
+      property: kind
+      direction: ASC
+    order:
+      - file.basename
+      - my_role
+      - status

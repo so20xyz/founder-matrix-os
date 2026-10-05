@@ -59,7 +59,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "// Шинэ мессежийг Discord #00-inbox-admin руу. offset-ийг ахиулна.\nconst sd = $getWorkflowStaticData('global');\nconst out = [];\nfor (const u of ($input.first().json.result || [])) {\n  sd.offset = u.update_id + 1;\n  const m = u.message || u.channel_post || u.edited_message;\n  if (!m) continue;\n  const who = [m.from?.first_name, m.from?.last_name].filter(Boolean).join(\" \") || m.chat?.title || \"?\";\n  let kind = \"\", text = m.text || m.caption || \"\";\n  if (m.photo) kind = \"📷 зураг\";\n  else if (m.voice) kind = `🎙 дуу (${m.voice.duration}с)`;\n  else if (m.video) kind = \"🎬 видео\";\n  else if (m.document) kind = `📎 ${m.document.file_name || \"файл\"}`;\n  if (m.forward_origin || m.forward_from) kind = (\"↪ forward \" + kind).trim();\n  out.push({ json: { channelId: \"DISCORD_ID\",\n    content: `📥 TELEGRAM · ${who}${kind ? \" · \" + kind : \"\"}\\n${text}`.slice(0, 1900) } });\n}\nreturn out;"
+        "jsCode": "// Шинэ мессежийг Discord inbox суваг руу ($env.FMOS_INBOX_CHANNEL_ID). offset-ийг ахиулна.\nconst sd = $getWorkflowStaticData('global');\nconst out = [];\nfor (const u of ($input.first().json.result || [])) {\n  sd.offset = u.update_id + 1;\n  const m = u.message || u.channel_post || u.edited_message;\n  if (!m) continue;\n  const who = [m.from?.first_name, m.from?.last_name].filter(Boolean).join(\" \") || m.chat?.title || \"?\";\n  let kind = \"\", text = m.text || m.caption || \"\";\n  if (m.photo) kind = \"📷 зураг\";\n  else if (m.voice) kind = `🎙 дуу (${m.voice.duration}с)`;\n  else if (m.video) kind = \"🎬 видео\";\n  else if (m.document) kind = `📎 ${m.document.file_name || \"файл\"}`;\n  if (m.forward_origin || m.forward_from) kind = (\"↪ forward \" + kind).trim();\n  out.push({ json: { channelId: $env.FMOS_INBOX_CHANNEL_ID,\n    content: `📥 TELEGRAM · ${who}${kind ? \" · \" + kind : \"\"}\\n${text}`.slice(0, 1900) } });\n}\nreturn out;"
       }
     },
     {
@@ -83,7 +83,7 @@
       },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "A58eILyXYwMV3Kx8",
+          "id": "<n8n-credential-id>",
           "name": "Header Auth account"
         }
       }

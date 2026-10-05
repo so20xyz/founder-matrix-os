@@ -7,18 +7,18 @@ The plugin has two hooks. Both are pure Python 3.9+ standard library, with no ba
 | SessionStart | `startup\|resume\|clear\|compact` | `fm_context.py` | If the session's cwd (or `CLAUDE_PROJECT_DIR`) is inside the vault, it injects `_system/BOOT.md` plus the rules sections of the session's role note. The total is capped at 10 KB. If no role is found, it adds `дүргүй: /fm:role <slug> ажиллуул`. Outside the vault it prints nothing. |
 | PostToolUse | `Write\|Edit\|MultiEdit` | `fm_lint.py` | Lints `.md` files inside the vault. Most findings are warnings. It blocks (exit 2) in only two cases: secrets, and private-finance notes saved outside `04-Areas/Business/finances/private/`. |
 
-The vault path is taken from the first of these that is set: the `vault_path` setting in the plugin config (`CLAUDE_PLUGIN_OPTION_VAULT_PATH`), then `FM_VAULT`, then `OBSIDIAN_VAULT_PATH`. If none of them points to an existing folder, both hooks exit 0 and print nothing.
+The vault path is taken from the first of these that is set: the `vault_path` setting in the plugin config (`CLAUDE_PLUGIN_OPTION_VAULT_PATH`), then `FM_VAULT`, then `OBSIDIAN_VAULT_PATH`, then the `vault` key of the per-machine file `~/.fmos/config.json` (`FMOS_CONFIG` overrides its location; `/fm:setup` can create it). If none of them points to an existing folder, both hooks exit 0 and print nothing.
 
 Both scripts handle all of their own errors. A bug in a hook exits 0, so it never stops a session or a write.
 
 ## Vault conventions the hooks rely on
 
 - **Boot file:** `<vault>/_system/BOOT.md`. Keep it under about 7 KB so the role rules still fit in the 10 KB budget.
-- **Registry:** `<vault>/_system/relay/registry.json`. Expected shape:
+- **Registry:** `<vault>/_system/fm/registry.json`. Expected shape:
   ```json
   {
-    "roles":    { "gtd": { "note": "00 GTD", "private": false } },
-    "sessions": { "<session-id>": { "role": "gtd", "device": "Mac", "private": false } }
+    "roles":    { "area": { "note": "02 Area", "private": false } },
+    "sessions": { "<session-id>": { "role": "area", "project": "area", "device": "Mac", "private": false } }
   }
   ```
   - The `note` value can be a note name (looked up in `04-Areas/AI Team/ai-workers/`), a path relative to the vault, or a `[[wikilink]]`. Paths that point outside the vault are ignored.

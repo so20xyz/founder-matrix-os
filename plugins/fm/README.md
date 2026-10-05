@@ -1,100 +1,60 @@
-# Founder Matrix Second Brain: `fm` plugin (marketplace `founder-matrix`)
+# `fm`: Founder Matrix Second Brain (marketplace `founder-matrix`)
 
-`founder-matrix-os` repo нь **marketplace `founder-matrix`** болно (`.claude-plugin/marketplace.json`). Одоогоор нэг plugin агуулна:
+**Founder Matrix Second Brain**-ийн Claude Code plugin. Гишүүн бүрийн **хувийн Obsidian vault**-ийг GTD + PARA + атом тэмдэглэлээр ажиллуулж, бизнес ба хувийн амьдралыг нэг дор цэгцэлнэ. Бүх сешн нь **Agent**: Project, Area, Resource, Research, Developer, Creative, Finance 🔒 + төсөл тус бүрийн Project агент. Дүрийн тэмдэглэлүүд plugin-д биш, таны vault-ийн `04-Areas/AI Team/ai-workers/`-д амьдарна.
 
-**`fm`, Founder Matrix OS.** Гишүүн бүрийн **хувийн Obsidian vault**-ийг GTD + PARA + атом тэмдэглэлээр ажиллуулах хөдөлгүүр. Багийн төслүүд ч мөн тэр хувийн vault дотор хөтлөгдөнө. Бүх сешн нь **Agent**, зөвхөн **дүрээрээ** (GTD, Project, Area, Resource, Content Writer, Creative Director, Tool Developer, Санхүү) ялгарна. Дүрийн тэмдэглэлүүд plugin-д биш, таны vault-ийн `04-Areas/AI Team/ai-workers/` дотор амьдарна.
+> **Суулгах, өдөр тутмын хэрэглээ, нууцлал, асуудал шийдэх:** repo-гийн үндсэн [README.md](../../README.md). Энэ файл plugin-ийн дотоод бүтцийг тайлбарлана.
 
-> Төлөв: **TEST v0**: зөвхөн vault-ийн цөм хөдөлгүүр. Багийн гишүүдэд тараахаас өмнө Mac + PC дээр туршина.
+## Ганц команд: `update`
 
-## Юу орсон бэ (v0)
+Өдөр тутам хэрэглэгч зөвхөн **«update»** гэж бичнэ. `/fm:update` ярианаас атом (save), task, хүмүүс, төсөл, inbox, өдрийн note, STATUS-ыг өөрөө дараалан цэгцэлнэ. Бусад skill бол барилгын блок.
+
+## Юу орсон бэ
 
 | Хэсэг | Агуулга |
 |---|---|
-| Skill (`/fm:…`) | `setup`, `role`, `vault`, `save`, `inbox`, `track`, `update`, `clip`, `daily`, `task`, `project`, `spawn`, `finance`, `bases`, `canvas`, `vault-cli` |
-| Agent | `resource`, `content-writer`, `creative-director`, `tool-developer` (vault дахь дүрийн тэмдэглэл рүү заадаг нимгэн заагч) |
-| Hook | SessionStart: `_system/BOOT.md` + дүрийн дүрмийг ачаална (≤10 KB). PostToolUse: тэмдэглэл бичих бүрт lint (frontmatter, огноо, файлын нэр), нууц түлхүүр болон хувийн санхүүг буруу газар бичихийг **блоклоно** |
-| Vault загвар | `plugins/fm/vault-template/`: PARA хавтсууд, BOOT, 8 дүрийн тэмдэглэл, загварууд, Bases, хувийн санхүүгийн модуль. `/fm:setup` таны vault руу хуулна (байгаа файлыг хэзээ ч дарж бичихгүй) |
+| Үндсэн skill (10) | `update` (ганц команд), `save`, `inbox`, `task`, `project`, `people`, `role`, `finance` 🔒, `vault`, `setup` |
+| Хэрэгслийн skill (6) | `relay` (Discord), `figma`, `framer`, `notion`, `post` (пост/carousel/poster), `watch` (бичлэг → транскрипт) |
+| Agent (7) | `project`, `area`, `resource`, `research`, `developer`, `creative`, `finance` — vault дахь дүрийн тэмдэглэл рүү заадаг нимгэн заагч |
+| Hook | SessionStart: `_system/BOOT.md` + дүрийн дүрэм (≤10 KB). PostToolUse: тэмдэглэлийн lint; token болон хувийн санхүүг буруу газар бичихийг **блоклоно** |
+| Script | `fm_doctor.py` (компьютерын шаардлага, албан ёсны суулгагч), `fm_setup.py`, `fm_onboard.py`, `fm_context.py`, `fm_lint.py` |
+| Tools | `tools/relay`, `tools/figma`, `tools/framer`, `tools/notion`, `tools/watch` — хэрэгслийн skill-үүдийн код (`${CLAUDE_PLUGIN_ROOT}/tools/...`) |
+| Vault загвар | `vault-template/`: PARA хавтсууд, BOOT, `_system/fm/`, 7 Agent-ийн тэмдэглэл, загварууд, Bases, хувийн санхүү, `Official skills` лавлагаа |
 
-**v0.2-т хойшилсон:** Discord relay, Figma, Notion, видео үзэх, судалгаа, health check, calendar. `discord_token`, `notion_token`, `figma_token` тохиргоо одоо хоосон байж болно.
+Албан ёсны skill-уудыг (superpowers, kepano obsidian, document-skills, finance, exa) fm **хуулдаггүй** — `/fm:setup` эх сурвалжаас нь суулгана ([THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)).
 
-`/fm:update` нь хуучин `/sync`, relay status болон өдрийн дүгнэлтийг нэг команд болгосон (v0-д Discord-гүй).
+## `/fm:setup`
 
-## Гишүүн суулгах алхам
+0. `fm_doctor.py` — Git, gh, Python, Claude, Obsidian… шалгаж дутууг албан ёсны суулгагчаар **санал болгоно** (зөвшөөрөлгүй суулгахгүй).
+1. Албан ёсны plugin-ууд (нэг нэгээр асууна).
+2. Vault-ийн араг яс (dry-run → батлах; байгаа файлыг дарж бичихгүй).
+3. Амьдралын ярилцлага: SOUL (Pinterest/Soulcatcher заавал биш), бизнес ба хувийн хүрээ, төсөл, хүмүүс, 🔒 санхүү, лавлагаа, зорилго.
+4. Agent-уудыг идэвхжүүлэх. 5. Нэмэлт хэрэгсэл. 6. Бичих.
 
-1. **GitHub эрх.** Энэ repo private. itge.e танд унших эрх өгсний дараа:
-   ```
-   gh auth login
-   gh auth setup-git
-   ```
-2. **Claude Code дотор marketplace нэмэх:**
-   ```
-   /plugin marketplace add rollingbd/founder-matrix-os
-   /plugin install fm@founder-matrix
-   /reload-plugins
-   ```
-   Суулгах үед `vault_path` (заавал: таны vault-ийн хавтас), `member` (нэр), `device` (жишээ нь `Mac`, `PC`) асууна. Дараа нь `/config`-оос өөрчилж болно.
-3. **Vault бэлдэх:** vault хавтсаа Claude Code-оор нээгээд:
-   ```
-   /fm:setup
-   ```
-   Эхлээд dry-run харуулна, зөвшөөрсний дараа PARA бүтэц, `_system/BOOT.md`, дүрийн тэмдэглэлүүд, `_system/relay/registry.json`-ийг үүсгэнэ. Дараа нь `01-Soul/SOUL.md`-г нэг асуултаар бөглүүлнэ.
-4. **Obsidian тохиргоо (гараар):** Settings → Core plugins → Templates асааж, template folder-ийг `_system/templates` болгоно. Kanban самбарт **Kanban** community plugin хэрэгтэй. fm нь `.obsidian/`-д хэзээ ч хүрэхгүй.
-5. **Дүр сонгох:** шинэ сешн бүрт «дүргүй» гэж гарвал:
-   ```
-   /fm:role gtd        # эсвэл project, area, resource, finance ...
-   ```
+## Хөдөлгүүрийн өгөгдөл: `_system/fm/`
 
-Шинэчлэл: `plugin.json`-ийн `version` (одоо `0.1.0`) нэмэгдэх үед гишүүдэд шинэ хувилбар очно. Custom marketplace-ийн auto-update анхдагчаар унтраалттай: `/plugin` → Marketplaces → founder-matrix → Enable auto-update, эсвэл `/plugin marketplace update founder-matrix`.
+| Файл | Юу |
+|---|---|
+| `registry.json` | сешн ↔ дүр (`project` = дүрийн slug → нэг baton, нэг Discord суваг), төхөөрөмж, `private` |
+| `channels.json`, `discord.json`, `state/<дүр>.md` | Discord relay ([docs/tools/relay.md](../../docs/tools/relay.md)) |
+| `notion_sync.json` | Notion руу түлхсэн note ↔ page ([docs/tools/notion.md](../../docs/tools/notion.md)) |
 
-## Windows тэмдэглэл
+## Нууцлал (товч)
 
-- Hook-ууд `python3` командыг shell-гүй (exec form) дууддаг. python.org-ийн Windows installer зөвхөн `python.exe` болон `py.exe` өгдөг тул `python3` олдохгүй байж болно. Microsoft Store-ийн `python3` alias нь заримдаа зөвхөн Store-ийг нээдэг.
-- Шийдэл (аль нэгийг):
-  1. **uv** (санал болгох): `uv python install --default`. `%USERPROFILE%\.local\bin`-д `python.exe`, `python3.exe` үүсгэнэ; тэр хавтас PATH-д байх ёстой;
-  2. Microsoft Store-оос Python 3 суулгах (жинхэнэ `python3.exe` өгнө; Settings → App execution aliases нь Store stub биш, жинхэнэ суулгалт руу заасан эсэхийг шалга);
-  3. Python-ий хавтсанд `python.exe`-г `python3.exe` нэрээр хуулах.
-- `python3` олдохгүй бол Claude Code hook алдаа гаргаад үргэлжилнэ: сешн блоклогдохгүй, гэхдээ context ачаалалт болон lint ажиллахгүй.
-- Шалгах: PowerShell дээр `python3 --version`. Дэлгэрэнгүй: `plugins/fm/hooks/README.md`.
-- Skill доторх script-үүдийг гараар ажиллуулахдаа `python3`-ийн оронд `python` эсвэл `py -3` бичиж болно. Бүх script цэвэр Python (pathlib, стандарт сан), bash/jq шаардахгүй, UTF-8 гаралттай.
-- Python 3.9+ хангалттай.
+- «Хувийн» = **vault-аас хэзээ ч гарахгүй** (`"private": true`, `finance`/`tax`/`gold`, `finances/private/`): git, Discord, Notion, STATUS, лог, атом руу орохгүй. Зөвхөн `finance` сешн уншиж, бичнэ.
+- Token-ууд home хавтсанд (`~/.fmos_discord_token`, `~/.fmos/notion_token`, `~/.figma_token`) эсвэл OS keychain-д (`sensitive` userConfig). Repo, vault-д хэзээ ч биш.
 
-## Нууцлалын загвар (privacy model)
+## Windows
 
-- **Хувийн санхүү** нь vault бүрийн нэгдүгээр зэрэглэлийн модуль: `04-Areas/Business/finances/private/`, хувийн **Санхүү** дүр, сарын төлбөрийн tracker, Finance Record загвар.
-- «Хувийн» гэдэг нь **vault-аас хэзээ ч гарахгүй** гэсэн үг (vault-аас хасна гэсэн үг биш):
-  - git, Discord, `_system/STATUS.md`, лог, daily note, атом руу хэзээ ч орохгүй;
-  - зөвхөн `role: finance` бүхий (`private: true`) сешн уншиж, бичнэ. Бусад дүр зөвхөн «N хувийн зүйл байна» гэж тоолно;
-  - данс, картын дугаар, нууц үг хэзээ ч бичигдэхгүй;
-  - lint hook санхүүгийн тэмдэглэлийг хувийн хавтсаас гадна бичихийг блоклоно.
-- Нууц түлхүүрүүд (`*_token`) нь `sensitive` тохиргоо тул OS keychain-д хадгалагдана, хэзээ ч файлд бичигдэхгүй. Lint hook тэмдэглэлд token шиг мөр бичигдэхийг блоклоно.
-- Анхаар: vault Google Drive-аар sync хийгддэг. Vault хавтсаа бүхэлд нь бусадтай share хийвэл хувийн хавтас ч хамт явна.
+Hook-ууд `python3`-ийг shell-гүй дууддаг. `fm_doctor.py` `python3` нэр байгаа эсэхийг шалгаж засах аргыг санал болгоно (`uv python install 3.12 --default`). Бүх script цэвэр Python 3.9+, bash/jq шаардахгүй.
 
-## Repo бүтэц
+## Хөгжүүлэлт
 
-```
-.claude-plugin/marketplace.json   marketplace "founder-matrix"
-plugins/fm/                        plugin "fm"
-  .claude-plugin/plugin.json
-  skills/  agents/  hooks/  scripts/  vault-template/
-  LICENSE  LICENSES/  THIRD_PARTY_NOTICES.md
-tests/test_hooks.py                python3 tests/test_hooks.py (repo root-оос)
-```
-
-Хөгжүүлэлт: `claude --plugin-dir plugins/fm` (суулгалгүй ачаална), `claude plugin validate plugins/fm`.
+`claude --plugin-dir plugins/fm`, `claude plugin validate --strict plugins/fm`, `python3 .github/scripts/ci_checks.py` (repo root-оос). Хувь нэмэр: [CONTRIBUTING.md](../../CONTRIBUTING.md). Түүх: [CHANGELOG.md](../../CHANGELOG.md).
 
 ## Лиценз
 
-Copyright (c) 2026 itge.e. All rights reserved. Licensed for use by the Founder Matrix team and Second Brain Season 2 participants. kepano/obsidian-skills болон obsidian-second-brain-аас гаралтай хэсгүүд MIT лицензтэй: `plugins/fm/THIRD_PARTY_NOTICES.md`.
+**Founder Matrix License** (ЗАГВАР, хуульчаар хянуулаагүй): худалдаж авсан нэг хүн өөрийн төхөөрөмж дээр ашиглаж, өөрчилж болно; тараах, дахин зарахыг хориглоно; хувь нэмэр itge.e-д шилжинэ. Бүтэн текст: [LICENSE](LICENSE).
 
 ---
 
-## English (short)
-
-The **founder-matrix-os** repo doubles as **founder-matrix**, the Claude Code marketplace of Founder Matrix Second Brain (team + Second Brain Season 2 students). Its one plugin, **`fm` (Founder Matrix OS)**, turns each member's personal Obsidian vault (Mongolian content) into a GTD + PARA + atomic-notes system run by role-based Agents. Role notes live in the vault, not in the plugin.
-
-- **v0 (this):** vault engine core: 16 skills, 4 agents, SessionStart context hook, note lint hook (warns on frontmatter/date issues, blocks secrets and misplaced private finance), vault template and `/fm:setup`.
-- **v0.2:** Discord relay, Figma, Notion, video watch, research, health checks, calendar.
-- **Install:** `gh auth login && gh auth setup-git`, then `/plugin marketplace add rollingbd/founder-matrix-os`, `/plugin install fm@founder-matrix`, `/fm:setup`.
-- **Windows:** hooks call `python3` in exec form (no shell); run `uv python install --default`, or install Store Python, or copy `python.exe` to `python3.exe`.
-- **Privacy:** personal finance is a private module inside every vault. It never leaves the vault (no git, Discord, STATUS, logs or atoms). Tokens are stored in the OS keychain.
-- **License:** proprietary to itge.e / Founder Matrix; MIT notices in `plugins/fm/THIRD_PARTY_NOTICES.md`.
+**English (short).** `fm` is the Claude Code plugin of Founder Matrix Second Brain: a personal Obsidian vault engine (GTD, PARA, atomic notes, 7 agents, private finance). One daily command: `update`. 10 core skills + 6 tool skills; official skills are installed from source during `/fm:setup` (step 0 `fm_doctor.py` checks prerequisites and offers official installers). Licensed per person under the Founder Matrix License (template pending legal review).

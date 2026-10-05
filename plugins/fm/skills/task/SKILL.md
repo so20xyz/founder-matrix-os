@@ -8,7 +8,7 @@ argument-hint: "[гарчиг | claim | done | list]"
 
 **Таск санаатайгаар үүсгэгдэнэ, эзэнтэй.** PARA-д таск өөрөө байдаггүй — хэн нэгэн «дараагийн алхам» гэж шийдэхэд л `02-GTD/tasks/<Гарчиг>.md` болж төрнө. Санаа төдий бол өдрийн тэмдэглэлийн `## 📥 Inbox`-д checkbox хангалттай.
 
-Эзэн дүр: **GTD** (үүсгэх, оноох, төлөв). Бусад дүр өөрт оноосон таскаа авч, дуусгана.
+Эзэн дүр: **Area** (хуучин GTD; үүсгэх, оноох, төлөв). Төслийн task-ийг тухайн төслийн Project агент өөрийн тогтмол сешнд хийнэ. Бусад дүр өөрт оноосон таскаа авч, дуусгана.
 
 Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
 Скрипт: `python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py"` (Windows: `python` / `py -3`).
@@ -19,7 +19,7 @@ Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
 |---|---|
 | `type` | `task` |
 | `status` | `inbox` · `someday` · `next-action` · `waiting` · `completed` · `cancelled` (`done` биш — `completed`) |
-| `owner` | **дүрийн slug** (`gtd`, `content-writer`, …) — тэр Agent хийнэ · `me` — гишүүн өөрөө · `"@Нэр"` — багийн гишүүн. Скрипт дүрийн нэрийг (`"Content Writer"`) slug болгож хувиргана |
+| `owner` | **дүрийн slug** (`area`, `project`, `creative`, төслийн slug …) — тэр Agent хийнэ · `me` — гишүүн өөрөө · `"@Нэр"` — багийн гишүүн. Скрипт дүрийн нэрийг (`"Content Writer"`) slug болгож хувиргана |
 | `priority` | `high` · `medium` · `low` (🔴 🟡 🟢 гэж өгсөн ч болно — үг болгон хадгална) |
 | `project` | `"[[03-Projects/<төлөв>/<Нэр>/<Нэр>]]"` эсвэл хоосон |
 | `due` | `YYYY-MM-DD` эсвэл хоосон |
@@ -72,7 +72,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py" set "${user_confi
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py" list "${user_config.vault_path}" --open
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py" list "${user_config.vault_path}" --owner gtd --status next-action
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py" list "${user_config.vault_path}" --owner area --status next-action
 ```
 
 ## Kanban самбар

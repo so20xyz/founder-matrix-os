@@ -18,3 +18,10 @@ Settings → Core plugins → Templates → «Template folder location» = `_sys
 | Capture | `capture` | `00-Inbox/` |
 | Finance Record | `finance-record` | `04-Areas/Business/finances/` (хувийнх бол `private/`) |
 | Bill | `bill` | `04-Areas/Business/finances/private/` |
+| Company | `company` | `04-Areas/Business/companies/` |
+| Area | `area` | `04-Areas/Life/<Нэр>/<Нэр>.md` |
+| Tool | `tool` | `04-Areas/Business/tools/` |
+| Reference | `reference` | `05-Resources/references/` |
+| Goal | `goal` | `07-Goals/<он> Goals.md` |
+| Agent Role | `agent-role` | `04-Areas/AI Team/ai-workers/<NN Нэр>.md` |
+| Income 🔒 | `income` | `04-Areas/Business/finances/private/income/` |

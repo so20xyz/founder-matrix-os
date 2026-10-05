@@ -1,5 +1,5 @@
 #!/bin/bash
-# Screenshot -> Second Brain 00-Inbox. AL CH app-aas ajillana (Messages g.m native app-uud) -
+# Screenshot -> vault-ийн 00-Inbox. AL CH app-aas ajillana (Messages g.m native app-uud) -
 # browser extension-ees yalgaatai ni macOS-iin screencapture tab bish buh delgetsiig zurna.
 # Zurag avsny daraa "Claude-d yuu hiilgeh ve?" gej asууna -> notod bichigdene.
 #
@@ -7,7 +7,13 @@
 # Ⓘ macOS Sonoma+ deer Screen Recording zovshoorol shaardana (System Settings > Privacy > Screen Recording).
 
 set -e
-VAULT="$HOME/Documents/CodeBase/Second Brain"
+# Vault: env FM_VAULT, эс бөгөөс ~/.fmos/config.json-ийн "vault" (fm /fm:setup үүсгэнэ).
+VAULT="${FM_VAULT:-$(python3 -c 'import json,os,sys;print(json.load(open(os.path.expanduser(os.environ.get("FMOS_CONFIG","~/.fmos/config.json")),encoding="utf-8")).get("vault",""))' 2>/dev/null || true)}"
+if [ -z "$VAULT" ] || [ ! -d "$VAULT" ]; then
+  osascript -e 'display notification "Vault олдсонгүй: ~/.fmos/config.json эсвэл FM_VAULT" with title "fm"' 2>/dev/null || true
+  echo "Vault олдсонгүй: ~/.fmos/config.json-д \"vault\" бич эсвэл FM_VAULT тавь" >&2
+  exit 1
+fi
 INBOX="$VAULT/00-Inbox"
 ATT="$VAULT/_system/attachments"
 mkdir -p "$ATT"

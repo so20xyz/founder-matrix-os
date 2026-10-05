@@ -3,12 +3,12 @@
   "owner": {
     "name": "itge.e / Founder Matrix"
   },
-  "description": "Founder Matrix Second Brain: багийн болон Second Brain Season 2-ын Claude Code plugin (Founder Matrix team + Season 2 students)",
+  "description": "Founder Matrix Second Brain: худалдаж авсан гишүүний Claude Code plugin (Founder Matrix Second Brain — licensed per person, see LICENSE)",
   "plugins": [
     {
       "name": "fm",
       "source": "./plugins/fm",
-      "description": "Founder Matrix OS: хувийн Obsidian vault-ийн хөдөлгүүр (personal Obsidian vault engine: GTD, PARA, atoms, roles, private finance)",
+      "description": "Founder Matrix Second Brain: хувийн Obsidian vault-ийн хөдөлгүүр — 7 Agent, 16 skill, fm_doctor (personal Obsidian vault engine: GTD, PARA, atoms, agents, private finance)",
       "category": "productivity"
     }
   ]

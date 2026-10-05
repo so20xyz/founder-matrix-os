@@ -1,0 +1,78 @@
+filters:
+  and:
+    - file.ext == "md"
+    - type == "project"
+    - '!file.inFolder("_system/templates")'
+formulas:
+  status_icon: 'if(status == "active", "🔨", if(status == "planning", "📝", if(status == "on-hold", "⏸️", if(status == "completed", "✅", "🚫"))))'
+  days_until_due: 'if(due, (date(due) - today()).days, "")'
+  contract: 'if(goal && due && milestones, "✅", "⚠️")'
+properties:
+  formula.status_icon:
+    displayName: " "
+  formula.days_until_due:
+    displayName: Хоног үлдсэн
+  formula.contract:
+    displayName: Гэрээ
+  status:
+    displayName: Төлөв
+  area:
+    displayName: Хүрээ
+  context:
+    displayName: Контекст
+  goal:
+    displayName: Зорилт
+  due:
+    displayName: Хугацаа
+  people:
+    displayName: Хүмүүс
+views:
+  - type: table
+    name: Идэвхтэй
+    filters:
+      and:
+        - status == "active"
+    order:
+      - formula.status_icon
+      - file.basename
+      - area
+      - goal
+      - due
+      - formula.days_until_due
+      - formula.contract
+  - type: table
+    name: Хүрээгээр
+    filters:
+      and:
+        - status != "completed"
+        - status != "cancelled"
+    groupBy:
+      property: area
+      direction: ASC
+    order:
+      - formula.status_icon
+      - file.basename
+      - status
+      - goal
+      - due
+  - type: table
+    name: Төлөвөөр
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - file.basename
+      - area
+      - context
+      - due
+  - type: cards
+    name: Картууд
+    filters:
+      and:
+        - status != "completed"
+        - status != "cancelled"
+    order:
+      - file.basename
+      - status
+      - area
+      - goal

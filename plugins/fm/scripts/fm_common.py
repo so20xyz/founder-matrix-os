@@ -18,6 +18,8 @@ from pathlib import Path
 #   CLAUDE_PLUGIN_OPTION_VAULT_PATH - plugin userConfig "vault_path"
 #   FM_VAULT                        - manual override / tests
 #   OBSIDIAN_VAULT_PATH             - legacy name (old OSB setups)
+# After the env keys: the per-machine file ~/.fmos/config.json ("vault" key;
+# FMOS_CONFIG overrides its location).
 VAULT_ENV_KEYS = (
     "CLAUDE_PLUGIN_OPTION_VAULT_PATH",
     "CLAUDE_PLUGIN_OPTION_vault_path",
@@ -25,8 +27,10 @@ VAULT_ENV_KEYS = (
     "OBSIDIAN_VAULT_PATH",
 )
 
+CONFIG_ENV = "FMOS_CONFIG"
+
 ROLES_DIR = "04-Areas/AI Team/ai-workers"
-REGISTRY_REL = "_system/relay/registry.json"
+REGISTRY_REL = "_system/fm/registry.json"
 BOOT_REL = "_system/BOOT.md"
 PRIVATE_FINANCE_DIR = "04-Areas/Business/finances/private"
 
@@ -125,6 +129,34 @@ def configured_vault():
                 return real(p)
         except Exception:
             continue
+    return _config_vault()
+
+
+def config_path():
+    """Per-machine config file: $FMOS_CONFIG or ~/.fmos/config.json."""
+    env = _clean_path_value(os.environ.get(CONFIG_ENV, ""))
+    if env:
+        return Path(env)
+    try:
+        return Path.home() / ".fmos" / "config.json"
+    except Exception:
+        return None
+
+
+def _config_vault():
+    path = config_path()
+    if path is None:
+        return None
+    try:
+        if not path.is_file():
+            return None
+        with open(str(path), "rb") as fh:
+            data = json.loads(fh.read().decode("utf-8-sig", errors="replace"))
+        value = _clean_path_value(str(data.get("vault") or "")) if isinstance(data, dict) else ""
+        if value and Path(value).is_dir():
+            return real(Path(value))
+    except Exception:
+        return None
     return None
 
 

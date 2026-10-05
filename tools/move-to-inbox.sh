@@ -1,10 +1,16 @@
 #!/bin/bash
-# Finder-d songoson file(uud)-iig Second Brain 00-Inbox ruu zoono (Downloads-oos gol tolov).
+# Finder-d songoson file(uud)-iig vault-ийн 00-Inbox ruu zoono (Downloads-oos gol tolov).
 # Songolt baihgui bol Downloads-iin hamgiin shine zuiliig zoono.
 # Holboh: Shortcuts.app -> "Run Shell Script" -> ene file -> keyboard shortcut onoo.
 # NOTE: set -e ashiglahgui (nohtsolt file uildluud).
 
-VAULT="$HOME/Documents/CodeBase/Second Brain"
+# Vault: env FM_VAULT, эс бөгөөс ~/.fmos/config.json-ийн "vault" (fm /fm:setup үүсгэнэ).
+VAULT="${FM_VAULT:-$(python3 -c 'import json,os,sys;print(json.load(open(os.path.expanduser(os.environ.get("FMOS_CONFIG","~/.fmos/config.json")),encoding="utf-8")).get("vault",""))' 2>/dev/null || true)}"
+if [ -z "$VAULT" ] || [ ! -d "$VAULT" ]; then
+  osascript -e 'display notification "Vault олдсонгүй: ~/.fmos/config.json эсвэл FM_VAULT" with title "fm"' 2>/dev/null || true
+  echo "Vault олдсонгүй: ~/.fmos/config.json-д \"vault\" бич эсвэл FM_VAULT тавь" >&2
+  exit 1
+fi
 INBOX="$VAULT/00-Inbox"
 DL="$HOME/Downloads"
 mkdir -p "$INBOX"

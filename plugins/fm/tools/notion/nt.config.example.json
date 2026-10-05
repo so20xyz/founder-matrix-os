@@ -1,0 +1,32 @@
+{
+ "_comment": "Copy to ~/.fmos/notion.json (or set FM_NOTION_CONFIG) and run `nt setup --root <page-id>` to fill databases. Per-user IDs live only there, never in the repo or the vault.",
+ "root": "<team-root-page-id>",
+ "databases": {
+  "Tasks": {
+   "id": "<data-source-id>",
+   "url": "https://www.notion.so/<page-id>",
+   "schema": {
+    "title": "Name",
+    "date": "Due",
+    "status": "Status",
+    "status_type": "status",
+    "status_options": ["Inbox", "Next Action", "Waiting on", "Someday / Maybe", "Completed"],
+    "checkbox": null
+   }
+  }
+ },
+ "aliases": {
+  "task": "Tasks",
+  "note": "<Notes database name>",
+  "project": "<Projects database name>",
+  "ref": "<References database name>",
+  "meeting": "<Meetings database name>"
+ },
+ "status_map": {
+  "inbox": "Inbox",
+  "next-action": "Next Action",
+  "waiting": "Waiting on",
+  "someday": "Someday / Maybe",
+  "completed": "Completed"
+ }
+}

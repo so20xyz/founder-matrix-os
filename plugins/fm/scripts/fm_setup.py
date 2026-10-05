@@ -15,14 +15,19 @@ What it does:
     (today, YYYY-MM-DD) and {{fm:member}} (--member, default "TBD") are
     filled in. Obsidian template placeholders ({{date:...}}, {{title}}) are
     left alone.
-  * Creates _system/relay/registry.json = {"sessions": {}, "roles": {...}}.
-    The roles map is built from the role notes (type: agent-role) that are in
+  * Creates _system/fm/registry.json = {"version": 1, "sessions": {}, "roles": {...}}
+    from the template skeleton (vault-template/_system/fm/registry.json, never
+    copied verbatim). The roles map is the skeleton's roles overlaid with the
+    role notes (type: agent-role) that are in
     <target_vault>/04-Areas/AI Team/ai-workers/ after the copy. An existing
     registry.json is left untouched unless --merge-registry is given; then only
     missing role slugs are added (sessions and existing roles are kept).
+  * --config (opt-in) also writes the per-machine file ~/.fmos/config.json
+    = {"vault", "device", "member"} when it does not exist yet (FMOS_CONFIG
+    overrides the location). This is the only write outside <target_vault>.
 
-It writes nothing outside <target_vault>. Pure standard library, Python 3.9+,
-macOS / Linux / Windows.
+Without --config it writes nothing outside <target_vault>. Pure standard
+library, Python 3.9+, macOS / Linux / Windows.
 """
 
 import argparse
@@ -30,6 +35,7 @@ import datetime
 import fnmatch
 import json
 import os
+import platform
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -38,7 +44,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = SCRIPT_DIR.parent / "vault-template"
 IGNORE_FILE = ".templateignore"
 ROLES_DIR = "04-Areas/AI Team/ai-workers"
-REGISTRY_REL = "_system/relay/registry.json"
+REGISTRY_REL = "_system/fm/registry.json"
+CONFIG_ENV = "FMOS_CONFIG"
 NO_SUBST_PREFIX = "_system/templates/"
 TEXT_SUFFIXES = {".md", ".base", ".json", ".canvas", ".txt"}
 DEFAULT_IGNORES = [".obsidian/", ".DS_Store", "Thumbs.db", "desktop.ini",
@@ -213,17 +220,92 @@ def collect_roles(vault):
             "folders": _as_list(fm.get("owns")),
             "skills": _as_list(fm.get("skills")),
             "private": str(fm.get("private", "")).strip().lower() == "true",
+            "active": True,
         }
     return roles
 
 
+def registry_skeleton(template):
+    # type: (Path) -> Dict[str, object]
+    """The template's registry.json (version/sessions/roles), or a minimal one."""
+    reg = {}  # type: Dict[str, object]
+    f = template / REGISTRY_REL
+    if f.is_file():
+        try:
+            data = json.loads(f.read_text(encoding="utf-8-sig"))
+            if isinstance(data, dict):
+                reg = data
+        except Exception:
+            reg = {}
+    reg.setdefault("version", 1)
+    reg["sessions"] = {}  # a template never ships sessions
+    if not isinstance(reg.get("roles"), dict):
+        reg["roles"] = {}
+    return reg
+
+
+def build_registry(template, roles):
+    # type: (Path, Dict[str, Dict[str, object]]) -> Dict[str, object]
+    reg = registry_skeleton(template)
+    merged = {}  # type: Dict[str, object]
+    for slug, info in reg["roles"].items():
+        merged[slug] = info
+    for slug, info in roles.items():
+        base = merged.get(slug) if isinstance(merged.get(slug), dict) else {}
+        entry = dict(base)
+        entry.update(info)
+        merged[slug] = entry
+    reg["roles"] = merged
+    return reg
+
+
+# ------------------------------------------------------------ per-machine
+
+def config_path():
+    # type: () -> Path
+    env = os.environ.get(CONFIG_ENV, "").strip()
+    if env:
+        return Path(os.path.expanduser(env))
+    return Path.home() / ".fmos" / "config.json"
+
+
+def default_device():
+    # type: () -> str
+    return {"Darwin": "Mac", "Windows": "PC"}.get(platform.system(), platform.system() or "Unknown")
+
+
+def write_config(target, member, device, dry_run=False):
+    # type: (Path, str, str, bool) -> str
+    """Create ~/.fmos/config.json once. Never overwrites; reports a mismatch."""
+    path = config_path()
+    if path.exists():
+        try:
+            cur = json.loads(path.read_text(encoding="utf-8-sig"))
+        except Exception:
+            return "skipped (%s уншигдсангүй — гараар шалга)" % path
+        if isinstance(cur, dict) and cur.get("vault") and \
+                _norm_key(Path(str(cur.get("vault")))) != _norm_key(target):
+            return "skipped (байгаа файл өөр vault руу заана: %s)" % cur.get("vault")
+        return "skipped (байгаа)"
+    if dry_run:
+        return "created (dry-run) %s" % path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not device or "${" in device:  # empty or unsubstituted ${user_config.device}
+        device = default_device()
+    body = {"vault": str(target), "device": device, "member": member}
+    with open(str(path), "x", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(body, ensure_ascii=False, indent=2) + "\n")
+    return "created %s" % path
+
+
 # ------------------------------------------------------------------- main
 
-def setup(target, member, dry_run=False, merge_registry=False, template=TEMPLATE_DIR):
-    # type: (Path, str, bool, bool, Path) -> Dict[str, object]
+def setup(target, member, dry_run=False, merge_registry=False, template=TEMPLATE_DIR,
+          config=False, device=""):
+    # type: (Path, str, bool, bool, Path, bool, str) -> Dict[str, object]
     report = {"target": str(target), "dry_run": dry_run,
               "created": [], "skipped": [], "dirs_created": [],
-              "registry": "", "roles": [], "errors": []}  # type: Dict[str, object]
+              "registry": "", "roles": [], "config": "", "errors": []}  # type: Dict[str, object]
     if not template.is_dir():
         report["errors"].append("vault-template олдсонгүй: %s" % template)
         return report
@@ -244,6 +326,8 @@ def setup(target, member, dry_run=False, merge_registry=False, template=TEMPLATE
                 d.mkdir(parents=True, exist_ok=True)
 
     for rel in files:
+        if rel == REGISTRY_REL:  # built below from the skeleton + role notes
+            continue
         dst = target / rel
         if not _is_inside(dst, target):
             report["errors"].append("vault-аас гадуур зам: %s" % rel)
@@ -286,9 +370,10 @@ def setup(target, member, dry_run=False, merge_registry=False, template=TEMPLATE
             else:
                 reg.setdefault("sessions", {})
                 have = reg.setdefault("roles", {})
-                added = [s for s in sorted(roles) if s not in have]
+                full = build_registry(template, roles)["roles"]
+                added = [s for s in sorted(full) if s not in have]
                 for s in added:
-                    have[s] = roles[s]
+                    have[s] = full[s]
                 if added and not dry_run:
                     tmp = reg_path.with_name(reg_path.name + ".tmp")
                     tmp.write_text(json.dumps(reg, ensure_ascii=False, indent=2) + "\n",
@@ -300,9 +385,14 @@ def setup(target, member, dry_run=False, merge_registry=False, template=TEMPLATE
         report["registry"] = "created"
         if not dry_run:
             reg_path.parent.mkdir(parents=True, exist_ok=True)
-            body = json.dumps({"sessions": {}, "roles": roles}, ensure_ascii=False, indent=2)
+            body = json.dumps(build_registry(template, roles), ensure_ascii=False, indent=2)
             with open(str(reg_path), "x", encoding="utf-8", newline="\n") as fh:
                 fh.write(body + "\n")
+    if config:
+        try:
+            report["config"] = write_config(target, member, device, dry_run=dry_run)
+        except Exception as exc:
+            report["errors"].append("config.json: %s" % exc)
     return report
 
 
@@ -319,6 +409,8 @@ def _print_report(rep):
         print("  Шинэ хавтас: %d" % len(rep["dirs_created"]))
     print("  registry.json: %s" % rep["registry"])
     print("  Дүрүүд (%d): %s" % (len(rep["roles"]), ", ".join(rep["roles"]) or "-"))
+    if rep.get("config"):
+        print("  ~/.fmos/config.json: %s" % rep["config"])
     for e in rep["errors"]:
         print("  ! %s" % e)
 
@@ -333,6 +425,9 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="юу ч бичихгүй, зөвхөн тайлан")
     ap.add_argument("--merge-registry", action="store_true",
                     help="байгаа registry.json-д дутуу дүрийг нэмнэ (sessions хөндөхгүй)")
+    ap.add_argument("--config", action="store_true",
+                    help="~/.fmos/config.json-г (байхгүй бол) үүсгэнэ: vault, device, member")
+    ap.add_argument("--device", default="", help="--config-д бичих төхөөрөмжийн шошго (Mac/PC)")
     ap.add_argument("--json", action="store_true", help="тайланг JSON-оор хэвлэнэ")
     args = ap.parse_args(argv)
 
@@ -350,7 +445,8 @@ def main(argv=None):
         print("Татгалзав: target хавтас биш: %s" % target, file=sys.stderr)
         return 2
 
-    rep = setup(target, args.member, dry_run=args.dry_run, merge_registry=args.merge_registry)
+    rep = setup(target, args.member, dry_run=args.dry_run, merge_registry=args.merge_registry,
+                config=args.config, device=args.device)
     if args.json:
         print(json.dumps(rep, ensure_ascii=False, indent=2))
     else:

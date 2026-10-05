@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      # uv installs the exact Python on every OS/arch (incl. 3.9 on Apple Silicon runners).
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install Python ${{ matrix.python }}
+        run: uv python install ${{ matrix.python }}
+
+      # Runs tests/test_hooks.py, test_onboard.py, test_doctor.py, test_tools.py and
+      # tools/relay/tests/test_relay_config.py (shims + canonical copy; missing ones are skipped),
+      # JSON validity under plugins/ and .claude-plugin/,
+      # SKILL.md frontmatter, and a personal-path scan of shipped files.
+      - name: Tests and checks
+        run: uv run --no-project --python ${{ matrix.python }} python .github/scripts/ci_checks.py
+
+  validate-plugin:
+    name: claude plugin validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The Claude Code CLI may require authentication in CI; never block a PR on it.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate plugin fm (strict)
+        run: npx -y @anthropic-ai/claude-code plugin validate --strict plugins/fm
+
+      - name: Validate marketplace founder-matrix (strict)
+        if: always()
+        run: npx -y @anthropic-ai/claude-code plugin validate --strict .

@@ -31,7 +31,7 @@ YESTERDAY = TODAY - datetime.timedelta(days=1)
 TOMORROW = TODAY + datetime.timedelta(days=1)
 
 VAULT_KEYS = ("CLAUDE_PLUGIN_OPTION_VAULT_PATH", "CLAUDE_PLUGIN_OPTION_vault_path",
-              "FM_VAULT", "OBSIDIAN_VAULT_PATH", "CLAUDE_PROJECT_DIR")
+              "FM_VAULT", "OBSIDIAN_VAULT_PATH", "CLAUDE_PROJECT_DIR", "FMOS_CONFIG")
 
 
 # ----------------------------------------------------------------- fixtures
@@ -66,7 +66,7 @@ class Vault(object):
         self.tmp = Path(tempfile.mkdtemp(prefix="fm-hooks-test-"))
         self.root = self.tmp / "Vault"
         self.outside = self.tmp / "elsewhere"
-        for d in ["00-Inbox", "02-GTD/tasks", "06-Atomic", "_system/relay", "_system/templates",
+        for d in ["00-Inbox", "02-GTD/tasks", "06-Atomic", "_system/fm", "_system/templates",
                   "_trash", "99-Archive", ".obsidian", "04-Areas/AI Team/ai-workers",
                   "04-Areas/Business/finances/private"]:
             (self.root / d).mkdir(parents=True, exist_ok=True)
@@ -79,7 +79,7 @@ class Vault(object):
         return p
 
     def registry(self, data):
-        self.write("_system/relay/registry.json", json.dumps(data, ensure_ascii=False))
+        self.write("_system/fm/registry.json", json.dumps(data, ensure_ascii=False))
 
     def cleanup(self):
         shutil.rmtree(str(self.tmp), ignore_errors=True)
@@ -89,6 +89,8 @@ def run(script, payload=None, env_extra=None, args=None, raw=None):
     env = dict(os.environ)
     for k in VAULT_KEYS:
         env.pop(k, None)
+    # never pick up this machine's real ~/.fmos/config.json
+    env["FMOS_CONFIG"] = str(Path(tempfile.gettempdir()) / "fm-test-no-such-config.json")
     env.update(env_extra or {})
     if raw is not None:
         data = raw
@@ -230,6 +232,19 @@ def test_ctx_obsidian_vault_path_fallback(v):
     assert "legacy-boot" in context_of(out)
 
 
+def test_ctx_vault_from_fmos_config(v):
+    cfg = v.tmp / "fmos-config.json"
+    cfg.write_text(json.dumps({"vault": str(v.root), "device": "Mac", "member": "Test"}),
+                   encoding="utf-8")
+    v.write("_system/BOOT.md", "# BOOT\n\nconfig-boot-marker\n")
+    code, out, _ = run(CTX, ctx_payload(v.root), {"FMOS_CONFIG": str(cfg)})
+    assert code == 0 and "config-boot-marker" in context_of(out), out
+    # FM_VAULT (env) overrides the config file
+    code, out, _ = run(CTX, ctx_payload(v.root), {"FMOS_CONFIG": str(cfg),
+                                                  "FM_VAULT": str(v.outside)})
+    assert code == 0 and out == "", out
+
+
 def test_ctx_project_dir_inside_vault(v):
     v.write("_system/BOOT.md", "pd-boot\n")
     payload = {"session_id": "x", "hook_event_name": "SessionStart"}
@@ -257,7 +272,7 @@ def test_ctx_note_path_traversal_ignored(v):
 
 
 def test_ctx_garbage_input_and_bad_registry(v):
-    v.write("_system/relay/registry.json", "{not json")
+    v.write("_system/fm/registry.json", "{not json")
     code, out, err = run(CTX, raw=b"\xff\xfe garbage", env_extra={"FM_VAULT": str(v.root)})
     assert code == 0 and out == "", (code, out, err)  # no cwd -> treated as outside
     code, out, _ = run(CTX, ctx_payload(v.root), {"FM_VAULT": str(v.root)})

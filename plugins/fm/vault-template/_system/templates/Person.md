@@ -5,11 +5,14 @@ type: person
 tags:
   - person
 ai-first: true
+aliases: []
 role:
-company:
 relationship:
+companies: []
+projects: []
 last_interaction: {{date:YYYY-MM-DD}}
 follow_up_date:
+hot: false
 ---
 
 # {{title}}
@@ -24,6 +27,12 @@ follow_up_date:
 
 ## Бие биедээ хэрхэн тус болох вэ
 
+## Харилцаа
+
 ## Тэмдэглэл
 
-<!-- relationship: team | client | partner | network | personal -->
+<!--
+relationship: team | client | partner | mentor | network | family | friend
+hot: true = идэвхтэй харилцаатай хүн (People.base → Hot, /fm:people hot).
+companies / projects: "[[wikilink]]" жагсаалт (байгууллага, төсөл).
+-->

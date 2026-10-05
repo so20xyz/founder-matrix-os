@@ -1,0 +1,111 @@
+{
+  "_comment": "Cut-over-ийн дараах ~/.claude/settings.json-ийн hooks + env хэсэг (Mac). Бүтэн файлыг ҮҮГЭЭР БҮҮ СОЛЬ: extras/cutover-mac.md 3-р алхмын скрипт зөвхөн OSB hook-уудыг хасна (FM_VAULT-ийг энд БҮҮ нэм — relay-ийн горимыг зөвхөн ~/.fmos/config.json сольдог), бусад тохиргоо (permissions, plugins, theme) хэвээр үлдэнэ. fm_context.py (SessionStart) ба fm_lint.py (PostToolUse) энд БАЙХГҮЙ — тэд fm plugin-ий hooks.json-оос ирнэ. Env утгад $HOME задрахгүй тул бүтэн замаа бич. Энэ '_comment' түлхүүрийг жинхэнэ settings.json руу бүү хуул.",
+  "env": {
+    "OBSIDIAN_VAULT_PATH": "/Users/<your-user>/My Drive/Second Brain 2.0"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/Documents/CodeBase/founder-matrix-os/tools/relay/relay.py\" inbox",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/Documents/CodeBase/founder-matrix-os/tools/relay/status.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/Documents/CodeBase/founder-matrix-os/tools/relay/relay.py\" inbox",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/Documents/CodeBase/founder-matrix-os/tools/relay/status.py\"",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/My Drive/Second Brain 2.0/_system/tools/figma/bridge/claude_status.py\" prompt",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/Documents/CodeBase/founder-matrix-os/tools/relay/status.py\"",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/My Drive/Second Brain 2.0/_system/tools/figma/bridge/claude_status.py\" pre",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/Documents/CodeBase/founder-matrix-os/tools/relay/status.py\"",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/My Drive/Second Brain 2.0/_system/tools/figma/bridge/claude_status.py\" post",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/Documents/CodeBase/founder-matrix-os/tools/relay/relay.py\" baton",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/Documents/CodeBase/founder-matrix-os/tools/relay/status.py\"",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/My Drive/Second Brain 2.0/_system/tools/figma/bridge/claude_status.py\" stop",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/Documents/CodeBase/founder-matrix-os/tools/relay/status.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

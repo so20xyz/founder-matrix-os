@@ -30,7 +30,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "// relay/notion_links.json-ийн хуулбар: Discord суваг ↔ Notion project page\nconst LINKS = [\n  { channel: \"🔥-04-acme-website\", channelId: \"DISCORD_ID\", page: \"NOTION_PAGE_ID\", title: \"acme website\" },\n];\nreturn LINKS.map(l => ({ json: l }));"
+        "jsCode": "// Discord суваг ↔ Notion project page (relay-ийн _system/fm/notion_links.json-тай ижил).\n// Өөрийн утгаараа соль: channelId = Discord channel id, page = Notion page id.\nconst LINKS = [\n  { channel: \"01-example-project\", channelId: \"<discord-channel-id>\", page: \"<notion-page-id>\", title: \"Example project\" },\n];\nreturn LINKS.filter(l => !l.channelId.startsWith(\"<\")).map(l => ({ json: l }));"
       },
       "id": "node-2"
     },

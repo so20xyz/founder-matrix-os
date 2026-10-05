@@ -1,0 +1,51 @@
+filters:
+  and:
+    - file.ext == "md"
+    - '!file.inFolder("_system/templates")'
+    - or:
+        - type == "reference"
+        - type == "tool"
+properties:
+  kind:
+    displayName: Төрөл
+  url:
+    displayName: Линк
+  areas:
+    displayName: Хүрээ
+  projects:
+    displayName: Төсөл
+  serves:
+    displayName: Үйлчилдэг
+views:
+  - type: table
+    name: Лавлагаа
+    filters:
+      and:
+        - type == "reference"
+    groupBy:
+      property: kind
+      direction: ASC
+    order:
+      - file.basename
+      - url
+      - areas
+      - projects
+      - date
+  - type: table
+    name: Хэрэгслүүд
+    filters:
+      and:
+        - type == "tool"
+    order:
+      - file.basename
+      - url
+      - status
+      - serves
+  - type: table
+    name: Сүүлд нэмсэн
+    limit: 30
+    order:
+      - date
+      - file.basename
+      - type
+      - url

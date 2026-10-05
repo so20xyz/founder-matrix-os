@@ -4,7 +4,7 @@
 Хийх зүйл:
   Сешн vault дотор (cwd эсвэл CLAUDE_PROJECT_DIR) нээгдсэн бол
     1. <vault>/_system/BOOT.md-г inject хийнэ (нийт context <= 10 KB);
-    2. сешний дүрийг <vault>/_system/relay/registry.json-оос олно:
+    2. сешний дүрийг <vault>/_system/fm/registry.json-оос олно:
          sessions[<session_id>].role -> roles[<role>].note
        олдвол дүрийн тэмдэглэлийн дүрмийн хэсгийг (## ...дүрэм / Rules /
        Юу хийж болохгүй / For future agent) нэмнэ;
