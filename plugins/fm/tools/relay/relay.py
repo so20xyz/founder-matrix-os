@@ -336,9 +336,25 @@ def d_send(to, text, sid):
     reg = load(REG, {"sessions": {}}); me = reg["sessions"].get(sid, {"name": f"{DEVICE}-{sid[:6]}"})
     state = load(STATE, {}); ch = dchannels(state); save(STATE, state)
     name = BROADCAST if to in ("all", "@all", "org", "sys") else to.lstrip("@").lower()
-    cid = ch[name]; msg = f"{ICON} [{me['name']}] {text}"
-    for i in range(0, len(msg), 1900):
-        dapi("POST", f"/channels/{cid}/messages", {"content": msg[i:i+1900]})
+    # itge.e 2026-10-06: clean chat — avatar+bot name already say PC/Mac, so no «🖥️ [name]» prefix in the body.
+    # The sending agent goes in a small grey footer (Discord «-#» subtext); the reply threads to itge.e's
+    # latest human message in the channel (or --reply <message_id>).
+    agent = (me.get("title") or me.get("name") or "").strip()
+    sig = f"\n-# {ICON} {DEVICE} · {agent}" if agent else ""
+    cid = ch[name]; ref = None
+    if "--reply" in sys.argv:
+        ref = sys.argv[sys.argv.index("--reply") + 1]
+    else:
+        try:
+            for m in dapi("GET", f"/channels/{cid}/messages?limit=15"):
+                if not m["author"].get("bot"): ref = m["id"]; break
+        except Exception: pass
+    body = text.strip()
+    chunks = [body[i:i + 1900] for i in range(0, len(body), 1900)] or [""]
+    for k, c in enumerate(chunks):
+        payload = {"content": c + (sig if k == len(chunks) - 1 else ""), "allowed_mentions": {"replied_user": False}}
+        if k == 0 and ref: payload["message_reference"] = {"message_id": ref, "fail_if_not_exists": False}
+        dapi("POST", f"/channels/{cid}/messages", payload)
     print("sent →", name)
 
 
@@ -368,6 +384,7 @@ def d_watch(sid, every=20):
                 last[n] = msgs[-1]["id"]; st = load(STATE, {}); st[wk] = last; save(STATE, st)
             for m in msgs:
                 if tag and tag in m["content"][:len(tag) + 4]: continue
+                if me and m["author"].get("bot") and m["content"].rstrip().endswith(f"{DEVICE} · {(me.get('title') or me.get('name') or '').strip()}"): continue
                 fm = FOR.search(m["content"])
                 if fm and fm.group(1).lower() != fmconfig.KIND: continue
                 who = m["author"].get("global_name") or m["author"]["username"]
