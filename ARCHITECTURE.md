@@ -1,68 +1,26 @@
-# Founder Matrix OS — сешн байгууллага (PARA)
+# Архитектур (v0.3)
 
-BD-ийн зорилго (2026-10-02): **BD хаана ч (PC / Mac / утас) ажилласан сешнүүд нэг байгууллага шиг эмх цэгцтэй харилцаж, санах ойгоо шинэчлээд зөрөхгүй үргэлжилнэ.**
+```
+Хэрэглэгч ── «update» ──▶ Claude (Agent = сешн + дүр)
+                              │  SessionStart hook: BOOT.md + дүрийн дүрэм
+                              ▼
+                    plugins/fm  (Claude Code plugin)
+   skills/  10 үндсэн (update = ганц команд → save · task · people · project · inbox …)
+            6 хэрэгсэл (relay · figma · framer · notion · post · watch)
+   agents/  project · area · resource · research · developer · creative · finance🔒
+   hooks/   fm_context.py (context) · fm_lint.py (lint, нууц/санхүүгийн хамгаалалт)
+   scripts/ fm_doctor (шаардлага) · fm_setup (араг яс) · fm_onboard (ярилцлага → note)
+   tools/   relay · figma · framer · notion · watch (хэрэгслийн код)
+                              │ бичнэ
+                              ▼
+            Гишүүний Obsidian vault (Google Drive-аар Mac ↔ PC)
+   00-Inbox · 01-Soul · 02-GTD · 03-Projects · 04-Areas · 05-Resources · 06-Atomic · 07-Goals
+   _system/BOOT.md (дүрэм) · STATUS.md (дүр бүрийн мөр) · logs/ (зөвхөн холбоос)
+   _system/fm/registry.json (сешн ↔ дүр; project = дүрийн slug) · state/<дүр>.md (baton)
+   04-Areas/AI Team/ai-workers/01–07 (Agent-уудын «сүнс»)
+```
 
-## 1. Нэг бүтэц — гурван газар ижил
-
-| PARA групп | Claude апп sidebar (PC = Mac) | Discord суваг | Үүрэг |
-|---|---|---|---|
-| **Tasks** | Tasks | `#tasks` | богино, нэг удаагийн ажил |
-| **Projects** | Projects | `#projects` | хугацаатай төсөл (client-b, acme, inai-website…) |
-| **Areas** | Areas | `#areas` | байнгын хариуцлага — **admin-ууд**: 00 Inbox, 01 Project, 02 Area, 03 System |
-| **Resources** | Resources | `#resources` | лавлах, хэрэгсэл — Creative Director, Wiki |
-| (бүгд) | — | `#03-sys-admin` | бүх сешн сонсоно, Mac ↔ PC ↔ BD |
-| (төлөв) | — | `#status` | сешн бүрийн амьд төлөв |
-
-Хувийн (Home) сешн: Areas-д, `--private` — Discord/status/git-д юу ч гарахгүй.
-
-## 2. Сешн = ажилтан
-
-`relay/registry.json`: `session_id → {name, group, project, device, private}`.
-Нэг төсөл хоёр машин дээр **ижил `project` slug**-тай.
-
-**Дүрэм — сешн бүр өөрийн Discord сувагтай (BD, 2026-10-02):**
-- Бүртгэлтэй сешн бүр өөрийн нэр бүхий Discord сувагтай байх ёстой. Нэг төслийн PC, Mac хос сешн тэр сувгаа хамт ашиглана.
-- Суваггүй сешн олдвол (эсвэл бүтэц нь энэ дүрэмд таарахгүй бол) Mac, PC хоёр `#03-sys-admin` дээр ярилцаж тохирно. Дараа нь нэг тал (03 Sys Admin) энэ файлын дүрэм, `registry.json`-ийг шинэчлээд push хийж, `sync-discord` ажиллуулна. Нөгөө тал `git pull` хийнэ.
-
-## 3. Харилцаа (Discord, git-гүй)
-
-- Сонсох: hook (`SessionStart`, `UserPromptSubmit`) → `#03-sys-admin` + өөрийн группийн сувгийн шинэ мессеж.
-- Тасралтгүй: `relay.py watch` (Monitor).
-- Бичих: `relay.py send <org|group> "текст"` → `[сешний нэр] текст`.
-
-## 4. Санах ой — төхөөрөмж солиход зөрөхгүй (baton)
-
-- `state/<project>.md` — **ОДОО** (сүүлийн хүсэлт + хаана зогссон + 📌 дараагийн алхам) ба **ТҮҮХ**.
-- `Stop` hook → `relay.py baton` (бичнэ, 5 мин тутам push). `relay.py next "…"` → дараагийн алхмыг тогтооно.
-- `SessionStart` → тухайн төслийн ОДОО + сүүлийн 5 түүх контекст болж орно.
-
-## 4b. Диспетчер — унтаа сешнийг сэрээх (BD, 2026-10-02)
-
-- Төхөөрөмж бүрийн **03 Sys Admin** `relay.py dispatch`-ийг Monitor-оор байнга ажиллуулна (дуусах бүрд тэр даруй дахин асаана).
-- Сешний хос суваг дээр: **BD (хүн)-ийн мессеж** эсвэл **нөгөө төхөөрөмжийн хос сешний мессеж** (хаяггүй ч, 10 мин-д ≤3 удаа — ping-pong хамгаалалт); `#03-sys-admin` broadcast дээр зөвхөн `→ PC`/`→ Mac` хаягласан нь — ирвэл → Sys Admin тухайн локал сешнийг Claude апп-ын `send_message`-ээр сэрээж мессежийг дамжуулна. Сешн хариугаа өөрийн сувагт бичнэ.
-- Өөрийн төхөөрөмжийн bot мессеж сэрээхгүй (ping-pong-гүй).
-- Sys Admin сешн хаагдвал диспетчер зогсоно → дахин нээхэд SessionStart context-д «dispatch асаа» гэж сануулна.
-
-## 4b2. Claim дүрэм — эхэлж уншсан нь зарлаад дуусгана (BD, 2026-10-02)
-
-- Хос сувагт (PC+Mac) ажил ирвэл **эхэлж уншсан сешн** тэр даруй `🙋 PC авлаа` / `🙋 Mac авлаа` гэж зарлана → ажлыг ДУУСГААД `✅ дууслаа: …` гэж бичнэ.
-- Нөгөө тал `авлаа` харсан бол хүрэхгүй (зөвхөн тусламж хүсвэл оролцоно). Зарлаагүй ажил = эзэнгүй.
-- 30 мин дотор `✅` гараагүй бол нөгөө тал асууж болно.
-
-## 4c. Git зэрэг бичилт
-
-- `baton`/`next` нь `~/.fmos_git.lock`-оор нэг нэгээр ажиллана; `pull --rebase -X theirs`, бүтэлгүйтвэл `rebase --abort` + merge. Rebase хэзээ ч дунд нь үлдэхгүй.
-
-## 5. Хэрэгслүүд
-
-| Төрөл | Юу |
-|---|---|
-| Resource tools | Claude (Code, skills, agents), Discord, GitHub (энэ repo) |
-| Project tools | Figma bridge, Framer bridge, skills, Remotion, Poster Maker |
-| Хадгалах газар | **Тодорхойгүй (BD шийднэ):** Obsidian vault · Notion · Google Drive. **Бодит байдал (2026-10-02):** Obsidian Sync дууссан → vault PC/Mac тусдаа, зөрж эхэлсэн; медиа → Drive. **Түр дүрэм:** vault = тухайн машины локал ажил; хоёр машинд хэрэгтэй бүхэн (код, тохиргоо, төлөв, шийдвэр) → энэ repo. Медиа/зураг repo-д орохгүй. |
-
-## 6. Нээлттэй асуулт
-
-- Vault-ийн агуулгын синк (git / Sync / Notion) — BD.
-- Sidebar группийг машин хооронд автоматаар тулгах (одоо Claude бүр `ccd_sidebar`-аар гараар).
-- PC + Mac нийлсэн sidebar панел (Discord `#status` дээр нэг самбар) — дараагийн алхам.
+- **Нэг эх үүсвэр = vault.** Албан ёсны skill-ууд (superpowers, kepano obsidian, document-skills, finance, exa) суусан ч vault-д бичнэ (BOOT «албан ёсны skill → vault»).
+- **Agent = дүр.** Дүрийн дүрэм vault-ийн note-д; `plugins/fm/agents/*.md` нь заагч. Төсөл бүрт нэг тогтмол сешн; мэргэжлийн ажлыг subagent-аар.
+- **🔒 Хувийн** (`private: true`, `finances/private/`) vault-аас хэзээ ч гарахгүй: git, Discord, Notion, STATUS, лог, атом.
+- **Нэмэлт relay:** Discord ↔ сешнүүд (`/fm:relay`), өгөгдөл `_system/fm/`, тохиргоо `~/.fmos/config.json`. `tools/relay/*.py` = хуучин замын shim. v0-ийн дотоод дизайн: `extras/personal/architecture-v0-relay.md`.
