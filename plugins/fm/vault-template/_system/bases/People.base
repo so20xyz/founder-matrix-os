@@ -20,6 +20,8 @@ properties:
     displayName: Сүүлд харилцсан
   follow_up_date:
     displayName: Дахин холбогдох
+  hot:
+    displayName: Hot
   formula.days_since:
     displayName: Хоног өнгөрсөн
   formula.follow_up_due:
@@ -47,6 +49,18 @@ views:
       - follow_up_date
       - relationship
       - companies
+  - type: table
+    name: Hot
+    filters:
+      and:
+        - hot == true
+    order:
+      - file.basename
+      - last_interaction
+      - formula.days_since
+      - relationship
+      - companies
+      - projects
   - type: table
     name: Баг
     filters:

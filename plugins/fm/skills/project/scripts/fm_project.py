@@ -238,7 +238,7 @@ def cmd_new(vault: Path, args: List[str]) -> None:
                      ("area", _opt(args, "--area")), ("goal", '"%s"' % goal.replace('"', "'") if goal else ""),
                      ("start", today if state == "active" else "")):
         fm = fm_set(fm, key, val)
-    for key in ("milestones", "anti-goal"):  # scope contract (see /fm:spawn)
+    for key in ("milestones", "anti-goal"):  # scope contract (goal/due/milestones/anti-goal)
         if not any(re.match(r"^%s:" % key, l) for l in fm):
             fm.append("%s:" % key)
     bfm, bbody = from_template(vault, "Project Brain", name)

@@ -1,4 +1,4 @@
 ---
-description: хуучин нэр — 2026-11-05 хүртэл (→ /fm:track)
+description: хуучин нэр — 2026-11-05 хүртэл (→ /fm:save --checkpoint)
 ---
-Skill `fm:track`-г ажиллуул. Аргумент: $ARGUMENTS
+Skill `fm:save`-г `--checkpoint` аргументтай ажиллуул. Нэмэлт: $ARGUMENTS

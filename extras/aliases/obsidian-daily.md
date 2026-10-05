@@ -1,4 +1,4 @@
 ---
-description: хуучин нэр — 2026-11-05 хүртэл (→ /fm:daily)
+description: хуучин нэр — 2026-11-05 хүртэл (→ /fm:update daily)
 ---
-Skill `fm:daily`-г ажиллуул. Аргумент: $ARGUMENTS
+Skill `fm:update`-г `daily` аргументтай ажиллуул. Нэмэлт: $ARGUMENTS
