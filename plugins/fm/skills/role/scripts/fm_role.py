@@ -6,7 +6,7 @@ The session -> role map lives in <vault>/_system/fm/registry.json:
 
     {"sessions": {"<sid>": {"role": "area", "project": "area", "group": "areas", "device": "Mac",
                             "title": "Area · Mac", "since": "YYYY-MM-DD"}},
-     "roles":    {"area": {"note": "04-Areas/AI Team/ai-workers/02 Area.md", "group": "areas"}}}
+     "roles":    {"area": {"note": "04-Areas/AI Team/ai-workers/GTD.md", "group": "areas"}}}
 
 A bound session gets project = <role slug> (and the role's group), so the relay groups the same role on every
 device into ONE Discord channel and ONE baton (state/<slug>.md); the " · <device>" title suffix is display only.
@@ -32,6 +32,14 @@ from typing import Dict, List, Optional
 ROLES_DIR = Path("04-Areas") / "AI Team" / "ai-workers"
 REGISTRY = Path("_system") / "fm" / "registry.json"
 ROLE_TYPES = {"agent-role", "ai-worker"}
+# 2026-10-05 consolidation: old role slugs/names -> current role slug (role: frontmatter of the new notes).
+LEGACY_ROLE_ALIASES = {
+    "gtd": "area", "inbox": "area", "inbox-admin": "area", "area-admin": "area",
+    "sys-admin": "developer", "session-admin": "developer", "tool-developer": "developer", "architect": "developer",
+    "wiki": "resource", "wiki-admin": "resource", "research": "resource",
+    "project-admin": "project", "creative-director": "creative",
+    "content-writer": "content", "social-admin": "content", "dispatcher": "operator",
+}
 
 
 def _out(text: str) -> None:
@@ -127,7 +135,14 @@ def find_role(roles: List[Dict[str, object]], query: str) -> Optional[Dict[str, 
         if q in names:
             return r
     hits = [r for r in roles if q and (q in str(r["slug"]).lower() or q in str(r["name"]).lower())]
-    return hits[0] if len(hits) == 1 else None
+    if len(hits) == 1:
+        return hits[0]
+    alias = LEGACY_ROLE_ALIASES.get(slugify(re.sub(r"^\d+\s*", "", q)))
+    if alias:
+        for r in roles:
+            if str(r["slug"]).lower() == alias:
+                return r
+    return None
 
 
 def load_registry(vault: Path) -> Dict[str, object]:

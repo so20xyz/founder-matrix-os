@@ -411,7 +411,9 @@ def d_task(args, sid):
     ch = next((cm[s] for s, v in reg.items() if (v.get("title") or "").strip() == owner.strip() and s in cm), None)
     msg = f"📌 TASK → **{owner}** · `{status}` · [[02-GTD/tasks/{safe}]]\n{title}" + (f"\n{opt('--body')}" if opt("--body") else "")
     if not ch and VAULT_MODE:  # unowned (no channel) → the inbox role catches it (discord.json "inbox_role")
-        ch = next((cm[s] for s, v in reg.items() if (v.get("title") or "").strip() == fmconfig.INBOX_ROLE and s in cm), None)
+        for want in dict.fromkeys([fmconfig.INBOX_ROLE, "🗂️ GTD", "GTD", "00 Inbox Admin"]):  # new GTD note title + legacy
+            ch = next((cm[s] for s, v in reg.items() if (v.get("title") or "").strip() == want and s in cm), None)
+            if ch: break
     if ch: d_send(ch, msg, sid)
     print("task →", f, "| notified:", ch or f"(owner сувагтай биш — {fmconfig.MEMBER_LABEL})")
 

@@ -400,6 +400,24 @@ def test_role_bind_groups_sessions_by_role(c):
     assert "role" not in reg["sessions"]["sid-pc"] and "project" not in reg["sessions"]["sid-pc"], reg
 
 
+def test_role_new_note_names_and_legacy_aliases(c):
+    """2026-10-05 consolidation: role notes are GTD.md / Wiki.md / Architect.md (no NN prefix);
+    old slugs (research, tool-developer, 00 Inbox Admin, wiki) still resolve to the new notes."""
+    NOTE_TMPL = "\n".join(["---", "type: ai-worker", "role: %s", "---", "# %s", ""])
+    folder = c.vault / "04-Areas/AI Team/ai-workers"
+    folder.mkdir(parents=True, exist_ok=True)
+    for name, slug in (("GTD", "area"), ("Wiki", "resource"), ("Architect", "developer"), ("Operator", "operator")):
+        (folder / ("%s.md" % name)).write_text(NOTE_TMPL % (slug, name), encoding="utf-8")
+    role = PLUGIN / "skills/role/scripts/fm_role.py"
+    for query, slug, note in (("area", "area", "GTD.md"), ("00 Inbox Admin", "area", "GTD.md"),
+                              ("research", "resource", "Wiki.md"), ("wiki", "resource", "Wiki.md"),
+                              ("tool-developer", "developer", "Architect.md"), ("Architect", "developer", "Architect.md")):
+        code, out, err = run(role, "bind", c.vault, query, "--sid", "sid-" + slug, "--device", "PC")
+        assert code == 0, (query, out, err)
+        res = json.loads(out)
+        assert res["role"] == slug and res["note"] == "04-Areas/AI Team/ai-workers/" + note, (query, res)
+
+
 def test_idempotent_second_run(c):
     onboarded(c)
     before = c.snapshot()
