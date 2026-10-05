@@ -14,9 +14,14 @@ Prints the absolute path of the logo file (svg or png). Exit 1 if nothing found.
 import argparse, datetime, json, re, shutil, sys, urllib.parse, urllib.request
 from pathlib import Path
 
-LIB = Path(r"<VAULT>\08-Studio\assets\social-logos")
-if not LIB.exists():  # Mac
-    LIB = Path.home() / "My Drive/Second Brain 2.0/08-Studio/assets/social-logos"
+import os
+def _vault():
+    """Vault from FM_VAULT or ~/.fmos/config.json (fm convention) — no personal paths in the repo."""
+    if os.environ.get("FM_VAULT"): return Path(os.environ["FM_VAULT"])
+    cfg = Path.home() / ".fmos" / "config.json"
+    if cfg.exists(): return Path(json.loads(cfg.read_text(encoding="utf-8"))["vault"])
+    sys.exit("vault алга: FM_VAULT эсвэл ~/.fmos/config.json тохируул")
+LIB = _vault() / "08-Studio" / "assets" / "social-logos"
 INDEX = LIB / "logos.json"
 UA = {"User-Agent": "Mozilla/5.0"}
 
