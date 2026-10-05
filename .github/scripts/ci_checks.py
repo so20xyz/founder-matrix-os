@@ -7,7 +7,7 @@ Run from the repo root (any OS):
 1. Runs every test script that exists (missing ones are skipped, not failed).
 2. Checks that every *.json under plugins/ and .claude-plugin/ parses.
 3. Checks every plugins/*/skills/<slug>/SKILL.md has frontmatter `name: <slug>` and a description.
-4. Checks shipped files (plugins/, docs/, top-level docs) for the maintainer's personal paths.
+4. Checks shipped files (plugins/, docs/, tools/, top-level docs) for the maintainer's personal paths.
 
 Exit code 0 = all good, 1 = something failed. Output is ASCII-only so it works on any console.
 """
@@ -22,6 +22,8 @@ REPO = Path(__file__).resolve().parents[2]
 TESTS = [
     "tests/test_hooks.py",
     "tests/test_onboard.py",
+    "tests/test_doctor.py",
+    "tests/test_tools.py",
     "tools/relay/tests/test_relay_config.py",
 ]
 
@@ -29,14 +31,15 @@ JSON_ROOTS = ["plugins", ".claude-plugin"]
 SKIP_DIRS = {"node_modules", ".git", "__pycache__", "dist", "out", ".vite"}
 
 # Shipped text must never contain the maintainer's machine paths.
-PERSONAL_SCAN_ROOTS = ["plugins", "docs", "README.md", "CONTRIBUTING.md", "CHANGELOG.md", ".github"]
+PERSONAL_SCAN_ROOTS = ["plugins", "docs", "tools", "README.md", "CONTRIBUTING.md", "CHANGELOG.md", ".github"]
 PERSONAL_PATTERNS = [
     re.compile(r"/Users/(?!(?:you|me|name|example|runner|Shared|USER)\b)[A-Za-z0-9._-]+"),  # only placeholder users allowed
     re.compile(r"[A-Z]:[/\\]Vaults[/\\]Founder\.Matrix", re.I),
     re.compile(r"[A-Z]:[/\\]My Drive[/\\]Second Brain 2\.0", re.I),
     re.compile(r"D:[/\\]CodeBase[/\\]founder-matrix-os", re.I),
 ]
-TEXT_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml", ".base", ".txt", ".mjs", ".js", ".canvas"}
+TEXT_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml", ".base", ".txt", ".mjs", ".js", ".canvas",
+                 ".sh", ".ps1", ".cmd", ".html", ".ts", ".tsx", ".example"}
 
 failures = []
 
@@ -78,7 +81,7 @@ def check_json():
     n = 0
     for root in JSON_ROOTS:
         for f in walk(root):
-            if f.suffix.lower() != ".json":
+            if f.suffix.lower() != ".json" or f.name.startswith("tsconfig"):  # tsconfig*.json is JSONC
                 continue
             n += 1
             try:

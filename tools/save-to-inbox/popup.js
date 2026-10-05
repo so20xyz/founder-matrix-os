@@ -2,7 +2,7 @@
 // Ded 1 (heregtei): Obsidian "Local REST API" plugin asaasan bol localhost ruu HTTP
 //   bичдег => Obsidian NEEGDDEGGUI (fokus solihgui), urt niitlel ч buten orno.
 // Ded 2 (fallback): API key togiruulaagui bol obsidian://new URI (Obsidian urd garna).
-const VAULT = "YOUR_VAULT_ID"; // vault ID: $HOME/Documents/CodeBase/Second Brain
+// Vault: Options-д тохируулна (нэр эсвэл Obsidian vault ID). obsidian:// fallback-д л хэрэглэгдэнэ.
 const DEFAULT_ENDPOINT = "http://127.0.0.1:27123";
 
 function clean(s) {
@@ -38,9 +38,9 @@ async function getSelection(tabId) {
 function getCfg() {
   return new Promise((res) => {
     try {
-      chrome.storage.local.get(["apiKey", "endpoint"], (d) =>
-        res({ apiKey: (d && d.apiKey) || "", endpoint: (d && d.endpoint) || DEFAULT_ENDPOINT }));
-    } catch (e) { res({ apiKey: "", endpoint: DEFAULT_ENDPOINT }); }
+      chrome.storage.local.get(["apiKey", "endpoint", "vault"], (d) =>
+        res({ apiKey: (d && d.apiKey) || "", endpoint: (d && d.endpoint) || DEFAULT_ENDPOINT, vault: (d && d.vault) || "" }));
+    } catch (e) { res({ apiKey: "", endpoint: DEFAULT_ENDPOINT, vault: "" }); }
   });
 }
 
@@ -374,6 +374,8 @@ document.getElementById("save").addEventListener("click", async () => {
   }
 
   // --- Ded 2: obsidian:// fallback (Obsidian urd garna) ---
+  const VAULT = (await getCfg()).vault;
+  if (!VAULT) { ok.textContent = "Options-д vault-ийн нэр (эсвэл ID) оруул."; btn.disabled = false; return; }
   const uri = `obsidian://new?vault=${encodeURIComponent(VAULT)}&file=${encodeURIComponent("00-Inbox/" + base)}&content=${encodeURIComponent(content)}`;
   window.location.href = uri;
   setTimeout(() => {

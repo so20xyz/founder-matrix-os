@@ -2,7 +2,7 @@
 //  Discord → files : хүний мессежийг relay файлд бичнэ. Зөвхөн WRITER машин бичнэ (legacy: PC) — давхардалгүй.
 //  git → Discord : энэ машины сешнүүдийн бичсэн шинэ relay бичлэгийг харгалзах суваг руу нийтэлнэ.
 // Run: node dispatcher.mjs   (token: ~/.fmos_discord_token)
-// Config (same as tools/relay/fmconfig.py): env FM_VAULT > ~/.fmos/config.json {"vault","device","member"}.
+// Config (same as fmconfig.py): env FM_VAULT > ~/.fmos/config.json {"vault","device","member"}.
 //   vault mode → data in <vault>/_system/fm (registry.json, discord.json, org.md, groups/, s/), NO git (Drive syncs).
 //   no config  → legacy <repo>/relay with git pull/commit/push, unchanged.
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
@@ -12,7 +12,10 @@ import { homedir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REPO = process.env.FMOS_REPO || resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+// legacy git mode: the checkout that holds .claude-plugin/marketplace.json (canonical copy: plugins/fm/tools/relay/dispatcher,
+// byte-identical copy kept at tools/relay/dispatcher for the running LaunchAgent / scheduled task and its node_modules)
+const findRepo = start => { for (let d = start, i = 0; i < 10; i++) { if (existsSync(join(d, '.claude-plugin', 'marketplace.json'))) return d; const up = dirname(d); if (up === d) break; d = up; } return resolve(start, '../../..'); };
+const REPO = process.env.FMOS_REPO || findRepo(dirname(fileURLToPath(import.meta.url)));
 const readJson = (f, d) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return d; } };
 const FMCFG = (c => (c && typeof c === 'object' ? c : {}))(readJson(process.env.FMOS_CONFIG || join(homedir(), '.fmos', 'config.json'), {}));
 const VAULT = process.env.FM_VAULT || FMCFG.vault || '';

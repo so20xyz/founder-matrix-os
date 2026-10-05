@@ -31,6 +31,11 @@
     <input id="endpoint" type="text" placeholder="http://127.0.0.1:27123" autocomplete="off">
     <small>HTTP (шифрлэлтгүй) сервер. Plugin тохиргоонд "Enable Non-encrypted (HTTP) Server" асаа, порт 27123.</small>
   </div>
+  <div class="f">
+    <label for="vault">Vault (нэр эсвэл ID)</label>
+    <input id="vault" type="text" placeholder="Second Brain" autocomplete="off">
+    <small>API key-гүй үед <code>obsidian://</code>-ээр хадгална. Ижил нэртэй хоёр vault байвал Obsidian-ий vault ID-г бич (Obsidian → Manage vaults).</small>
+  </div>
   <button id="save">Хадгалах</button><span class="ok" id="ok"></span>
 
   <hr style="margin:24px 0;opacity:.3">

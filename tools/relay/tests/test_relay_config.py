@@ -14,7 +14,11 @@ import tempfile
 import textwrap
 from pathlib import Path
 
-RELAY_DIR = Path(__file__).resolve().parents[1]
+REPO_DIR = Path(__file__).resolve().parents[3]
+LEGACY_DIR = Path(__file__).resolve().parents[1]                       # tools/relay: shims (live hook paths)
+CANON_DIR = REPO_DIR / "plugins" / "fm" / "tools" / "relay"           # canonical code (fm plugin)
+# Runs twice: through the legacy shims (default) and against the canonical plugin copy (FM_RELAY_DIR=canon).
+RELAY_DIR = CANON_DIR if os.environ.get("FM_RELAY_DIR") == "canon" else LEGACY_DIR
 FAILS = []
 PASSES = 0
 
@@ -270,5 +274,32 @@ def main():
     shutil.rmtree(tmp, ignore_errors=True)
 
 
+def shim_checks():
+    """tools/relay/*.py must stay thin shims of plugins/fm/tools/relay/*.py; the dispatcher copy must be identical."""
+    for f in sorted(LEGACY_DIR.glob("*.py")):
+        txt = f.read_text(encoding="utf-8")
+        check((CANON_DIR / f.name).is_file() and "exec(compile(" in txt and len(txt.splitlines()) < 25,
+              f"shim {f.name} -> plugins/fm/tools/relay/{f.name}")
+    for name in ("relay.py", "status.py"):
+        for d in (LEGACY_DIR, CANON_DIR):
+            raw = (d / name).read_bytes()
+            check(raw.count(b"\r\n") == raw.count(b"\n"), f"CRLF kept: {d.relative_to(REPO_DIR).as_posix()}/{name}")
+    for name in ("dispatcher.mjs", "package.json", "package-lock.json"):
+        check((LEGACY_DIR / "dispatcher" / name).read_bytes() == (CANON_DIR / "dispatcher" / name).read_bytes(),
+              f"dispatcher copy identical: {name}")
+
+
 if __name__ == "__main__":
+    print(f"== relay tests via {RELAY_DIR.relative_to(REPO_DIR).as_posix()}")
+    if RELAY_DIR == LEGACY_DIR:
+        shim_checks()
+        main_rc = 0
+        try:
+            main()
+        except SystemExit as e:
+            main_rc = int(e.code or 0)
+        sys.stdout.flush()
+        env = dict(os.environ, FM_RELAY_DIR="canon")
+        rc = subprocess.call([sys.executable, str(Path(__file__).resolve())], env=env)
+        sys.exit(1 if (main_rc or rc) else 0)
     main()

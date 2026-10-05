@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inai side panel — a narrow GTD dashboard that reads the vault live (no build step, stdlib only).
+"""fm side panel — a narrow GTD dashboard that reads the vault live (no build step, stdlib only).
 
   python _system/tools/sidepanel/server.py        → http://127.0.0.1:8770
 
@@ -11,7 +11,19 @@ import json, re, sys, uuid, shutil, subprocess, datetime as dt
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
-VAULT = Path(__file__).resolve().parents[3]
+def _vault():
+    """env FM_VAULT > ~/.fmos/config.json "vault" > the vault this file was copied into (<vault>/_system/tools/sidepanel)."""
+    import os
+    v = os.environ.get("FM_VAULT", "")
+    if not v:
+        try:
+            v = json.loads((Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8")).get("vault", "")
+        except Exception:
+            v = ""
+    return Path(os.path.expanduser(v)) if v else Path(__file__).resolve().parents[3]
+
+
+VAULT = _vault()
 HERE = Path(__file__).parent
 PORT = 8770
 FM = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.S)
@@ -193,7 +205,7 @@ def set_prop(rel, key, val):
 
 CHAT = HERE / "chat.jsonl"
 SID = HERE / ".panel-session"
-SYS = ("You are answering from BD's Inai side panel (a narrow GTD dashboard). Reply short, in Mongolian Cyrillic, "
+SYS = ("You are answering from the vault owner's fm side panel (a narrow GTD dashboard). Reply short, in Mongolian Cyrillic, "
        "plain text/markdown, no long tables. Vault rules in _CLAUDE.md and AGENTS.md apply; logs are append-only.")
 
 
@@ -299,5 +311,5 @@ class H(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
-    print(f"Inai side panel · vault={VAULT} · http://127.0.0.1:{PORT}")
+    print(f"fm side panel · vault={VAULT} · http://127.0.0.1:{PORT}")
     ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()

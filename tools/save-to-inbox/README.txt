@@ -1,4 +1,4 @@
-# Save to Inbox - Second Brain
+# Save to Inbox - Obsidian vault
 
 Chrome/Brave/Edge extension. Одоогийн вэб хуудсыг **шууд** Obsidian vault-ийн `00-Inbox/` руу reference болгон хадгална. Notion-оор дамжихгүй.
 
@@ -13,7 +13,7 @@ Chrome/Brave/Edge extension. Одоогийн вэб хуудсыг **шууд**
 
 1. Chrome (эсвэл Brave/Edge)-д `chrome://extensions` нээ
 2. Баруун дээд булангийн **Developer mode**-ыг асаа
-3. **Load unpacked** дар → энэ хавтасыг сонго: `$HOME/Documents/CodeBase/save-to-inbox`
+3. **Load unpacked** дар → энэ хавтасыг сонго: `<repo>/tools/save-to-inbox`
 4. Toolbar дээр 📥 icon гарч ирнэ (pin хийж болно)
 
 ## Ашиглах
@@ -25,7 +25,7 @@ Chrome/Brave/Edge extension. Одоогийн вэб хуудсыг **шууд**
 
 ## Тохиргоо
 
-- ⚠️ Obsidian-д **ХОЁР "Second Brain" нэртэй vault** байгаа тул нэрээр заавал буруу vault руу ордог. Тиймээс `popup.js` дотор **vault ID** ашигласан: `VAULT = "YOUR_VAULT_ID"` = `$HOME/Documents/CodeBase/Second Brain`. Энэ нь `$HOME/Documents/CodeBase/Second Brain/00-Inbox` руу зөв бичнэ.
+- Extension-ий **Options**-д vault-ийнхаа **нэр**-ийг бич. Ижил нэртэй хоёр vault байвал Obsidian-ий **vault ID** (Obsidian → Manage vaults) бич — тэгвэл буруу vault руу орохгүй.
 - Obsidian **нээлттэй** байх ёстой (хаалттай бол URI ажиллахгүй).
 - Frontmatter: `type: reference`, `status: draft`, `source: web-clip`, `reftype`, `url`, `related-projects`. AI-first цэвэр (em-dash/curly quote автоматаар ASCII болгодог).
 
