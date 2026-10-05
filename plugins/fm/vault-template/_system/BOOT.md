@@ -60,3 +60,11 @@ ai-first: true
 - Task: `status` = `inbox · next-action · waiting · someday · completed · cancelled`; `owner` = `me` · `"@Нэр"` · дүрийн slug; `priority` = `high · medium · low`.
 - Нэр: task тодорхой гарчиг · хүн бүтэн нэр · төсөл `<Нэр>/<Нэр>.md` + `_BRAIN.md`. Файлын нэрэнд зөвхөн ASCII `-` (em/en dash хориотой), `/ \ : * ? " < > |` үгүй. Rename-ийг Obsidian дотроос.
 - `type:` ба `ai-first:` хоёулаа байхгүй `.md` бол гадны файл. Чөлөөлөгдөх: `Home.md`, `_system/index.md`, `STATUS.md`, `logs/`, `boards/`, `README.md`.
+
+## Бичих дүрэм (чат + Discord, бүх agent)
+
+- **Эхний мөрөнд гол үр дүн** — юу болсон / юу хэрэгтэй.
+- Гарчиг → дэд гарчиг + `•` жагсаалт · нэг санаа = нэг мөр · **≤12 мөр**.
+- Техникийн нэр (registry, sid, hook, JSON, commit) нуршихгүй — хэрэглэгчид хэрэгтэй бол л.
+- Сонголт нэг мөрөнд: **A** — … · **B** — …
+- Discord-д олон мөрийг файлд бичээд `fm:relay`-ээр илгээ.
