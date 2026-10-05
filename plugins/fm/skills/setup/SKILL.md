@@ -234,7 +234,7 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 Гишүүнд хэл:
 - Obsidian-оор vault-аа нээж **Home**-оос эхэл (`.obsidian/` тохиргоог гишүүн өөрөө удирдана: Settings → Core plugins → **Bases**, **Templates** асаа; Templates хавтас = `_system/templates`; Community plugins → **Kanban**).
 - Энэ сешнийг Area агентад холбох уу? → `/fm:role area`. Төсөл бүрийн Project агентыг **тусдаа нэг тогтмол сешнд** `/fm:role <slug>`; Finance-ийг тусдаа сешнд `/fm:role finance`.
-- Өдөр тутам: өглөө `/fm:update daily` → ажил → `/fm:inbox` → оройд `/fm:update daily дүгнэлт` → `/fm:save`. Долоо хоногт `/fm:update weekly`.
+- **Ганц команд: «update».** Ажлынхаа дараа «update» гэж бичихэд Agent атом, task, хүн, төсөл, inbox, STATUS-ыг өөрөө цэгцэлнэ. Өглөө «update daily», орой «update дүгнэлт», долоо хоногт «update weekly».
 - Дутуу үлдсэн алхмууд (алгассан програм, plugin, ярилцлагын хэсэг) → дараа `/fm:setup doctor`, `/fm:setup plugins`, эсвэл `/fm:setup`-ийг дахин; байгаа note хөндөгдөхгүй.
 
 Юу суусан, юу үүссэн (тоогоор), юу алгасагдсаныг жагсааж дуусга. 🔒 Санхүүгийн нэр, дүнг дүгнэлтэд бүү дурд.

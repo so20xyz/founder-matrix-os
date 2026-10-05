@@ -66,8 +66,10 @@ aliases:
 | `_system/logs/` | Өдрийн лог (зөвхөн холбоос) |
 | `_system/fm/` | Хөдөлгүүрийн өгөгдөл (registry.json) — гараар бүү зас |
 
-## 🔑 Түгээмэл skill
+## 🔑 Ганц команд: `update`
 
-`/fm:update daily` өдрөө эхлүүлэх · `/fm:inbox` inbox цэгцлэх · `/fm:task` task · `/fm:save` хадгалах (`--checkpoint`, `<url>`) · `/fm:project` төсөл · `/fm:people` хүмүүс · `/fm:update` төлөв · `/fm:update weekly` тойм · `/fm:finance` 🔒 · `/fm:setup` онбординг
+**«update»** (эсвэл «шинэчил», «өдрийн дүгнэлт») гэж бичихэд л хангалттай: Agent ярианаас атом, task, хүмүүс, төсөл, inbox, STATUS-ыг өөрөө цэгцэлнэ. Өглөө `update daily` · орой `update дүгнэлт` · долоо хоногт `update weekly`.
+
+Барилгын блокууд (update өөрөө дууддаг; шууд дуудаж ч болно): `/fm:save` хадгалах (`--checkpoint`, `<url>`) · `/fm:inbox` · `/fm:task` · `/fm:project` · `/fm:people` · `/fm:finance` 🔒 · `/fm:role` · `/fm:setup` онбординг
 
 Хэрэгсэл (заавал биш): `/fm:post` пост · `/fm:figma` · `/fm:framer` · `/fm:watch` бичлэг · `/fm:notion` · `/fm:relay` Discord. Албан ёсны skill-ууд: [[05-Resources/references/Official skills|Official skills]].

@@ -71,6 +71,33 @@ def test_no_retired_skill_names_in_plugin():
 
 # ------------------------------------------------------------------- code
 
+def test_boot_and_role_rules_fit_session_context():
+    """BOOT.md + every template agent's rules fit the SessionStart budget (nothing truncated)."""
+    tmp = Path(tempfile.mkdtemp(prefix="fm-ctx-"))
+    try:
+        vault = tmp / "vault"
+        env = child_env(tmp)
+        env["FMOS_CONFIG"] = str(tmp / "no-config.json")
+        r = subprocess.run([sys.executable, str(PLUGIN / "scripts" / "fm_setup.py"), str(vault), "--member", "T"],
+                           env=env, capture_output=True, text=True, encoding="utf-8")
+        assert r.returncode == 0, r.stderr
+        regp = vault / "_system" / "fm" / "registry.json"
+        reg = json.loads(regp.read_text(encoding="utf-8"))
+        assert set(reg["roles"]) == {"project", "area", "resource", "research", "developer", "creative", "finance"}
+        for slug in sorted(reg["roles"]):
+            reg["sessions"] = {"sid": {"role": slug}}
+            regp.write_text(json.dumps(reg, ensure_ascii=False), encoding="utf-8")
+            env2 = dict(env, FM_VAULT=str(vault))
+            r = subprocess.run([sys.executable, str(PLUGIN / "scripts" / "fm_context.py")], env=env2,
+                               input=json.dumps({"session_id": "sid", "cwd": str(vault)}),
+                               capture_output=True, text=True, encoding="utf-8")
+            ctx = json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"]
+            assert "таслав" not in ctx, (slug, len(ctx.encode("utf-8")))
+            assert "Дүр: %s" % slug in ctx and "Ганц команд" in ctx, slug
+    finally:
+        shutil.rmtree(str(tmp), ignore_errors=True)
+
+
 def test_tool_code_compiles():
     tmp = Path(tempfile.mkdtemp(prefix="fm-tools-pyc-"))
     try:
