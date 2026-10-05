@@ -570,7 +570,9 @@ def chmap():
     todo = []
     for k, v in first.items():
         base = chname(v)
-        if k in prev and strip(prev[k]) == strip(base) and _re.match(r"^([^\w]+-)?\d+-", prev[k]) and not _re.match(r"^\d", strip(base)):
+        # itge.e 2026-10-05: a project keeps its existing channel even when PC/Mac titles differ slightly
+        # (e.g. «Academy AI Agent» vs «Academy · Claude AI Agent») — the project key is the identity.
+        if k in prev and _re.match(r"^([^\w]+-)?\d+-", prev[k]) and not _re.match(r"^\d", strip(base)):
             names[k] = prev[k]; used.setdefault(v["group"], set()).add(num(prev[k]))
         else: todo.append((k, v, base))
     for k, v, base in todo:
