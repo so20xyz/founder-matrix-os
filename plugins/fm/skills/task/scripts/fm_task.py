@@ -242,7 +242,7 @@ def cmd_new(vault: Path, args: List[str]) -> None:
     context = _opt(args, "--context")
     project = _opt(args, "--project").strip().strip("[]")
     if not owner:
-        _die("--owner заавал: дүрийн slug/нэр (\"gtd\", \"Content Writer\"), \"me\" эсвэл \"@Нэр\".")
+        _die("--owner заавал: дүрийн slug/нэр (\"area\", \"Creative\"), \"me\" эсвэл \"@Нэр\".")
     owner = resolve_owner(vault, owner)
     if status not in STATUSES:
         _die("status буруу: %s (%s)" % (status, " | ".join(STATUSES)))

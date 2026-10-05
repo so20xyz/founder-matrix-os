@@ -1,6 +1,6 @@
 ---
 name: role
-description: Энэ сешнийг vault-ийн нэг дүрд (GTD, Project, Area, Resource, Content Writer, Санхүү…) холбож, дүрийн тэмдэглэлийг ачаална. Slug-гүй бол дүрүүдийг жагсаана. «/fm:role gtd», «дүр сонго», «дүрд холбо», «чи ямар дүр вэ», «энэ сешн ямар дүр», «дүрүүдийг харуул», «role тавь» гэвэл энэ skill-ийг ашигла.
+description: Энэ сешнийг vault-ийн нэг дүрд (Project, Area, Resource, Research, Developer, Creative, Finance эсвэл төслийн дүр) холбож, дүрийн тэмдэглэлийг ачаална. Slug-гүй бол дүрүүдийг жагсаана. «/fm:role area», «дүр сонго», «дүрд холбо», «чи ямар дүр вэ», «энэ сешн ямар дүр», «дүрүүдийг харуул», «role тавь» гэвэл энэ skill-ийг ашигла.
 argument-hint: "[slug]"
 ---
 
@@ -41,7 +41,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/role/scripts/fm_role.py" show "${user_conf
    - ашигладаг skill-үүд (`skills:`).
    Тэмдэглэлд байхгүй дүрэм зохиохгүй.
 
-3. **Гарчгийн санал.** Гаралтын `title` (жишээ `GTD · Mac`). Гишүүнд: «Сешний гарчгийг `<title>` болгохыг санал болгож байна». Claude Desktop дээр `mcp__ccd_session_mgmt__set_session_title` (ToolSearch-ээр ачаална) байвал гишүүн зөвшөөрсний дараа тавь. Sidebar бүлэг (`group:` талбар) байвал түүнийг бас санал болго.
+3. **Гарчгийн санал.** Гаралтын `title` (жишээ `Area · Mac`). Registry-д `project` = дүрийн slug бичигдэнэ: Mac, PC дээрх ижил дүрийн сешн нэг baton, нэг Discord сувагтай (гарчгийн ` · <device>` нь зөвхөн харагдах хэсэг). Гишүүнд: «Сешний гарчгийг `<title>` болгохыг санал болгож байна». Claude Desktop дээр `mcp__ccd_session_mgmt__set_session_title` (ToolSearch-ээр ачаална) байвал гишүүн зөвшөөрсний дараа тавь. Sidebar бүлэг (`group:` → Projects · Areas · Resources · Research · Development) байвал түүнийг бас санал болго. Төслийн дүр бол энэ сешн тэр төслийн **цорын ганц тогтмол сешн** болно — task бүрт шинэ сешн нээхгүй.
 
 4. **Товч мэдэгдэл** (5 мөрөөс бага):
    ```
@@ -53,7 +53,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/role/scripts/fm_role.py" show "${user_conf
 
 ## 🔒 Хувийн дүр
 
-Гаралт `"private": true` (жишээ нь `finance` / Санхүү) бол:
+Гаралт `"private": true` (жишээ нь `finance` / Finance) бол:
 - Энэ сешний ярианы агуулга, санхүүгийн тоо, нэр vault-ын хувийн хавтаснаас **гадагш гарахгүй**: лог, STATUS, Discord, git, атом, бусад сешн рүү relay — бүгд хориотой.
 - Зөвхөн `/fm:finance` skill-ээр ажилла.
 - Бусад сешнд «санхүүгийн сешн юу хийв» гэж тайлагнахгүй.

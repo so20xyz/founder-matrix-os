@@ -4,8 +4,12 @@
 Role notes live in <vault>/04-Areas/AI Team/ai-workers/*.md (one note = one role).
 The session -> role map lives in <vault>/_system/fm/registry.json:
 
-    {"sessions": {"<sid>": {"role": "gtd", "device": "Mac", "title": "GTD · Mac", "since": "YYYY-MM-DD"}},
-     "roles":    {"gtd": {"note": "04-Areas/AI Team/ai-workers/00 GTD.md"}}}
+    {"sessions": {"<sid>": {"role": "area", "project": "area", "group": "areas", "device": "Mac",
+                            "title": "Area · Mac", "since": "YYYY-MM-DD"}},
+     "roles":    {"area": {"note": "04-Areas/AI Team/ai-workers/02 Area.md", "group": "areas"}}}
+
+A bound session gets project = <role slug> (and the role's group), so the relay groups the same role on every
+device into ONE Discord channel and ONE baton (state/<slug>.md); the " · <device>" title suffix is display only.
 
 Usage:
     fm_role.py list   <vault>
@@ -47,7 +51,7 @@ def _die(msg: str, code: int = 1) -> None:
 
 
 def read_frontmatter(path: Path) -> Dict[str, object]:
-    """Minimal YAML frontmatter reader: top-level `key: value` scalars and inline [a, b] lists."""
+    """Minimal YAML frontmatter reader: top-level `key: value` scalars, inline [a, b] lists and block lists."""
     try:
         text = path.read_text(encoding="utf-8-sig")
     except (OSError, UnicodeDecodeError):
@@ -56,9 +60,18 @@ def read_frontmatter(path: Path) -> Dict[str, object]:
     if not lines or lines[0].strip() != "---":
         return {}
     data = {}  # type: Dict[str, object]
+    key = None  # type: Optional[str]
     for line in lines[1:]:
         if line.strip() == "---":
             break
+        item = re.match(r"^\s+-\s+(.*)$", line)
+        if item and key:  # block list item under the last key
+            cur = data.get(key)
+            if not isinstance(cur, list):
+                cur = []
+            cur.append(item.group(1).strip().strip("\"'"))
+            data[key] = cur
+            continue
         m = re.match(r"^([A-Za-z0-9_\-]+):\s*(.*)$", line)
         if not m:
             continue
@@ -73,7 +86,7 @@ def read_frontmatter(path: Path) -> Dict[str, object]:
 
 
 def display_name(stem: str) -> str:
-    """'00 GTD' -> 'GTD', '30 Санхүү' -> 'Санхүү'."""
+    """'02 Area' -> 'Area', '07 Finance' -> 'Finance'."""
     return re.sub(r"^\d+\s*[-.·]?\s*", "", stem).strip() or stem
 
 
@@ -215,7 +228,10 @@ def cmd_bind(vault: Path, args: List[str]) -> None:
     sessions = reg["sessions"]
     prev = sessions.get(sid) if isinstance(sessions.get(sid), dict) else {}
     entry = dict(prev)
-    entry.update({"role": role["slug"], "device": device, "title": title})
+    entry.update({"role": role["slug"], "device": device, "title": title, "project": role["slug"]})
+    group = role["group"] or str((reg["roles"].get(role["slug"]) or {}).get("group") or "")
+    if group:
+        entry["group"] = group
     entry.setdefault("since", datetime.date.today().isoformat())
     if role["private"]:
         entry["private"] = True
@@ -245,7 +261,9 @@ def cmd_unbind(vault: Path, args: List[str]) -> None:
     if not isinstance(entry, dict) or "role" not in entry:
         _out("Энэ сешн дүргүй байна — өөрчлөх зүйлгүй.")
         return
-    entry.pop("role", None)
+    slug = entry.pop("role", None)
+    if entry.get("project") == slug:  # set by bind; legacy relay projects are kept
+        entry.pop("project", None)
     save_registry(vault, reg)
     _out("Дүрээс салгав: %s" % sid)
 

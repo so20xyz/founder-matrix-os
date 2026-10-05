@@ -9,6 +9,6 @@ Getting Things Done: хураах → тодруулах → зохион бай
 | `boards/` | Kanban самбар (Work, Personal) | — |
 | `meetings/` | Уулзалт (`type: meeting`) | Meeting |
 
-- **Эзэн дүр:** [[00 GTD]]
+- **Эзэн дүр:** [[02 Area]]
 - Task-ийн `status`: `inbox → next-action → waiting → completed / cancelled` (+ `someday`).
 - Бүх task: `_system/bases/Tasks.base`.

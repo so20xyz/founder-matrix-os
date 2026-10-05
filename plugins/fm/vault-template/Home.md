@@ -42,18 +42,17 @@ aliases:
 
 ## 🤖 Agent-ууд
 
-Бүгд Agent, зөвхөн дүрээрээ ялгарна. Сешнийг дүрд холбох: `/fm:role <slug>`. Төсөл бүрийн ажлын дүр онбордингоор нэмэгдэж доорх ростерт гарна.
+Бүгд Agent, зөвхөн дүрээрээ ялгарна. Сешнийг дүрд холбох: `/fm:role <slug>`. **Төсөл бүрт нэг тогтмол сешн** — тэр төслийн task-уудыг тэнд хийнэ. Claude Desktop-ийн sidebar-т сешнүүдээ бүлгээр (Projects · Areas · Resources · Research · Development) цэгцэл.
 
-| Slug | Дүр |
-|---|---|
-| `gtd` | [[00 GTD]] — inbox, task, өдөр |
-| `project` | [[01 Project]] — төслүүд |
-| `area` | [[02 Area]] — бүтэц, дүрэм, хүрээ |
-| `resource` | [[03 Resource]] — лавлагаа, атом |
-| `content-writer` | [[20 Content Writer]] |
-| `creative-director` | [[21 Creative Director]] |
-| `tool-developer` | [[22 Tool Developer]] |
-| `finance` | [[30 Санхүү]] 🔒 |
+| Slug | Agent | Юу хийдэг |
+|---|---|---|
+| `project` | [[01 Project]] | Төслүүд; төсөл бүр өөрийн ажлын дүртэй (`10+`) |
+| `area` | [[02 Area]] | Inbox, task, өдөр, хүмүүс, хүрээ, систем |
+| `resource` | [[03 Resource]] | Лавлагаа, атом, fact-check |
+| `research` | [[04 Research]] | Гүн судалгаа → `/fm:save` |
+| `developer` | [[05 Developer]] | Код, хэрэгсэл, plugin |
+| `creative` | [[06 Creative]] | Moodboard, Figma, пост, бичвэр |
+| `finance` | [[07 Finance]] 🔒 | Хувийн санхүү + бизнесийн тайлан |
 
 ![[Agents.base#Ростер]]
 
@@ -69,4 +68,6 @@ aliases:
 
 ## 🔑 Түгээмэл skill
 
-`/fm:setup` онбординг · `/fm:inbox` inbox цэгцлэх · `/fm:task` task · `/fm:daily` өдрийн тэмдэглэл · `/fm:save` хадгалах · `/fm:clip <url>` линк → атом · `/fm:project` төсөл · `/fm:update` өдрийн дүгнэлт ба статус
+`/fm:update daily` өдрөө эхлүүлэх · `/fm:inbox` inbox цэгцлэх · `/fm:task` task · `/fm:save` хадгалах (`--checkpoint`, `<url>`) · `/fm:project` төсөл · `/fm:people` хүмүүс · `/fm:update` төлөв · `/fm:update weekly` тойм · `/fm:finance` 🔒 · `/fm:setup` онбординг
+
+Хэрэгсэл (заавал биш): `/fm:post` пост · `/fm:figma` · `/fm:framer` · `/fm:watch` бичлэг · `/fm:notion` · `/fm:relay` Discord. Албан ёсны skill-ууд: [[05-Resources/references/Official skills|Official skills]].

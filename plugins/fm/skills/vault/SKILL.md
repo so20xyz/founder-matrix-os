@@ -121,7 +121,7 @@ Kanban карт чирэх нь task файлын `status`-ыг өөрчлөхг
 
 ## 7. Хувийн санхүү ба нууцлал
 
-Хувийн санхүү бол vault-ийн **үндсэн модуль**: `04-Areas/Business/finances/private/` + Санхүү дүр + сарын төлбөрийн tracker + `Finance Record` загвар (`type: finance-record`, `kind`, `amount`, `currency`, `txn-date`, `due`, `status`, `recurs`, `sensitivity`).
+Хувийн санхүү бол vault-ийн **үндсэн модуль**: `04-Areas/Business/finances/private/` + Finance дүр + сарын төлбөрийн tracker + `Finance Record` загвар (`type: finance-record`, `kind`, `amount`, `currency`, `txn-date`, `due`, `status`, `recurs`, `sensitivity`).
 
 **«Хувийн» = vault-аас хэзээ ч гарахгүй** (vault-аас хасагдсан гэсэн үг биш). Дараах газар руу санхүүгийн дүн, гүйлгээ, данс, цалин, өр, хувийн төлбөрийн мэдээллийг **хэзээ ч бүү гарга:**
 

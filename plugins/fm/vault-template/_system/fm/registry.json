@@ -2,24 +2,6 @@
   "version": 1,
   "sessions": {},
   "roles": {
-    "gtd": {
-      "note": "04-Areas/AI Team/ai-workers/00 GTD.md",
-      "channel": "00-gtd",
-      "group": "tasks",
-      "folders": [
-        "00-Inbox/",
-        "02-GTD/"
-      ],
-      "skills": [
-        "fm:inbox",
-        "fm:task",
-        "fm:daily",
-        "fm:update",
-        "fm:save"
-      ],
-      "private": false,
-      "active": true
-    },
     "project": {
       "note": "04-Areas/AI Team/ai-workers/01 Project.md",
       "channel": "01-project",
@@ -29,9 +11,12 @@
       ],
       "skills": [
         "fm:project",
-        "fm:spawn",
         "fm:task",
-        "fm:save"
+        "fm:save",
+        "fm:update",
+        "fm:people",
+        "superpowers:brainstorming",
+        "superpowers:writing-plans"
       ],
       "private": false,
       "active": true
@@ -41,6 +26,8 @@
       "channel": "02-area",
       "group": "areas",
       "folders": [
+        "00-Inbox/",
+        "02-GTD/",
         "04-Areas/",
         "01-Soul/",
         "07-Goals/",
@@ -49,12 +36,17 @@
         "Home.md"
       ],
       "skills": [
+        "fm:inbox",
+        "fm:task",
+        "fm:update",
+        "fm:people",
+        "fm:save",
         "fm:setup",
         "fm:role",
         "fm:vault",
-        "fm:bases",
-        "fm:vault-cli",
-        "fm:save"
+        "fm:relay",
+        "fm:notion",
+        "obsidian:obsidian-bases"
       ],
       "private": false,
       "active": true
@@ -68,58 +60,65 @@
         "06-Atomic/"
       ],
       "skills": [
-        "fm:clip",
         "fm:save",
-        "fm:track",
-        "fm:canvas"
+        "fm:vault",
+        "fm:watch",
+        "obsidian:defuddle",
+        "obsidian:json-canvas"
       ],
       "private": false,
       "active": true
     },
-    "content-writer": {
-      "note": "04-Areas/AI Team/ai-workers/20 Content Writer.md",
-      "channel": "20-content-writer",
-      "group": "projects",
-      "folders": [],
+    "research": {
+      "note": "04-Areas/AI Team/ai-workers/04 Research.md",
+      "channel": "04-research",
+      "group": "research",
+      "folders": [
+        "05-Resources/sources/"
+      ],
       "skills": [
         "fm:save",
-        "fm:clip",
-        "fm:task"
+        "fm:watch",
+        "exa"
       ],
       "private": false,
       "active": true
     },
-    "creative-director": {
-      "note": "04-Areas/AI Team/ai-workers/21 Creative Director.md",
-      "channel": "21-creative-director",
-      "group": "development",
-      "folders": [],
-      "skills": [
-        "fm:canvas",
-        "fm:save",
-        "fm:task"
-      ],
-      "private": false,
-      "active": true
-    },
-    "tool-developer": {
-      "note": "04-Areas/AI Team/ai-workers/22 Tool Developer.md",
-      "channel": "22-tool-developer",
+    "developer": {
+      "note": "04-Areas/AI Team/ai-workers/05 Developer.md",
+      "channel": "05-developer",
       "group": "development",
       "folders": [
         "04-Areas/AI Team/skills/"
       ],
       "skills": [
-        "fm:vault-cli",
-        "fm:bases",
-        "fm:canvas",
-        "fm:task"
+        "fm:vault",
+        "fm:relay",
+        "superpowers:subagent-driven-development",
+        "superpowers:systematic-debugging",
+        "superpowers:writing-skills",
+        "skill-creator"
+      ],
+      "private": false,
+      "active": true
+    },
+    "creative": {
+      "note": "04-Areas/AI Team/ai-workers/06 Creative.md",
+      "channel": "06-creative",
+      "group": "development",
+      "folders": [],
+      "skills": [
+        "fm:post",
+        "fm:figma",
+        "fm:framer",
+        "fm:watch",
+        "fm:save"
       ],
       "private": false,
       "active": true
     },
     "finance": {
-      "note": "04-Areas/AI Team/ai-workers/30 Санхүү.md",
+      "note": "04-Areas/AI Team/ai-workers/07 Finance.md",
       "channel": "",
       "group": "areas",
       "folders": [
@@ -127,8 +126,9 @@
       ],
       "skills": [
         "fm:finance",
-        "fm:bases",
-        "fm:task"
+        "fm:task",
+        "finance:financial-statements",
+        "finance:variance-analysis"
       ],
       "private": true,
       "active": true

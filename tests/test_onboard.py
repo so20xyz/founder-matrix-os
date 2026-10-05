@@ -174,8 +174,7 @@ def test_setup_creates_fm_registry_not_relay(c):
     assert not (c.vault / "_system/relay").exists(), "template must not ship _system/relay"
     reg = json.loads(c.read("_system/fm/registry.json"))
     assert reg["sessions"] == {} and reg.get("version") == 1
-    want = {"gtd", "project", "area", "resource", "finance", "content-writer",
-            "creative-director", "tool-developer"}
+    want = {"project", "area", "resource", "research", "developer", "creative", "finance"}
     assert set(reg["roles"]) == want, reg["roles"].keys()
     for slug, info in reg["roles"].items():
         assert (c.vault / info["note"]).is_file(), (slug, info)
@@ -353,9 +352,9 @@ def test_roles_and_registry(c):
     assert roles["narny-site"]["note"] == "04-Areas/AI Team/ai-workers/10 Нарны сайт.md"
     assert roles["narny-site"]["folders"] == ["03-Projects/1-Active/Нарны вэбсайт/"]
     assert roles["marafon-beltgel"]["active"] is True
-    for slug in ("gtd", "project", "area", "resource", "finance"):
-        assert roles[slug]["active"] is True, slug
-    for slug in ("content-writer", "creative-director", "tool-developer"):
+    for slug in ("project", "area", "resource", "finance"):
+        assert roles[slug]["active"] is True, slug       # "gtd" in the answers maps to "area"
+    for slug in ("research", "developer", "creative"):
         assert roles[slug]["active"] is False, slug
     note = c.fm("04-Areas/AI Team/ai-workers/10 Нарны сайт.md")
     assert note["role"] == "narny-site" and note["owns"] == ["03-Projects/1-Active/Нарны вэбсайт/"]
@@ -375,6 +374,30 @@ def test_sessions_are_preserved(c):
     assert code == 0, (out, err)
     reg = json.loads(regp.read_text(encoding="utf-8"))
     assert reg["sessions"] == {"abc": {"role": "gtd", "device": "Mac"}}
+
+
+def test_role_bind_groups_sessions_by_role(c):
+    """fm_role bind: project = role slug + role group (one Discord channel / baton per role on every device);
+    old slug "gtd" resolves to the Area agent via its aliases; private finance stays private; unbind clears it."""
+    c.setup()
+    role = PLUGIN / "skills/role/scripts/fm_role.py"
+    code, out, err = run(role, "bind", c.vault, "gtd", "--sid", "sid-mac", "--device", "Mac")
+    assert code == 0, (out, err)
+    res = json.loads(out)
+    assert res["role"] == "area" and res["title"] == "Area · Mac", res
+    code, out, err = run(role, "bind", c.vault, "area", "--sid", "sid-pc", "--device", "PC")
+    assert code == 0, (out, err)
+    code, out, err = run(role, "bind", c.vault, "finance", "--sid", "sid-fin", "--device", "Mac")
+    assert code == 0 and json.loads(out)["private"] is True, (out, err)
+    reg = json.loads(c.read("_system/fm/registry.json"))
+    s = reg["sessions"]
+    assert s["sid-mac"]["project"] == s["sid-pc"]["project"] == "area", s
+    assert s["sid-mac"]["group"] == "areas", s
+    assert s["sid-fin"]["private"] is True and s["sid-fin"]["project"] == "finance", s
+    code, out, err = run(role, "unbind", c.vault, "--sid", "sid-pc")
+    assert code == 0, (out, err)
+    reg = json.loads(c.read("_system/fm/registry.json"))
+    assert "role" not in reg["sessions"]["sid-pc"] and "project" not in reg["sessions"]["sid-pc"], reg
 
 
 def test_idempotent_second_run(c):

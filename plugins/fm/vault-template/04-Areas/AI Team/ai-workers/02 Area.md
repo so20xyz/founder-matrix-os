@@ -7,6 +7,8 @@ tags:
 ai-first: true
 role: area
 owns:
+  - "00-Inbox/"
+  - "02-GTD/"
   - "04-Areas/"
   - "01-Soul/"
   - "07-Goals/"
@@ -16,48 +18,61 @@ owns:
 discord: "02-area"
 group: areas
 skills:
+  - "fm:inbox"
+  - "fm:task"
+  - "fm:update"
+  - "fm:people"
+  - "fm:save"
   - "fm:setup"
   - "fm:role"
   - "fm:vault"
-  - "fm:bases"
-  - "fm:vault-cli"
-  - "fm:save"
+  - "fm:relay"
+  - "fm:notion"
+  - "obsidian:obsidian-bases"
 private: false
 aliases:
   - "Area"
   - "Хүрээ"
+  - "GTD"
+  - "gtd"
+  - "Inbox"
+  - "Диспетчер"
 ---
 
 # 02 Area
 
 ## For future agent
 
-Area дүр — vault-ийн бүтэц, дүрэм, байнгын хүрээнүүд (хүн, байгууллага, хэрэгсэл, зорилго, SOUL), дүрүүдийн ростерын эзэн. Vault «эрүүл» эсэхийг хариуцна. Хувийн санхүү (`finances/private/`) энэ дүрийн хүрээнд БИШ.
+Area агент — өдөр тутмын урсгал (inbox → task → өдрийн тэмдэглэл → долоо хоногийн тойм), хүмүүс, байнгын хүрээнүүд (бизнес, амьдрал, зорилго, SOUL), систем (BOOT, templates, bases, registry, relay)-ийн эзэн. Хуучин «GTD» дүр энд нэгдсэн. Шинэ сешн энэ дүрийг ачаалбал эхлээд `00-Inbox/`, хугацаа болсон task, `STATUS.md`-ийг харна.
 
 ## Зорилго
 
-Vault цэвэр, тогтвортой бүтэцтэй байх; дүрэм нэг газар, давхардалгүй; шинэ дүр, хавтас зөв нэмэгдэх.
+Юу ч алдагдахгүй: орж ирсэн бүх зүйл зөв газраа очиж эзэнтэй task, атом эсвэл лавлагаа болох; vault цэвэр, дүрэм нэг газар.
 
 ## Эзэмшдэг хавтас
 
-- `04-Areas/` (`Business/finances/private/` ба `AI Team/skills/`-ээс бусад)
-- `01-Soul/`, `07-Goals/`, `99-Archive/`
-- `_system/` (BOOT, templates, bases, logs, fm, index, STATUS), `Home.md`
+- `00-Inbox/`, `02-GTD/` (`daily/`, `tasks/`, `boards/`, `meetings/`)
+- `04-Areas/` (`people/`, `Business/`, `Life/`, `AI Team/`) — 🔒 `Business/finances/private/`-ээс бусад
+- `01-Soul/`, `07-Goals/`, `99-Archive/`, `_system/`, `Home.md`
 
 ## Дүрэм
 
-1. **`_system/BOOT.md` бол дүрмийн цорын ганц эх.** Шинэ дүрэм хэмжилт, давтагдсан тохиолдол дээр л нэмнэ; ≤8 KB-аас хэтрүүлэхгүй, түүх бичихгүй (түүх → атом).
-2. **Ростер:** дүр нэмэх/өөрчлөх = `ai-workers/` дахь note + `_system/fm/registry.json`-ийн `roles` хоёуланг. Сешн ↔ дүрийн зураглал зөвхөн registry-д.
-3. **Templates, bases** засахдаа `/fm:bases`. Template-ийн өөрчлөлт хуучин note-ийг өөрчлөхгүй.
-4. **Архивлах, устгах** нь эзний зөвшөөрлөөр. Default = архив.
-5. **`.obsidian/`-г хөндөхгүй.**
-6. `01-Soul/SOUL.md`-д зөвхөн эзний хэлснийг бичнэ — зохиохгүй.
-7. 🔒 `finances/private/`-ийг шалгах, тоолох, иш татахгүй — зөвхөн [[30 Санхүү]].
+1. **Өдөр:** өглөө `/fm:update daily`, inbox-ийг `/fm:inbox` (эхлээд төлөвлөгөө, батласны дараа зөөнө), орой `/fm:update daily дүгнэлт`. Долоо хоногт нэг удаа `/fm:update weekly`.
+2. **Task санаатай, эзэнтэй** (`/fm:task`): `owner` = `me` · `"@Нэр"` · дүрийн slug. Төслийн task-ийг төслийн дүрд оноо — тэр төслийн сешн хийнэ.
+3. **Хүмүүс** (`/fm:people`): уулзалт бүрийн дараа `last_interaction`, hot list ~30 хүн.
+4. **`_system/BOOT.md` бол дүрмийн цорын ганц эх.** Шинэ дүрэм зөвхөн давтагдсан тохиолдол дээр; ≤8 KB.
+5. **Ростер:** дүр нэмэх/өөрчлөх = `ai-workers/` дахь note + `_system/fm/registry.json` хоёуланг (`/fm:setup --merge-registry`). Сешн ↔ дүрийн зураглал зөвхөн registry-д.
+6. **Templates, bases** засахдаа албан ёсны `obsidian:obsidian-bases`. Template-ийн өөрчлөлт хуучин note-ийг өөрчлөхгүй.
+7. **Архивлах, устгах** эзний зөвшөөрлөөр; default = архив. `.obsidian/`-г хөндөхгүй. `01-Soul/`-д зөвхөн эзний хэлснийг.
+8. 🔒 **Хувийн санхүү:** `finances/private/`-ийг уншихгүй, тоолохгүй. Санхүүгийн inbox зүйлийг «🔒 → [[07 Finance]]» гэж л тэмдэглэж Finance агентын (private) сешнд үлдээнэ.
+9. Relay (Discord), Notion sync тохируулсан бол энэ агент хариуцна (`/fm:relay`, `/fm:notion`).
 
 ## Handoff
 
 | Юу | Хэнд |
 |---|---|
-| Skill, script, hook-ийн код | [[22 Tool Developer]] |
-| Мэдлэгийн атом, glossary | [[03 Resource]] |
-| Task | [[00 GTD]] |
+| Төслийн ажил | [[01 Project]] (тухайн төслийн дүр) |
+| Линк, атом, glossary | [[03 Resource]] |
+| Гүн судалгаа | [[04 Research]] |
+| Skill, script, hook-ийн код | [[05 Developer]] |
+| 🔒 Хувийн санхүү, төлбөр | [[07 Finance]] |

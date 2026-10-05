@@ -48,7 +48,7 @@ Answers schema (every section is optional; "quick mode" = soul, projects, roles)
                   "why": "...", "areas": ["..."], "projects": ["..."]}],   # kind "tool" -> 04-Areas/Business/tools/
   "goals": {"year": 2026, "why": "...",
             "items": [{"title": "...", "measure": "...", "area": "...", "projects": ["..."]}]},
-  "roles": {"activate": ["gtd", "project", "area", "resource", "finance"],
+  "roles": {"activate": ["project", "area", "resource", "finance"],
             "work": [{"project": "<project name>", "slug": "english-kebab", "name": "...", "focus": "..."}]
                     # or "work": "auto" = one work role per active project
            },
@@ -100,7 +100,10 @@ STATES = {"active": ("03-Projects/1-Active", "active"),
           "on-hold": ("03-Projects/3-On-hold", "on-hold")}
 PROJECT_ROOTS = ["03-Projects/1-Active", "03-Projects/2-Planning", "03-Projects/3-On-hold",
                  "99-Archive/Projects"]
-CORE_ROLES = ["gtd", "project", "area", "resource", "finance"]
+CORE_ROLES = ["project", "area", "resource", "research", "developer", "creative", "finance"]
+# v0.2 slugs → v0.3 agents (old answers.json files keep working)
+ROLE_ALIASES = {"gtd": "area", "content-writer": "creative", "creative-director": "creative",
+                "tool-developer": "developer"}
 
 SOUL_PLACEHOLDER = "<Нэг догол мөр: юу хийдэг, юуны төлөө>"
 INDEX_PLACEHOLDER = "_(одоогоор байхгүй — `/fm:project`-оор нэм)_"
@@ -1002,7 +1005,7 @@ class Onboard(object):
             title_name = clean_name(w.get("name") or pname, "Дүр", self.warnings)
             folder_rel = prel.rsplit("/", 1)[0] + "/"
             entry = {"note": "", "channel": "", "group": "projects", "folders": [folder_rel],
-                     "skills": ["fm:project", "fm:task", "fm:save"], "private": False,
+                     "skills": ["fm:project", "fm:task", "fm:save", "fm:update"], "private": False,
                      "active": True, "project": prel}
             if slug in notes:
                 self.report["skipped"].append(notes[slug] + " (дүр байна)")
@@ -1029,7 +1032,7 @@ class Onboard(object):
                 notes[slug] = rel
             entry["note"] = rel
             new_entries[slug] = entry
-        activate = [s for s in as_list(roles.get("activate"))]
+        activate = uniq([ROLE_ALIASES.get(s, s) for s in as_list(roles.get("activate"))])
         bad = [s for s in activate if not SLUG_RE.match(s)]
         if bad:
             raise InputError("roles.activate: slug буруу: %s" % ", ".join(bad))
