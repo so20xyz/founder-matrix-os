@@ -88,6 +88,7 @@ regex:DESKTOP-[A-Z0-9]{7}==>PC-HOST
 regex:[A-Za-z0-9_-]+-MacBook-(Air|Pro)(-[0-9]+)?(\.local)?==>MAC-HOST
 regex:[A-Za-z0-9._%+-]+@gmail\.com==>user@example.com
 regex:[Dd]:[/\\]Vaults[/\\]Founder\.Matrix==><OLD-VAULT>
+regex:[A-Za-z]:\\My Drive\\Second Brain 2\.0==><VAULT>
 regex:[Dd]:([/\\])CodeBase==>~\1CodeBase
 regex:(?<![0-9])1[0-9]{17,19}(?![0-9])==>DISCORD_ID
 regex:(?<![0-9a-f-])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-f-])==>NOTION_PAGE_ID
@@ -121,7 +122,7 @@ scan() { # $1 = label, $2 = ERE, $3 = зөвшөөрөгдсөн мөрийн ER
   if [ -n "$hits" ]; then echo "  !! $1:"; echo "$hits" | head -5 | sed 's/^/     /'; FAIL=1; else echo "  ok $1"; fi
 }
 scan "mac home path"      "/Users/${MAC_USER}([/\"'\`[:space:]]|\$)" ''
-scan "windows D: path"    '[Dd]:[/\\][A-Za-z]+' '^D:/My$'
+scan "windows D: path"    '[Dd]:[/\\][A-Za-z]+' '^D:/My$|^[Dd]:\\[dn]$'
 scan "hostnames"          'DESKTOP-[A-Z0-9]{7}|-MacBook-(Air|Pro)' ''
 scan "gmail"              '[A-Za-z0-9._%+-]+@gmail\.com' ''
 scan "discord snowflake"  '(^|[^0-9])1[0-9]{17,19}([^0-9]|$)' ''
@@ -130,7 +131,7 @@ for p in state relay vault tools/figma/html2fig tools/notion/nt.config.json clau
   if git log --all --format=%H -- "$p" | grep -q .; then echo "  !! path still in history: $p"; FAIL=1; fi
 done
 if git log --all --format='%ae%n%ce' | grep -qiF "$OLD_EMAIL"; then echo "  !! OLD_EMAIL still in commit metadata"; FAIL=1; fi
-for p in plugins/fm tools/relay tools/figma README.md; do
+for p in plugins/fm tools/relay plugins/fm/tools/figma README.md; do
   git cat-file -e "main:$p" 2>/dev/null && echo "  ok HEAD has $p" || { echo "  !! HEAD missing $p"; FAIL=1; }
 done
 echo "[5] commits: $BEFORE_COMMITS -> $AFTER_COMMITS   pack: $BEFORE_SIZE -> $AFTER_SIZE"
