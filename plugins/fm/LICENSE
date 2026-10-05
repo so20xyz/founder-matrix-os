@@ -1,21 +1,99 @@
-Founder Matrix Second Brain - "fm" plugin (Founder Matrix OS)
+FOUNDER MATRIX LICENSE  (version 1.0 — TEMPLATE)
+
+  *** TEMPLATE — PENDING LEGAL REVIEW ***
+  This text is a draft prepared for itge.e. It has not been reviewed by a lawyer
+  and must be reviewed (including under the laws of Mongolia and of the countries
+  where the Software is sold) before it is relied upon. Until then, itge.e
+  reserves all rights not expressly granted below.
+
+Founder Matrix Second Brain (repository "founder-matrix-os", including the Claude
+Code plugin "fm", its skills, agents, hooks, scripts, tools, vault template and
+documentation — together the "Software")
 
 Copyright (c) 2026 itge.e. All rights reserved.
 
-Licensed for use by the Founder Matrix team and SB+AI Season 2 participants.
-Contributions are licensed to itge.e under the same terms.
+1. Definitions
+   "Licensor" means itge.e. "Purchaser" means the natural person who bought a
+   licence to the Software from the Licensor (for example through the Inai
+   website) or who received a written licence from the Licensor. "Your Devices"
+   means computers and other devices owned or controlled by the Purchaser for
+   the Purchaser's own use.
 
-You may not redistribute, publish, sublicense or sell this plugin or any part
-of it outside the Founder Matrix team and SB+AI Season 2 without prior written
-permission from itge.e.
+2. Licence grant
+   Subject to this licence and to payment of the applicable fee, the Licensor
+   grants the Purchaser a personal, non-exclusive, non-transferable,
+   non-sublicensable licence to:
+   (a) install and use the Software on Your Devices, for the Purchaser's own
+       personal and business purposes; and
+   (b) modify the Software and create derivative works for that same own use.
+   One licence covers one person. Teams, companies and classes need one licence
+   per person or a separate written agreement with the Licensor.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+3. Restrictions
+   The Purchaser may NOT, without the Licensor's prior written permission:
+   (a) redistribute, publish, share, upload or otherwise make the Software (or
+       any modified version or substantial part of it) available to anyone else,
+       including in a public or shared repository, marketplace or course;
+   (b) sublicense, sell, resell, rent, lend or transfer the Software or this
+       licence;
+   (c) use the Software to build or offer a competing product, template or
+       service that substitutes for the Software;
+   (d) remove or alter copyright notices, this licence or the third-party notices.
+   The Purchaser's own notes, vault content and data created with the Software
+   belong to the Purchaser and are not covered by these restrictions.
 
-Third-party components
-----------------------
-This plugin includes components derived from projects licensed under the MIT
-License. Those components remain under the MIT License. See
-THIRD_PARTY_NOTICES.md and the LICENSES/ directory for their notices and full
-license texts.
+4. Contributions
+   If the Purchaser (or any participant of a Founder Matrix programme, such as
+   SB+AI Season 2 students) submits a contribution to the Licensor — for example
+   a pull request, patch, issue text, skill, script or documentation — the
+   contributor:
+   (a) assigns to the Licensor all copyright and other rights in the
+       contribution, or, where an assignment is not permitted by law, grants the
+       Licensor a perpetual, worldwide, irrevocable, royalty-free, exclusive,
+       transferable and sublicensable licence to use, modify, distribute and sell
+       it as part of the Software or otherwise;
+   (b) confirms that the contribution is their own original work (or that they
+       have the right to submit it) and that it does not include anyone else's
+       personal or confidential data; and
+   (c) waives, to the extent permitted by law, any moral rights that would
+       restrict the Licensor's use of the contribution.
+   Contributions are voluntary and unpaid unless agreed otherwise in writing.
+
+5. Third-party components
+   The Software does not bundle third-party code. Official plugins and tools that
+   the setup offers to install (see plugins/fm/THIRD_PARTY_NOTICES.md) are
+   installed from their own sources and remain under their own licences and
+   terms; this licence does not apply to them.
+
+6. Termination
+   This licence ends automatically if the Purchaser breaches it. On termination
+   the Purchaser must stop using and delete all copies of the Software (the
+   Purchaser keeps their own notes and data).
+
+7. No warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. The Software is a
+   productivity tool; it does not provide financial, investment, tax, legal or
+   medical advice.
+
+8. Limitation of liability
+   TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL THE LICENSOR BE
+   LIABLE FOR ANY CLAIM, DAMAGES (INCLUDING LOSS OF DATA OR PROFITS) OR OTHER
+   LIABILITY ARISING FROM OR IN CONNECTION WITH THE SOFTWARE OR ITS USE. THE
+   LICENSOR'S TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT THE PURCHASER PAID FOR
+   THE LICENCE.
+
+9. General
+   [TEMPLATE: governing law, jurisdiction, refund policy and contact address to
+   be completed after legal review.]
+
+---------------------------------------------------------------------------
+Монгол товчлол (албан ёсны текст бол дээрх англи хувилбар):
+
+Энэ бол **ЗАГВАР** — хуульчаар хянуулаагүй. Худалдаж авсан хүн Software-ийг
+өөрийн төхөөрөмж дээр, өөрийнхөө хэрэгцээнд (нэг хүн) ашиглаж, өөрчилж болно.
+Бусдад тараах, нийтлэх, дахин зарах, түрээслэх, дэд лиценз олгохыг хориглоно.
+PR болон бусад хувь нэмэр (Season 2-ын сурагчдынх ч) itge.e-д шилжинэ. Таны
+vault-ийн тэмдэглэл, өгөгдөл таных хэвээр. Гуравдагч талын plugin-ууд өөрийн
+лицензтэй (plugins/fm/THIRD_PARTY_NOTICES.md).

@@ -6,6 +6,38 @@
 
 ---
 
+## [0.3.0] — 2026-10-05 · Худалдаалах хувилбар (Founder Matrix License)
+
+### Нэмсэн
+
+- **Ганц команд `update`**: «update» гэхэд `/fm:update` атом (save) → task → хүмүүс → төсөл → inbox (зөөхөөс өмнө асууна) → өдрийн note → STATUS + лог → нээлттэй task-ыг өөрөө дараалан хийнэ. `daily` (өглөө/оройн дүгнэлт), `weekly` (долоо хоногийн тойм) горимтой. Хуучин `/sync`, `jirge`, `/fm:daily`-г орлоно.
+- **7 Agent**: Project (төсөлд нэг тогтмол сешн, мэргэжлийн ажлыг subagent-аар), Area (хуучин GTD + систем), Resource, Research, Developer, Creative (Creative Director + контент, Pinterest/Soulcatcher moodboard), Finance 🔒 (хувийн санхүү + бизнесийн тайлан; хөрөнгө оруулалтын зөвлөгөө, төлбөр хийхгүй). `plugins/fm/agents/<slug>.md` + vault-ийн `01–07` дүрийн тэмдэглэл.
+- **`fm:people`**: хүний note, харилцааны бүртгэл (`last_interaction`), hot list (`People.base → Hot`).
+- **`fm_doctor.py`** (Mac + Windows): Homebrew, Git, gh, Python 3.9+, uv, Node 24, ffmpeg, yt-dlp, Claude desktop + CLI, Obsidian, Google Drive (+ Figma, Framer, Discord, Notion, Chrome) шалгаж, дутуу бүрд албан ёсны линк + командыг санал болгоно; зөвхөн `--install <id> --yes`-ээр, нууц үг асуудаггүй суулгагчийг л ажиллуулна.
+- **`/fm:setup` бүрэн урсгал**: 0 doctor → 1 албан ёсны plugin → 2 араг яс → 3 ярилцлага → 4 Agent → 5 нэмэлт хэрэгсэл → 6 бичих.
+- **Хэрэгслийн 6 skill** + `docs/tools/<name>.md`: `relay` (Discord), `figma`, `framer`, `notion` (vault → багийн Notion, зөвхөн `notion:` тэмдэглэсэн note), `post` (carousel 5 дүрэм, 10 слайд), `watch` (бичлэг → транскрипт + кадрын хуудас; mlx-whisper заавал биш).
+- Vault загварт `05-Resources/references/Official skills.md`.
+- Тест: `tests/test_doctor.py`, `tests/test_tools.py`; relay тест shim ба plugin хуулбар хоёуланг шалгана.
+
+### Өөрчилсөн
+
+- **16 → 10 үндсэн skill:** `track`, `clip` → `save` (`--checkpoint`, `<url>`); `daily` → `update daily`; `spawn` → itge.e-ийн хувийн skill (`extras/personal/`).
+- **Хэрэгслийн код plugin руу:** `plugins/fm/tools/relay` canonical; `tools/relay/*.py` нь hook-уудын хуучин замын shim, `tools/relay/dispatcher` ижил хуулбар.
+- `fm_role bind` сешнд `project` = дүрийн slug, `group` тавина → Mac, PC дээрх ижил дүр нэг baton, нэг Discord сувагтай.
+- `BOOT.md`: Agent-ууд, албан ёсны skill → vault дүрэм, монгол хариулт; SessionStart-ийн хязгаарт багтана (таслагдахгүй).
+- `nt.py` → `fm_notion.py` (Mac дээр Python-ийн `nt` модультай давхцаж эвдэрдэг байсан); тохиргоо `~/.fmos/notion.json`.
+- **Лиценз:** MIT / «all rights reserved»-ийн оронд **Founder Matrix License** (ЗАГВАР — хуульчаар хянуулна): нэг хүн өөрийн төхөөрөмж дээр ашиглаж, өөрчилж болно; тараах, дахин зарах хориотой; хувь нэмэр itge.e-д шилжинэ.
+
+### Хассан
+
+- `bases`, `canvas`, `vault-cli` skill ба `vault/references/obsidian-syntax.md` (kepano/obsidian-skills-ийн хуулбар) — албан ёсны `obsidian@obsidian-skills`-ийг суулгана. MIT лицензийн файлууд (`LICENSES/`).
+- `tools/figma/html2fig/`-ийн харилцагч, брэндийн script-үүд, `tools/moodboard` (vault-д хадгалагдсан).
+
+### Нууцлал
+
+- `tools/`-оос хувийн зам, vault ID, Discord/Notion ID, харилцагчийн нэрийг хасав; CI-ийн хувийн зам шалгалт `tools/`-ийг хамарна.
+- Notion руу хувийн note (`private`, `finances/private/`, `01-Soul/`, `Life/`) хэзээ ч явахгүй.
+
 ## [0.2.0] — 2026-10-05 · Анхны багийн тест
 
 Төвшин, Соёл болон дараа нь SB+AI Season 2-ын сурагчид суулгаж туршина.
@@ -48,5 +80,6 @@
 - `tests/test_hooks.py`.
 - MIT мэдэгдэл: `plugins/fm/THIRD_PARTY_NOTICES.md`, `plugins/fm/LICENSES/`.
 
+[0.3.0]: https://github.com/rollingbd/founder-matrix-os/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/rollingbd/founder-matrix-os/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rollingbd/founder-matrix-os/releases/tag/v0.1.0

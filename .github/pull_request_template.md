@@ -8,10 +8,8 @@
 
 ## Хэрхэн тестэлсэн
 
-- [ ] `python3 tests/test_hooks.py`
-- [ ] `python3 tests/test_onboard.py`
-- [ ] `python3 tools/relay/tests/test_relay_config.py`
-- [ ] `claude plugin validate --strict plugins/fm`
+- [ ] `python3 .github/scripts/ci_checks.py` (test_hooks, test_onboard, test_doctor, test_tools, relay)
+- [ ] `claude plugin validate --strict plugins/fm` ба `claude plugin validate --strict .`
 - [ ] Туршилтын (жинхэнэ биш) vault дээр гараар шалгасан: <!-- юуг -->
 
 OS: <!-- macOS / Windows / Linux -->  Python: <!-- python3 --version -->
@@ -26,4 +24,6 @@ OS: <!-- macOS / Windows / Linux -->  Python: <!-- python3 --version -->
 - [ ] Шаардлагатай бол README / CHANGELOG шинэчилсэн
 - [ ] `plugin.json`-ийн `version`-ийг өөрчлөөгүй (itge.e гаргахдаа нэмнэ)
 
-PR илгээснээр энэ хувь нэмрийг repo-ийн [LICENSE](../LICENSE)-ийн нөхцлөөр itge.e-д лицензлэж байгаагаа зөвшөөрч байна.
+- [ ] Албан ёсны skill-ийг хуулаагүй, гадны код/текст оруулаагүй
+
+PR илгээснээр энэ хувь нэмрийн эрхийг [Founder Matrix License](../LICENSE)-ийн 4-р зүйлээр itge.e-д шилжүүлж байгаагаа, мөн илгээх эрхтэй гэдгээ баталж байна.

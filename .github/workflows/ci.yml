@@ -31,8 +31,9 @@ jobs:
       - name: Install Python ${{ matrix.python }}
         run: uv python install ${{ matrix.python }}
 
-      # Runs tests/test_hooks.py, tests/test_onboard.py, tools/relay/tests/test_relay_config.py
-      # (missing ones are skipped), JSON validity under plugins/ and .claude-plugin/,
+      # Runs tests/test_hooks.py, test_onboard.py, test_doctor.py, test_tools.py and
+      # tools/relay/tests/test_relay_config.py (shims + canonical copy; missing ones are skipped),
+      # JSON validity under plugins/ and .claude-plugin/,
       # SKILL.md frontmatter, and a personal-path scan of shipped files.
       - name: Tests and checks
         run: uv run --no-project --python ${{ matrix.python }} python .github/scripts/ci_checks.py
@@ -53,6 +54,6 @@ jobs:
       - name: Validate plugin fm (strict)
         run: npx -y @anthropic-ai/claude-code plugin validate --strict plugins/fm
 
-      - name: Validate marketplace founder-matrix
+      - name: Validate marketplace founder-matrix (strict)
         if: always()
-        run: npx -y @anthropic-ai/claude-code plugin validate .
+        run: npx -y @anthropic-ai/claude-code plugin validate --strict .
