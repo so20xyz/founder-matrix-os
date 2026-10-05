@@ -604,7 +604,7 @@ def chmap():
     return {sid: names[key(v)] for sid, v in regs}
 
 CATS = {"tasks": "01 Tasks", "projects": "02 Projects", "areas": "03 Areas", "resources": "04 Resources", "research": "05 Research", "creative": "06 Creative", "development": "07 Development", "system": "08 System", "archive": "09 Archive"}
-SYSTEM_CH = ["status", "status-data", "general", "relay"]  # #org хаагдсан (2026-10-02) → Archive
+SYSTEM_CH = ["status-data", "general", "relay"]  # #org хаагдсан (2026-10-02) → Archive · #status устгасан (2026-10-06, itge.e)
 
 def d_sync():
     """Discord = sidebar: category per PARA group, one channel per project slug. Never deletes — old channels → Archive."""
