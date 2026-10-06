@@ -12,7 +12,7 @@ if [ -z "$VAULT" ] || [ ! -d "$VAULT" ]; then
   exit 1
 fi
 INBOX="$VAULT/00-Inbox"
-DL="$HOME/Downloads"
+DL="${DOWNLOADS_DIR:-${HOME}/Downloads}"
 mkdir -p "$INBOX"
 
 # Finder-iin songoltiig POSIX zamaar av (mor bur = neg file)
