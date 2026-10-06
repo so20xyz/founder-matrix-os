@@ -764,7 +764,11 @@ def main():
         pj = a[a.index("--project")+1] if "--project" in a else None
         return cmd_register(a[1], a[2], sid, pj)
     if a[0] == "send":
-        return d_send(a[1], " ".join(a[2:]), sid)
+        rest = list(a[2:])
+        for flag, takes in (("--no-thread", 0), ("--thread", 1), ("--reply", 1)):
+            while flag in rest:
+                i = rest.index(flag); del rest[i:i + 1 + takes]
+        return d_send(a[1], " ".join(rest), sid)
     if a[0] == "gsend":  # old git transport
         return cmd_send(a[1], a[2], a[3] if len(a) > 3 else "", sid)
     if a[0] == "sync-discord":
