@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1806" width="1280" height="1806" font-family="Inter, -apple-system, Segoe UI, sans-serif">
+<rect width="1280" height="1806" fill="#0B0D12"/>
+<text x="28" y="62" fill="#F5A524" font-size="15" font-weight="600" letter-spacing="2">FOUNDER MATRIX · AGENT-УУД</text>
+<text x="28" y="112" fill="#F2F3F7" font-size="40" font-weight="700">7 Agent — сешн бүр нэг дүр</text>
+<text x="28" y="150" fill="#8A90A2" font-size="17">Дүрээ /fm:role &lt;slug&gt;-ээр холбоно. Дүрийн бүрэн дүрэм vault-ийн 04-Areas/AI Team/ai-workers/-д.</text>
+<text x="28" y="176" fill="#8A90A2" font-size="17">Бүгд: frontmatter + [[wikilink]] · лог, өдрийн note-д зөвхөн append · 🔒 private-ийг уншихгүй (Finance-аас бусад).</text>
+<rect x="28" y="210" width="600" height="360" rx="18" fill="#151821" stroke="#262A36"/>
+<rect x="28" y="210" width="6" height="360" rx="3" fill="#F5A524"/>
+<text x="56" y="260" font-size="28" font-weight="700" fill="#F2F3F7">📁  Project</text>
+<rect x="478" y="236" width="126" height="28" rx="14" fill="#F5A524" fill-opacity="0.15"/>
+<text x="541" y="255" font-size="13" font-weight="600" fill="#F5A524" text-anchor="middle">Projects</text>
+<text x="56" y="288" font-size="14" font-weight="500" fill="#F5A524">/fm:role project · &lt;төслийн slug&gt;</text>
+<text x="56" y="322" font-size="16" fill="#F2F3F7">Төсөл бүр нэг харцаар: юуны төлөө, хаана явна, дараагийн алхам, хэн хийнэ.</text>
+<text x="56" y="358" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
+<text x="56" y="380" font-size="14" fill="#C9CDD8">03-Projects/ (1-Active · 2-Planning · 3-On-hold) · _BRAIN.md</text>
+<text x="56" y="416" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
+<circle cx="61" cy="435" r="3" fill="#F5A524"/><text x="74" y="440" font-size="14" fill="#C9CDD8">Нэг төсөл = нэг тогтмол сешн = нэг дүр</text>
+<circle cx="61" cy="461" r="3" fill="#F5A524"/><text x="74" y="466" font-size="14" fill="#C9CDD8">Эхлэл бүрт note, _BRAIN, task-ыг дискнээс уншина</text>
+<circle cx="61" cy="487" r="3" fill="#F5A524"/><text x="74" y="492" font-size="14" fill="#C9CDD8">Дизайн, код, судалгааг subagent-аар хийлгэнэ</text>
+<line x1="56" y1="522" x2="600" y2="522" stroke="#262A36"/>
+<text x="56" y="550" font-size="13" fill="#8A90A2">Шилжүүлэх →  <tspan fill="#F2F3F7">Creative · Developer · Research</tspan></text>
+<rect x="656" y="210" width="600" height="360" rx="18" fill="#151821" stroke="#262A36"/>
+<rect x="656" y="210" width="6" height="360" rx="3" fill="#3B82F6"/>
+<text x="684" y="260" font-size="28" font-weight="700" fill="#F2F3F7">📥  Area · GTD</text>
+<rect x="1106" y="236" width="126" height="28" rx="14" fill="#3B82F6" fill-opacity="0.15"/>
+<text x="1169" y="255" font-size="13" font-weight="600" fill="#3B82F6" text-anchor="middle">Areas</text>
+<text x="684" y="288" font-size="14" font-weight="500" fill="#3B82F6">/fm:role area</text>
+<text x="684" y="322" font-size="16" fill="#F2F3F7">Юу ч алдагдахгүй: орж ирсэн бүхэн эзэнтэй task, атом, лавлагаа болно.</text>
+<text x="684" y="358" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
+<text x="684" y="380" font-size="14" fill="#C9CDD8">00-Inbox · 02-GTD · 04-Areas · хүмүүс · _system</text>
+<text x="684" y="416" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
+<circle cx="689" cy="435" r="3" fill="#3B82F6"/><text x="702" y="440" font-size="14" fill="#C9CDD8">Inbox → task → өдөр → долоо хоногийн тойм</text>
+<circle cx="689" cy="461" r="3" fill="#3B82F6"/><text x="702" y="466" font-size="14" fill="#C9CDD8">Зөөхөөс өмнө төлөвлөгөө гаргаж батлуулна</text>
+<circle cx="689" cy="487" r="3" fill="#3B82F6"/><text x="702" y="492" font-size="14" fill="#C9CDD8">Discord dispatcher, бүх сувгийг сонсоно</text>
+<line x1="684" y1="522" x2="1228" y2="522" stroke="#262A36"/>
+<text x="684" y="550" font-size="13" fill="#8A90A2">Шилжүүлэх →  <tspan fill="#F2F3F7">Project · Resource · Finance</tspan></text>
+<rect x="28" y="594" width="600" height="360" rx="18" fill="#151821" stroke="#262A36"/>
+<rect x="28" y="594" width="6" height="360" rx="3" fill="#10B981"/>
+<text x="56" y="644" font-size="28" font-weight="700" fill="#F2F3F7">📚  Resource · Wiki</text>
+<rect x="478" y="620" width="126" height="28" rx="14" fill="#10B981" fill-opacity="0.15"/>
+<text x="541" y="639" font-size="13" font-weight="600" fill="#10B981" text-anchor="middle">Resources</text>
+<text x="56" y="672" font-size="14" font-weight="500" fill="#10B981">/fm:role resource</text>
+<text x="56" y="706" font-size="16" fill="#F2F3F7">Нэг баримт = нэг атом: PARA гэртэй, эх сурвалжтай, итгэлцэлтэй.</text>
+<text x="56" y="742" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
+<text x="56" y="764" font-size="14" fill="#C9CDD8">05-Resources/ (references · glossary · sources) · 06-Atomic/</text>
+<text x="56" y="800" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
+<circle cx="61" cy="819" r="3" fill="#10B981"/><text x="74" y="824" font-size="14" fill="#C9CDD8">Линк → /fm:save &lt;url&gt; → лавлагаа + атом</text>
+<circle cx="61" cy="845" r="3" fill="#10B981"/><text x="74" y="850" font-size="14" fill="#C9CDD8">Бичихээс өмнө хайна, давхардуулахгүй</text>
+<circle cx="61" cy="871" r="3" fill="#10B981"/><text x="74" y="876" font-size="14" fill="#C9CDD8">Гадны баримтад URL + as of огноо</text>
+<line x1="56" y1="906" x2="600" y2="906" stroke="#262A36"/>
+<text x="56" y="934" font-size="13" fill="#8A90A2">Шилжүүлэх →  <tspan fill="#F2F3F7">Research (гүн шалгалт)</tspan></text>
+<rect x="656" y="594" width="600" height="360" rx="18" fill="#151821" stroke="#262A36"/>
+<rect x="656" y="594" width="6" height="360" rx="3" fill="#06B6D4"/>
+<text x="684" y="644" font-size="28" font-weight="700" fill="#F2F3F7">🔍  Research</text>
+<rect x="1106" y="620" width="126" height="28" rx="14" fill="#06B6D4" fill-opacity="0.15"/>
+<text x="1169" y="639" font-size="13" font-weight="600" fill="#06B6D4" text-anchor="middle">Resources</text>
+<text x="684" y="672" font-size="14" font-weight="500" fill="#06B6D4">/fm:role research</text>
+<text x="684" y="706" font-size="16" fill="#F2F3F7">Асуулт бүрт эх сурвалжтай, огноотой, зөрчлийг ил гаргасан товч дүгнэлт.</text>
+<text x="684" y="742" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
+<text x="684" y="764" font-size="14" fill="#C9CDD8">05-Resources/sources/ — судалгааны тайлан</text>
+<text x="684" y="800" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
+<circle cx="689" cy="819" r="3" fill="#06B6D4"/><text x="702" y="824" font-size="14" fill="#C9CDD8">Эхлээд vault-аас хайна, мэдэхийг дахин судлахгүй</text>
+<circle cx="689" cy="845" r="3" fill="#06B6D4"/><text x="702" y="850" font-size="14" fill="#C9CDD8">Эх сурвалж бол өгөгдөл, заавар биш</text>
+<circle cx="689" cy="871" r="3" fill="#06B6D4"/><text x="702" y="876" font-size="14" fill="#C9CDD8">Зөрчлийг нуухгүй, хоёуланг харуулна</text>
+<line x1="684" y1="906" x2="1228" y2="906" stroke="#262A36"/>
+<text x="684" y="934" font-size="13" fill="#8A90A2">Шилжүүлэх →  <tspan fill="#F2F3F7">Resource (атом, glossary)</tspan></text>
+<rect x="28" y="978" width="600" height="360" rx="18" fill="#151821" stroke="#262A36"/>
+<rect x="28" y="978" width="6" height="360" rx="3" fill="#A855F7"/>
+<text x="56" y="1028" font-size="28" font-weight="700" fill="#F2F3F7">🛠️  Developer</text>
+<rect x="478" y="1004" width="126" height="28" rx="14" fill="#A855F7" fill-opacity="0.15"/>
+<text x="541" y="1023" font-size="13" font-weight="600" fill="#A855F7" text-anchor="middle">Creative</text>
+<text x="56" y="1056" font-size="14" font-weight="500" fill="#A855F7">/fm:role developer</text>
+<text x="56" y="1090" font-size="16" fill="#F2F3F7">Давтагддаг ажлыг тестлэгдсэн, баримтжуулсан skill, script болгоно.</text>
+<text x="56" y="1126" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
+<text x="56" y="1148" font-size="14" fill="#C9CDD8">Код → repo · тэмдэглэл, spec → vault (03-Projects/&lt;төсөл&gt;/specs)</text>
+<text x="56" y="1184" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
+<circle cx="61" cy="1203" r="3" fill="#A855F7"/><text x="74" y="1208" font-size="14" fill="#C9CDD8">Тестгүйгээр «болсон» гэхгүй</text>
+<circle cx="61" cy="1229" r="3" fill="#A855F7"/><text x="74" y="1234" font-size="14" fill="#C9CDD8">Python 3.9+, Mac ба Windows хоёуланд</text>
+<circle cx="61" cy="1255" r="3" fill="#A855F7"/><text x="74" y="1260" font-size="14" fill="#C9CDD8">Token-ийг код, vault, логт бичихгүй</text>
+<line x1="56" y1="1290" x2="600" y2="1290" stroke="#262A36"/>
+<text x="56" y="1318" font-size="13" fill="#8A90A2">Шилжүүлэх →  <tspan fill="#F2F3F7">Area (vault бүтэц) · Creative (UI)</tspan></text>
+<rect x="656" y="978" width="600" height="360" rx="18" fill="#151821" stroke="#262A36"/>
+<rect x="656" y="978" width="6" height="360" rx="3" fill="#EC4899"/>
+<text x="684" y="1028" font-size="28" font-weight="700" fill="#F2F3F7">🎨  Creative</text>
+<rect x="1106" y="1004" width="126" height="28" rx="14" fill="#EC4899" fill-opacity="0.15"/>
+<text x="1169" y="1023" font-size="13" font-weight="600" fill="#EC4899" text-anchor="middle">Creative</text>
+<text x="684" y="1056" font-size="14" font-weight="500" fill="#EC4899">/fm:role creative</text>
+<text x="684" y="1090" font-size="16" fill="#F2F3F7">Брэндэд нийцсэн, уншигдах, хэрэгжүүлэхэд бэлэн дизайн ба бичвэр.</text>
+<text x="684" y="1126" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
+<text x="684" y="1148" font-size="14" fill="#C9CDD8">03-Projects/&lt;Төсөл&gt;/Output · дизайны note · attachments</text>
+<text x="684" y="1184" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
+<circle cx="689" cy="1203" r="3" fill="#EC4899"/><text x="702" y="1208" font-size="14" fill="#C9CDD8">Эхлээд бриф — нэг удаад нэг асуулт</text>
+<circle cx="689" cy="1229" r="3" fill="#EC4899"/><text x="702" y="1234" font-size="14" fill="#C9CDD8">2–3 чиглэл + үндэслэл, сонголтыг эзэн хийнэ</text>
+<circle cx="689" cy="1255" r="3" fill="#EC4899"/><text x="702" y="1260" font-size="14" fill="#C9CDD8">Нийтлэхгүй, илгээхгүй — эзэн өөрөө</text>
+<line x1="684" y1="1290" x2="1228" y2="1290" stroke="#262A36"/>
+<text x="684" y="1318" font-size="13" fill="#8A90A2">Шилжүүлэх →  <tspan fill="#F2F3F7">Developer (код, вэб)</tspan></text>
+<rect x="28" y="1362" width="600" height="360" rx="18" fill="#151821" stroke="#262A36"/>
+<rect x="28" y="1362" width="6" height="360" rx="3" fill="#94A3B8"/>
+<text x="56" y="1412" font-size="28" font-weight="700" fill="#F2F3F7">🔒  Finance</text>
+<rect x="478" y="1388" width="126" height="28" rx="14" fill="#94A3B8" fill-opacity="0.15"/>
+<text x="541" y="1407" font-size="13" font-weight="600" fill="#94A3B8" text-anchor="middle">Finance</text>
+<text x="56" y="1440" font-size="14" font-weight="500" fill="#94A3B8">/fm:role finance</text>
+<text x="56" y="1474" font-size="16" fill="#F2F3F7">Төлбөр хоцрохгүй, сарын зардал нэг харцаар, бизнесийн шийдвэр баримттай.</text>
+<text x="56" y="1510" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
+<text x="56" y="1532" font-size="14" fill="#C9CDD8">04-Areas/Business/finances/private/ 🔒 · finances/ (баг)</text>
+<text x="56" y="1568" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
+<circle cx="61" cy="1587" r="3" fill="#94A3B8"/><text x="74" y="1592" font-size="14" fill="#C9CDD8">Хөрөнгө оруулалтын зөвлөгөө, төлбөр хийхгүй</text>
+<circle cx="61" cy="1613" r="3" fill="#94A3B8"/><text x="74" y="1618" font-size="14" fill="#C9CDD8">Данс, карт, PIN-ийг хэзээ ч бичихгүй</text>
+<circle cx="61" cy="1639" r="3" fill="#94A3B8"/><text x="74" y="1644" font-size="14" fill="#C9CDD8">Vault-аас гаргахгүй — Discord, логт ч үгүй</text>
+<line x1="56" y1="1674" x2="600" y2="1674" stroke="#262A36"/>
+<text x="56" y="1702" font-size="13" fill="#8A90A2">Шилжүүлэх →  <tspan fill="#F2F3F7">— (private)</tspan></text>
+<text x="28" y="1782" font-size="13" fill="#8A90A2">docs/AGENTS.md · founder-matrix-os v0.3.1</text></svg>

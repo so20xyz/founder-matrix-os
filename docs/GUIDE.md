@@ -29,7 +29,7 @@
 | 🎨 **Creative** | `creative` | Брэнд, moodboard, Figma/Framer дизайн, пост | post · figma · framer · watch | Creative |
 | 🔒 **Finance** | `finance` | Хувийн санхүү + бизнесийн тайлан. Төлбөр, хөрөнгө оруулалтын зөвлөгөө **хийхгүй** | finance | Finance 🔒 |
 
-Project agent мэргэжлийн ажлыг (дизайн, код, судалгаа) Creative/Developer/Research **subagent**-аар хийлгэнэ.
+Project agent мэргэжлийн ажлыг (дизайн, код, судалгаа) Creative/Developer/Research **subagent**-аар хийлгэнэ. Agent бүрийн зураг, дүрэм: **[AGENTS.md](AGENTS.md)**.
 
 ## 1.5 Sidebar — бүлэг ба сешний дараалал
 

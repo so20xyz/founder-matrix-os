@@ -16,6 +16,7 @@
 
 - **`/fm:setup` 7-р алхам — Sidebar:** `plugins/fm/sidebar.json`-оор бүлгүүдийг (`Tasks · Projects · Areas · Resources · Creative · Finance · Archive`) энэ дарааллаар үүсгэж, setup-ийн сешнийг **📥 GTD** болгоод, бусад сешнийг (💼 Project Manager → 📁 төсөл бүр → 📚 Wiki → 🔍 Research → 🎨 Creative → 🛠️ Developer → 🔒 Personal, 💼 Business) chip-ээр дарааллаар нь нээж нэрлэнэ.
 - **`/fm:setup` 8-р алхам — Routine-ууд:** `plugins/fm/routines/` (☀️ өглөөний update daily, 📅 долоо хоногийн тойм, 💰 сарын 1/20-ны төлбөр, 🧠 Harvester — Discord-гүйгээр ажиллана) — асууж, Scheduled task болгон үүсгэнэ (байгааг дарж бичихгүй).
+- **`docs/AGENTS.md` + `docs/img/agents.svg`**: 7 Agent-ийн зурагт гарын авлага (зорилго, эзэмших хавтас, дүрэм, шилжүүлэх, sidebar) ба «аль Agent-ийг хэзээ» хүснэгт. Зураг `docs/img/make_agents_svg.py`-ээр үүснэ.
 - Тест: routine загвар, sidebar загвар.
 
 ### Засварласан

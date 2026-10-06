@@ -115,6 +115,10 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 
 ## Agent-ууд
 
+![7 Agent](docs/img/agents.svg)
+
+Дэлгэрэнгүй (аль Agent-ийг хэзээ, дүрэм бүр): **[docs/AGENTS.md](docs/AGENTS.md)**.
+
 Бүх сешн нь Agent, зөвхөн **дүрээрээ** ялгарна. Дүрийн дүрэм таны vault-ийн `04-Areas/AI Team/ai-workers/`-д амьдарна. Claude Desktop-ийн sidebar-т сешнүүдээ бүлгээр цэгцэл.
 
 | Agent | Юу хийдэг | Sidebar бүлэг |
