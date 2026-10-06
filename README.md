@@ -72,6 +72,14 @@ Code табын чатад:
 /reload-plugins
 ```
 
+**Repo-гийн clone (relay, хэрэгсэл, хөгжүүлэлтэд):** заавал **локал дискэнд** — Google Drive-д **биш**.
+
+```
+gh repo clone Atlas322/founder-matrix-os ~/Documents/CodeBase/founder-matrix-os
+```
+
+Windows: `C:/Users/<нэр>/founder-matrix-os`. Шалтгаан: Drive `.git`-ийн олон мянган жижиг файлыг sync хийхдээ эвдэж `файл (1)` давхардал үүсгэдэг; Mac ↔ PC-г git өөрөө GitHub-ээр sync хийнэ. **Дүрэм: vault → Drive, код → локал.**
+
 Суулгахад гурван тохиргоо асууна: `vault_path` (**заавал**, vault хавтасны бүтэн зам), `member` (таны нэр), `device` (`Mac` / `PC`). `*_token` тохиргоонуудыг хоосон үлдээ.
 
 ### 5. `/fm:setup`

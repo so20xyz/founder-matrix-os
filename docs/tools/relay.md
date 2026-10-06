@@ -24,9 +24,9 @@ Discord relay нь таны Claude сешнүүдийг (Mac ↔ PC, утасн�
 
 - fm plugin (relay код нь plugin дотор: `${CLAUDE_PLUGIN_ROOT}/tools/relay/`). Hook-уудад **тогтвортой зам** хэрэгтэй тул худалдаж авсан repo-гоо clone хийж, түүний `tools/relay/relay.py` shim-ийг заахыг зөвлөнө:
   ```
-  gh repo clone <owner>/founder-matrix-os
+  gh repo clone Atlas322/founder-matrix-os
   ```
-  Жишээ нь Mac-д `~/founder-matrix-os`, Windows-д `C:/Users/<нэр>/founder-matrix-os`. Доор `<REPO>` гэж тэмдэглэв.
+  Жишээ нь Mac-д `~/Documents/CodeBase/founder-matrix-os`, Windows-д `C:/Users/<нэр>/founder-matrix-os` — **локал дискэнд, Google Drive-д биш** (Drive `.git`-ийг эвддэг). Доор `<REPO>` гэж тэмдэглэв.
 - Python 3.9+ (`python3`). Windows-ийн тэмдэглэлийг [README](../../README.md)-ээс хар.
 - Сешн сэрээх диспетчер (`tools/relay/dispatcher/`) ашиглах бол Node.js 24 (`npm install` тэр хавтсанд).
 

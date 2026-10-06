@@ -128,7 +128,7 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 
 ## 7. Нууцлал — 3 хатуу дүрэм
 
-0. **Vault Google Drive дотор** (`My Drive/Second Brain`, Mirror files) — нөөц ба Mac ↔ PC sync. Vault-ийг бүхэлд нь бусадтай share хийхгүй (хувийн хавтас хамт явна).
+0. **Vault → Google Drive, код → локал диск.** Vault Google Drive дотор (`My Drive/Second Brain`, Mirror files) — нөөц ба Mac ↔ PC sync. Vault-ийг бүхэлд нь бусадтай share хийхгүй (хувийн хавтас хамт явна). Repo-гийн clone Drive-д **биш**, локал дискэнд (`.git` эвдэрнэ).
 
 1. `private: true` эсвэл `finances/private/` — git, Discord, Notion, STATUS, лог, атом руу **хэзээ ч** гарахгүй.
 2. Token-ууд зөвхөн home хавтсанд (`~/.fmos_discord_token`, `~/.figma_token`, `~/.fmos/notion_token`). Vault, repo, чатад биш.

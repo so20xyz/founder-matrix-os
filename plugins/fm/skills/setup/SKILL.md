@@ -94,6 +94,7 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 2. **Vault хавтас:** `My Drive/Second Brain` (Mac: `~/Library/CloudStorage/GoogleDrive-<имэйл>/My Drive/Second Brain` эсвэл `~/My Drive/Second Brain`; Windows: `G:/My Drive/Second Brain`). Бодит замыг `ls`-ээр олж гишүүнээр батлуул; хавтас байхгүй бол (зөвшөөрлөөр) үүсгэ. Энэ зам = `${user_config.vault_path}` — plugin тохиргоонд өөр зам байвал гишүүнд хэлж зас.
 3. Obsidian → **Open folder as vault** → тэр хавтас (гишүүн өөрөө; fm `.obsidian/`-д хүрэхгүй). Хоёр дахь төхөөрөмж дээр Drive sync дууссаны дараа ижил хавтсыг нээнэ — шинээр setup хийхгүй, зөвхөн `--config --device PC`.
 4. Нэр = «Танилцах»-д асуусан нэр (дахин бүү асуу).
+5. **Код ≠ Drive:** repo-гийн clone (relay, Harvester, хөгжүүлэлтэд) **локал дискэнд** (`~/Documents/CodeBase/founder-matrix-os`, Windows `C:/Users/<нэр>/founder-matrix-os`). Drive дотор clone байвал анхааруулж зөөхийг санал болго — Drive `.git`-ийг эвддэг.
 2. **Dry run** (юу ч бичихгүй):
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_setup.py" "${user_config.vault_path}" --member "<нэр>" --dry-run
