@@ -15,7 +15,7 @@
 - `tools/inbox-gallery` (localhost:5190) + тест.
 
 - **`/fm:setup` 7-р алхам — Sidebar:** `plugins/fm/sidebar.json`-оор бүлгүүдийг (`Tasks · Projects · Areas · Resources · Creative · Finance · Archive`) энэ дарааллаар үүсгэж, setup-ийн сешнийг **📥 GTD** болгоод, бусад сешнийг (💼 Project Manager → 📁 төсөл бүр → 📚 Wiki → 🔍 Research → 🎨 Creative → 🛠️ Developer → 🔒 Personal, 💼 Business) chip-ээр дарааллаар нь нээж нэрлэнэ.
-- **`/fm:setup` 8-р алхам — Routine-ууд:** `plugins/fm/routines/` (☀️ өглөөний update daily, 📅 долоо хоногийн тойм, 💰 сарын 1/20-ны төлбөр, 🧠 Harvester) — асууж, Scheduled task болгон үүсгэнэ (байгааг дарж бичихгүй).
+- **`/fm:setup` 8-р алхам — Routine-ууд:** `plugins/fm/routines/` (☀️ өглөөний update daily, 📅 долоо хоногийн тойм, 💰 сарын 1/20-ны төлбөр, 🧠 Harvester — Discord-гүйгээр ажиллана) — асууж, Scheduled task болгон үүсгэнэ (байгааг дарж бичихгүй).
 - Тест: routine загвар, sidebar загвар.
 
 ### Засварласан

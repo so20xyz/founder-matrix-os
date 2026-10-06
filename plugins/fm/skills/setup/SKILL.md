@@ -253,9 +253,9 @@ Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй о
 | 📅 Долоо хоногийн тойм (`weekly.md`) | Баасан 17:00 | — |
 | 💰 Сарын төлбөрийн жагсаалт (`finance-month-start.md`) | Сарын 1, 09:00 | `finance` идэвхтэй |
 | 💰 Төлөгдөөгүй сануулга (`finance-month-20.md`) | Сарын 20, 09:00 | `finance` идэвхтэй |
-| 🧠 Harvester (`harvester.md`) | 2 цаг тутам | `/fm:relay` тохируулсан |
+| 🧠 Harvester (`harvester.md`) — чатыг автоматаар атом болгоно | 2 цаг тутам | `~/.fmos/config.json` бий (Discord хэрэггүй) |
 
-Тийм гэсэн бүрд: файлыг унш → биеийн `{{VAULT}}`, `{{MEMBER}}`, `{{DEVICE}}`, `{{REPO}}`-г бодит утгаар соль → `mcp__scheduled-tasks__list_scheduled_tasks`-аар ижил `id` байгаа эсэхийг шалга (байвал алгас, дарж бичихгүй) → `mcp__scheduled-tasks__create_scheduled_task(taskId=id, title, description, cronExpression=cron, prompt=бие)`. Цаг гишүүнд тохирохгүй бол cron-ыг тэр үед нь солиод үүсгэ.
+Тийм гэсэн бүрд: файлыг унш → биеийн `{{VAULT}}`, `{{MEMBER}}`, `{{DEVICE}}`, `{{HARVEST}}`-г (`routines/README.md`) бодит утгаар соль → `mcp__scheduled-tasks__list_scheduled_tasks`-аар ижил `id` байгаа эсэхийг шалга (байвал алгас, дарж бичихгүй) → `mcp__scheduled-tasks__create_scheduled_task(taskId=id, title, description, cronExpression=cron, prompt=бие)`. Цаг гишүүнд тохирохгүй бол cron-ыг тэр үед нь солиод үүсгэ.
 
 Гишүүнд хэл: routine Claude апп **нээлттэй** үед ажиллана (хаалттай байсан бол дараа нээхэд). Sidebar-ийн **Routines** хэсгээс харж, унтрааж болно. Хэрэгсэл байхгүй (CLI) бол жагсаалтыг өгөөд Desktop → Scheduled-аас гараар үүсгэхийг хэл.
 
