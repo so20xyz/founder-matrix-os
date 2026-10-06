@@ -106,6 +106,6 @@
 - `tests/test_hooks.py`.
 - MIT мэдэгдэл: `plugins/fm/THIRD_PARTY_NOTICES.md`, `plugins/fm/LICENSES/`.
 
-[0.3.0]: https://github.com/rollingbd/founder-matrix-os/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/rollingbd/founder-matrix-os/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/rollingbd/founder-matrix-os/releases/tag/v0.1.0
+[0.3.0]: https://github.com/Atlas322/founder-matrix-os/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/Atlas322/founder-matrix-os/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/Atlas322/founder-matrix-os/releases/tag/v0.1.0

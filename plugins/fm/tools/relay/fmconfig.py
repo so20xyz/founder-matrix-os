@@ -99,7 +99,7 @@ MEMBER = os.environ.get("FM_MEMBER") or CONFIG.get("member") or dcfg("member") o
 BROADCAST = dcfg("broadcast", "03-sys-admin")              # channel every session listens to
 DISPATCHER_TITLE = dcfg("dispatcher_title", "Sys Admin")    # session title substring that runs the dispatcher
 INBOX_ROLE = dcfg("inbox_role", "00 Inbox Admin")           # role (session title) that catches unowned work
-USER_AGENT_URL = dcfg("user_agent_url", "https://github.com/rollingbd/founder-matrix-os")
+USER_AGENT_URL = dcfg("user_agent_url", "https://github.com/Atlas322/founder-matrix-os")
 MEMBER_LABEL = MEMBER or "BD"                                 # how the human is labelled in relay/harvest text
 DEFAULT_OWNER = dcfg("default_owner") or MEMBER or "itge.e"  # default GTD task owner
 

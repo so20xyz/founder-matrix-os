@@ -10,12 +10,12 @@ Founder Matrix Second Brain-ийг худалдаж авсан гишүүд, Fou
 
 > ⚖️ **PR илгээхээсээ өмнө** доорх «6. Лиценз (хувь нэмэр)»-ийг унш: PR илгээснээр хувь нэмрийнхээ эрхийг itge.e-д шилжүүлж байгаа (Season 2-ын сурагчдад ч мөн адил).
 
-1. **Fork.** GitHub дээр `rollingbd/founder-matrix-os` → **Fork** (private repo тул fork нь мөн private, зөвхөн эрхтэй хүмүүст харагдана). Fork-оо **public болгох, өөр хүнд хуваалцахыг** лиценз хориглоно.
+1. **Fork.** GitHub дээр `Atlas322/founder-matrix-os` → **Fork** (private repo тул fork нь мөн private, зөвхөн эрхтэй хүмүүст харагдана). Fork-оо **public болгох, өөр хүнд хуваалцахыг** лиценз хориглоно.
 2. **Clone:**
    ```
    gh repo clone <таны-нэр>/founder-matrix-os
    cd founder-matrix-os
-   git remote add upstream https://github.com/rollingbd/founder-matrix-os.git
+   git remote add upstream https://github.com/Atlas322/founder-matrix-os.git
    ```
 3. **Branch** (нэг PR = нэг сэдэв). Нэр англиар, kebab-case:
    ```
@@ -33,7 +33,7 @@ Founder Matrix Second Brain-ийг худалдаж авсан гишүүд, Fou
 6. **Push + PR:**
    ```
    git push -u origin fix/windows-python3-hint
-   gh pr create --repo rollingbd/founder-matrix-os --base main
+   gh pr create --repo Atlas322/founder-matrix-os --base main
    ```
    PR-ийн загварыг бөглө (юу, яагаад, хэрхэн тестэлсэн, ямар OS).
 7. **Review.** itge.e санал өгвөл тэр branch дээрээ нэмж commit хийгээд push хий, PR автоматаар шинэчлэгдэнэ. CI ногоон, review батлагдсаны дараа нэгтгэнэ.

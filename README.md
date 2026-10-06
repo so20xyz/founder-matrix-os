@@ -67,7 +67,7 @@ gh auth setup-git
 Code табын чатад:
 
 ```
-/plugin marketplace add rollingbd/founder-matrix-os
+/plugin marketplace add Atlas322/founder-matrix-os
 /plugin install fm@founder-matrix
 /reload-plugins
 ```
@@ -244,7 +244,7 @@ Founder Matrix Second Brain-ийг itge.e **Inai вэбсайтаар** зарн
 
 **Founder Matrix Second Brain** organizes a member's whole life and work in one personal Obsidian vault (Mongolian content), run by Claude **Agents** (Project, Area, Resource, Research, Developer, Creative, Finance). **One daily command: `update`** — it captures atoms, tasks, people, project progress, triages the inbox (asking before moving) and refreshes STATUS.
 
-- **Install:** buy a licence (Inai website) and accept the GitHub invite → install Claude desktop + Obsidian → open the vault folder in Claude Desktop's **Code** tab → let Claude check Git/gh/Python (official installers, only with your consent) → `gh auth login` → `/plugin marketplace add rollingbd/founder-matrix-os`, `/plugin install fm@founder-matrix` → `/fm:setup` (step 0 `fm_doctor.py` checks and offers every prerequisite; step 1 installs official plugins from source; then vault skeleton, life interview, agents, optional tools).
+- **Install:** buy a licence (Inai website) and accept the GitHub invite → install Claude desktop + Obsidian → open the vault folder in Claude Desktop's **Code** tab → let Claude check Git/gh/Python (official installers, only with your consent) → `gh auth login` → `/plugin marketplace add Atlas322/founder-matrix-os`, `/plugin install fm@founder-matrix` → `/fm:setup` (step 0 `fm_doctor.py` checks and offers every prerequisite; step 1 installs official plugins from source; then vault skeleton, life interview, agents, optional tools).
 - **Skills:** 10 core (`update`, `save`, `inbox`, `task`, `project`, `people`, `role`, `finance`, `vault`, `setup`) + 6 tools (`post`, `figma`, `framer`, `watch`, `notion`, `relay`).
 - **Official plugins** (installed, not copied): superpowers, kepano obsidian-skills, anthropics document-skills / skill-creator, knowledge-work finance (optional, CSV mode), exa (optional).
 - **Privacy:** private finance and `private: true` items never leave the vault; tokens live only in your home folder or keychain.

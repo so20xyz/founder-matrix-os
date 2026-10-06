@@ -45,7 +45,7 @@ fi
 command -v git-filter-repo >/dev/null 2>&1 || { echo "git-filter-repo суулгаагүй байна."; exit 1; }
 : "${OLD_EMAIL:?OLD_EMAIL (commit-уудын хуучин author email) заавал өг}"
 
-SRC_URL="${SRC_URL:-https://github.com/rollingbd/founder-matrix-os.git}"
+SRC_URL="${SRC_URL:-https://github.com/Atlas322/founder-matrix-os.git}"
 PUSH_URL="${NEW_REPO_URL:-$SRC_URL}"
 NEW_IDENT="${NEW_IDENT:-itge.e <rollingbd@users.noreply.github.com>}"
 MAC_USER="${MAC_USER:-$(id -un)}"   # itge.e-ийн Mac дээр ажиллуулбал өөрийн нэр нь
