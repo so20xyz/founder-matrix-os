@@ -591,8 +591,9 @@ def chmap():
         base = chname(v)
         # itge.e 2026-10-05: a project keeps its existing channel even when PC/Mac titles differ slightly
         # (e.g. «Acme AI Agent» vs «Acme · Claude AI Agent») — the project key is the identity.
-        if k in prev and _re.match(r"^([^\w]+-)?\d+-", prev[k]) and not _re.match(r"^\d", strip(base)):
-            names[k] = prev[k]; used.setdefault(v["group"], set()).add(num(prev[k]))
+        if k in prev:  # itge.e 2026-10-06: channels.json is the source of truth — a project keeps its channel name as-is
+            names[k] = prev[k]
+            if _re.match(r"^([^\w]+-)?\d+-", prev[k]): used.setdefault(v["group"], set()).add(num(prev[k]))
         else: todo.append((k, v, base))
     for k, v, base in todo:
         emo, _, core = base.partition("-") if not _re.match(r"^\w", base) else ("", "", base)

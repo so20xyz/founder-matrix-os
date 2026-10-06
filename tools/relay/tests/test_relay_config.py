@@ -99,7 +99,7 @@ def main():
     write(repo / "relay" / "discord.json", json.dumps({"guild": {"id": "0"}, "note": "test"}))
     write(repo / "relay" / "notion_links.json", "{}")
     write(repo / "state" / "alpha.md", "# alpha\n\n## ОДОО · x\n**Дараагийн алхам (A, 1):** go\n\n## ТҮҮХ\n- a\n", crlf=True)
-    for priv in ("finance", "tax", "gold", "home"):
+    for priv in ("finance", "home"):
         write(repo / "state" / f"{priv}.md", f"# {priv}\nSECRET\n")
     write(repo / "state" / "mac-drive-manifest.tsv", "a\t1\tx\n")
     write(repo / "state" / "vault-diff.md", "# diff\n")
@@ -177,7 +177,7 @@ def main():
     # ── 5. vault-mode baton/next/hub/task: written in the vault, NO git, private skipped
     tp2 = tmp / "t-vault.jsonl"
     make_transcript(tp2, "vault асуулт", "VAULT хариу мөр")
-    write(data / "state" / "gold.md", "# gold\n\n## ОДОО · 1 · x\n**Дараагийн алхам (x, 1):** secret\n\n## ТҮҮХ\n")
+    write(data / "state" / "finance.md", "# finance\n\n## ОДОО · 1 · x\n**Дараагийн алхам (x, 1):** secret\n\n## ТҮҮХ\n")
     d = child(f"""
         import relay
         relay.d_baton({{"session_id": "sid-alpha-0000-0000-0000-000000000001", "transcript_path": {str(tp2)!r}}}, push_every=0)
@@ -194,7 +194,7 @@ def main():
     check("дараагийн алхам тест" in vb.read_text(encoding="utf-8"), "vault: next pinned in vault baton")
     check((repo / "state" / "alpha.md").read_text(encoding="utf-8") == legacy_baton, "vault: repo/state untouched")
     check(d["calls"] == [] and d["rc"] == 0, "vault: git never called (baton/next/hub/task/git())", str(d["calls"]))
-    check(not (data / "state" / "finance.md").exists(), "private: finance session baton skipped")
+    check("VAULT хариу мөр" not in (data / "state" / "finance.md").read_text(encoding="utf-8"), "private: finance session baton skipped")
     check(not (data / "state" / "home.md").exists(), "private: 'private': true session baton skipped")
     status = (vault / "_system" / "STATUS.md").read_text(encoding="utf-8")
     check("Alpha төсөл" in status and "secret" not in status, "hub: STATUS.md in vault, private project rows omitted")
@@ -240,7 +240,7 @@ def main():
     check(rc == 0 and "DRY-RUN" in out, "migrate: dry run exits 0", out[-400:])
     for f in ("registry.json", "channels.json", "discord.json", "notion_links.json", "alpha.md"):
         check(any(l.strip().startswith("COPY") and f in l for l in out.splitlines()), f"migrate dry-run lists COPY {f}")
-    for f in ("finance.md", "tax.md", "gold.md", "home.md", "mac-drive-manifest.tsv", "pc-merge", "vault-diff.md"):
+    for f in ("finance.md", "home.md", "mac-drive-manifest.tsv", "pc-merge", "vault-diff.md"):
         check(any(l.strip().startswith("SKIP") and f in l for l in out.splitlines()), f"migrate dry-run SKIPs {f}")
     check(not data2.exists() and not (home2 / ".fmos" / "config.json").exists(), "migrate dry-run writes nothing")
 
@@ -250,7 +250,7 @@ def main():
           "migrate --apply copies data files")
     check((data2 / "state" / "alpha.md").read_bytes() == (repo / "state" / "alpha.md").read_bytes(),
           "migrate --apply copies baton byte-exact (line endings kept)")
-    check(not any((data2 / "state" / f"{p}.md").exists() for p in ("finance", "tax", "gold", "home")),
+    check(not any((data2 / "state" / f"{p}.md").exists() for p in ("finance", "home")),
           "migrate --apply never copies private batons")
     check(not (data2 / "state" / "pc-merge").exists() and not list((data2 / "state").glob("*.tsv")),
           "migrate --apply skips manifests + pc-merge")

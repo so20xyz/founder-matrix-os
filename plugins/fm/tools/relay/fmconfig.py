@@ -76,7 +76,7 @@ CHANNELS = DATA / "channels.json"
 DISCORD_CFG = DATA / "discord.json"
 NOTION_LINKS = DATA / "notion_links.json"
 
-PRIVATE_PROJECTS = {"finance", "tax", "gold"}
+PRIVATE_PROJECTS = {"finance"}  # itge.e 2026-10-06: Алт/ААНОАТ бол судалгаа — хувийн биш
 
 _dcfg_cache = None
 
