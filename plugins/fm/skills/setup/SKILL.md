@@ -88,7 +88,12 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 
 ## 2. Vault-ийн араг яс
 
-1. Гишүүний нэрийг асуу (Home.md-д гарна; хүсэхгүй бол `TBD`).
+**Дүрэм: vault Google Drive дотор амьдарна** — нөөц, Mac ↔ PC sync, утаснаас харах. Өөр газар бол зөвхөн гишүүн тусгайлан хүсвэл.
+
+1. **Google Drive desktop** суусан, нэвтэрсэн эсэхийг шалга (0-р алхмын `google-drive`). Үгүй бол гишүүн өөрөө суулгаж Google бүртгэлээрээ нэвтэрнэ (нууц үгийг гишүүн өөрөө). Drive-ийн тохиргоо → **My Drive → Mirror files** (Stream биш — Obsidian офлайн ажиллана).
+2. **Vault хавтас:** `My Drive/Second Brain` (Mac: `~/Library/CloudStorage/GoogleDrive-<имэйл>/My Drive/Second Brain` эсвэл `~/My Drive/Second Brain`; Windows: `G:/My Drive/Second Brain`). Бодит замыг `ls`-ээр олж гишүүнээр батлуул; хавтас байхгүй бол (зөвшөөрлөөр) үүсгэ. Энэ зам = `${user_config.vault_path}` — plugin тохиргоонд өөр зам байвал гишүүнд хэлж зас.
+3. Obsidian → **Open folder as vault** → тэр хавтас (гишүүн өөрөө; fm `.obsidian/`-д хүрэхгүй). Хоёр дахь төхөөрөмж дээр Drive sync дууссаны дараа ижил хавтсыг нээнэ — шинээр setup хийхгүй, зөвхөн `--config --device PC`.
+4. Нэр = «Танилцах»-д асуусан нэр (дахин бүү асуу).
 2. **Dry run** (юу ч бичихгүй):
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_setup.py" "${user_config.vault_path}" --member "<нэр>" --dry-run

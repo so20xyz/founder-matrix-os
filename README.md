@@ -43,7 +43,9 @@ Slash команд санахгүй байсан ч болно — монгол�
 - **Claude desktop** — [claude.ai/download](https://claude.ai/download) (Pro/Max эсвэл багийн бүртгэлээр нэвтэр).
 - **Obsidian** — [obsidian.md/download](https://obsidian.md/download).
 
-Компьютер дээрээ vault-д зориулж **хоосон хавтас** үүсгэ (жишээ нь `Documents/Second Brain`; Mac ↔ PC хоёр дээр ажиллах бол Google Drive дотор). Obsidian → **Open folder as vault** → тэр хавтас.
+- **Google Drive desktop** — [google.com/drive/download](https://www.google.com/drive/download/). Google бүртгэлээрээ нэвтэрч, **My Drive → Mirror files** сонго.
+
+**Дүрэм: vault Google Drive дотор.** `My Drive/Second Brain` хавтас үүсгэ (`/fm:setup` шалгаж туслана). Obsidian → **Open folder as vault** → тэр хавтас. Нөөц, Mac ↔ PC sync, утаснаас харах бүгд Drive-аар.
 
 ### 3. Claude Desktop → Code таб
 
@@ -97,7 +99,8 @@ Setup таныг алхам алхмаар хөтөлнө:
 | Python 3.9+ | fm-ийн hook, script | заавал |
 | Claude desktop · Obsidian | ажиллах орчин | заавал |
 | Homebrew (Mac) · winget (Windows) | бусдыг нэг командаар суулгах | санал болгох |
-| uv · Claude Code CLI · Google Drive desktop | Python хэрэгсэл · терминалаас plugin · Mac ↔ PC sync | санал болгох |
+| Google Drive desktop | Vault-ийн гэр (нөөц, Mac ↔ PC sync) | **заавал** |
+| uv · Claude Code CLI | Python хэрэгсэл · терминалаас plugin | санал болгох |
 | Node.js 24 · ffmpeg · yt-dlp | relay/Figma/Framer bridge · бичлэг үзэх | заавал биш |
 | Figma · Framer · Discord · Notion · Chrome | дизайн · вэб · relay · Notion sync · вэб клип | заавал биш |
 

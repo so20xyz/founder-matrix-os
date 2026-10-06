@@ -203,8 +203,8 @@ ITEMS = [
                     "interactive": False, "note": ""},
     },
     {
-        "id": "google-drive", "name": "Google Drive desktop", "level": "recommended",
-        "why": "Mac ↔ PC vault sync (Mirror files).",
+        "id": "google-drive", "name": "Google Drive desktop", "level": "required",
+        "why": "Vault-ийн гэр: «My Drive/Second Brain» — нөөц + Mac ↔ PC sync (Mirror files).",
         "skills": ["sync"], "link": "https://www.google.com/drive/download/",
         "detect": {"kind": "app", "mac": ["Google Drive.app"],
                    "windows": [("ProgramFiles", "Google/Drive File Stream")]},

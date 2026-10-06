@@ -275,7 +275,7 @@ def test_human_output_mongolian(c):
     assert "заавал" in out and "алга" in out, out
     assert "Git 2.50.1 (заавал)" in out, out
     assert "GitHub CLI — алга (заавал) → brew install gh" in out, out
-    assert "Заавал: 1/5 бэлэн" in out, out
+    assert "Заавал: 1/6 бэлэн" in out, out
     assert "Дутуу зүйлсийг суулгах уу?" in out, out
 
 
