@@ -332,6 +332,14 @@ def d_inbox(hook):
            + ("\n\n".join(out) if out else "Шинэ мессеж алга."))
     print(json.dumps({"hookSpecificOutput": {"hookEventName": event or "UserPromptSubmit", "additionalContext": ctx}}, ensure_ascii=False))
 
+def _threads(parent_ids):
+    """itge.e 2026-10-06: one request = one Discord thread. Active threads whose parent is in parent_ids → {thread_id: parent_id}."""
+    try:
+        gid = load(DCFG, {})["guild"]["id"]
+        return {t["id"]: t["parent_id"] for t in dapi("GET", f"/guilds/{gid}/threads/active").get("threads", []) if t.get("parent_id") in parent_ids}
+    except Exception: return {}
+
+
 def d_send(to, text, sid):
     reg = load(REG, {"sessions": {}}); me = reg["sessions"].get(sid, {"name": f"{DEVICE}-{sid[:6]}"})
     state = load(STATE, {}); ch = dchannels(state); save(STATE, state)
@@ -341,21 +349,45 @@ def d_send(to, text, sid):
     # latest human message in the channel (or --reply <message_id>).
     agent = (me.get("title") or me.get("name") or "").strip()
     sig = f"\n-# {ICON} {DEVICE} · {agent}" if agent else ""
-    cid = ch[name]; ref = None
-    if "--reply" in sys.argv:
-        ref = sys.argv[sys.argv.index("--reply") + 1]
+    cid = ch[name]; ref = None; target = cid
+    arg = lambda k: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else None
+    if arg("--thread"):
+        target = arg("--thread")                     # explicit: keep talking in that thread
+    elif "--no-thread" in sys.argv:
+        ref = arg("--reply")
     else:
+        # itge.e 2026-10-06: the reply goes into a THREAD on itge.e's latest human message (channel or its active threads).
+        best = None  # (message_id, where): where = None → channel message, else thread id
         try:
-            for m in dapi("GET", f"/channels/{cid}/messages?limit=15"):
-                if not m["author"].get("bot"): ref = m["id"]; break
+            if arg("--reply"): best = (arg("--reply"), None)
+            else:
+                for m in dapi("GET", f"/channels/{cid}/messages?limit=15"):
+                    if not m["author"].get("bot"): best = (m["id"], None); break
+                for tid in _threads({cid}):
+                    for m in dapi("GET", f"/channels/{tid}/messages?limit=10"):
+                        if not m["author"].get("bot"):
+                            if not best or int(m["id"]) > int(best[0]): best = (m["id"], tid)
+                            break
         except Exception: pass
+        if best and best[1]: target = best[1]            # human wrote inside a thread → answer there
+        elif best:
+            mid = best[0]
+            try:
+                src = dapi("GET", f"/channels/{cid}/messages/{mid}")["content"].strip().splitlines()
+                tname = (src[0] if src and src[0] else "хүсэлт")[:80]
+                dapi("POST", f"/channels/{cid}/messages/{mid}/threads", {"name": tname, "auto_archive_duration": 1440})
+            except Exception: pass                       # already has a thread → its id equals the message id
+            target = mid
     body = text.strip()
     chunks = [body[i:i + 1900] for i in range(0, len(body), 1900)] or [""]
     for k, c in enumerate(chunks):
         payload = {"content": c + (sig if k == len(chunks) - 1 else ""), "allowed_mentions": {"replied_user": False}}
         if k == 0 and ref: payload["message_reference"] = {"message_id": ref, "fail_if_not_exists": False}
-        dapi("POST", f"/channels/{cid}/messages", payload)
-    print("sent →", name)
+        try: dapi("POST", f"/channels/{target}/messages", payload)
+        except Exception:
+            if target == cid: raise
+            dapi("POST", f"/channels/{cid}/messages", payload); target = cid   # thread failed → plain channel
+    print("sent →", name + (f" (thread {target})" if target != cid else ""))
 
 
 def d_watch(sid, every=20):
@@ -676,14 +708,23 @@ def d_dispatch(every=15):
             local.setdefault(ch, []).append(v.get("title") or v["name"])
     st = load(STATE, {}); st.pop("_dch", None); ch = dchannels(st); save(STATE, st)
     watch = {n: ch[n] for n in local if n in ch}
-    bot_wakes = {}; last = {}
+    bot_wakes = {}; last = {}; seen_threads = {}
     for n, cid in watch.items():
         lm = dapi("GET", f"/channels/{cid}/messages?limit=1"); last[n] = lm[0]["id"] if lm else "0"
     print(json.dumps({"ready": len(watch), "channels": list(watch)}, ensure_ascii=False), flush=True)
     tag = re.compile(r"(→\s*" + DEVICE + r"\b|@" + DEVICE.lower() + r"\b)", re.I)
     while True:
         time.sleep(every)
-        for n, cid in watch.items():
+        srcs = list(watch.items()); parent = {}
+        for tid, pid in _threads(set(watch.values())).items():   # itge.e 2026-10-06: replies inside threads wake too
+            pn = next((k for k, v in watch.items() if v == pid), None)
+            if not pn: continue
+            if "t:" + tid not in last:
+                try: lm = dapi("GET", f"/channels/{tid}/messages?limit=1"); last["t:" + tid] = lm[0]["id"] if lm else "0"
+                except Exception: continue
+                if tid in seen_threads: last["t:" + tid] = seen_threads[tid]
+            srcs.append(("t:" + tid, tid)); local.setdefault("t:" + tid, local.get(pn, [])); parent[("t:" + tid)] = pn
+        for n, cid in srcs:
             try: msgs = sorted(dapi("GET", f"/channels/{cid}/messages?after={last[n]}&limit=20"), key=lambda m: int(m["id"]))
             except Exception as e: continue
             for m in msgs:
@@ -697,7 +738,9 @@ def d_dispatch(every=15):
                     hist = [t for t in bot_wakes.get(n, []) if time.time() - t < 600]
                     if len(hist) >= 3: continue
                     bot_wakes[n] = hist + [time.time()]
-                print(json.dumps({"wake": local[n], "channel": n, "from": a.get("global_name") or a["username"], "text": txt[:1500]}, ensure_ascii=False), flush=True)
+                ev = {"wake": local[n], "channel": parent.get(n, n), "from": a.get("global_name") or a["username"], "text": txt[:1500]}
+                if n.startswith("t:"): ev["thread"] = n[2:]; seen_threads[n[2:]] = m["id"]
+                print(json.dumps(ev, ensure_ascii=False), flush=True)
 
 
 def main():
