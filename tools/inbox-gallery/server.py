@@ -1,7 +1,7 @@
 """Inbox Gallery — vault-ийн 00-Inbox-ийг localhost дээр gallery хэлбэрээр харуулж,
 зүйл бүрт очих газар сонгоод «Apply» дарахад л зөөнө.
 
-Ажиллуулах:  python server.py [--vault "D:/My Drive/Second Brain 2.0"] [--port 5190]
+Ажиллуулах:  python server.py [--vault "<vault хавтас>"] [--port 5190]
 Зарчим: юу ч устгахгүй (trash = vault-ийн _trash/ руу зөөх), Apply-ээс өмнө юу ч өөрчлөхгүй.
 """
 import argparse, json, mimetypes, os, re, shutil, subprocess, sys, time, urllib.parse

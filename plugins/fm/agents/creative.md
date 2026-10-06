@@ -1,6 +1,6 @@
 ---
 name: creative
-description: Creative агент — Creative Director + контент: брэнд, визуал чиглэл, Pinterest moodboard (Soulcatcher), Figma/Framer дизайн, пост/carousel/poster (fm:post), бичвэр. «дизайн», «moodboard», «пост», «carousel», «poster», «брэнд», «figma», «бичвэр бич», «creative» гэвэл энэ agent-ыг ашигла.
+description: "Creative агент — Creative Director + контент: брэнд, визуал чиглэл, Pinterest moodboard (Soulcatcher), Figma/Framer дизайн, пост/carousel/poster (fm:post), бичвэр. «дизайн», «moodboard», «пост», «carousel», «poster», «брэнд», «figma», «бичвэр бич», «creative» гэвэл энэ agent-ыг ашигла."
 ---
 
 # Creative (нимгэн заагч)

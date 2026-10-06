@@ -2,7 +2,7 @@
 
 **Founder Matrix Second Brain** нь таны амьдрал, ажлыг нэг Obsidian vault-д цэгцэлж, Claude-ийн **Agent**-уудаар удирддаг систем. Бизнес, хувийн амьдрал, төслүүд, хүмүүс, лавлагаа, зорилго, хувийн санхүү — бүгд нэг дор, нэг дүрмээр. Өдөр бүр та **ганц үг** бичнэ: **«update»**.
 
-> Худалдаж авсан хүн бүрт нэг лиценз ([Founder Matrix License](LICENSE)) · Хувилбар **0.3.0** · Түүх: [CHANGELOG.md](CHANGELOG.md)
+> Худалдаж авсан хүн бүрт нэг лиценз ([Founder Matrix License](LICENSE)) · Хувилбар **0.3.1** · 📘 **[Бүрэн гарын авлага](docs/GUIDE.md)** · Түүх: [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -144,7 +144,7 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 | `/fm:vault` | Vault-ийн дүрэм, синтакс | | |
 | `/fm:setup` | Суулгалт, онбординг | | |
 
-Хэрэгсэл бүрийн заавар (юу, суулгах, token, аль Agent): [docs/tools/](docs/tools/).
+Хэрэгсэл бүрийн заавар (юу, суулгах, token, аль Agent): [docs/tools/](docs/tools/). Bridge, routine, Discord-ийн дүрэм, нэмэлт хэрэгслийг нэг дор: **[docs/GUIDE.md](docs/GUIDE.md)**.
 
 ---
 
@@ -210,10 +210,11 @@ fm албан ёсны skill-ийг өөртөө **хуулдаггүй** — `/
 | `.claude-plugin/marketplace.json` | marketplace `founder-matrix` |
 | `plugins/fm/` | plugin `fm`: `skills/` (10 + 6), `agents/` (7), `hooks/`, `scripts/` (`fm_doctor`, `fm_setup`, `fm_onboard`…), `tools/` (relay, figma, framer, notion, watch), `vault-template/` — [plugins/fm/README.md](plugins/fm/README.md) |
 | `tools/` | Plugin-гүй нэмэлт хэрэгсэл (save-to-inbox extension, sidepanel, n8n, inbox shortcut-ууд); `tools/relay/*.py` = live hook-уудын хуучин замын shim |
+| `docs/GUIDE.md` | Бүх бүрэлдэхүүний гарын авлага (Agent · skill · bridge · routine · Discord) |
 | `docs/tools/` | Хэрэгсэл бүрийн заавар |
 | `tests/` | `test_hooks`, `test_onboard`, `test_doctor`, `test_tools` (+ `tools/relay/tests`) |
 | `extras/` | itge.e-ийн шилжилтийн runbook, хувийн skill (`extras/personal/`) |
-| `relay/`, `state/`, `vault/`, `claude/` | itge.e-ийн v0 хөдөлгүүрийн хуучин файлууд — гишүүд ашиглахгүй (түүх цэвэрлэгээгээр хасагдана) |
+| `relay/`, `state/`, `vault/` | itge.e-ийн v0 хөдөлгүүрийн хуучин файлууд — гишүүд ашиглахгүй (түүх цэвэрлэгээгээр хасагдана) |
 
 Хөгжүүлэлт: `claude --plugin-dir plugins/fm`, `python3 .github/scripts/ci_checks.py`, `claude plugin validate --strict plugins/fm`. Архитектур: [ARCHITECTURE.md](ARCHITECTURE.md). Хувь нэмэр: [CONTRIBUTING.md](CONTRIBUTING.md).
 

@@ -1,6 +1,6 @@
 ---
 name: developer
-description: Developer агент — код: fm-ийн skill, script, hook, хэрэгсэл (Figma/Framer bridge, relay, Notion sync), гишүүний апп, вэб. superpowers-ийн SDD, systematic-debugging аргаар; тестгүйгээр «болсон» гэхгүй; код repo-д, тэмдэглэл vault-д. «код бич», «skill бич», «script», «hook», «алдаа зас», «debug», «tool хий» гэвэл энэ agent-ыг ашигла.
+description: "Developer агент — код: fm-ийн skill, script, hook, хэрэгсэл (Figma/Framer bridge, relay, Notion sync), гишүүний апп, вэб. superpowers-ийн SDD, systematic-debugging аргаар; тестгүйгээр «болсон» гэхгүй; код repo-д, тэмдэглэл vault-д. «код бич», «skill бич», «script», «hook», «алдаа зас», «debug», «tool хий» гэвэл энэ agent-ыг ашигла."
 ---
 
 # Developer (нимгэн заагч)

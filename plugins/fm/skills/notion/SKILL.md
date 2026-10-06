@@ -1,6 +1,6 @@
 ---
 name: notion
-description: Vault → багийн Notion руу ЗӨВХӨН хэрэгтэй зүйлсийг (frontmatter-т `notion: task|note|project|ref|meeting` гэж тэмдэглэсэн note) түлхэх, Notion-ийн task-уудыг харах, нэмэх, дуусгах, баазыг vault-д зөвхөн-унших хуулбар болгон татах. Vault бол үндсэн эх сурвалж, Notion бол багийн толь; хувийн note хэзээ ч явахгүй. Area/Project агентын хэрэгсэл. «notion», «ноушн», «notion руу явуул», «багт хуваалц», «notion sync», «notion task», «notion-оос тат» гэвэл ашигла. Push selected vault notes to a team Notion.
+description: "Vault → багийн Notion руу ЗӨВХӨН хэрэгтэй зүйлсийг (frontmatter-т `notion: task|note|project|ref|meeting` гэж тэмдэглэсэн note) түлхэх, Notion-ийн task-уудыг харах, нэмэх, дуусгах, баазыг vault-д зөвхөн-унших хуулбар болгон татах. Vault бол үндсэн эх сурвалж, Notion бол багийн толь; хувийн note хэзээ ч явахгүй. Area/Project агентын хэрэгсэл. «notion», «ноушн», «notion руу явуул», «багт хуваалц», «notion sync», «notion task», «notion-оос тат» гэвэл ашигла. Push selected vault notes to a team Notion."
 argument-hint: "[setup | sync [--dry-run] | push <note> | tasks | add | done | pull]"
 ---
 

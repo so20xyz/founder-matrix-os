@@ -1,6 +1,6 @@
 ---
 name: watch
-description: Бичлэгийг (YouTube, Instagram, TikTok линк эсвэл локал видео/аудио файл) «үзэж уншина» - дууг текст болгоно (Apple Silicon дээр mlx-whisper, бусад үед faster-whisper; заавал биш), N секунд тутмын кадрын хуудас (contact sheet) гаргаж Read-ээр харна, гарчиг/тайлбар/огноо мета өгөгдлийг татна. Research/Resource/Creative агентын хэрэгсэл. «энэ бичлэгийг үз», «видео юу гэж байна», «transcribe», «транскрипт», «бичлэг уншаад өг», «reel үз», «youtube үз», «подкаст сонс» гэвэл ашигла. Watch a video: transcript + contact sheet + metadata.
+description: "Бичлэгийг (YouTube, Instagram, TikTok линк эсвэл локал видео/аудио файл) «үзэж уншина» - дууг текст болгоно (Apple Silicon дээр mlx-whisper, бусад үед faster-whisper; заавал биш), N секунд тутмын кадрын хуудас (contact sheet) гаргаж Read-ээр харна, гарчиг/тайлбар/огноо мета өгөгдлийг татна. Research/Resource/Creative агентын хэрэгсэл. «энэ бичлэгийг үз», «видео юу гэж байна», «transcribe», «транскрипт», «бичлэг уншаад өг», «reel үз», «youtube үз», «подкаст сонс» гэвэл ашигла. Watch a video: transcript + contact sheet + metadata."
 argument-hint: "<URL эсвэл файл> [--lang mn|en|auto] [--every 4]"
 ---
 

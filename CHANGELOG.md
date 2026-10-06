@@ -6,6 +6,23 @@
 
 ---
 
+## [0.3.1] — 2026-10-06 · Гарын авлага, цэвэрлэгээ
+
+### Нэмсэн
+
+- **`docs/GUIDE.md`**: бүх бүрэлдэхүүн нэг дор — 7 Agent, 16 skill, Figma/Framer bridge (3055/3056), `tools/`-ийн нэмэлт хэрэгсэл (Inbox Gallery, side panel, save-to-inbox, shortcut-ууд, n8n), routine-ууд (Harvester, сарын төлбөр), Discord-ийн дүрэм (thread, 🙋/✅).
+- Discord relay: нэг хүсэлт = нэг thread; dispatcher thread доторх хариуг сонсоно; `#gtd` status tracker.
+- `tools/inbox-gallery` (localhost:5190) + тест.
+
+### Засварласан
+
+- **Agent/skill-ийн frontmatter:** 5 agent (creative, project, developer, research, resource) ба 3 skill (update, notion, watch)-ийн `description`-д `: ` байсан тул YAML задрахгүй, тайлбар нь ажиллах үед **чимээгүй алга болж** байсан → хашилтад авав. `claude plugin validate --strict plugins/fm` давна.
+- `tools/inbox-gallery/server.py`-ийн хувийн зам (CI personal-path шалгалт).
+
+### Хассан
+
+- `claude/skills/figma-bridge/` — хуучин vault замтай, `/fm:figma`-аар орлогдсон.
+
 ## [0.3.0] — 2026-10-05 · Худалдаалах хувилбар (Founder Matrix License)
 
 ### Нэмсэн
