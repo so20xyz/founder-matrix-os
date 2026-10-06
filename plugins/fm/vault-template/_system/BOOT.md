@@ -51,7 +51,7 @@ ai-first: true
 
 ## Албан ёсны skill → vault
 
-`superpowers`, `obsidian:*`, `document-skills`, `finance:*` зэрэг албан ёсны skill **vault-д** бичнэ: spec/plan → `03-Projects/<төсөл>/specs/` · task → `02-GTD/tasks/` · хүн → `04-Areas/people/` · тайлан → Area note. Vault-ийн root-д `CLAUDE.md`, `TASKS.md`, `memory/`, `docs/` үүсгэхгүй; vault дотор git commit хийхгүй. `superpowers:brainstorming` зөвхөн шинэ төсөл, дизайнд. Жагсаалт: `05-Resources/references/Official skills.md`.
+**Skill-first:** дүрийн «Skill-ууд» хүснэгтээс skill-ээ ачаал. `superpowers`, `obsidian:*`, `document-skills`, `finance:*` зэрэг албан ёсны skill **vault-д** бичнэ: spec/plan → `03-Projects/<төсөл>/specs/` · task → `02-GTD/tasks/` · хүн → `04-Areas/people/` · тайлан → Area note. Vault-ийн root-д `CLAUDE.md`, `TASKS.md`, `memory/`, `docs/` үүсгэхгүй; vault дотор git commit хийхгүй. Жагсаалт: `05-Resources/references/Official skills.md`.
 
 ## Лавлах: төрөл → хавтас, frontmatter, нэршил
 

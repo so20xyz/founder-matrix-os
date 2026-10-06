@@ -14,6 +14,9 @@ skills:
   - "fm:save"
   - "fm:watch"
   - "exa"
+  - "anthropic-skills:deep-research"
+  - "last30days"
+  - "obsidian:defuddle"
 private: false
 aliases:
   - "Research"
@@ -35,6 +38,18 @@ Research агент — гүн судалгаа: олон эх сурвалжа�
 
 - `05-Resources/sources/` — судалгааны тайлан (`type: reference`, `reftype: research`)
 - Атом, лавлагааг [[03 Resource]]-ийн дүрмээр `06-Atomic/`, `05-Resources/references/`-д
+
+## Skill-ууд — эхлээд хай
+
+Ажил эхлэхээс өмнө доорхоос тохирохыг **Skill tool-оор ачаал**; жагсаалтад байхгүй бол боломжит skill-үүдээс хай (`05-Resources/references/Official skills.md`). Суугаагүй бол эзэнд `/fm:setup plugins` санал болго.
+
+| Ажил | Skill |
+|---|---|
+| Олон эх сурвалжийн гүн судалгаа | `deep-research · exa` |
+| Сүүлийн 30 хоногт хүмүүс юу ярьж байна | `last30days (community)` |
+| Вэб хуудас унших | `obsidian:defuddle` |
+| Видео, подкаст | `fm:watch` |
+| Хадгалах | `fm:save` |
 
 ## Дүрэм
 

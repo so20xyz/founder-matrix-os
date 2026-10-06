@@ -18,11 +18,16 @@ skills:
   - "fm:people"
   - "superpowers:brainstorming"
   - "superpowers:writing-plans"
+  - "superpowers:executing-plans"
+  - "product-management:write-spec"
+  - "product-management:sprint-planning"
 private: false
 aliases:
   - "Project"
   - "Төсөл"
   - "Project Admin"
+  - "Project Manager"
+  - "Төслийн менежер"
 ---
 
 # 01 Project
@@ -38,6 +43,17 @@ Project агент — `03-Projects/`-ийн эзэн. **Төсөл бүрт н�
 ## Эзэмшдэг хавтас
 
 - `03-Projects/` — `1-Active/`, `2-Planning/`, `3-On-hold/` (төсөл бүр `<Нэр>/<Нэр>.md` + `_BRAIN.md`)
+
+## Skill-ууд — эхлээд хай
+
+Ажил эхлэхээс өмнө доорхоос тохирохыг **Skill tool-оор ачаал**; жагсаалтад байхгүй бол боломжит skill-үүдээс хай (`05-Resources/references/Official skills.md`). Суугаагүй бол эзэнд `/fm:setup plugins` санал болго.
+
+| Ажил | Skill |
+|---|---|
+| Шинэ төсөл, санаа | `superpowers:brainstorming` |
+| Төлөвлөгөө, алхам | `superpowers:writing-plans → executing-plans` |
+| Спек, sprint | `product-management:write-spec · sprint-planning` |
+| Төсөл, task | `fm:project · fm:task` |
 
 ## Дүрэм
 

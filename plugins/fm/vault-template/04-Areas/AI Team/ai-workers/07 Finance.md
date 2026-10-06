@@ -16,12 +16,17 @@ skills:
   - "fm:task"
   - "finance:financial-statements"
   - "finance:variance-analysis"
+  - "finance:reconciliation"
+  - "document-skills:xlsx"
+  - "document-skills:pdf"
 private: true
 aliases:
   - "Finance"
   - "Санхүү"
   - "Санхүүч"
   - "Finance advisor"
+  - "💼 Business"
+  - "🔒 Personal"
 ---
 
 # 07 Finance 🔒
@@ -38,6 +43,17 @@ aliases:
 
 - `04-Areas/Business/finances/private/` — 🔒 хувийн: `type: bill`, `type: income`, хувийн `finance-record`, [[Сарын төлбөр]]
 - `04-Areas/Business/finances/` — ажлын/багийн `finance-record` (`scope: team`), бизнесийн тайлангийн дүгнэлт
+
+## Skill-ууд — эхлээд хай
+
+Ажил эхлэхээс өмнө доорхоос тохирохыг **Skill tool-оор ачаал**; жагсаалтад байхгүй бол боломжит skill-үүдээс хай (`05-Resources/references/Official skills.md`). Суугаагүй бол эзэнд `/fm:setup plugins` санал болго.
+
+| Ажил | Skill |
+|---|---|
+| Сарын төлбөр, бичлэг | `fm:finance` |
+| Санхүүгийн тайлан | `finance:financial-statements` |
+| Зөрүү, тулгалт | `finance:variance-analysis · reconciliation` |
+| Хүснэгт, хуулга | `document-skills:xlsx · pdf` |
 
 ## Дүрэм
 

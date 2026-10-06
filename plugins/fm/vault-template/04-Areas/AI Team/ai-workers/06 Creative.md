@@ -15,6 +15,12 @@ skills:
   - "fm:framer"
   - "fm:watch"
   - "fm:save"
+  - "last30days"
+  - "brand-voice:brand-voice-enforcement"
+  - "marketing:content-creation"
+  - "design:design-critique"
+  - "frontend-design"
+  - "canvas-design"
 private: false
 aliases:
   - "Creative"
@@ -22,6 +28,9 @@ aliases:
   - "Content"
   - "Content Writer"
   - "Дизайн"
+  - "Director"
+  - "🎨 Director"
+  - "✍️ Content Writer"
 ---
 
 # 06 Creative
@@ -38,6 +47,18 @@ Creative агент — Creative Director + Content: брэнд, визуал ч
 
 - Тогтсон хавтасгүй: `03-Projects/<төлөв>/<Төсөл>/` (`Output/`, дизайны note, `attachments/`).
 - Брэнд/дизайн систем байнгын бол `04-Areas/Business/`-д тусдаа note ([[02 Area]]-тай тохирно).
+
+## Skill-ууд — эхлээд хай
+
+Ажил эхлэхээс өмнө доорхоос тохирохыг **Skill tool-оор ачаал**; жагсаалтад байхгүй бол боломжит skill-үүдээс хай (`05-Resources/references/Official skills.md`). Суугаагүй бол эзэнд `/fm:setup plugins` санал болго.
+
+| Ажил | Skill |
+|---|---|
+| Тренд, дэгээ хайх | `last30days (community)` |
+| Пост, carousel, poster | `fm:post · fm:figma` |
+| Брэндийн дуу хоолой | `brand-voice:brand-voice-enforcement` |
+| Бичвэр | `marketing:content-creation` |
+| Дизайн шүүмж, вэб UI | `design:design-critique · frontend-design` |
 
 ## Дүрэм
 

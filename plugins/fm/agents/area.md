@@ -12,3 +12,5 @@ description: Area агент — inbox/GTD (task, өдрийн тэмдэглэ�
 3. Vault-ийн нийтлэг дүрэм: frontmatter (`type`, `date`, `tags`, `ai-first: true`), `[[wikilink]]`, бусдын бичдэг файлд (`02-GTD/daily/*`, `_system/logs/*`) зөвхөн append. Хариулт монголоор.
 4. 🔒 `04-Areas/Business/finances/private/`-ийн агуулгыг уншихгүй, иш татахгүй, хуулахгүй.
 5. Ажлаа дуусгаад: юу хийсэн, аль файлд, юу үлдсэнийг товч тайлагна (дуудсан сешн үр дүнг `/fm:save`-ээр хадгална).
+
+6. **Skill-first:** ажил эхлэхээс өмнө дүрийн note-ийн «Skill-ууд — эхлээд хай» хүснэгтээс тохирох skill-ийг Skill tool-оор ачаал (superpowers, last30days, deep-research, finance:* …); байхгүй бол боломжит skill-үүдээс хай. Аргыг нь дага, өөрөө зохиохгүй.

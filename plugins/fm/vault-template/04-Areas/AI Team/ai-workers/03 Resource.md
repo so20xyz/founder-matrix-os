@@ -17,6 +17,8 @@ skills:
   - "fm:watch"
   - "obsidian:defuddle"
   - "obsidian:json-canvas"
+  - "obsidian:obsidian-markdown"
+  - "document-skills:pdf"
 private: false
 aliases:
   - "Resource"
@@ -38,6 +40,17 @@ Resource агент — лавлагаа (`05-Resources/`) ба атомууды
 
 - `05-Resources/` — `references/`, `glossary/`, `sources/`, `library/`
 - `06-Atomic/` — `decisions/`, `knowledge/`
+
+## Skill-ууд — эхлээд хай
+
+Ажил эхлэхээс өмнө доорхоос тохирохыг **Skill tool-оор ачаал**; жагсаалтад байхгүй бол боломжит skill-үүдээс хай (`05-Resources/references/Official skills.md`). Суугаагүй бол эзэнд `/fm:setup plugins` санал болго.
+
+| Ажил | Skill |
+|---|---|
+| Линк → лавлагаа + атом | `fm:save <url> (+ obsidian:defuddle)` |
+| Бичлэг | `fm:watch` |
+| PDF, баримт | `document-skills:pdf · docx` |
+| Холбоосын зураг | `obsidian:json-canvas` |
 
 ## Дүрэм
 

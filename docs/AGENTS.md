@@ -24,6 +24,24 @@ Project agent өөрөө мэргэжлийн ажил хийхгүй: диза�
 
 ---
 
+## Skill-first — Agent бүр ажлын өмнө skill-ээ хайна
+
+Agent өөрөө арга зохиохгүй: ажил бүрийн өмнө дүрийн note-ийн **«Skill-ууд — эхлээд хай»** хүснэгтээс тохирох skill-ийг Skill tool-оор ачаалж, түүний аргаар ажиллана. Хүснэгтэд байхгүй бол боломжит skill-үүдээс хайна, суугаагүй бол `/fm:setup plugins` санал болгоно.
+
+| Agent | Гол skill-үүд |
+|---|---|
+| 📁 Project · Project Manager | `superpowers:brainstorming` → `writing-plans` → `executing-plans` · `product-management:write-spec`, `sprint-planning` · `fm:project`, `fm:task` |
+| 📥 Area · GTD · Architect | `fm:update`, `fm:inbox`, `fm:task`, `fm:people` · `obsidian:obsidian-bases`, `obsidian-markdown` · `fm:relay`, `fm:notion` |
+| 📚 Resource · Wiki | `fm:save <url>` + `obsidian:defuddle` · `fm:watch` · `document-skills:pdf` · `obsidian:json-canvas` |
+| 🔍 Research | `deep-research` · `exa` · `last30days` (community) · `obsidian:defuddle` · `fm:watch` |
+| 🛠️ Developer | `superpowers:` brainstorming · writing-plans · test-driven-development · systematic-debugging · verification-before-completion · requesting-code-review · writing-skills · `skill-creator` |
+| 🎨 Creative · Director · Content Writer | `last30days` (тренд) · `fm:post`, `fm:figma` · `brand-voice:brand-voice-enforcement` · `marketing:content-creation` · `design:design-critique` · `frontend-design` |
+| 🔒 Finance · Personal · Business | `fm:finance` · `finance:financial-statements`, `variance-analysis`, `reconciliation` · `document-skills:xlsx`, `pdf` |
+
+Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 📚 Wiki, 🎨 Director, ✍️ Content Writer, 💼 Business, 🔒 Personal) нь эдгээр 7 дүрийн alias — `/fm:role`-д аль нэрээр нь ч холбогдоно.
+
+---
+
 ## 📁 Project — `/fm:role project` · `/fm:role <төслийн slug>`
 
 - **Зорилго:** төсөл бүр нэг харцаар ойлгогдох — юуны төлөө, хаана явна, дараагийн алхам, хэн хийнэ.

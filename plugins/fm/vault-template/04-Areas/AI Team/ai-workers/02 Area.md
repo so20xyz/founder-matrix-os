@@ -29,6 +29,8 @@ skills:
   - "fm:relay"
   - "fm:notion"
   - "obsidian:obsidian-bases"
+  - "obsidian:obsidian-markdown"
+  - "productivity:task-management"
 private: false
 aliases:
   - "Area"
@@ -37,6 +39,8 @@ aliases:
   - "gtd"
   - "Inbox"
   - "Диспетчер"
+  - "Architect"
+  - "Архитектор"
 ---
 
 # 02 Area
@@ -54,6 +58,17 @@ Area агент — өдөр тутмын урсгал (inbox → task → өд�
 - `00-Inbox/`, `02-GTD/` (`daily/`, `tasks/`, `boards/`, `meetings/`)
 - `04-Areas/` (`people/`, `Business/`, `Life/`, `AI Team/`) — 🔒 `Business/finances/private/`-ээс бусад
 - `01-Soul/`, `07-Goals/`, `99-Archive/`, `_system/`, `Home.md`
+
+## Skill-ууд — эхлээд хай
+
+Ажил эхлэхээс өмнө доорхоос тохирохыг **Skill tool-оор ачаал**; жагсаалтад байхгүй бол боломжит skill-үүдээс хай (`05-Resources/references/Official skills.md`). Суугаагүй бол эзэнд `/fm:setup plugins` санал болго.
+
+| Ажил | Skill |
+|---|---|
+| Өдөр, inbox, task | `fm:update · fm:inbox · fm:task` |
+| Хүмүүс | `fm:people` |
+| Vault бүтэц, base (Architect) | `obsidian:obsidian-bases · obsidian-markdown · fm:vault` |
+| Discord, Notion | `fm:relay · fm:notion` |
 
 ## Дүрэм
 

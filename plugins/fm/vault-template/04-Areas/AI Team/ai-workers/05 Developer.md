@@ -13,8 +13,13 @@ group: development
 skills:
   - "fm:vault"
   - "fm:relay"
-  - "superpowers:subagent-driven-development"
+  - "superpowers:brainstorming"
+  - "superpowers:writing-plans"
+  - "superpowers:test-driven-development"
   - "superpowers:systematic-debugging"
+  - "superpowers:verification-before-completion"
+  - "superpowers:subagent-driven-development"
+  - "superpowers:requesting-code-review"
   - "superpowers:writing-skills"
   - "skill-creator"
 private: false
@@ -38,6 +43,18 @@ Developer агент — код: skill, script, hook, хэрэгсэл (Figma/Fr
 
 - `04-Areas/AI Team/skills/` — каталог (skill-ийн frontmatter-аас, гараар давхардуулахгүй)
 - Vault-аас гадна: эзний заасан repo (жишээ нь plugin-ий clone)
+
+## Skill-ууд — эхлээд хай
+
+Ажил эхлэхээс өмнө доорхоос тохирохыг **Skill tool-оор ачаал**; жагсаалтад байхгүй бол боломжит skill-үүдээс хай (`05-Resources/references/Official skills.md`). Суугаагүй бол эзэнд `/fm:setup plugins` санал болго.
+
+| Ажил | Skill |
+|---|---|
+| Шинэ функц | `superpowers:brainstorming → writing-plans → subagent-driven-development` |
+| Тест | `superpowers:test-driven-development` |
+| Алдаа | `superpowers:systematic-debugging` |
+| «Болсон» гэхээс өмнө | `superpowers:verification-before-completion · requesting-code-review` |
+| Skill бичих | `superpowers:writing-skills · skill-creator` |
 
 ## Дүрэм
 
