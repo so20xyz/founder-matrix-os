@@ -158,8 +158,12 @@ def extract_rules(text):
 def build_context(vault, session_id):
     from fm_common import BOOT_REL, byte_len, read_text, rel_posix, truncate_utf8
 
+    from fm_common import config_member
     header = ["# Founder Matrix OS - vault context",
               "Vault: %s" % vault]
+    member = config_member()
+    if member:
+        header.append("Эзэн: %s — ингэж дууд" % member)
 
     role, problem, slugs = find_role(vault, session_id)
     role_block = ""

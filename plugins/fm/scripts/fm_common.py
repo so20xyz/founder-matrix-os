@@ -143,6 +143,19 @@ def config_path():
         return None
 
 
+def config_member():
+    """The member's name from ~/.fmos/config.json ("member") — how agents address the owner."""
+    path = config_path()
+    try:
+        if path is None or not path.is_file():
+            return ""
+        with open(str(path), "rb") as fh:
+            data = json.loads(fh.read().decode("utf-8-sig", errors="replace"))
+        return str(data.get("member") or "").strip()[:40] if isinstance(data, dict) else ""
+    except Exception:
+        return ""
+
+
 def _config_vault():
     path = config_path()
     if path is None:

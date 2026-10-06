@@ -18,7 +18,8 @@
 - **`/fm:setup` 8-р алхам — Routine-ууд:** `plugins/fm/routines/` (☀️ өглөөний update daily, 📅 долоо хоногийн тойм, 💰 сарын 1/20-ны төлбөр, 🧠 Harvester — Discord-гүйгээр ажиллана) — асууж, Scheduled task болгон үүсгэнэ (байгааг дарж бичихгүй).
 - **`docs/AGENTS.md` + `docs/img/agents.svg`**: 7 Agent-ийн зурагт гарын авлага (зорилго, эзэмших хавтас, дүрэм, шилжүүлэх, sidebar) ба «аль Agent-ийг хэзээ» хүснэгт. Зураг `docs/img/make_agents_svg.py`-ээр үүснэ.
 - **Skill-first Agent-ууд:** Agent бүр ажлын өмнө дүрийн note-ийн «Skill-ууд — эхлээд хай» хүснэгтээс тохирох skill-ийг (superpowers, deep-research, last30days, product-management, brand-voice, finance:* …) Skill tool-оор ачаалж, түүний аргаар ажиллана. BOOT, `agents/*.md`, 7 дүрийн note, `Official skills.md`, `docs/AGENTS.md` шинэчлэгдэв. Sidebar-ийн нэрс (Architect, Project Manager, Wiki, Director, Content Writer, Business, Personal) дүрийн alias болов.
-- Тест: routine загвар, sidebar загвар.
+- **Танилцах:** `/fm:setup` хамгийн эхэнд өөрийгөө танилцуулж «Таныг юу гэж дуудах вэ?» гэж асууна → `member`, `soul.call_me` (SOUL-ийн «Намайг ингэж дууд»), `~/.fmos/config.json`. SessionStart hook сешн бүрт «Эзэн: <нэр> — ингэж дууд» гэж Agent-д сануулна.
+- Тест: routine загвар, sidebar загвар, нэрээр дуудах.
 
 ### Засварласан
 

@@ -257,6 +257,7 @@ def test_frontmatter_conventions(c):
     soul = c.read("01-Soul/SOUL.md")
     assert "Монгол залууст" in soul and "1. Үнэт зүйл" not in soul and "2. Гар бие оролцох" in soul
     assert "<Нэг догол мөр" not in soul
+    assert "## Намайг ингэж дууд\n\nНомин" in soul and "<Agent-ууд таныг" not in soul
     assert "Эзэн: **Номин**" in c.read("Home.md")
     assert "Нарны вэбсайт" in c.read("_system/index.md")
 

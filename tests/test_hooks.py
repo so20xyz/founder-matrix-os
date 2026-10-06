@@ -239,6 +239,7 @@ def test_ctx_vault_from_fmos_config(v):
     v.write("_system/BOOT.md", "# BOOT\n\nconfig-boot-marker\n")
     code, out, _ = run(CTX, ctx_payload(v.root), {"FMOS_CONFIG": str(cfg)})
     assert code == 0 and "config-boot-marker" in context_of(out), out
+    assert "Эзэн: Test — ингэж дууд" in context_of(out), out  # agents address the owner by name
     # FM_VAULT (env) overrides the config file
     code, out, _ = run(CTX, ctx_payload(v.root), {"FMOS_CONFIG": str(cfg),
                                                   "FM_VAULT": str(v.outside)})

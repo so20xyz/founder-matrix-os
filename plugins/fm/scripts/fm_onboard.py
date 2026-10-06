@@ -26,7 +26,7 @@ Answers schema (every section is optional; "quick mode" = soul, projects, roles)
 {
   "member": "Name",                      # Home.md owner line
   "year": 2026,                          # default: this year
-  "soul": {"who": "...", "why": "...", "values": ["..."], "principles": ["..."],
+  "soul": {"call_me": "Соёл", "who": "...", "why": "...", "values": ["..."], "principles": ["..."],
            "voice": "...", "anti_goals": ["..."], "inspiration": ["..."]},
   "companies": [{"name": "...", "kind": "company|organization|community|client|partner",
                  "my_role": "...", "about": "...", "website": "https://...",
@@ -605,6 +605,10 @@ class Onboard(object):
             tpl = TEMPLATE_VAULT / SOUL
             raw = fill_placeholders(tpl.read_text(encoding="utf-8"), "SOUL", self.today)
         note = Note.parse(raw)
+        call_me = text(soul.get("call_me")) or text(self.a.get("member"))
+        if call_me:
+            if not note.set_section("Намайг ингэж дууд", [call_me]):
+                note.body += ["", "## Намайг ингэж дууд", "", call_me, ""]
         if text(soul.get("who")):
             note.set_section("Би хэн бэ", [text(soul.get("who"))])
         if text(soul.get("why")):
