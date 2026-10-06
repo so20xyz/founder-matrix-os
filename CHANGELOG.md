@@ -14,8 +14,13 @@
 - Discord relay: нэг хүсэлт = нэг thread; dispatcher thread доторх хариуг сонсоно; `#gtd` status tracker.
 - `tools/inbox-gallery` (localhost:5190) + тест.
 
+- **`/fm:setup` 7-р алхам — Sidebar:** `plugins/fm/sidebar.json`-оор бүлгүүдийг (`Tasks · Projects · Areas · Resources · Creative · Finance · Archive`) энэ дарааллаар үүсгэж, setup-ийн сешнийг **📥 GTD** болгоод, бусад сешнийг (💼 Project Manager → 📁 төсөл бүр → 📚 Wiki → 🔍 Research → 🎨 Creative → 🛠️ Developer → 🔒 Personal, 💼 Business) chip-ээр дарааллаар нь нээж нэрлэнэ.
+- **`/fm:setup` 8-р алхам — Routine-ууд:** `plugins/fm/routines/` (☀️ өглөөний update daily, 📅 долоо хоногийн тойм, 💰 сарын 1/20-ны төлбөр, 🧠 Harvester) — асууж, Scheduled task болгон үүсгэнэ (байгааг дарж бичихгүй).
+- Тест: routine загвар, sidebar загвар.
+
 ### Засварласан
 
+- README/GUIDE-ийн sidebar бүлэг бодит бүтэцтэй таарав (Research → Resources, Developer → Creative, Finance тусдаа бүлэг).
 - **Agent/skill-ийн frontmatter:** 5 agent (creative, project, developer, research, resource) ба 3 skill (update, notion, watch)-ийн `description`-д `: ` байсан тул YAML задрахгүй, тайлбар нь ажиллах үед **чимээгүй алга болж** байсан → хашилтад авав. `claude plugin validate --strict plugins/fm` давна.
 - `tools/inbox-gallery/server.py`-ийн хувийн зам (CI personal-path шалгалт).
 

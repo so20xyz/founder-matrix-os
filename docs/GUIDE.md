@@ -24,12 +24,28 @@
 | 📁 **Project** | `project` / төслийн slug | Нэг төсөлд нэг тогтмол сешн: task, `_BRAIN.md`, шийдвэр | project · task · save | Projects |
 | 📥 **Area** (GTD) | `area` | Inbox, өдөр, хүмүүс, бизнес/амьдралын хүрээ, систем | update · inbox · task · people · relay | Areas |
 | 📚 **Resource** | `resource` | Лавлагаа, атом, fact-check, glossary | save `<url>` · vault | Resources |
-| 🔍 **Research** | `research` | Гүн судалгаа → vault-д хадгална | save · watch | Research |
-| 🛠️ **Developer** | `developer` | Код: skill, script, hook, bridge, апп | (superpowers) | Development |
+| 🔍 **Research** | `research` | Гүн судалгаа → vault-д хадгална | save · watch | Resources |
+| 🛠️ **Developer** | `developer` | Код: skill, script, hook, bridge, апп | (superpowers) | Creative |
 | 🎨 **Creative** | `creative` | Брэнд, moodboard, Figma/Framer дизайн, пост | post · figma · framer · watch | Creative |
-| 🔒 **Finance** | `finance` | Хувийн санхүү + бизнесийн тайлан. Төлбөр, хөрөнгө оруулалтын зөвлөгөө **хийхгүй** | finance | Finance (private) |
+| 🔒 **Finance** | `finance` | Хувийн санхүү + бизнесийн тайлан. Төлбөр, хөрөнгө оруулалтын зөвлөгөө **хийхгүй** | finance | Finance 🔒 |
 
 Project agent мэргэжлийн ажлыг (дизайн, код, судалгаа) Creative/Developer/Research **subagent**-аар хийлгэнэ.
+
+## 1.5 Sidebar — бүлэг ба сешний дараалал
+
+`/fm:setup` (7-р алхам) [`plugins/fm/sidebar.json`](../plugins/fm/sidebar.json)-оор яг ингэж үүсгэнэ. Sidebar = PARA = Discord-ийн ангилал.
+
+| # | Бүлэг | Сешн (нээх дараалал) |
+|---|---|---|
+| 1 | **Tasks** | нэг удаагийн богино сешн → дуусахад Archive |
+| 2 | **Projects** | 📁 `<Төсөл>` — Active төсөл бүрт нэг |
+| 3 | **Areas** | 📥 GTD (setup-ийн сешн өөрөө) · 💼 Project Manager |
+| 4 | **Resources** | 📚 Wiki · 🔍 Research · `<сэдэв>` |
+| 5 | **Creative** | 🎨 Creative · 🛠️ Developer |
+| 6 | **Finance** 🔒 | 🔒 Personal · 💼 Business (Discord-гүй) |
+| 7 | **Archive** | дууссан сешн — устгахгүй |
+
+Нэг дүр = нэг тогтмол сешн. Mac, PC хос сешн ижил гарчигтай (нэг baton, нэг Discord суваг).
 
 ## 2. Skill-ууд (16) — «юу»
 
@@ -81,11 +97,13 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 
 ## 5. Routine-ууд — өөрөө ажилладаг
 
-Claude Desktop → **Scheduled** (эсвэл «routine үүсгэ» гэж хэл). Жишээ тохиргоо:
+`/fm:setup` (8-р алхам) [`plugins/fm/routines/`](../plugins/fm/routines/)-ийн загвараас асууж үүсгэнэ. Sidebar → **Routines**-оос харж, унтрааж болно.
 
 | Routine | Хэзээ | Юу |
 |---|---|---|
-| 🧠 **Harvester** | 2 цаг тутам | Сешнүүдийн чатыг атом болгож PARA-д холбоно (`tools/relay/harvest.py`) |
+| ☀️ **Өглөөний update daily** | Ажлын өдөр 08:30 | Өдрийн тэмдэглэл, гол 3, нээлттэй task |
+| 📅 **Долоо хоногийн тойм** | Баасан 17:00 | `update weekly` |
+| 🧠 **Harvester** (relay) | 2 цаг тутам | Сешнүүдийн чатыг атом болгож PARA-д холбоно (`tools/relay/harvest.py`) |
 | 💰 **Сарын төлбөр** | Сар бүрийн 1-нд 09:00 | Энэ сарын төлөх жагсаалт (зөвхөн private хавтсанд) |
 | 💰 **Төлөгдөөгүй сануулга** | Сар бүрийн 20-нд 09:00 | Үлдсэн төлбөрүүд (зөвхөн private хавтсанд) |
 | 📊 **Status tracker** | 1 минут тутам (dispatcher) | Discord #gtd-ийн pin мессежид сешнүүдийн төлөв |

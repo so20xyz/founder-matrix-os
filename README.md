@@ -122,10 +122,10 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 | **Project** (+ төсөл бүрийн) | Төсөл бүрт **нэг тогтмол сешн** — тэр төслийн бүх task тэнд; дизайн, код, судалгааг мэргэжлийн агентаар (subagent) хийлгэнэ | Projects |
 | **Area** | Inbox/GTD, өдөр, хүмүүс, бизнес ба хувийн хүрээ, систем | Areas |
 | **Resource** | Лавлагаа, атом, fact-check | Resources |
-| **Research** | Гүн судалгаа (built-in Research горим эсвэл exa) → vault-д хадгална | Research |
-| **Developer** | Код, хэрэгсэл, plugin (superpowers аргаар) | Development |
-| **Creative** | Creative Director + контент: Pinterest moodboard (Soulcatcher), Figma, пост, carousel | Development |
-| **Finance** 🔒 | Хувийн санхүү (төлбөр, зээл) + бизнесийн тайлан (CSV). Хөрөнгө оруулалтын зөвлөгөө, төлбөр **хийхгүй** | Areas (private) |
+| **Research** | Гүн судалгаа (built-in Research горим эсвэл exa) → vault-д хадгална | Resources |
+| **Developer** | Код, хэрэгсэл, plugin (superpowers аргаар) | Creative |
+| **Creative** | Creative Director + контент: Pinterest moodboard (Soulcatcher), Figma, пост, carousel | Creative |
+| **Finance** 🔒 | Хувийн санхүү (төлбөр, зээл) + бизнесийн тайлан (CSV). Хөрөнгө оруулалтын зөвлөгөө, төлбөр **хийхгүй** | Finance 🔒 |
 
 ---
 

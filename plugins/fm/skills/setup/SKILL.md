@@ -1,7 +1,7 @@
 ---
 name: setup
-description: Шинэ гишүүнийг эхнээс нь бүрэн тохируулна - (0) компьютерын шаардлагыг шалгаж (fm_doctor) дутууг албан ёсны суулгагчаар санал болгох, (1) албан ёсны plugin-уудыг (superpowers, obsidian, document-skills, finance, exa) эх сурвалжаас нь суулгах, (2) vault-ийн араг яс, (3) амьдралын онбординг ярилцлага (SOUL, бизнес ба хувийн хүрээ, төсөл, хүмүүс, хувийн санхүү, лавлагаа, зорилго), (4) Agent-уудыг идэвхжүүлэх, (5) нэмэлт хэрэгсэл (Discord relay, Figma, Notion, watch). «setup», «fm setup», «суулга», «тохируул», «шинэ vault», «эхлүүлье», «onboarding», «онбординг», «анх удаа», «компьютераа бэлд», «юу суулгах вэ», «амьдралаа цэгцэлье» гэвэл энэ skill-ийг ашигла.
-argument-hint: "[хурдан | doctor | plugins | tools]"
+description: Шинэ гишүүнийг эхнээс нь бүрэн тохируулна - (0) компьютерын шаардлагыг шалгаж (fm_doctor) дутууг албан ёсны суулгагчаар санал болгох, (1) албан ёсны plugin-уудыг (superpowers, obsidian, document-skills, finance, exa) эх сурвалжаас нь суулгах, (2) vault-ийн араг яс, (3) амьдралын онбординг ярилцлага (SOUL, бизнес ба хувийн хүрээ, төсөл, хүмүүс, хувийн санхүү, лавлагаа, зорилго), (4) Agent-уудыг идэвхжүүлэх, (5) нэмэлт хэрэгсэл (Discord relay, Figma, Notion, watch), (7) sidebar-ийн бүлэг ба сешнүүдийг Second Brain-ийн дарааллаар, (8) routine-ууд. «setup», «fm setup», «суулга», «тохируул», «шинэ vault», «эхлүүлье», «onboarding», «онбординг», «анх удаа», «компьютераа бэлд», «юу суулгах вэ», «амьдралаа цэгцэлье» гэвэл энэ skill-ийг ашигла.
+argument-hint: "[хурдан | doctor | plugins | tools | sidebar | routines]"
 ---
 
 # /fm:setup — гишүүнийг бүрэн тохируулах
@@ -16,10 +16,12 @@ argument-hint: "[хурдан | doctor | plugins | tools]"
 | 3 | Амьдралын ярилцлага | 10 (хурдан) / 30–40 (бүтэн) мин |
 | 4 | Agent-ууд | 3 мин |
 | 5 | Нэмэлт хэрэгсэл (заавал биш) | хэрэгцээгээр |
-| 6 | Бичих ба дүгнэлт | 2 мин |
+| 6 | Бичих | 2 мин |
+| 7 | Sidebar: бүлэг, сешн (Second Brain-ийн бүтэц) | 3 мин |
+| 8 | Routine-ууд | 2 мин |
 
 Vault: `${user_config.vault_path}` (хоосон эсвэл `${...}` хэвээр бол бүтэн замыг асуу).
-Аргумент `$ARGUMENTS`: «хурдан» = хурдан ярилцлага · «doctor» = зөвхөн 0-р алхам · «plugins» = зөвхөн 1 · «tools» = зөвхөн 5.
+Аргумент `$ARGUMENTS`: «хурдан» = хурдан ярилцлага · «doctor» = зөвхөн 0-р алхам · «plugins» = зөвхөн 1 · «tools» = зөвхөн 5 · «sidebar» = зөвхөн 7 · «routines» = зөвхөн 8.
 Скриптүүд: `python3` (Windows дээр `python` эсвэл `py -3`). Зам хоосон зайтай тул **заавал хашилтад**. Доор `S=${CLAUDE_PLUGIN_ROOT}/scripts`.
 
 ## Хатуу дүрэм
@@ -148,7 +150,7 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 
 ## 4. Agent-ууд
 
-Тайлбарла: **бүгд Agent, зөвхөн дүрээрээ ялгарна.** Claude-ийн сешн бүр нэг дүрд холбогдож (`/fm:role <slug>`), тэр дүрийн дүрмээр ажиллана. Claude Desktop-ийн sidebar-т сешнүүдийг бүлгээр (Projects · Areas · Resources · Research · Development) цэгцэлнэ.
+Тайлбарла: **бүгд Agent, зөвхөн дүрээрээ ялгарна.** Claude-ийн сешн бүр нэг дүрд холбогдож (`/fm:role <slug>`), тэр дүрийн дүрмээр ажиллана. Claude Desktop-ийн sidebar-т сешнүүдийг бүлгээр (`Tasks · Projects · Areas · Resources · Creative · Finance · Archive`) 7-р алхамд цэгцэлнэ.
 
 | Slug | Agent | Юу хийдэг | Санал |
 |---|---|---|---|
@@ -229,11 +231,39 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 - Санхүүд `account`, `card`, `pin`, `password` гэх мэт талбар эсвэл 8+ оронтой дугаар байвал скрипт хасна.
 - Төсөл аль хэдийн байвал (ямар ч төлөвт) шинээр үүсгэхгүй, байгааг нь холбоно.
 
+## 7. Sidebar ба сешнүүд — Second Brain-ийн бүтэц
+
+Загвар: `${CLAUDE_PLUGIN_ROOT}/sidebar.json` — **бүлгийн дараалал, сешний дараалал, гарчиг, icon яг үүгээр.** Sidebar = PARA = Discord-ийн ангилал.
+
+1. **Бүлгүүд** (энэ дарааллаар): `Tasks · Projects · Areas · Resources · Creative · Finance · Archive`. Эхлээд `mcp__ccd_sidebar__list_groups` — нэр нь таарах бүлэг байвал түүнийг ашигла, байхгүйг л `mcp__ccd_sidebar__create_group`-ээр үүсгэ. Давхар бүлэг бүү үүсгэ.
+2. **Энэ сешн = 📥 GTD.** `set_session_title("self", "📥 GTD")` → `move_sessions(["self"], Areas)` → `/fm:role area`.
+3. **Бусад сешн** `sidebar.json`-ийн `order`-оор, 6-р алхамд бичигдсэн дүрүүдэд л (`_system/fm/registry.json` → `roles`, `active: true`): 💼 Project Manager → 📁 Active төсөл бүр → 📚 Wiki → (🔍 Research) → (🎨 Creative) → (🛠️ Developer) → (🔒 Personal, 💼 Business). Сешн бүрт `mcp__ccd_session__spawn_task` chip үүсгэ — гишүүн нэг дарахад нээгдэнэ. Chip-ийн prompt бие даасан байна:
+   > «Энэ сешн нь `<гарчиг>`. 1) `set_session_title("self", "<гарчиг>")` 2) `move_sessions(["self"], "<бүлэг>")` 3) cwd = `<vault>/<cwd>` (`mcp__ccd_directory__change_directory`) 4) `/fm:role <slug>` 5) нэг мөрөөр «бэлэн» гэж хариул.»
+4. Гишүүнд жагсаалтаар харуул (бүлэг → сешн), chip-уудыг **дээрээс доош** дарахыг хэл. 🔒 Finance-ийн сешнүүд Discord-гүй, Tasks бүлэгт нэг удаагийн сешн, дууссаныг Archive руу.
+
+Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй орчинд (CLI): жагсаалтыг өгөөд гараар хийхийг хэл.
+
+## 8. Routine-ууд (өөрөө ажилладаг)
+
+Загвар: `${CLAUDE_PLUGIN_ROOT}/routines/*.md` (frontmatter: `id`, `title`, `cron`, `needs`). Нэг нэгээр «асаах уу?» гэж асуу:
+
+| Routine | Хэзээ | Нөхцөл |
+|---|---|---|
+| ☀️ Өглөөний update daily (`daily.md`) | Ажлын өдөр 08:30 | — |
+| 📅 Долоо хоногийн тойм (`weekly.md`) | Баасан 17:00 | — |
+| 💰 Сарын төлбөрийн жагсаалт (`finance-month-start.md`) | Сарын 1, 09:00 | `finance` идэвхтэй |
+| 💰 Төлөгдөөгүй сануулга (`finance-month-20.md`) | Сарын 20, 09:00 | `finance` идэвхтэй |
+| 🧠 Harvester (`harvester.md`) | 2 цаг тутам | `/fm:relay` тохируулсан |
+
+Тийм гэсэн бүрд: файлыг унш → биеийн `{{VAULT}}`, `{{MEMBER}}`, `{{DEVICE}}`, `{{REPO}}`-г бодит утгаар соль → `mcp__scheduled-tasks__list_scheduled_tasks`-аар ижил `id` байгаа эсэхийг шалга (байвал алгас, дарж бичихгүй) → `mcp__scheduled-tasks__create_scheduled_task(taskId=id, title, description, cronExpression=cron, prompt=бие)`. Цаг гишүүнд тохирохгүй бол cron-ыг тэр үед нь солиод үүсгэ.
+
+Гишүүнд хэл: routine Claude апп **нээлттэй** үед ажиллана (хаалттай байсан бол дараа нээхэд). Sidebar-ийн **Routines** хэсгээс харж, унтрааж болно. Хэрэгсэл байхгүй (CLI) бол жагсаалтыг өгөөд Desktop → Scheduled-аас гараар үүсгэхийг хэл.
+
 ## Дүгнэлт
 
 Гишүүнд хэл:
 - Obsidian-оор vault-аа нээж **Home**-оос эхэл (`.obsidian/` тохиргоог гишүүн өөрөө удирдана: Settings → Core plugins → **Bases**, **Templates** асаа; Templates хавтас = `_system/templates`; Community plugins → **Kanban**).
-- Энэ сешнийг Area агентад холбох уу? → `/fm:role area`. Төсөл бүрийн Project агентыг **тусдаа нэг тогтмол сешнд** `/fm:role <slug>`; Finance-ийг тусдаа сешнд `/fm:role finance`.
+- Sidebar бэлэн (7-р алхам): энэ сешн **📥 GTD**; бусад сешнийг chip-ээр дээрээс доош нээ. Төсөл бүр **тусдаа нэг тогтмол сешн**, Finance тусдаа 🔒 сешн.
 - **Ганц команд: «update».** Ажлынхаа дараа «update» гэж бичихэд Agent атом, task, хүн, төсөл, inbox, STATUS-ыг өөрөө цэгцэлнэ. Өглөө «update daily», орой «update дүгнэлт», долоо хоногт «update weekly».
 - Дутуу үлдсэн алхмууд (алгассан програм, plugin, ярилцлагын хэсэг) → дараа `/fm:setup doctor`, `/fm:setup plugins`, эсвэл `/fm:setup`-ийг дахин; байгаа note хөндөгдөхгүй.
 

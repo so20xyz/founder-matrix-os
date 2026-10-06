@@ -239,6 +239,43 @@ def test_bridges_have_no_vault_relative_paths():
     assert "FIGMA_BRIDGE_STATE" in server and '"bd"' not in server
 
 
+def test_routine_templates_valid():
+    import re as _re
+    ids, setup = set(), (PLUGIN / "skills" / "setup" / "SKILL.md").read_text(encoding="utf-8")
+    files = sorted((PLUGIN / "routines").glob("*.md"))
+    files = [f for f in files if f.name != "README.md"]
+    assert len(files) >= 5, files
+    for f in files:
+        t = f.read_text(encoding="utf-8")
+        m = _re.match(r"---\n(.*?)\n---\n(.*)", t, _re.S)
+        assert m, f
+        fm = dict(l.split(": ", 1) for l in m.group(1).splitlines() if ": " in l)
+        for k in ("id", "title", "cron", "needs", "description"):
+            assert k in fm, (f.name, k)
+        assert len(fm["cron"].strip('"').split()) == 5, (f.name, fm["cron"])
+        assert fm["id"] not in ids, fm["id"]; ids.add(fm["id"])
+        assert "{{VAULT}}" in m.group(2), f.name
+        assert "/Users/" not in t and ":\\" not in t, f.name  # no personal paths
+        if "finance" in fm["needs"]:
+            assert "finances/private" in t, f.name
+        assert f.name in setup, ("setup must list", f.name)
+
+
+def test_sidebar_layout_matches_concept():
+    lay = json.loads((PLUGIN / "sidebar.json").read_text(encoding="utf-8"))
+    assert lay["groups"] == ["Tasks", "Projects", "Areas", "Resources", "Creative", "Finance", "Archive"]
+    orders = [x["order"] for x in lay["sessions"]]
+    assert orders == sorted(orders) and orders[0] == 1
+    assert lay["sessions"][0]["role"] == "area" and lay["sessions"][0]["title"] == "📥 GTD"
+    roles = {a.stem for a in (PLUGIN / "agents").glob("*.md")}
+    for x in lay["sessions"]:
+        assert x["group"] in lay["groups"], x
+        assert x["role"] in roles or x["role"].startswith("<"), x
+        if x["role"] == "finance":
+            assert x.get("private") and x["group"] == "Finance", x
+    assert "sidebar.json" in (PLUGIN / "skills" / "setup" / "SKILL.md").read_text(encoding="utf-8")
+
+
 # ------------------------------------------------------------------ runner
 
 def main():
