@@ -42,8 +42,8 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 | # | Бүлэг | Сешн (нээх дараалал) |
 |---|---|---|
 | 1 | **Projects** | 📁 Portfolio (бүх төслийн төлөв) · 📁 `<Төсөл>` — Active төсөл бүрт нэг |
-| 2 | **Areas** | 📥 GTD (setup-ийн сешн өөрөө) · 🏛️ Architect · 🎨 Creative Agent |
-| 3 | **Resources** | 📚 Wiki · 🔍 Research · `<сэдэв>` |
+| 2 | **Areas** | 🎨 Creative · 🏛️ Architect · 📥 GTD (setup-ийн сешн өөрөө) — бараг бүх ажлыг эдгээр 3 agent хийнэ |
+| 3 | **Resources** | 📚 Wiki · 📖 Library (номын сан: нэмэх, байршуулах, судлах) · 🔍 Research · `<сэдэв>` |
 | 4 | **Finance** 🔒 | 💼 Business · 🔒 Personal (тусдаа, Discord-гүй) |
 
 Нэг удаагийн сешн бүлэггүй; дууссан сешнийг апп-ын Archive руу (устгахгүй). Энэ бүтэц itge.e-ийн sidebar-тай ижил (2026-10-07); Season 2-ын 12 хичээл үүнийг алхам алхмаар барина.

@@ -24,6 +24,9 @@ aliases:
   - "Resource"
   - "Мэдлэг"
   - "Wiki"
+  - "Library"
+  - "📖 Library"
+  - "Номын сан"
 ---
 
 # 03 Resource

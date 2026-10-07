@@ -29,11 +29,11 @@
     {
       "order": 3,
       "role": "creative",
-      "title": "🎨 Creative Agent",
+      "title": "🎨 Creative",
       "group": "Areas",
       "cwd": "",
       "required": false,
-      "note": "Брэнд, moodboard, Figma, пост, бичвэр."
+      "note": "Брэнд, moodboard, Figma, пост, бичвэр (Content Writer энд нэгдсэн)."
     },
     {
       "order": 4,
@@ -64,6 +64,15 @@
     },
     {
       "order": 7,
+      "role": "resource",
+      "title": "📖 Library",
+      "group": "Resources",
+      "cwd": "05-Resources/library",
+      "required": false,
+      "note": "Номын сан: ном нэмэх, байршуулах, задлах, судлах — Second Brain-ийн гол хүч."
+    },
+    {
+      "order": 8,
       "role": "research",
       "title": "🔍 Research · <сэдэв>",
       "group": "Resources",
@@ -73,7 +82,7 @@
       "note": "Судалгааны сэдэв бүрт (хэрэгтэй бол)."
     },
     {
-      "order": 8,
+      "order": 9,
       "role": "finance",
       "title": "💼 Business",
       "group": "Finance",
@@ -83,7 +92,7 @@
       "note": "Бизнесийн санхүү. Discord суваггүй."
     },
     {
-      "order": 9,
+      "order": 10,
       "role": "finance",
       "title": "🔒 Personal",
       "group": "Finance",
@@ -97,7 +106,7 @@
     "4 бүлэг: Projects · Areas · Resources · Finance. Нэг удаагийн сешн бүлэггүй; дууссан сешнийг апп-ын Archive руу (устгахгүй).",
     "Нэг дүр = нэг тогтмол сешн; ижил дүрийн хоёр дахь сешн нээхгүй.",
     "Finance: Business ба Personal хоёр тусдаа сешн, Discord суваггүй, агуулга vault-аас гарахгүй.",
-    "Icon: 📁 төсөл/portfolio · 📥 GTD · 🏛️ architect · 🎨 creative · 📚 wiki · 🔍 судалгаа · 💼 бизнес · 🔒 хувийн."
+    "Icon: 📁 төсөл/portfolio · 📥 GTD · 🏛️ architect · 🎨 creative · 📖 номын сан · 📚 wiki · 🔍 судалгаа · 💼 бизнес · 🔒 хувийн."
   ],
   "routines": [
     {
