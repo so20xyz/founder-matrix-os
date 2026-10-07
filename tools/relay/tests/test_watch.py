@@ -31,19 +31,19 @@ def main():
     tmp = Path(tempfile.mkdtemp(prefix="fm-watch-test-"))
     home, repo = tmp / "home", tmp / "repo"
     (repo / "relay").mkdir(parents=True); home.mkdir()
-    reg = {"sessions": {"sid-acme": {"name": "PC-acme", "group": "projects", "project": "acme", "title": "📁 acme", "device": "PC"},
+    reg = {"sessions": {"sid-acme": {"name": "PC-Acme", "group": "projects", "project": "acme", "title": "📁 Acme", "device": "PC"},
                         "sid-gtd": {"name": "PC-GTD", "group": "areas", "project": "area", "role": "area", "title": "📥 GTD", "device": "PC"},
                         "sid-fin": {"name": "PC-Fin", "group": "finance", "project": "finance", "title": "💰 Finance", "device": "PC", "private": True}}}
     files = {"registry.json": reg, "channels.json": {}, "notion_links.json": {},
              "discord.json": {"guild": {"id": "P"}, "team_guild": {"id": "TEAM"},
-                              "team_map": {"acme-landing-website": "acme", "finance": "area", "general": "area", "secret": "finance"}}}
+                              "team_map": {"acme-website": "acme", "finance": "area", "general": "area", "secret": "finance"}}}
     for n, v in files.items():
         (repo / "relay" / n).write_text(json.dumps(v, ensure_ascii=False), encoding="utf-8")
     env = {k: v for k, v in os.environ.items() if k not in ("FM_VAULT", "FMOS_CONFIG", "FMOS_REPO", "OBSIDIAN_VAULT_PATH")}
     env.update(HOME=str(home), USERPROFILE=str(home), FMOS_REPO=str(repo), PYTHONIOENCODING="utf-8", FMOS_DEVICE="PC")
 
     team = """
-    CH = [{"id": "1", "name": "acme-landing-website", "type": 0}, {"id": "2", "name": "finance", "type": 0},
+    CH = [{"id": "1", "name": "acme-website", "type": 0}, {"id": "2", "name": "finance", "type": 0},
           {"id": "3", "name": "general", "type": 0}, {"id": "4", "name": "secret", "type": 0}]
     relay._tapi = lambda m, p: CH
     R = relay.load(relay.REG, {})["sessions"]
@@ -51,7 +51,7 @@ def main():
     """
     rc, out = child(team, env)
     d = json.loads(out.strip().splitlines()[-1]) if rc == 0 else {}
-    check(d.get("sid-acme") == ["acme-landing-website"], "team_map: project session reads its team channel", out)
+    check(d.get("sid-acme") == ["acme-website"], "team_map: project session reads its team channel", out)
     check(sorted(d.get("sid-gtd", [])) == ["finance", "general"], "team_map: GTD (role area) reads finance + general", out)
     check(d.get("sid-fin") == [], "team_map: private/finance session never reads the team server", out)
 
