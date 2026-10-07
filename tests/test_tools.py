@@ -266,7 +266,7 @@ def test_routine_templates_valid():
 
 def test_sidebar_layout_matches_concept():
     lay = json.loads((PLUGIN / "sidebar.json").read_text(encoding="utf-8"))
-    assert lay["groups"] == ["Tasks", "Projects", "Areas", "Resources", "Creative", "Finance", "Archive"]
+    assert lay["groups"] == ["Projects", "Areas", "Resources", "Finance"]  # itge.e 2026-10-07
     orders = [x["order"] for x in lay["sessions"]]
     assert orders == sorted(orders) and orders[0] == 1
     assert lay["sessions"][0]["role"] == "area" and lay["sessions"][0]["title"] == "📥 GTD"

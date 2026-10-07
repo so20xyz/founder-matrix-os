@@ -41,13 +41,12 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 
 | # | Бүлэг | Сешн (нээх дараалал) |
 |---|---|---|
-| 1 | **Tasks** | нэг удаагийн богино сешн → дуусахад Archive |
-| 2 | **Projects** | 📁 `<Төсөл>` — Active төсөл бүрт нэг |
-| 3 | **Areas** | 📥 GTD (setup-ийн сешн өөрөө) · 💼 Project Manager |
-| 4 | **Resources** | 📚 Wiki · 🔍 Research · `<сэдэв>` |
-| 5 | **Creative** | 🎨 Creative · 🛠️ Developer |
-| 6 | **Finance** 🔒 | 🔒 Personal · 💼 Business (Discord-гүй) |
-| 7 | **Archive** | дууссан сешн — устгахгүй |
+| 1 | **Projects** | 📁 Portfolio (бүх төслийн төлөв) · 📁 `<Төсөл>` — Active төсөл бүрт нэг |
+| 2 | **Areas** | 📥 GTD (setup-ийн сешн өөрөө) · 🏛️ Architect · 🎨 Creative Agent |
+| 3 | **Resources** | 📚 Wiki · 🔍 Research · `<сэдэв>` |
+| 4 | **Finance** 🔒 | 💼 Business · 🔒 Personal (тусдаа, Discord-гүй) |
+
+Нэг удаагийн сешн бүлэггүй; дууссан сешнийг апп-ын Archive руу (устгахгүй). Энэ бүтэц itge.e-ийн sidebar-тай ижил (2026-10-07); Season 2-ын 12 хичээл үүнийг алхам алхмаар барина.
 
 Нэг дүр = нэг тогтмол сешн. Mac, PC хос сешн ижил гарчигтай (нэг baton, нэг Discord суваг).
 

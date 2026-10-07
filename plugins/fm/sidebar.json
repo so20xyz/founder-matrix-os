@@ -1,21 +1,21 @@
 {
-  "_comment": "Second Brain-ийн sidebar = PARA. /fm:setup 4.5-р алхам: бүлгүүдийг энэ дарааллаар үүсгэж, сешнүүдийг энэ дарааллаар нээж нэрлэнэ. Discord-ийн ангилал = бүлэг. Гарчиг = '<icon> <нэр>'; Mac/PC хос сешн ижил гарчигтай.",
-  "groups": ["Tasks", "Projects", "Areas", "Resources", "Creative", "Finance", "Archive"],
+  "_comment": "Second Brain-ийн sidebar = PARA + Finance (itge.e 2026-10-07: шинэ хэрэглэгчийн бүтэц яг itge.e-ийн Claude sidebar шиг). /fm:setup 7-р алхам: бүлгүүдийг энэ дарааллаар үүсгэж, сешнүүдийг энэ дарааллаар нээж нэрлэнэ. Discord-ийн ангилал = бүлэг (Finance-ээс бусад). Гарчиг = '<icon> <нэр>'; Mac/PC хос сешн ижил гарчигтай. Season 2-ын 12 хичээл энэ бүтцийг алхам алхмаар барина.",
+  "groups": ["Projects", "Areas", "Resources", "Finance"],
   "sessions": [
-    {"order": 1, "role": "area",     "title": "📥 GTD",              "group": "Areas",     "cwd": "",             "required": true,  "note": "Өдөр тутмын гол сешн: inbox, task, өдөр, хүмүүс, Discord dispatcher. Setup-ийг ажиллуулж буй сешн өөрөө энэ болно."},
-    {"order": 2, "role": "project",  "title": "💼 Project Manager",  "group": "Areas",     "cwd": "03-Projects",  "required": true,  "note": "Бүх төслийн төлөв, самбар, төсөл нээх/хаах."},
-    {"order": 3, "role": "<project-slug>", "title": "📁 <Төслийн нэр>", "group": "Projects", "cwd": "03-Projects/1-Active/<Төсөл>", "required": true, "per": "active-project", "note": "Active төсөл бүрт нэг тогтмол сешн."},
-    {"order": 4, "role": "resource", "title": "📚 Wiki",             "group": "Resources", "cwd": "05-Resources", "required": true,  "note": "Лавлагаа, атом, fact-check."},
-    {"order": 5, "role": "research", "title": "🔍 Research · <сэдэв>", "group": "Resources", "cwd": "05-Resources/Research", "required": false, "per": "topic", "note": "Судалгааны сэдэв бүрт (хэрэгтэй бол)."},
-    {"order": 6, "role": "creative", "title": "🎨 Creative",         "group": "Creative",  "cwd": "",             "required": false, "note": "Брэнд, moodboard, Figma, пост."},
-    {"order": 7, "role": "developer","title": "🛠️ Developer",        "group": "Creative",  "cwd": "",             "required": false, "note": "Код, хэрэгсэл (хэрэгтэй бол)."},
-    {"order": 8, "role": "finance",  "title": "🔒 Personal",         "group": "Finance",   "cwd": "",             "required": false, "private": true, "note": "Хувийн санхүү. Discord суваггүй."},
-    {"order": 9, "role": "finance",  "title": "💼 Business",         "group": "Finance",   "cwd": "",             "required": false, "private": true, "note": "Бизнесийн санхүүгийн тайлан."}
+    {"order": 1, "role": "area",      "title": "📥 GTD",              "group": "Areas",     "cwd": "",             "required": true,  "note": "Өдөр тутмын гол сешн: inbox, task, өдөр, хүмүүс, Discord dispatcher. Setup-ийг ажиллуулж буй сешн өөрөө энэ болно."},
+    {"order": 2, "role": "developer", "title": "🏛️ Architect",        "group": "Areas",     "cwd": "",             "required": false, "note": "Систем: код, skill, vault-ийн бүтэц, агент/дүр үүсгэх (хэрэгтэй бол)."},
+    {"order": 3, "role": "creative",  "title": "🎨 Creative Agent",   "group": "Areas",     "cwd": "",             "required": false, "note": "Брэнд, moodboard, Figma, пост, бичвэр."},
+    {"order": 4, "role": "project",   "title": "📁 Portfolio",        "group": "Projects",  "cwd": "03-Projects",  "required": true,  "note": "Бүх төслийн төлөв, самбар, төсөл нээх/хаах (хуучин нэр: Project Manager)."},
+    {"order": 5, "role": "<project-slug>", "title": "📁 <Төслийн нэр>", "group": "Projects", "cwd": "03-Projects/1-Active/<Төсөл>", "required": true, "per": "active-project", "note": "Active төсөл бүрт нэг тогтмол сешн."},
+    {"order": 6, "role": "resource",  "title": "📚 Wiki",             "group": "Resources", "cwd": "05-Resources", "required": true,  "note": "Лавлагаа, атом, fact-check."},
+    {"order": 7, "role": "research",  "title": "🔍 Research · <сэдэв>", "group": "Resources", "cwd": "05-Resources/Research", "required": false, "per": "topic", "note": "Судалгааны сэдэв бүрт (хэрэгтэй бол)."},
+    {"order": 8, "role": "finance",   "title": "💼 Business",         "group": "Finance",   "cwd": "",             "required": false, "private": true, "note": "Бизнесийн санхүү. Discord суваггүй."},
+    {"order": 9, "role": "finance",   "title": "🔒 Personal",         "group": "Finance",   "cwd": "",             "required": false, "private": true, "note": "Хувийн санхүү. Discord суваггүй; business ба personal тусдаа."}
   ],
   "rules": [
-    "Tasks = нэг удаагийн богино сешн (дуусахад Archive руу).",
-    "Archive = дууссан/хуучирсан сешн; устгахгүй.",
+    "4 бүлэг: Projects · Areas · Resources · Finance. Нэг удаагийн сешн бүлэггүй; дууссан сешнийг апп-ын Archive руу (устгахгүй).",
     "Нэг дүр = нэг тогтмол сешн; ижил дүрийн хоёр дахь сешн нээхгүй.",
-    "Icon: 📁 төсөл · 📥 GTD · 💼 удирдлага/бизнес · 📚 wiki · 🔍 судалгаа · 🎨 creative · 🛠️ developer · 🔒 хувийн."
+    "Finance: Business ба Personal хоёр тусдаа сешн, Discord суваггүй, агуулга vault-аас гарахгүй.",
+    "Icon: 📁 төсөл/portfolio · 📥 GTD · 🏛️ architect · 🎨 creative · 📚 wiki · 🔍 судалгаа · 💼 бизнес · 🔒 хувийн."
   ]
 }

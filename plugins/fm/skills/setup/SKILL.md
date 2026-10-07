@@ -168,7 +168,7 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 
 ## 4. Agent-ууд
 
-Тайлбарла: **бүгд Agent, зөвхөн дүрээрээ ялгарна.** Claude-ийн сешн бүр нэг дүрд холбогдож (`/fm:role <slug>`), тэр дүрийн дүрмээр ажиллана. Claude Desktop-ийн sidebar-т сешнүүдийг бүлгээр (`Tasks · Projects · Areas · Resources · Creative · Finance · Archive`) 7-р алхамд цэгцэлнэ.
+Тайлбарла: **бүгд Agent, зөвхөн дүрээрээ ялгарна.** Claude-ийн сешн бүр нэг дүрд холбогдож (`/fm:role <slug>`), тэр дүрийн дүрмээр ажиллана. Claude Desktop-ийн sidebar-т сешнүүдийг бүлгээр (`Projects · Areas · Resources · Finance`) 7-р алхамд цэгцэлнэ — яг itge.e-ийн sidebar шиг.
 
 | Slug | Agent | Юу хийдэг | Санал |
 |---|---|---|---|
@@ -253,11 +253,11 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 
 Загвар: `${CLAUDE_PLUGIN_ROOT}/sidebar.json` — **бүлгийн дараалал, сешний дараалал, гарчиг, icon яг үүгээр.** Sidebar = PARA = Discord-ийн ангилал.
 
-1. **Бүлгүүд** (энэ дарааллаар): `Tasks · Projects · Areas · Resources · Creative · Finance · Archive`. Эхлээд `mcp__ccd_sidebar__list_groups` — нэр нь таарах бүлэг байвал түүнийг ашигла, байхгүйг л `mcp__ccd_sidebar__create_group`-ээр үүсгэ. Давхар бүлэг бүү үүсгэ.
+1. **Бүлгүүд** (энэ дарааллаар): `Projects · Areas · Resources · Finance`. Эхлээд `mcp__ccd_sidebar__list_groups` — нэр нь таарах бүлэг байвал түүнийг ашигла, байхгүйг л `mcp__ccd_sidebar__create_group`-ээр үүсгэ. Давхар бүлэг бүү үүсгэ.
 2. **Энэ сешн = 📥 GTD.** `set_session_title("self", "📥 GTD")` → `move_sessions(["self"], Areas)` → `/fm:role area`.
-3. **Бусад сешн** `sidebar.json`-ийн `order`-оор, 6-р алхамд бичигдсэн дүрүүдэд л (`_system/fm/registry.json` → `roles`, `active: true`): 💼 Project Manager → 📁 Active төсөл бүр → 📚 Wiki → (🔍 Research) → (🎨 Creative) → (🛠️ Developer) → (🔒 Personal, 💼 Business). Сешн бүрт `mcp__ccd_session__spawn_task` chip үүсгэ — гишүүн нэг дарахад нээгдэнэ. Chip-ийн prompt бие даасан байна:
+3. **Бусад сешн** `sidebar.json`-ийн `order`-оор, 6-р алхамд бичигдсэн дүрүүдэд л (`_system/fm/registry.json` → `roles`, `active: true`): (🏛️ Architect) → (🎨 Creative Agent) → 📁 Portfolio → 📁 Active төсөл бүр → 📚 Wiki → (🔍 Research · <сэдэв>) → (💼 Business, 🔒 Personal). Сешн бүрт `mcp__ccd_session__spawn_task` chip үүсгэ — гишүүн нэг дарахад нээгдэнэ. Chip-ийн prompt бие даасан байна:
    > «Энэ сешн нь `<гарчиг>`. 1) `set_session_title("self", "<гарчиг>")` 2) `move_sessions(["self"], "<бүлэг>")` 3) cwd = `<vault>/<cwd>` (`mcp__ccd_directory__change_directory`) 4) `/fm:role <slug>` 5) нэг мөрөөр «бэлэн» гэж хариул.»
-4. Гишүүнд жагсаалтаар харуул (бүлэг → сешн), chip-уудыг **дээрээс доош** дарахыг хэл. 🔒 Finance-ийн сешнүүд Discord-гүй, Tasks бүлэгт нэг удаагийн сешн, дууссаныг Archive руу.
+4. Гишүүнд жагсаалтаар харуул (бүлэг → сешн), chip-уудыг **дээрээс доош** дарахыг хэл. 🔒 Finance-ийн сешнүүд (Business, Personal тусдаа) Discord-гүй. Нэг удаагийн сешн бүлэггүй, дууссаныг апп-ын Archive руу.
 
 Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй орчинд (CLI): жагсаалтыг өгөөд гараар хийхийг хэл.
 
