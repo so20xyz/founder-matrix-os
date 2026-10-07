@@ -31,6 +31,8 @@ aliases:
   - "Director"
   - "🎨 Director"
   - "✍️ Content Writer"
+  - "Creative Agent"
+  - "🎨 Creative Agent"
 ---
 
 # 06 Creative

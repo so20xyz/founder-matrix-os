@@ -28,6 +28,8 @@ aliases:
   - "Project Admin"
   - "Project Manager"
   - "Төслийн менежер"
+  - "Portfolio"
+  - "📁 Portfolio"
 ---
 
 # 01 Project

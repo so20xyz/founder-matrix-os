@@ -279,6 +279,21 @@ def test_sidebar_layout_matches_concept():
     assert "sidebar.json" in (PLUGIN / "skills" / "setup" / "SKILL.md").read_text(encoding="utf-8")
 
 
+def test_sidebar_titles_resolve_to_roles():
+    """Every concrete sidebar title (e.g. «🎨 Creative Agent») binds to its role via /fm:role (role-note aliases)."""
+    lay = json.loads((PLUGIN / "sidebar.json").read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory() as td:
+        vault = Path(td) / "v"
+        subprocess.run([sys.executable, str(PLUGIN / "scripts" / "fm_setup.py"), str(vault), "--member", "T"],
+                       capture_output=True, check=True)
+        for x in lay["sessions"]:
+            if "<" in x["title"] or x["role"].startswith("<"):
+                continue
+            r = subprocess.run([sys.executable, str(PLUGIN / "skills" / "role" / "scripts" / "fm_role.py"), "bind",
+                                str(vault), x["title"], "--sid", "t"], capture_output=True, text=True, encoding="utf-8")
+            assert r.returncode == 0 and json.loads(r.stdout).get("role") == x["role"], (x["title"], r.stdout, r.stderr)
+
+
 # ------------------------------------------------------------------ runner
 
 def main():
