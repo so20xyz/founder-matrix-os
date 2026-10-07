@@ -269,7 +269,8 @@ def test_sidebar_layout_matches_concept():
     assert lay["groups"] == ["Projects", "Areas", "Resources", "Finance"]  # itge.e 2026-10-07
     orders = [x["order"] for x in lay["sessions"]]
     assert orders == sorted(orders) and orders[0] == 1
-    assert lay["sessions"][0]["role"] == "area" and lay["sessions"][0]["title"] == "📥 GTD"
+    gtd = [x for x in lay["sessions"] if x["title"] == "📥 GTD"]
+    assert gtd and gtd[0]["role"] == "area" and gtd[0]["required"]  # setup-ийн сешн өөрөө GTD болно; order = sidebar дээрх дараалал
     roles = {a.stem for a in (PLUGIN / "agents").glob("*.md")}
     for x in lay["sessions"]:
         assert x["group"] in lay["groups"], x
