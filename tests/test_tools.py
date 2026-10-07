@@ -250,7 +250,7 @@ def test_routine_templates_valid():
         m = _re.match(r"---\n(.*?)\n---\n(.*)", t, _re.S)
         assert m, f
         fm = dict(l.split(": ", 1) for l in m.group(1).splitlines() if ": " in l)
-        for k in ("id", "title", "cron", "needs", "description"):
+        for k in ("id", "title", "cron", "scope", "needs", "description"):
             assert k in fm, (f.name, k)
         assert len(fm["cron"].strip('"').split()) == 5, (f.name, fm["cron"])
         assert fm["id"] not in ids, fm["id"]; ids.add(fm["id"])
@@ -259,6 +259,9 @@ def test_routine_templates_valid():
         if "finance" in fm["needs"]:
             assert "finances/private" in t, f.name
         assert f.name in setup, ("setup must list", f.name)
+        assert fm["scope"] in ("one-device", "per-device"), (f.name, fm["scope"])
+        if fm["scope"] == "per-device":
+            assert "{{DEVICE}}" in t, f.name  # per-device routines must be told apart per machine
 
 
 def test_sidebar_layout_matches_concept():

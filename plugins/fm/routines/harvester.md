@@ -2,6 +2,7 @@
 id: fm-harvester
 title: "🧠 Harvester ({{DEVICE}})"
 cron: "0 */2 * * *"
+scope: per-device
 needs: [config]
 description: 2 цаг тутам энэ төхөөрөмжийн сешнүүдийн чатыг атом болгож vault-д холбоно
 ---

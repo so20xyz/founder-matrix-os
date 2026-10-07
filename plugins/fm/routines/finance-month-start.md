@@ -2,6 +2,7 @@
 id: fm-finance-month-start
 title: "💰 Сарын төлбөрийн жагсаалт (1-нд)"
 cron: "0 9 1 * *"
+scope: one-device
 needs: [finance]
 description: Сар бүрийн 1-нд энэ сард төлөх төлбөрийн жагсаалтыг хувийн санхүүгийн хавтсанд гаргана
 ---

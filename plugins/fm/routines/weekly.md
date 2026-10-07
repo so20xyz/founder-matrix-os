@@ -2,6 +2,7 @@
 id: fm-weekly-review
 title: "📅 Долоо хоногийн тойм"
 cron: "0 17 * * 5"
+scope: one-device
 needs: []
 description: Баасан бүр 17:00-д долоо хоногийн тойм (update weekly) гаргана
 ---

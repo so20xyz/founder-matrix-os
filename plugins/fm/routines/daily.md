@@ -2,6 +2,7 @@
 id: fm-daily-morning
 title: "☀️ Өглөөний update daily"
 cron: "30 8 * * 1-5"
+scope: one-device
 needs: []
 description: Ажлын өдөр бүр 08:30-д өнөөдрийн өдрийн тэмдэглэл, гол 3, нээлттэй task-уудыг бэлдэнэ
 ---

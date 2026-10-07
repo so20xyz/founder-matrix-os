@@ -97,7 +97,7 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 
 ## 5. Routine-ууд — өөрөө ажилладаг
 
-`/fm:setup` (8-р алхам) [`plugins/fm/routines/`](../plugins/fm/routines/)-ийн загвараас асууж үүсгэнэ. Sidebar → **Routines**-оос харж, унтрааж болно.
+`/fm:setup` (8-р алхам) [`plugins/fm/routines/`](../plugins/fm/routines/)-ийн загвараас асууж үүсгэнэ. Sidebar → **Routines**-оос харж, унтрааж болно. **Vault руу бичдэг routine зөвхөн нэг (гол) машин дээр**, Harvester машин бүрт — 2 дахь компьютер дээр 5 routine биш, ганц Harvester байх нь зөв.
 
 | Routine | Хэзээ | Юу |
 |---|---|---|
