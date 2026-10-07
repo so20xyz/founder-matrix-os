@@ -777,6 +777,16 @@ def d_sync():
     st = load(STATE, {}); st.pop("_dch", None); save(STATE, st)
 
 
+STATUS_RE = re.compile(r"^\s*(?:#+\s*)?(?:🙋|✅|↪|🗄|🔄)")
+
+
+def status_only(txt):
+    """A claim/done/hand-off notice from the other device (🙋 авлаа · ✅ дууслаа · ↪ · 🗄 архивлав · 🔄).
+    Waking a session for these only produced late «don't do it» relays after the work was already settled
+    (itge.e 2026-10-07): the claim rule is read from the channel when a session actually wakes."""
+    return bool(STATUS_RE.match(txt or ""))
+
+
 def d_dispatch(every=15):
     """Dispatcher (one per device, run by 03 Sys Admin via Monitor): watch every session channel;
     print one JSON line per message that should WAKE a local session: human (BD) messages, or other-device
@@ -815,6 +825,7 @@ def d_dispatch(every=15):
                 if a.get("bot"):
                     if a["username"].endswith(DEVICE) and "📌 TASK" not in txt and "📌 NOTION" not in txt: continue   # own device (tasks still wake owner)
                     if n == BROADCAST and not tag.search(txt): continue    # broadcast channel: must be addressed
+                    if status_only(txt) and not tag.search(txt): continue  # other device's 🙋/✅/↪ notice: the channel shows it, no wake
                     # pair channel: other device's twin talks to us → wake, but rate-limit to avoid ping-pong
                     hist = [t for t in bot_wakes.get(n, []) if time.time() - t < 600]
                     if len(hist) >= 3: continue

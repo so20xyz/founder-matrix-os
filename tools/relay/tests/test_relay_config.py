@@ -198,6 +198,15 @@ def main():
     check(not (data / "state" / "home.md").exists(), "private: 'private': true session baton skipped")
     status = (vault / "_system" / "STATUS.md").read_text(encoding="utf-8")
     check("Alpha төсөл" in status and "secret" not in status, "hub: STATUS.md in vault, private project rows omitted")
+
+    # ── 5c. dispatch: the other device's 🙋/✅/↪ notices don't wake sessions (late «don't do it» relays)
+    d = child("""
+        import relay
+        print(json.dumps([relay.status_only(t) for t in
+            ["🙋 PC авлаа — x", "✅ дууслаа: y", "## ✅ дууслаа", "↪ @mac: зогсоолоо", "🗄 PC архивлав",
+             "for mac: хий", "Шинэ task", "", "PC ✅ гэж бичсэн"]]))
+    """, base)
+    check(d == [True, True, True, True, True, False, False, False, False], "dispatch: status notices recognised, requests not", str(d))
     task = vault / "02-GTD" / "tasks" / "Тест даалгавар.md"
     check(task.exists() and 'owner: "Тестер"' in task.read_text(encoding="utf-8"), "task: vault task, default owner = member")
 
