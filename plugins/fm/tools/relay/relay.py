@@ -338,6 +338,15 @@ def d_inbox(hook):
            + ("\n\n".join(out) if out else "Шинэ мессеж алга."))
     print(json.dumps({"hookSpecificOutput": {"hookEventName": event or "UserPromptSubmit", "additionalContext": ctx}}, ensure_ascii=False))
 
+THREAD_WINDOW = 30 * 60  # seconds: reply in a thread only to a human message this recent
+
+
+def _recent(message_id, window=None):
+    """Discord snowflake → age check (True if the message is newer than THREAD_WINDOW)."""
+    ts = ((int(message_id) >> 22) + 1420070400000) / 1000
+    return time.time() - ts < (window or THREAD_WINDOW)
+
+
 def _threads(parent_ids):
     """itge.e 2026-10-06: one request = one Discord thread. Active threads whose parent is in parent_ids → {thread_id: parent_id}."""
     try:
@@ -374,6 +383,7 @@ def d_send(to, text, sid):
                         if not m["author"].get("bot"):
                             if not best or int(m["id"]) > int(best[0]): best = (m["id"], tid)
                             break
+                if best and not _recent(best[0]): best = None   # itge.e 2026-10-07: old request → plain channel, no stray thread
         except Exception: pass
         if best and best[1]: target = best[1]            # human wrote inside a thread → answer there
         elif best:
@@ -381,7 +391,7 @@ def d_send(to, text, sid):
             try:
                 src = dapi("GET", f"/channels/{cid}/messages/{mid}")["content"].strip().splitlines()
                 tname = (src[0] if src and src[0] else "хүсэлт")[:80]
-                dapi("POST", f"/channels/{cid}/messages/{mid}/threads", {"name": tname, "auto_archive_duration": 1440})
+                dapi("POST", f"/channels/{cid}/messages/{mid}/threads", {"name": tname, "auto_archive_duration": 60})
             except Exception: pass                       # already has a thread → its id equals the message id
             target = mid
     body = text.strip()
@@ -393,6 +403,9 @@ def d_send(to, text, sid):
         except Exception:
             if target == cid: raise
             dapi("POST", f"/channels/{cid}/messages", payload); target = cid   # thread failed → plain channel
+    if target != cid and body.startswith("✅"):          # itge.e 2026-10-07: done → archive the thread (hidden, not deleted)
+        try: dapi("PATCH", f"/channels/{target}", {"archived": True})
+        except Exception: pass
     print("sent →", name + (f" (thread {target})" if target != cid else ""))
 
 
@@ -643,7 +656,7 @@ def chmap():
     return {sid: names[key(v)] for sid, v in regs}
 
 CATS = {"tasks": "01 Tasks", "projects": "02 Projects", "areas": "03 Areas", "resources": "04 Resources", "research": "05 Research", "creative": "06 Creative", "development": "07 Development", "system": "08 System", "archive": "09 Archive"}
-SYSTEM_CH = ["status-data", "general", "relay"]  # #org хаагдсан (2026-10-02) → Archive · #status устгасан (2026-10-06, itge.e)
+SYSTEM_CH = []  # #org, #status, #general, #relay, #status-data → Archive (itge.e 2026-10-07: System бүлэг хаагдсан)
 
 def sync_needed_cats(want, text):
     """CATS keys d_sync must have: groups of wanted channels, system (if a SYSTEM_CH channel exists),

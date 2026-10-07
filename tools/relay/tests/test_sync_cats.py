@@ -75,7 +75,13 @@ def main():
 
     d = run(env, existing + [{"id": "t3", "name": "general", "type": 0, "parent_id": None},
                              {"id": "t4", "name": "old-stuff", "type": 0, "parent_id": None}], cm)
-    check(sorted(d["cats"]) == sorted(["08 System", "09 Archive"]), "system/archive created only when a channel goes there", str(d))
+    check(d["cats"] == ["09 Archive"], "leftover channels → one Archive category (no System), created only when needed", str(d))
+
+    code = (f"import sys,time; sys.path.insert(0,{str(RELAY_DIR)!r}); import relay; "
+            "now=int(time.time()*1000-1420070400000)<<22; old=int(time.time()*1000-3600000-1420070400000)<<22; "
+            "print(relay._recent(now), relay._recent(old))")
+    r = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, encoding="utf-8")
+    check(r.stdout.strip() == "True False", "thread only on a recent (<30 min) human message", r.stdout + r.stderr)
 
     print(f"\n{PASSES} passed, {len(FAILS)} failed")
     sys.exit(1 if FAILS else 0)
