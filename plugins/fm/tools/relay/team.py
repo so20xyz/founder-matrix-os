@@ -5,7 +5,8 @@ The personal relay (relay.py) only ever touches discord.json "guild". The team s
   discord.json  "team_guild": {"id": "<guild id>", "name": "Digital Nomad Agent"}
 and is used only through this file, so team channels never mix with personal channels, registry or dispatch.
 
-  python team.py read [--all]        new messages (channels + active threads) since last read; --all = last 10 each
+  python team.py read [--all]        (token: ~/.fmos_team_token if present, else relay token)
+                                     new messages (channels + active threads) since last read; --all = last 10 each
   python team.py send <#channel|thread-id> "text" --approved
                                      post ONLY what itge.e explicitly asked to post (--approved is required)
 
@@ -19,6 +20,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import relay  # noqa: E402  (dapi, fmconfig)
 
 SEEN = Path.home() / ".fmos_team_seen.json"
+# itge.e 2026-10-07: ONE bot speaks for itge.e on the team server. A machine whose own relay bot is not in that
+# server (PC) keeps that single team bot's token in ~/.fmos_team_token; otherwise the relay token is used.
+TEAM_TOKEN = Path.home() / ".fmos_team_token"
+if TEAM_TOKEN.is_file():
+    relay.DTOKEN_F = TEAM_TOKEN
 BLOCK = [r"\[\[", r"_system", r"04-Areas", r"03-Projects", r"06-Atomic", r"finances?/private", r"private:\s*true",
          r"\bvault\b", r"[A-Za-z]:[\\/]", r"/Users/", r"~/", r"санхүү", r"🔒"]
 
