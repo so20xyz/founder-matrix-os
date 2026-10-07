@@ -333,8 +333,14 @@ def d_inbox(hook):
                       f"1. Monitor(command='python -u {Path(__file__)} dispatch --sid {sid} 2>&1 | grep --line-buffered -v ready', timeout_ms=1800000) — wake event ирвэл тэр сешнийг send_message-ээр сэрээ\n"
                       f"2. Monitor(command='python -u {Path(__file__)} status 2>&1 | grep --line-buffered -iE \"error|traceback|exception\"', timeout_ms=1800000) — #gtd-ийн status самбар\n"
                       "Monitor дуусах бүрд тэр даруй дахин асаа.")
+    elif me and event == "SessionStart" and not is_private(me):
+        # itge.e 2026-10-07: every session listens to its OWN channel(s) in real time (GTD no longer relays each message)
+        out.insert(0, f"### 🛰 Та {me.get('title') or me['name']} ({DEVICE}) — ЭХЛЭЭД өөрийн сувгаа сонсох Monitor-ыг асаа, хэрэглэгчээс бүү асуу:\n"
+                      f"Monitor(command='python -u {Path(__file__)} watch --sid {sid}', timeout_ms=1800000) — мөр ирэх бүр = таны сувагт шинэ мессеж; "
+                      "itge.e-ийн хүсэлт бол «🙋 авлаа» → хий → «✅ дууслаа». [team] мөр = багийн сервер, зөвхөн уншина — itge.e зөвшөөрвөл л бичнэ.\n"
+                      "Monitor дуусах бүрд (30 мин) тэр даруй дахин асаа.")
     ctx = (f"[FMOS Discord] Энэ сешн: {who}. Хариу: `python {Path(__file__)} send <сувгийн нэр|sys> \"текст\" --sid {sid}`."
-           + (f" Тасралтгүй сонсох: Monitor-оор `python {Path(__file__)} watch --sid {sid}` асаа (30 мин тутам дахин)." if event == "SessionStart" and me else "") + "\n"
+           + "\n"
            + ("\n\n".join(out) if out else "Шинэ мессеж алга."))
     print(json.dumps({"hookSpecificOutput": {"hookEventName": event or "UserPromptSubmit", "additionalContext": ctx}}, ensure_ascii=False))
 
@@ -409,6 +415,35 @@ def d_send(to, text, sid):
     print("sent →", name + (f" (thread {target})" if target != cid else ""))
 
 
+TEAM_TOKEN_F = Path.home() / ".fmos_team_token"
+
+
+def _tapi(method, path):
+    """Team-server API call with the single team bot's token (~/.fmos_team_token, else this device's relay token)."""
+    tok = (TEAM_TOKEN_F if TEAM_TOKEN_F.is_file() else DTOKEN_F).read_text().strip()
+    req = urllib.request.Request(API + path, method=method, headers={"Authorization": "Bot " + tok,
+          "User-Agent": f"FMOS-relay ({fmconfig.USER_AGENT_URL}, 1)"})
+    with urllib.request.urlopen(req, timeout=8) as r:
+        return json.loads(r.read() or b"null")
+
+
+def _team_sources(me):
+    """[(team channel name, id)] this session reads: discord.json team_map {"<team channel>": "<project|role>"}; never private."""
+    t = fmconfig.dcfg("team_guild") or {}; tmap = fmconfig.dcfg("team_map") or {}
+    if not me or is_private(me) or not t.get("id") or not tmap: return []
+    mine = {c for c, proj in tmap.items() if proj in (me.get("project"), me.get("role"))}
+    if not mine: return []
+    try: chans = _tapi("GET", f"/guilds/{t['id']}/channels")
+    except Exception as e: print(f"[watch error] team server: {e}", flush=True); return []
+    return [(c["name"], c["id"]) for c in chans if c.get("type") == 0 and c["name"] in mine]
+
+
+def _channel_live(channel, window=90):
+    """True if a local session that owns this channel has a running watch (heartbeat within `window` s)."""
+    alive = load(STATE, {}).get("_alive", {}); cm = chmap()
+    return any(cm.get(s) == channel and time.time() - t < window for s, t in alive.items())
+
+
 def d_watch(sid, every=20):
     """Continuous: print one line per new Discord message for this session (own messages skipped)."""
     reg = load(REG, {"sessions": {}}); me = reg["sessions"].get(sid)
@@ -425,8 +460,28 @@ def d_watch(sid, every=20):
             except Exception as e:
                 print(f"[watch error] {e}", flush=True); time.sleep(15)
         else: last[n] = "0"
+    team = _team_sources(me)  # itge.e 2026-10-07: team-server channels mapped to my project (read-only)
     while True:
         time.sleep(every)
+        st = load(STATE, {}); st.setdefault("_alive", {})[sid] = time.time(); save(STATE, st)   # dispatcher skips live sessions
+        try: thr = _threads({ch[n] for n in names if n in ch})
+        except Exception: thr = {}
+        for tid, pid in thr.items():                                                            # replies inside my threads
+            pn = next((k for k in names if ch.get(k) == pid), None)
+            if pn and ("t:" + tid) not in last:
+                try: lm = dapi("GET", f"/channels/{tid}/messages?limit=1"); last["t:" + tid] = lm[0]["id"] if lm else "0"
+                except Exception: continue
+                ch["t:" + tid] = tid; names.append("t:" + tid)
+        for tn, tcid in team:
+            key = "team:" + tn
+            try:
+                if key not in last:
+                    lm = _tapi("GET", f"/channels/{tcid}/messages?limit=1"); last[key] = lm[0]["id"] if lm else "0"; continue
+                for m in sorted(_tapi("GET", f"/channels/{tcid}/messages?after={last[key]}&limit=20"), key=lambda m: int(m["id"])):
+                    last[key] = m["id"]
+                    if m["author"].get("bot"): continue
+                    print(f"[team] #{tn} · {m['author'].get('global_name') or m['author']['username']}: " + m["content"].replace("\n", " ⏎ ")[:600], flush=True)
+            except Exception as e: print(f"[watch error] team {tn}: {e}", flush=True)
         for n in names:
             if n not in ch or n not in last: continue
             try: msgs = sorted(dapi("GET", f"/channels/{ch[n]}/messages?after={last[n]}&limit=20"), key=lambda m: int(m["id"]))
@@ -770,6 +825,7 @@ def d_dispatch(every=15):
                     hist = [t for t in bot_wakes.get(n, []) if time.time() - t < 600]
                     if len(hist) >= 3: continue
                     bot_wakes[n] = hist + [time.time()]
+                if _channel_live(parent.get(n, n)): continue        # itge.e 2026-10-07: that session hears it itself
                 ev = {"wake": local[n], "channel": parent.get(n, n), "from": a.get("global_name") or a["username"], "text": txt[:1500]}
                 if n.startswith("t:"): ev["thread"] = n[2:]; seen_threads[n[2:]] = m["id"]
                 print(json.dumps(ev, ensure_ascii=False), flush=True)
