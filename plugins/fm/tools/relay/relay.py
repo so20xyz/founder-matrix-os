@@ -645,27 +645,40 @@ def chmap():
 CATS = {"tasks": "01 Tasks", "projects": "02 Projects", "areas": "03 Areas", "resources": "04 Resources", "research": "05 Research", "creative": "06 Creative", "development": "07 Development", "system": "08 System", "archive": "09 Archive"}
 SYSTEM_CH = ["status-data", "general", "relay"]  # #org хаагдсан (2026-10-02) → Archive · #status устгасан (2026-10-06, itge.e)
 
+def sync_needed_cats(want, text):
+    """CATS keys d_sync must have: groups of wanted channels, system (if a SYSTEM_CH channel exists),
+    archive (if a wanted group is unknown or a leftover channel must be parked)."""
+    need = {g if g in CATS else "archive" for g, _ in want.values()}
+    for n in text:
+        if n in want: continue
+        need.add("system" if n in SYSTEM_CH else "archive")
+    return need
+
+
 def d_sync():
     """Discord = sidebar: category per PARA group, one channel per project slug. Never deletes — old channels → Archive."""
     gid = load(DCFG, {})["guild"]["id"]
     reg = [v for v in load(REG, {"sessions": {}})["sessions"].values() if not is_private(v)]
     allc = dapi("GET", f"/guilds/{gid}/channels")
     byname = {_re.sub(r"^\d+\s*", "", c["name"]).lower().replace("r&d", "research"): c for c in allc if c["type"] == 4}
-    cats = {}
-    for i, (k, name) in enumerate(CATS.items()):
-        c = byname.get(k)
-        if c:
-            cats[k] = c["id"]
-            if c["name"] != name or c.get("position") != i:
-                dapi("PATCH", f"/channels/{c['id']}", {"name": name, "position": i}); print("category", name)
-        else:
-            cats[k] = dapi("POST", f"/guilds/{gid}/channels", {"name": name, "type": 4, "position": i})["id"]; print("category +", name)
     text = {c["name"]: c for c in allc if c["type"] == 0}
     CHF = fmconfig.CHANNELS; prev = load(CHF, {})  # project → last channel name (for in-place rename)
     want = {}
     for sid, name in chmap().items():
         v = load(REG, {"sessions": {}})["sessions"][sid]
         want.setdefault(name, (v["group"], v.get("project")))
+    need = sync_needed_cats(want, text)  # only categories that will actually hold a channel (no empty ones)
+    cats, i = {}, 0
+    for k, name in CATS.items():
+        c = byname.get(k)
+        if not c and k not in need: continue          # never create an empty category; existing ones are kept
+        if c:
+            cats[k] = c["id"]
+            if c["name"] != name or c.get("position") != i:
+                dapi("PATCH", f"/channels/{c['id']}", {"name": name, "position": i}); print("category", name)
+        else:
+            cats[k] = dapi("POST", f"/guilds/{gid}/channels", {"name": name, "type": 4, "position": i})["id"]; print("category +", name)
+        i += 1
     for slug, (grp, proj) in want.items():
         parent = cats[grp if grp in CATS else "archive"]
         if slug not in text and proj and prev.get(proj) in text and prev.get(proj) not in want:
