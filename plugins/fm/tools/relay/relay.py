@@ -333,12 +333,6 @@ def d_inbox(hook):
                       f"1. Monitor(command='python -u {Path(__file__)} dispatch --sid {sid} 2>&1 | grep --line-buffered -v ready', timeout_ms=1800000) — wake event ирвэл тэр сешнийг send_message-ээр сэрээ\n"
                       f"2. Monitor(command='python -u {Path(__file__)} status 2>&1 | grep --line-buffered -iE \"error|traceback|exception\"', timeout_ms=1800000) — #gtd-ийн status самбар\n"
                       "Monitor дуусах бүрд тэр даруй дахин асаа.")
-    elif me and event == "SessionStart" and not is_private(me):
-        # itge.e 2026-10-07: every session listens to its OWN channel(s) in real time (GTD no longer relays each message)
-        out.insert(0, f"### 🛰 Та {me.get('title') or me['name']} ({DEVICE}) — ЭХЛЭЭД өөрийн сувгаа сонсох Monitor-ыг асаа, хэрэглэгчээс бүү асуу:\n"
-                      f"Monitor(command='python -u {Path(__file__)} watch --sid {sid}', timeout_ms=1800000) — мөр ирэх бүр = таны сувагт шинэ мессеж; "
-                      "itge.e-ийн хүсэлт бол «🙋 авлаа» → хий → «✅ дууслаа». [team] мөр = багийн сервер, зөвхөн уншина — itge.e зөвшөөрвөл л бичнэ.\n"
-                      "Monitor дуусах бүрд (30 мин) тэр даруй дахин асаа.")
     ctx = (f"[FMOS Discord] Энэ сешн: {who}. Хариу: `python {Path(__file__)} send <сувгийн нэр|sys> \"текст\" --sid {sid}`."
            + "\n"
            + ("\n\n".join(out) if out else "Шинэ мессеж алга."))

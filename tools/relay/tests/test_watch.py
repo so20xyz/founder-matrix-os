@@ -70,7 +70,7 @@ def main():
     relay.chmap = lambda: {}
     relay.d_inbox({"session_id": "%s", "hook_event_name": "SessionStart", "cwd": %r})
     """
-    for sid, want in (("sid-acme", True), ("sid-fin", False)):
+    for sid, want in (("sid-acme", False), ("sid-fin", False)):   # 2026-10-07 A: background dispatcher listens, sessions don't
         rc, out = child(start % (sid, str(repo)), env)
         has = "watch --sid " + sid in out and "Monitor(command=" in out
         check(rc == 0 and has == want, f"SessionStart: {'asks' if want else 'does not ask'} {sid} to start its own watch", out[-400:])
