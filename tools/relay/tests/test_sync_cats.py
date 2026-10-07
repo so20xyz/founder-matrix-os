@@ -39,7 +39,7 @@ relay.d_sync()
 print(json.dumps({"cats": [p["name"] for p in POSTS if p.get("type") == 4], "chans": [p["name"] for p in POSTS if p.get("type") == 0]}))
 """
 
-REG = {"sessions": {"s1": {"group": "projects", "project": "acme", "title": "📁 acme"},
+REG = {"sessions": {"s1": {"group": "projects", "project": "acme", "title": "📁 Acme"},
                     "s2": {"group": "areas", "project": "area", "title": "📥 GTD"}}}
 
 
