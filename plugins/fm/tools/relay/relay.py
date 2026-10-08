@@ -10,7 +10,10 @@ Commands:
   relay.py inbox                     hook (SessionStart / UserPromptSubmit): reads hook JSON on stdin,
                                      git pull (throttled; vault mode: no git), prints new entries as additionalContext
   relay.py register NAME GROUP       bind the current session (CLAUDE_SESSION_ID or --sid) to NAME + GROUP
-  relay.py send TO "title" [body]    TO = all | @<group> | <session-name>; appends, commits, pushes
+  relay.py send TO "text…"           Discord: TO = channel name | sys (broadcast)
+  relay.py send TO --file PATH       … the whole (multi-line) file is the message
+  relay.py send TO -                 … the message is read from stdin
+  relay.py gsend TO "title" [body]   old git transport: TO = all | @<group> | <session-name>
   relay.py who                       show registry
 
 Data location (see fmconfig.py): ~/.fmos/config.json {"vault": ...} or env FM_VAULT → vault mode, all data in
@@ -30,6 +33,8 @@ REG = fmconfig.REG
 STATE_DIR = fmconfig.STATE_DIR      # batons state/<project>.md
 VAULT_MODE = fmconfig.VAULT_MODE    # True → no git at all (Drive syncs the vault)
 STATE = Path.home() / ".fmos_relay_state.json"   # per-machine read cursors (not in git)
+STATE_LOCK = Path.home() / ".fmos" / "relay_state.lock"   # local disk; every save of STATE merges under it
+BATON_LOCK = Path.home() / ".fmos" / "baton.lock"          # local disk; state/<project>.md read-modify-write
 GROUPS = ["tasks", "projects", "areas", "resources", "research", "development", "archive"]
 DEVICE = fmconfig.DEVICE
 PULL_EVERY = 45  # seconds
@@ -67,18 +72,51 @@ def safe_sync(paths, msg):
         git("push", "-q")
 
 
+class _State(dict):
+    """~/.fmos_relay_state.json as loaded: remembers what it looked like (_base) so save() writes back only what
+    this caller changed (3-way merge under STATE_LOCK) — 20+ hook/watch processes share the file."""
+    _base = None
+
+
+def _snap(v):
+    return json.loads(json.dumps(v, ensure_ascii=False))
+
+
+def _merge3(base, mine, disk):
+    """Apply mine's changes relative to base onto disk (dicts recurse; untouched keys keep disk's value)."""
+    out = dict(disk)
+    for k in set(base) | set(mine):
+        if k not in mine:
+            out.pop(k, None)                                   # deleted by this caller
+        elif k in base and mine[k] == base[k]:
+            continue                                           # untouched → whatever is on disk now
+        elif isinstance(mine[k], dict) and isinstance(disk.get(k), dict):
+            out[k] = _merge3(base[k] if isinstance(base.get(k), dict) else {}, mine[k], disk[k])
+        else:
+            out[k] = mine[k]
+    return out
+
+
+def _read_json(p, d):
+    try:
+        return json.loads(Path(p).read_text(encoding="utf-8"))
+    except Exception:
+        return d
+
+
 def load(p, d):
     """Read-only JSON load; any error → d. The registry goes through regstore.read (retries Windows sharing
-    violations). NEVER load→save the registry with this: use reg_edit() (locked, refuses to overwrite a bad file)."""
+    violations). NEVER load→save the registry with this: use reg_edit() (locked, refuses to overwrite a bad file).
+    STATE comes back as a _State so save() can merge it."""
     if Path(p) == Path(REG):
         try: v = regstore.read(p, d)
         except regstore.RegistryReadError: return d
         _norm_reg(v)
         return v
-    try:
-        return json.loads(Path(p).read_text(encoding="utf-8"))
-    except Exception:
-        return d
+    v = _read_json(p, d)
+    if Path(p) == Path(STATE) and isinstance(v, dict):
+        v = _State(v); v._base = _snap(v)
+    return v
 
 
 def reg_edit():
@@ -102,9 +140,18 @@ def _norm_reg(reg):
 
 
 def save(p, v):
-    """Atomic JSON write (temp + os.replace). Not for registry.json — that goes through reg_edit()."""
+    """Atomic JSON write (temp + os.replace). Not for registry.json — that goes through reg_edit().
+    STATE: under ~/.fmos/relay_state.lock, re-read the file and apply only this caller's changes."""
     assert Path(p) != Path(REG), "registry.json: use reg_edit() (locked)"
-    regstore.write_atomic(p, v, indent=1, backup=False)
+    if Path(p) != Path(STATE):
+        regstore.write_atomic(p, v, indent=1, backup=False); return
+    with regstore.file_lock(STATE_LOCK, what="relay state lock"):
+        disk = _read_json(p, {})
+        if not isinstance(disk, dict): disk = {}
+        base = getattr(v, "_base", None)
+        merged = _merge3(base, v, disk) if isinstance(base, dict) else {**disk, **v}
+        regstore.write_atomic(p, merged, indent=1, backup=False)
+    if isinstance(v, _State): v._base = _snap(v)
 
 
 def pull(state):
@@ -254,6 +301,20 @@ API = "https://discord.com/api/v10"
 DTOKEN_F = Path.home() / ".fmos_discord_token"
 DCFG = fmconfig.DISCORD_CFG
 
+
+def _author_fields(a):
+    """Discord author → {"from": name} (+ "from_owner": True when author.id ∈ discord.json "owner_ids").
+    Identity is the numeric user id, never the display name (anyone can call themselves «Soyol»)."""
+    if str(a.get("id") or "") in fmconfig.OWNER_IDS:
+        return {"from": fmconfig.MEMBER_LABEL, "from_owner": True}
+    return {"from": a.get("global_name") or a.get("username") or "?"}
+
+
+def _who(a):
+    """Display name for a line, plus a «(from_owner)» marker for the owner."""
+    f = _author_fields(a)
+    return f["from"] + (" (from_owner)" if f.get("from_owner") else "")
+
 def dapi(method, path, body=None):
     req = urllib.request.Request(API + path, method=method,
         data=json.dumps(body).encode() if body is not None else None,
@@ -336,7 +397,7 @@ def d_inbox(hook):
         if msgs: cur[n] = msgs[-1]["id"]
         elif not last:
             lm = dapi("GET", f"/channels/{cid}/messages?limit=1"); cur[n] = lm[0]["id"] if lm else "0"
-        lines = [f"- {m['timestamp'][11:16]} **{m['author'].get('global_name') or m['author']['username']}**: {m['content']}"
+        lines = [f"- {m['timestamp'][11:16]} **{_who(m['author'])}**: {m['content']}"
                  for m in msgs if not (my_tag and m["content"].startswith(my_tag))]
         if lines: out.append(f"### #{n}\n" + "\n".join(lines))
     save(STATE, state)
@@ -391,6 +452,13 @@ def d_send(to, text, sid):
     # latest human message in the channel (or --reply <message_id>).
     agent = (me.get("title") or me.get("name") or "").strip()
     sig = f"\n-# {ICON} {DEVICE} · {agent}" if agent else ""
+    if name not in ch:
+        import difflib
+        near = difflib.get_close_matches(name, list(ch), n=3, cutoff=0.5)
+        sys.stderr.write(f"relay send: «{name}» суваг Discord-д алга"
+                         + (" (discord.json \"broadcast\" — sys/all энэ суваг руу явна)" if name == BROADCAST else "")
+                         + (f". Ойролцоо: {', '.join(near)}" if near else f". Байгаа: {', '.join(sorted(ch))[:400]}") + "\n")
+        sys.exit(1)
     cid = ch[name]; ref = None; target = cid
     arg = lambda k: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else None
     if arg("--thread"):
@@ -501,7 +569,7 @@ def d_watch(sid, every=20):
                 for m in sorted(_tapi("GET", f"/channels/{tcid}/messages?after={last[key]}&limit=20"), key=lambda m: int(m["id"])):
                     last[key] = m["id"]
                     if m["author"].get("bot"): continue
-                    print(f"[team] #{tn} · {m['author'].get('global_name') or m['author']['username']}: " + m["content"].replace("\n", " ⏎ ")[:600], flush=True)
+                    print(f"[team] #{tn} · {_who(m['author'])}: " + m["content"].replace("\n", " ⏎ ")[:600], flush=True)
             except Exception as e: print(f"[watch error] team {tn}: {e}", flush=True)
         for n in names:
             if n not in ch or n not in last: continue
@@ -514,7 +582,7 @@ def d_watch(sid, every=20):
                 if me and m["author"].get("bot") and m["content"].rstrip().endswith(f"{DEVICE} · {(me.get('title') or me.get('name') or '').strip()}"): continue
                 fm = FOR.search(m["content"])
                 if fm and fm.group(1).lower() != fmconfig.KIND: continue
-                who = m["author"].get("global_name") or m["author"]["username"]
+                who = _who(m["author"])
                 print(f"#{n} · {who}: " + m["content"].replace("\n", " ⏎ ")[:600], flush=True)
 
 
@@ -677,22 +745,30 @@ def finmap():
 
 
 def d_baton(hook, push_every=300):
-    """Stop hook: write state/<project>.md (ОДОО overwritten, ТҮҮХ appended); commit+push throttled."""
+    """Stop hook: write state/<project>.md (ОДОО overwritten, ТҮҮХ appended); commit+push throttled.
+    Never raises (a Stop hook must not break the session); errors go to stderr."""
+    try: return _d_baton(hook, push_every)
+    except Exception as e:
+        regstore.log(f"baton: {e!r}")
+
+
+def _d_baton(hook, push_every):
     sid = hook.get("session_id", ""); me = load(REG, {"sessions": {}})["sessions"].get(sid)
     if not me or not me.get("project"): return
     if is_private(me): return  # privacy (itge.e 2026-10-05): finance/private chat never leaves the machine
     user, asst = _last_turn(hook.get("transcript_path", ""))
     if not asst: return
     f = STATE_DIR / f"{me['project']}.md"; f.parent.mkdir(parents=True, exist_ok=True)
-    old = f.read_text(encoding="utf-8") if f.exists() else ""
-    hist = old.split("## ТҮҮХ", 1)[1].strip() if "## ТҮҮХ" in old else ""
-    nxt = [l for l in old.split("## ТҮҮХ")[0].splitlines() if l.startswith("**Дараагийн алхам")]
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     first = asst.split("\n")[0][:140]
-    now = (f"# {me['project']}\n\n## ОДОО · {ts} · {me['name']} ({DEVICE})\n"
-           + (nxt[0] + "\n" if nxt else "") + f"**{fmconfig.MEMBER_LABEL}-ийн сүүлийн хүсэлт:** {user[:500]}\n\n**Хаана зогссон (сүүлийн хариу):**\n{asst[:2500]}\n")
-    line = f"- {ts} · {DEVICE} · {me['name']} · {first}"
-    f.write_text(now + "\n## ТҮҮХ\n" + (hist + "\n" if hist else "") + line + "\n", encoding="utf-8")
+    with regstore.file_lock(BATON_LOCK, what="baton lock"):   # parallel Stop hooks: never drop each other's ТҮҮХ lines
+        old = f.read_text(encoding="utf-8") if f.exists() else ""
+        hist = old.split("## ТҮҮХ", 1)[1].strip() if "## ТҮҮХ" in old else ""
+        nxt = [l for l in old.split("## ТҮҮХ")[0].splitlines() if l.startswith("**Дараагийн алхам")]
+        now = (f"# {me['project']}\n\n## ОДОО · {ts} · {me['name']} ({DEVICE})\n"
+               + (nxt[0] + "\n" if nxt else "") + f"**{fmconfig.MEMBER_LABEL}-ийн сүүлийн хүсэлт:** {user[:500]}\n\n**Хаана зогссон (сүүлийн хариу):**\n{asst[:2500]}\n")
+        line = f"- {ts} · {DEVICE} · {me['name']} · {first}"
+        _write_text_atomic(f, now + "\n## ТҮҮХ\n" + (hist + "\n" if hist else "") + line + "\n")
     if VAULT_MODE: return  # vault file written; Drive syncs it — no git
     st = load(STATE, {}); k = "_baton_push_" + me["project"]
     if time.time() - st.get(k, 0) > push_every:
@@ -701,18 +777,30 @@ def d_baton(hook, push_every=300):
         st[k] = time.time(); save(STATE, st)
 
 
+def _write_text_atomic(f, text):
+    """Same-folder temp + os.replace (with Windows retries): a reader never sees a half-written baton."""
+    tmp = regstore._write_tmp(f.parent, "." + f.name + ".", text.encode("utf-8"))
+    try: regstore._replace(tmp, f)
+    except BaseException:
+        try: os.unlink(tmp)
+        except OSError: pass
+        raise
+
+
 def d_next(text, sid):
     """Pin 'Дараагийн алхам' in state/<project>.md (kept across auto baton writes)."""
     me = load(REG, {"sessions": {}})["sessions"].get(sid)
     if not me or not me.get("project"): print("project алга"); return
     if is_private(me): print("private — baton бичихгүй"); return  # same rule as d_baton: never written/pushed
-    f = STATE_DIR / f"{me['project']}.md"; f.parent.mkdir(parents=True, exist_ok=True); old = f.read_text(encoding="utf-8") if f.exists() else f"# {me['project']}\n\n## ТҮҮХ\n"
-    head, _, tail = old.partition("## ТҮҮХ")
-    lines = [l for l in head.splitlines() if not l.startswith("**Дараагийн алхам")]
-    i = next((k + 1 for k, l in enumerate(lines) if l.startswith("## ОДОО")), len(lines))
-    ts = datetime.datetime.now().strftime("%m-%d %H:%M")
-    lines.insert(i, f"**Дараагийн алхам ({me['name']}, {ts}):** {text}")
-    f.write_text("\n".join(lines).rstrip() + "\n\n## ТҮҮХ" + tail, encoding="utf-8")
+    f = STATE_DIR / f"{me['project']}.md"; f.parent.mkdir(parents=True, exist_ok=True)
+    with regstore.file_lock(BATON_LOCK, what="baton lock"):
+        old = f.read_text(encoding="utf-8") if f.exists() else f"# {me['project']}\n\n## ТҮҮХ\n"
+        head, _, tail = old.partition("## ТҮҮХ")
+        lines = [l for l in head.splitlines() if not l.startswith("**Дараагийн алхам")]
+        i = next((k + 1 for k, l in enumerate(lines) if l.startswith("## ОДОО")), len(lines))
+        ts = datetime.datetime.now().strftime("%m-%d %H:%M")
+        lines.insert(i, f"**Дараагийн алхам ({me['name']}, {ts}):** {text}")
+        _write_text_atomic(f, "\n".join(lines).rstrip() + "\n\n## ТҮҮХ" + tail)
     safe_sync([f], f"baton next {me['project']}")
     print("pinned")
 
@@ -852,10 +940,30 @@ def status_only(txt):
     return bool(STATUS_RE.match(txt or ""))
 
 
+DISPATCH_LOG = Path.home() / ".fmos" / "logs" / "dispatcher.log"
+
+
+def rotate_log(p, max_bytes=5 * 1024 * 1024, keep=3):
+    """p > max_bytes → p.1 (p.1 → p.2 …, p.<keep> dropped). Best effort: a log another process holds open
+    (Windows) is left alone and tried again on the next start."""
+    p = Path(p)
+    try:
+        if not p.is_file() or p.stat().st_size <= max_bytes: return False
+        for i in range(keep, 0, -1):
+            src = Path(f"{p}.{i - 1}") if i > 1 else p
+            if src.exists(): os.replace(str(src), f"{p}.{i}")
+        return True
+    except OSError as e:
+        regstore.log(f"log rotate {p.name}: {e}")
+        return False
+
+
 def d_dispatch(every=15):
     """Dispatcher (one per device, run by 03 Sys Admin via Monitor): watch every session channel;
     print one JSON line per message that should WAKE a local session: human (BD) messages, or other-device
-    messages that address this device ('→ PC' / '@pc'). Own-device bot messages are skipped (no ping-pong)."""
+    messages that address this device ('→ PC' / '@pc'). Own-device bot messages are skipped (no ping-pong).
+    Owner messages (author.id ∈ discord.json "owner_ids") carry "from_owner": true."""
+    rotate_log(DISPATCH_LOG)
     reg = load(REG, {"sessions": {}})["sessions"]; cm = chmap()
     local = {}
     for sid, ch in cm.items():
@@ -905,7 +1013,7 @@ def d_dispatch(every=15):
                                      ensure_ascii=False), flush=True)
                     continue
                 if _channel_live(parent.get(n, n)): continue        # itge.e 2026-10-07: that session hears it itself
-                ev = {"wake": local[n], "channel": parent.get(n, n), "from": a.get("global_name") or a["username"], "text": txt[:1500]}
+                ev = {"wake": local[n], "channel": parent.get(n, n), **_author_fields(a), "text": txt[:1500]}
                 if n.startswith("t:"): ev["thread"] = n[2:]; seen_threads[n[2:]] = m["id"]
                 print(json.dumps(ev, ensure_ascii=False), flush=True)
 
@@ -958,11 +1066,21 @@ def main():
         pj = a[a.index("--project")+1] if "--project" in a else None
         return cmd_register(a[1], a[2], sid, pj)
     if a[0] == "send":
-        rest = list(a[2:])
-        for flag, takes in (("--no-thread", 0), ("--thread", 1), ("--reply", 1)):
+        rest = list(a[2:]); src = None
+        for flag, takes in (("--no-thread", 0), ("--thread", 1), ("--reply", 1), ("--file", 1)):
             while flag in rest:
-                i = rest.index(flag); del rest[i:i + 1 + takes]
-        return d_send(a[1], " ".join(rest), sid)
+                i = rest.index(flag)
+                if flag == "--file": src = rest[i + 1] if i + 1 < len(rest) else ""
+                del rest[i:i + 1 + takes]
+        if src is not None:          # multi-line report: relay.py send <channel> --file <path>
+            try: text = Path(src).read_text(encoding="utf-8-sig")
+            except OSError as e:
+                sys.stderr.write(f"relay send --file: уншигдсангүй «{src}» ({e.strerror or e})\n"); sys.exit(1)
+        elif rest == ["-"]:          # relay.py send <channel> -   (stdin)
+            text = sys.stdin.buffer.read().decode("utf-8-sig", "replace").replace("\r\n", "\n")
+        else:
+            text = " ".join(rest)
+        return d_send(a[1], text, sid)
     if a[0] == "gsend":  # old git transport
         return cmd_send(a[1], a[2], a[3] if len(a) > 3 else "", sid)
     if a[0] == "sync-discord":

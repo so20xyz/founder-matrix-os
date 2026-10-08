@@ -102,6 +102,10 @@ INBOX_ROLE = dcfg("inbox_role", "00 Inbox Admin")           # role (session titl
 USER_AGENT_URL = dcfg("user_agent_url", "https://github.com/Atlas322/founder-matrix-os")
 MEMBER_LABEL = MEMBER or "BD"                                 # how the human is labelled in relay/harvest text
 DEFAULT_OWNER = dcfg("default_owner") or MEMBER or "itge.e"  # default GTD task owner
+# The owner's Discord user ids (strings). A message whose author.id is listed is the owner's order
+# ("from_owner": true in dispatch/watch/inbox events). Never matched by display name.
+_oids = dcfg("owner_ids", [])
+OWNER_IDS = frozenset(str(x).strip() for x in ([_oids] if isinstance(_oids, (str, int)) else _oids or []) if str(x).strip())
 
 
 def _legacy_vault():
