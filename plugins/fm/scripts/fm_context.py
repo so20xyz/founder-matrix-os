@@ -171,7 +171,7 @@ def build_context(vault, session_id):
     role_block = ""
     private = False
     if role and role.get("path") is not None:
-        note_text = read_text(role["path"])
+        note_text = read_text(role["path"]).replace("\r\n", "\n")   # CRLF (Windows checkout) would eat the budget
         rules, note_private = extract_rules(note_text)
         private = role.get("private") or note_private
         rel = rel_posix(role["path"], vault)
@@ -194,7 +194,7 @@ def build_context(vault, session_id):
     boot_path = vault / BOOT_REL
     if boot_path.is_file():
         budget = TOTAL_MAX_BYTES - byte_len(head_text) - byte_len(role_block) - 200
-        boot, cut = truncate_utf8(read_text(boot_path), max(budget, 0))
+        boot, cut = truncate_utf8(read_text(boot_path).replace("\r\n", "\n"), max(budget, 0))
         if cut:
             boot += "...(BOOT.md таслав - бүтнээр нь _system/BOOT.md-ээс унш)\n"
         boot_block = "\n## BOOT.md\n\n%s" % boot.strip()

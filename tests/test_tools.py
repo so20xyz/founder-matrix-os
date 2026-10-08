@@ -84,16 +84,22 @@ def test_boot_and_role_rules_fit_session_context():
         regp = vault / "_system" / "fm" / "registry.json"
         reg = json.loads(regp.read_text(encoding="utf-8"))
         assert set(reg["roles"]) == {"project", "area", "resource", "research", "developer", "creative", "finance"}
-        for slug in sorted(reg["roles"]):
-            reg["sessions"] = {"sid": {"role": slug}}
-            regp.write_text(json.dumps(reg, ensure_ascii=False), encoding="utf-8")
-            env2 = dict(env, FM_VAULT=str(vault))
-            r = subprocess.run([sys.executable, str(PLUGIN / "scripts" / "fm_context.py")], env=env2,
-                               input=json.dumps({"session_id": "sid", "cwd": str(vault)}),
-                               capture_output=True, text=True, encoding="utf-8")
-            ctx = json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"]
-            assert "таслав" not in ctx, (slug, len(ctx.encode("utf-8")))
-            assert "Дүр: %s" % slug in ctx and "Ганц команд" in ctx, slug
+        notes = [vault / "_system" / "BOOT.md"] + sorted((vault / "03-Areas" / "AI Team" / "ai-workers").glob("*.md"))
+        for eol in ("LF", "CRLF"):   # a Windows checkout (core.autocrlf) gives the templates CRLF
+            if eol == "CRLF":
+                for p in notes:
+                    p.write_bytes(p.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+            for slug in sorted(reg["roles"]):
+                reg["sessions"] = {"sid": {"role": slug}}
+                regp.write_text(json.dumps(reg, ensure_ascii=False), encoding="utf-8")
+                env2 = dict(env, FM_VAULT=str(vault))
+                r = subprocess.run([sys.executable, str(PLUGIN / "scripts" / "fm_context.py")], env=env2,
+                                   input=json.dumps({"session_id": "sid", "cwd": str(vault)}),
+                                   capture_output=True, text=True, encoding="utf-8")
+                ctx = json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"]
+                assert "таслав" not in ctx, (eol, slug, len(ctx.encode("utf-8")))
+                assert "\r" not in ctx, (eol, slug)
+                assert "Дүр: %s" % slug in ctx and "Ганц команд" in ctx, (eol, slug)
     finally:
         shutil.rmtree(str(tmp), ignore_errors=True)
 
