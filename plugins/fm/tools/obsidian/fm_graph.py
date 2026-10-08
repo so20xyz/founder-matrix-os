@@ -10,18 +10,16 @@ import json, os, re, subprocess, sys, time
 from pathlib import Path
 
 # One colour per agent's territory (itge.e 2026-10-09): first match wins, so specific paths come first.
-PALETTE = [('path:"02-Projects" OR path:"01-GTD/Tasks"', 0x4F8EF7),      # 💼 Project — blue
-           ('path:"01-GTD"', 0xF2784B),                                  # 📥 GTD — orange
-           ('path:"03-Areas/people"', 0xE85D9A),                         # 📥 GTD · people — pink
-           ('path:"03-Areas/Goals"', 0xFFB4A2),                          # 📥 GTD · goals — peach
-           ('path:"03-Areas/Studio"', 0xC08552),                         # 🎨 Creative — brown
-           ('path:"03-Areas/AI Team" OR path:"03-Areas/Business/INAI/tools"', 0x2EC4B6),  # 🏛️ Architect — teal
-           ('path:"03-Areas/Business/finances"', 0xE63946),              # 🔒 Finance — red
-           ('path:"03-Areas"', 0x3FBF7F),                                # areas — green
-           ('path:"04-Resources/Atomic"', 0xB57EDC),                     # 📚 Wiki · atoms — purple
-           ('path:"04-Resources"', 0xF2C14E),                            # 📚 Wiki — yellow
-           ('path:"00-Soul"', 0xFFFFFF),                                 # soul — white
-           ('path:"99-Archive"', 0x666666)]                              # archive — grey
+PALETTE = [  # PARA = 4 hues; bases inside take a neighbouring shade (itge.e 2026-10-09)
+           ('path:"01-GTD/Tasks"', 0x8FB8FF),                 # P · tasks — light blue
+           ('path:"02-Projects"', 0x3A7BF0),                  # P · projects — blue
+           ('path:"01-GTD" OR path:"00-Soul"', 0x5B5FE0),     # P · GTD/soul — indigo
+           ('path:"03-Areas/Studio" OR path:"03-Areas/AI Team"', 0x8BD99B),  # A · agents' areas — light green
+           ('path:"03-Areas/people" OR path:"03-Areas/Goals"', 0x2E9E6B),    # A · people/goals — deep green
+           ('path:"03-Areas"', 0x45C27F),                     # A · areas — green
+           ('path:"04-Resources/Atomic"', 0xE0962E),          # R · atoms — amber
+           ('path:"04-Resources"', 0xF5CD4A),                 # R · resources — yellow
+           ('path:"99-Archive"', 0x6E6E6E)]                   # A · archive — grey                              # archive — grey
 SEARCH = '-path:"03-Areas/Studio/Social saves" -path:_system -path:_trash -path:.backups'
 FORCES = {"centerStrength": 0.518713248970312, "repelStrength": 10, "linkStrength": 1, "linkDistance": 250,
           "nodeSizeMultiplier": 1, "lineSizeMultiplier": 1, "textFadeMultiplier": 0}
