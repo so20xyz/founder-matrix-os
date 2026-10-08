@@ -272,6 +272,7 @@ def test_sidebar_layout_matches_concept():
     gtd = [x for x in lay["sessions"] if x["title"] == "📥 GTD"]
     assert gtd and gtd[0]["role"] == "area" and gtd[0]["required"]  # setup-ийн сешн өөрөө GTD болно; order = sidebar дээрх дараалал
     roles = {a.stem for a in (PLUGIN / "agents").glob("*.md")}
+    roles |= {"area", "developer", "resource", "research"}  # engine role keys behind agents gtd / architect / wiki (2026-10-09)
     for x in lay["sessions"]:
         assert x["group"] in lay["groups"], x
         assert x["role"] in roles or x["role"].startswith("<"), x

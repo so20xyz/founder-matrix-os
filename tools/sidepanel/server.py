@@ -143,7 +143,7 @@ def meetings():
 
 
 def research(limit=14):
-    roots = ["05-Resources", "01-Soul/creative", "03-Projects", "05-Resources/Atomic" if (VAULT / "05-Resources/Atomic").exists() or not (VAULT / "06-Atomic").exists() else "06-Atomic", inbox_dir().relative_to(VAULT).as_posix()]
+    roots = ["05-Resources", "04-Areas/Studio/brainstorm", "03-Projects", "05-Resources/Atomic" if (VAULT / "05-Resources/Atomic").exists() or not (VAULT / "06-Atomic").exists() else "06-Atomic", inbox_dir().relative_to(VAULT).as_posix()]
     cand = []
     for r in roots:
         for p in (VAULT / r).rglob("*.md"):
@@ -153,7 +153,7 @@ def research(limit=14):
                 continue
             fm, _ = frontmatter(head + "\n")
             t = fm.get("type", "")
-            if r in ("05-Resources", "01-Soul/creative") or t in ("research", "reference", "source", "decision", "brainstorm"):
+            if r in ("05-Resources", "04-Areas/Studio/brainstorm") or t in ("research", "reference", "source", "decision", "brainstorm"):
                 cand.append((p.stat().st_mtime, p, t))
     cand.sort(reverse=True)
     out = []

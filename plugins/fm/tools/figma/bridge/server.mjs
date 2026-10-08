@@ -123,7 +123,7 @@ const server = http.createServer(async (req, res) => {
     // vault: env FM_VAULT > ~/.fmos/config.json "vault"; folders: env FIGMA_GALLERY_ROOTS (comma-separated, vault-relative)
     let cfgVault = ""; try { cfgVault = JSON.parse(fs.readFileSync(path.join((await import("node:os")).homedir(), ".fmos", "config.json"), "utf8")).vault || ""; } catch {}
     const VAULT = path.resolve(process.env.FM_VAULT || cfgVault || ".");
-    const ROOTS = (process.env.FIGMA_GALLERY_ROOTS || "01-Soul,03-Projects,05-Resources").split(",").map(s => s.trim()).filter(Boolean);
+    const ROOTS = (process.env.FIGMA_GALLERY_ROOTS || "04-Areas/Studio,03-Projects,05-Resources").split(",").map(s => s.trim()).filter(Boolean);
     const EXT = /\.(png|jpe?g|webp|gif)$/i;
     res.setHeader("Access-Control-Allow-Origin", "*");
     if (req.url.startsWith("/file?")) {
