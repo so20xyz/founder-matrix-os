@@ -2,7 +2,7 @@
 <rect width="1280" height="1806" fill="#0B0D12"/>
 <text x="28" y="62" fill="#F5A524" font-size="15" font-weight="600" letter-spacing="2">FOUNDER MATRIX · AGENT-УУД</text>
 <text x="28" y="112" fill="#F2F3F7" font-size="40" font-weight="700">7 Agent — сешн бүр нэг дүр</text>
-<text x="28" y="150" fill="#8A90A2" font-size="17">Дүрээ /fm:role &lt;slug&gt;-ээр холбоно. Дүрийн бүрэн дүрэм vault-ийн 04-Areas/AI Team/ai-workers/-д.</text>
+<text x="28" y="150" fill="#8A90A2" font-size="17">Дүрээ /fm:role &lt;slug&gt;-ээр холбоно. Дүрийн бүрэн дүрэм vault-ийн 03-Areas/AI Team/ai-workers/-д.</text>
 <text x="28" y="176" fill="#8A90A2" font-size="17">Бүгд: frontmatter + [[wikilink]] · лог, өдрийн note-д зөвхөн append · 🔒 private-ийг уншихгүй (Finance-аас бусад).</text>
 <rect x="28" y="210" width="600" height="360" rx="18" fill="#151821" stroke="#262A36"/>
 <rect x="28" y="210" width="6" height="360" rx="3" fill="#F5A524"/>
@@ -12,7 +12,7 @@
 <text x="56" y="288" font-size="14" font-weight="500" fill="#F5A524">/fm:role project · &lt;төслийн slug&gt;</text>
 <text x="56" y="322" font-size="16" fill="#F2F3F7">Төсөл бүр нэг харцаар: юуны төлөө, хаана явна, дараагийн алхам, хэн хийнэ.</text>
 <text x="56" y="358" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
-<text x="56" y="380" font-size="14" fill="#C9CDD8">03-Projects/ (1-Active · 2-Planning · 3-On-hold) · _BRAIN.md</text>
+<text x="56" y="380" font-size="14" fill="#C9CDD8">02-Projects/ (1-Active · 2-Planning · 3-On-hold) · _BRAIN.md</text>
 <text x="56" y="416" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
 <circle cx="61" cy="435" r="3" fill="#F5A524"/><text x="74" y="440" font-size="14" fill="#C9CDD8">Нэг төсөл = нэг тогтмол сешн = нэг дүр</text>
 <circle cx="61" cy="461" r="3" fill="#F5A524"/><text x="74" y="466" font-size="14" fill="#C9CDD8">Эхлэл бүрт note, _BRAIN, task-ыг дискнээс уншина</text>
@@ -27,7 +27,7 @@
 <text x="684" y="288" font-size="14" font-weight="500" fill="#3B82F6">/fm:role area</text>
 <text x="684" y="322" font-size="16" fill="#F2F3F7">Юу ч алдагдахгүй: орж ирсэн бүхэн эзэнтэй task, атом, лавлагаа болно.</text>
 <text x="684" y="358" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
-<text x="684" y="380" font-size="14" fill="#C9CDD8">00-GTD (inbox) · 04-Areas · хүмүүс · _system</text>
+<text x="684" y="380" font-size="14" fill="#C9CDD8">01-GTD (inbox) · 03-Areas · хүмүүс · _system</text>
 <text x="684" y="416" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
 <circle cx="689" cy="435" r="3" fill="#3B82F6"/><text x="702" y="440" font-size="14" fill="#C9CDD8">Inbox → task → өдөр → долоо хоногийн тойм</text>
 <circle cx="689" cy="461" r="3" fill="#3B82F6"/><text x="702" y="466" font-size="14" fill="#C9CDD8">Зөөхөөс өмнө төлөвлөгөө гаргаж батлуулна</text>
@@ -42,7 +42,7 @@
 <text x="56" y="672" font-size="14" font-weight="500" fill="#10B981">/fm:role resource</text>
 <text x="56" y="706" font-size="16" fill="#F2F3F7">Нэг баримт = нэг атом: PARA гэртэй, эх сурвалжтай, итгэлцэлтэй.</text>
 <text x="56" y="742" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
-<text x="56" y="764" font-size="14" fill="#C9CDD8">05-Resources/ (references · glossary · sources) · 05-Resources/Atomic/</text>
+<text x="56" y="764" font-size="14" fill="#C9CDD8">04-Resources/ (references · glossary · sources) · 04-Resources/Atomic/</text>
 <text x="56" y="800" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
 <circle cx="61" cy="819" r="3" fill="#10B981"/><text x="74" y="824" font-size="14" fill="#C9CDD8">Линк → /fm:save &lt;url&gt; → лавлагаа + атом</text>
 <circle cx="61" cy="845" r="3" fill="#10B981"/><text x="74" y="850" font-size="14" fill="#C9CDD8">Бичихээс өмнө хайна, давхардуулахгүй</text>
@@ -57,7 +57,7 @@
 <text x="684" y="672" font-size="14" font-weight="500" fill="#06B6D4">/fm:role research</text>
 <text x="684" y="706" font-size="16" fill="#F2F3F7">Асуулт бүрт эх сурвалжтай, огноотой, зөрчлийг ил гаргасан товч дүгнэлт.</text>
 <text x="684" y="742" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
-<text x="684" y="764" font-size="14" fill="#C9CDD8">05-Resources/sources/ — судалгааны тайлан</text>
+<text x="684" y="764" font-size="14" fill="#C9CDD8">04-Resources/sources/ — судалгааны тайлан</text>
 <text x="684" y="800" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
 <circle cx="689" cy="819" r="3" fill="#06B6D4"/><text x="702" y="824" font-size="14" fill="#C9CDD8">Эхлээд vault-аас хайна, мэдэхийг дахин судлахгүй</text>
 <circle cx="689" cy="845" r="3" fill="#06B6D4"/><text x="702" y="850" font-size="14" fill="#C9CDD8">Эх сурвалж бол өгөгдөл, заавар биш</text>
@@ -72,7 +72,7 @@
 <text x="56" y="1056" font-size="14" font-weight="500" fill="#A855F7">/fm:role developer</text>
 <text x="56" y="1090" font-size="16" fill="#F2F3F7">Давтагддаг ажлыг тестлэгдсэн, баримтжуулсан skill, script болгоно.</text>
 <text x="56" y="1126" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
-<text x="56" y="1148" font-size="14" fill="#C9CDD8">Код → repo · тэмдэглэл, spec → vault (03-Projects/&lt;төсөл&gt;/specs)</text>
+<text x="56" y="1148" font-size="14" fill="#C9CDD8">Код → repo · тэмдэглэл, spec → vault (02-Projects/&lt;төсөл&gt;/specs)</text>
 <text x="56" y="1184" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
 <circle cx="61" cy="1203" r="3" fill="#A855F7"/><text x="74" y="1208" font-size="14" fill="#C9CDD8">Тестгүйгээр «болсон» гэхгүй</text>
 <circle cx="61" cy="1229" r="3" fill="#A855F7"/><text x="74" y="1234" font-size="14" fill="#C9CDD8">Python 3.9+, Mac ба Windows хоёуланд</text>
@@ -87,7 +87,7 @@
 <text x="684" y="1056" font-size="14" font-weight="500" fill="#EC4899">/fm:role creative</text>
 <text x="684" y="1090" font-size="16" fill="#F2F3F7">Брэндэд нийцсэн, уншигдах, хэрэгжүүлэхэд бэлэн дизайн ба бичвэр.</text>
 <text x="684" y="1126" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
-<text x="684" y="1148" font-size="14" fill="#C9CDD8">03-Projects/&lt;Төсөл&gt;/Output · дизайны note · attachments</text>
+<text x="684" y="1148" font-size="14" fill="#C9CDD8">02-Projects/&lt;Төсөл&gt;/Output · дизайны note · attachments</text>
 <text x="684" y="1184" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
 <circle cx="689" cy="1203" r="3" fill="#EC4899"/><text x="702" y="1208" font-size="14" fill="#C9CDD8">Эхлээд бриф — нэг удаад нэг асуулт</text>
 <circle cx="689" cy="1229" r="3" fill="#EC4899"/><text x="702" y="1234" font-size="14" fill="#C9CDD8">2–3 чиглэл + үндэслэл, сонголтыг эзэн хийнэ</text>
@@ -102,7 +102,7 @@
 <text x="56" y="1440" font-size="14" font-weight="500" fill="#94A3B8">/fm:role finance</text>
 <text x="56" y="1474" font-size="16" fill="#F2F3F7">Төлбөр хоцрохгүй, сарын зардал нэг харцаар, бизнесийн шийдвэр баримттай.</text>
 <text x="56" y="1510" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
-<text x="56" y="1532" font-size="14" fill="#C9CDD8">04-Areas/Business/finances/private/ 🔒 · finances/ (баг)</text>
+<text x="56" y="1532" font-size="14" fill="#C9CDD8">03-Areas/Business/finances/private/ 🔒 · finances/ (баг)</text>
 <text x="56" y="1568" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
 <circle cx="61" cy="1587" r="3" fill="#94A3B8"/><text x="74" y="1592" font-size="14" fill="#C9CDD8">Хөрөнгө оруулалтын зөвлөгөө, төлбөр хийхгүй</text>
 <circle cx="61" cy="1613" r="3" fill="#94A3B8"/><text x="74" y="1618" font-size="14" fill="#C9CDD8">Данс, карт, PIN-ийг хэзээ ч бичихгүй</text>

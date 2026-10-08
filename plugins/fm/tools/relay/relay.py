@@ -499,15 +499,16 @@ def d_watch(sid, every=20):
 def d_task(args, sid):
     """GTD task (itge.e 2026-10-05): PARA has no tasks — a task is created on purpose, owned by a dural (session role),
     and the owner is notified in its Discord channel. Usage:
-    relay.py task "<гарчиг>" --owner "<сешний title>" [--project "<03-Projects/... note>"] [--status next-action] [--prio 🟡] [--due YYYY-MM-DD] [--body "..."]"""
+    relay.py task "<гарчиг>" --owner "<сешний title>" [--project "<02-Projects/... note>"] [--status next-action] [--prio 🟡] [--due YYYY-MM-DD] [--body "..."]"""
     def opt(k, d=""):
         return args[args.index(k) + 1] if k in args else d
     title = args[0]; owner = opt("--owner", fmconfig.DEFAULT_OWNER); status = opt("--status", "next-action")
     vault = fmconfig.vault_dir()
     safe = _re.sub(r'[\\/:*?"<>|]', "-", title)[:80]
-    tdir = vault / "00-GTD" / "Tasks"
-    if not tdir.is_dir() and (vault / "02-GTD" / "tasks").is_dir():  # хуучин layout (шилжилтийн хамгаалалт)
-        tdir = vault / "02-GTD" / "tasks"
+    tdir = vault / "01-GTD" / "Tasks"
+    for old in (vault / "00-GTD" / "Tasks", vault / "02-GTD" / "tasks"):  # одоогийн / хуучин layout (шилжилтийн хамгаалалт)
+        if not tdir.is_dir() and old.is_dir():
+            tdir = old
     f = tdir / f"{safe}.md"; f.parent.mkdir(parents=True, exist_ok=True)
     today = datetime.date.today().isoformat()
     proj = opt("--project")
@@ -632,7 +633,13 @@ is_private = fmconfig.is_private  # explicit "private": true, or a money project
 # санхүүгийн сешн рүү (`fetch`) — dispatcher-ийн event (GTD харна) агуулга, холбоосгүй.
 FIN_CH = ("business", "personal")
 FIN_ACK = re.compile(r"^\s*(?:🙋|✅)[^0-9]{0,80}$")
-FIN_INBOX = "04-Areas/Business/finances/private/inbox"
+FIN_INBOX = "03-Areas/Business/finances/private/inbox"
+FIN_INBOX_CUR = "04-Areas/Business/finances/private/inbox"  # одоогийн layout (fallback)
+
+
+def fin_inbox(vault):
+    v = Path(vault)
+    return v / (FIN_INBOX_CUR if not (v / "03-Areas").is_dir() and (v / "04-Areas").is_dir() else FIN_INBOX)
 
 
 def fin_channel(v):
@@ -891,7 +898,7 @@ def d_fetch(chan, sid):
     if chan not in ch: print(f"#{chan} суваг алга — `relay.py sync-discord`"); return
     key = "_fin_" + chan; after = st.get(key, "0")
     msgs = sorted(dapi("GET", f"/channels/{ch[chan]}/messages?after={after}&limit=50"), key=lambda m: int(m["id"]))
-    out = Path(fmconfig.VAULT) / FIN_INBOX if VAULT_MODE else Path.home() / ".fmos_fin_inbox"
+    out = fin_inbox(fmconfig.VAULT) if VAULT_MODE else Path.home() / ".fmos_fin_inbox"
     out.mkdir(parents=True, exist_ok=True); n = 0
     for m in msgs:
         after = m["id"]

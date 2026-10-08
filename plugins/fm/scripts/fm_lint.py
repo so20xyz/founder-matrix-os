@@ -12,7 +12,7 @@ Hook горим (stdin дээр hook JSON):
     - бичсэн текстэнд token/secret байна (Discord, Notion, Figma, OpenAI,
       Anthropic, GitHub, Slack, AWS, private key);
     - хувийн санхүүгийн note (`type: bill`, `private: true`, эсвэл
-      `scope: team`-гүй `type: finance-record`) 04-Areas/Business/finances/private/-аас
+      `scope: team`-гүй `type: finance-record`) 03-Areas/Business/finances/private/-аас
       гадуур бичигдсэн. `scope: team` (salary биш) багийн бичлэг гадуур байж болно.
   Анхааруулгыг алгасах хавтас: _system/templates, _trash, 99-Archive, .obsidian.
   Secret шалгалт .obsidian-аас бусад бүх хавтаст ажиллана.
@@ -86,8 +86,8 @@ def find_secrets(text):
 
 
 def _finance_allowed(rel):
-    from fm_common import PRIVATE_FINANCE_DIR, rel_startswith
-    if rel_startswith(rel, PRIVATE_FINANCE_DIR):
+    from fm_common import PRIVATE_FINANCE_DIRS, rel_startswith
+    if any(rel_startswith(rel, d) for d in PRIVATE_FINANCE_DIRS):
         return True
     if rel_startswith(rel, "_system/templates") or rel_startswith(rel, "_trash"):
         return True
@@ -156,7 +156,7 @@ def analyze(rel, file_name, file_text, written_text, tool, today=None):
     fields, has_fm, _ = split_frontmatter(file_text)
     if has_fm and is_private_finance(fields) and rel is not None and not _finance_allowed(rel):
         blocks.append("Хувийн санхүүгийн note (bill / private: true / scope: team-гүй finance-record) "
-                      "04-Areas/Business/finances/private/-аас гадуур бичигдлээ: %s. "
+                      "03-Areas/Business/finances/private/-аас гадуур бичигдлээ: %s. "
                       "Энэ хавтас руу зөө (эсвэл хувийн мэдээллийг устга)." % rel)
 
     skip_lint = rel is not None and any(rel_startswith(rel, d) for d in SKIP_LINT_DIRS)

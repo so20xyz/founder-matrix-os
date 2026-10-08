@@ -6,13 +6,13 @@ argument-hint: "[нэр] [new|status|close|hygiene]"
 
 # /fm:project — төсөл ба самбар
 
-Төсөл бүр нэг хавтас: `03-Projects/<төлөв>/<Нэр>/<Нэр>.md` + `_BRAIN.md`.
+Төсөл бүр нэг хавтас: `02-Projects/<төлөв>/<Нэр>/<Нэр>.md` + `_BRAIN.md`.
 
 | Төлөв | Хавтас | `status:` |
 |---|---|---|
-| Active | `03-Projects/1-Active/` | `active` |
-| Planning | `03-Projects/2-Planning/` | `planning` |
-| On-hold | `03-Projects/3-On-hold/` | `on-hold` |
+| Active | `02-Projects/1-Active/` | `active` |
+| Planning | `02-Projects/2-Planning/` | `planning` |
+| On-hold | `02-Projects/3-On-hold/` | `on-hold` |
 | Archive | `99-Archive/Projects/` | `completed` эсвэл `cancelled` |
 
 **Frontmatter = үнэн.** Хавтас, самбар, дашбоард нь түүнийг дагана.
@@ -41,7 +41,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" list "${use
    `_system/templates/Project.md` байвал түүний нэмэлт хэсгүүдийг (Bases харагдац г.м.) шинэ нот руу нэм.
 5. Яриан дахь мэдээллээр бөглө: тойм, `goal`, `due`, `milestones`, `anti-goal`, холбогдох хүмүүс (`[[wikilink]]`). Мэдэхгүй зүйлийг `TBD`. **`goal`-ыг өөрөө зохиохгүй** — гишүүний үг.
 6. `_BRAIN.md`: «яагаад байдаг», «дууссан гэж юу вэ», «юу хамаарахгүй» — гишүүнээс асууж бөглө.
-7. Өдрийн тэмдэглэл байвал (`00-GTD/Daily/<өнөөдөр>.md`) нэг мөр **append**: `- 🆕 [[<төслийн зам>|<Нэр>]] төсөл нээгдэв`.
+7. Өдрийн тэмдэглэл байвал (`01-GTD/Daily/<өнөөдөр>.md`) нэг мөр **append**: `- 🆕 [[<төслийн зам>|<Нэр>]] төсөл нээгдэв`.
 
 ## 2. Шинэчлэх
 
@@ -56,7 +56,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${use
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${user_config.vault_path}" "<Нэр>" on-hold --apply
 ```
 
-- Скрипт хавтсыг зөөж, `status`-ыг тавьж, vault доторх бүх `03-Projects/<хуучин>/<Нэр>` холбоосыг шинэ зам руу солино (`.obsidian/`, `_trash/`-ийг хөндөхгүй).
+- Скрипт хавтсыг зөөж, `status`-ыг тавьж, vault доторх бүх `02-Projects/<хуучин>/<Нэр>` холбоосыг шинэ зам руу солино (`.obsidian/`, `_trash/`-ийг хөндөхгүй).
 - **Obsidian нээлттэй бол** түүний «Move file to…» командаар зөөх нь илүү найдвартай (Obsidian холбоосыг өөрөө шинэчилнэ) — дараа нь зөвхөн `status`-ыг засна.
 - Хоёр машин зэрэг бичиж байгаа бол зөөхгүй (Drive `(1)` давхардал үүсгэнэ).
 - Active/Planning биш төлөв рүү шилжсэн төсөлд Project agent-ийн сешн байвал гишүүнд мэдэгдэ - сешнийг архивлах эсэхийг гишүүн шийднэ (өөрөө хаахгүй).
@@ -71,14 +71,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${use
 | 2 | **Нээлттэй таск** бүрд шийдвэр: `completed` / `cancelled` / залгамжлагч төсөл эсвэл Area руу `project:` солих. Бусад дүрийн таскийг өөрөө засахгүй — эзэнд нь task үүсгэж дамжуул | таск бүрийн шинэ төлөв |
 | 3 | **Нээлттэй асуултууд бүтэн текстээр** `_BRAIN.md`-д — «3 асуулт байна» биш, асуулт өөрөө | хэсгийн агуулга |
 | 4 | **Handoff тэмдэглэл** төслийн хавтсанд: юу хийгдсэн · юу үлдсэн · мэдлэг хаана · шударга «бүртгэгдээгүй» | файлын зам |
-| 5 | **Шийдвэрийн атом** (`05-Resources/Atomic/decisions/`) — яагаад хаагдсан. Resource дүрд task болгож өгч болно | атомын зам |
+| 5 | **Шийдвэрийн атом** (`04-Resources/Atomic/decisions/`) — яагаад хаагдсан. Resource дүрд task болгож өгч болно | атомын зам |
 | 6 | `status: completed` (эсвэл `cancelled`) → `move … archive --status completed --apply` | скриптийн гаралт |
 | 7 | Энэ төсөлд холбогдсон **сешн** (Project agent) байвал архивлах нэр дэвшигч - `_system/fm/registry.json`-оос ол, гишүүнээр шийдүүл | registry мөр |
 | 8 | **Гишүүний зөвшөөрөл** — archive уу, `_trash` уу гэдгийг гишүүн шийднэ | гишүүний үг |
 
 ## 5. Самбарын цэгцлэл (hygiene горим)
 
-**Kanban самбар архивлагдсан (itge.e)** — шинэ vault-д самбар = `00-GTD/Tasks/Tasks.base`-ийн GTD view-ууд (task-ийн `status`-аас шууд). Энэ горим зөвхөн **хуучин vault-д** Kanban файл (`00-GTD/boards/` эсвэл `02-GTD/boards/`) үлдсэн үед. Шинэ самбар **үүсгэхгүй**. Kanban файл нь таскийн файлаас **тусдаа** — карт чирэхэд таскийн `status` өөрчлөгдөхгүй. Hygiene горим хоёуланг нь тулгана.
+**Kanban самбар архивлагдсан (itge.e)** — шинэ vault-д самбар = `01-GTD/Tasks/Tasks.base`-ийн GTD view-ууд (task-ийн `status`-аас шууд). Энэ горим зөвхөн **хуучин vault-д** Kanban файл (`01-GTD/boards/` эсвэл `02-GTD/boards/`) үлдсэн үед. Шинэ самбар **үүсгэхгүй**. Kanban файл нь таскийн файлаас **тусдаа** — карт чирэхэд таскийн `status` өөрчлөгдөхгүй. Hygiene горим хоёуланг нь тулгана.
 
 1. Тайлан (зөвхөн уншина):
    ```bash

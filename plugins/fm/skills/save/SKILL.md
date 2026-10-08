@@ -1,6 +1,6 @@
 ---
 name: save
-description: Яриаг vault руу хадгална (атом → PARA холбоос → task → хүн → лог). Гурван горимтой - (1) энгийн - сэдэв/сешн дуусахад бүгдийг цэгцэлж хадгална; (2) `--checkpoint` - ярианы дундах хурдан барьж авалт, дараа нь яриагаа таслалгүй үргэлжлүүлнэ; (3) URL өгвөл - линкийг 05-Resources-д лавлагаа болгож, гол санааг confidence-тэй атом болгоод байгаа атомуудтай fact-check хийнэ. «хадгал», «бүгдийг хадгал», «vault руу хадгал», «тэмдэглэж ав», «барьж ав», «checkpoint», «track», «атом болго», «энэ линкийг хадгал», «линк атом болго», «clip», «reference болго», «save» гэвэл ашигла. Save the conversation, mid-session checkpoint, or clip a URL into reference + atoms.
+description: Яриаг vault руу хадгална (атом → PARA холбоос → task → хүн → лог). Гурван горимтой - (1) энгийн - сэдэв/сешн дуусахад бүгдийг цэгцэлж хадгална; (2) `--checkpoint` - ярианы дундах хурдан барьж авалт, дараа нь яриагаа таслалгүй үргэлжлүүлнэ; (3) URL өгвөл - линкийг 04-Resources-д лавлагаа болгож, гол санааг confidence-тэй атом болгоод байгаа атомуудтай fact-check хийнэ. «хадгал», «бүгдийг хадгал», «vault руу хадгал», «тэмдэглэж ав», «барьж ав», «checkpoint», «track», «атом болго», «энэ линкийг хадгал», «линк атом болго», «clip», «reference болго», «save» гэвэл ашигла. Save the conversation, mid-session checkpoint, or clip a URL into reference + atoms.
 argument-hint: "[--checkpoint] [<url>] [онцлох сэдэв]"
 ---
 
@@ -38,14 +38,14 @@ argument-hint: "[--checkpoint] [<url>] [онцлох сэдэв]"
 
 | Ангилал | Хаашаа | Шалгуур | checkpoint |
 |---|---|---|---|
-| Шийдвэр | `05-Resources/Atomic/decisions/` (`type: session-decision`) | Сонголт хийгдэж чиглэл тогтсон | ✅ |
-| Ойлголт / баримт / сургамж | `05-Resources/Atomic/knowledge/` (`type: atomic`) | Дахин хэрэглэгдэх, контекстгүй уншигдах нэг санаа | ✅ |
-| Нээлттэй асуулт | `05-Resources/Atomic/knowledge/` (`kind: question`) | Хариулт хараахан алга. Хожим хариулт гарвал шинэ атом + `answeredby:` | ✅ |
-| Task | `00-GTD/Tasks/` (`/fm:task`-ийн журам) | Хэн нэгэн «дараагийн алхам» гэж шийдсэн | ✅ |
-| Төслийн ахиц | Төслийн note / `_BRAIN.md` | `03-Projects/`-ийн төсөлд хамаарна | - |
-| Хүн | `04-Areas/people/` (`/fm:people`-ийн журам) | Нэр, үүрэг, харилцаа дурдагдсан | - |
+| Шийдвэр | `04-Resources/Atomic/decisions/` (`type: session-decision`) | Сонголт хийгдэж чиглэл тогтсон | ✅ |
+| Ойлголт / баримт / сургамж | `04-Resources/Atomic/knowledge/` (`type: atomic`) | Дахин хэрэглэгдэх, контекстгүй уншигдах нэг санаа | ✅ |
+| Нээлттэй асуулт | `04-Resources/Atomic/knowledge/` (`kind: question`) | Хариулт хараахан алга. Хожим хариулт гарвал шинэ атом + `answeredby:` | ✅ |
+| Task | `01-GTD/Tasks/` (`/fm:task`-ийн журам) | Хэн нэгэн «дараагийн алхам» гэж шийдсэн | ✅ |
+| Төслийн ахиц | Төслийн note / `_BRAIN.md` | `02-Projects/`-ийн төсөлд хамаарна | - |
+| Хүн | `03-Areas/people/` (`/fm:people`-ийн журам) | Нэр, үүрэг, харилцаа дурдагдсан | - |
 | Линк | URL горим | Хадгалах үнэ цэнэтэй URL | - |
-| 🔒 Хувийн санхүү | `04-Areas/Business/finances/private/` | Доорх тусгай дүрэм | - |
+| 🔒 Хувийн санхүү | `03-Areas/Business/finances/private/` | Доорх тусгай дүрэм | - |
 
 Шүүлт:
 - Нэг атом = нэг санаа. «Ирээдүйн агент үүнийг хайх уу?» - үгүй бол алгас.
@@ -78,10 +78,10 @@ tags: [atomic, <сэдэв>]
 confidence: medium       # stated | high | medium | speculation
 sources: ["[[...]]"]     # эх note, лавлагаа эсвэл өнөөдрийн лог
 role: <дүрийн slug>
-projects: ["[[03-Projects/...]]"]  # projects эсвэл areas - дор хаяж нэг PARA гэр
-topics: ["[[05-Resources/Topics/<Сэдэв>]]"]  # 1-2 сэдэв: хадгалсан пост → сэдэв → атом гүүр (байвал)
-from: ["[[05-Resources/references/...]]"]  # ямар resource-оос гарсан (байвал) — ажлын цикл
-up: "[[05-Resources/Atomic/knowledge/Atoms]]"  # харьяалал (шийдвэр бол 05-Resources/Atomic/decisions/Decisions)
+projects: ["[[02-Projects/...]]"]  # projects эсвэл areas - дор хаяж нэг PARA гэр
+topics: ["[[04-Resources/Topics/<Сэдэв>]]"]  # 1-2 сэдэв: хадгалсан пост → сэдэв → атом гүүр (байвал)
+from: ["[[04-Resources/references/...]]"]  # ямар resource-оос гарсан (байвал) — ажлын цикл
+up: "[[04-Resources/Atomic/knowledge/Atoms]]"  # харьяалал (шийдвэр бол 04-Resources/Atomic/decisions/Decisions)
 areas: []
 supersededby: []
 ai-first: true
@@ -94,30 +94,30 @@ ai-first: true
 
 ## 5. PARA холбоос ба task
 
-**PARA гэр.** Атом бүр `03-Projects/`, `04-Areas/` эсвэл `05-Resources/` доорх дор хаяж нэг note-той хоёр чиглэлд холбогдоно:
+**PARA гэр.** Атом бүр `02-Projects/`, `03-Areas/` эсвэл `04-Resources/` доорх дор хаяж нэг note-той хоёр чиглэлд холбогдоно:
 1. Атомын `projects:`/`areas:` болон `**Холбоос:**` мөрөнд гэрийг нь заа.
 2. Гэрийн note-д атом руу мөр нэм: төслийн `## Гол шийдвэр` хэсэгт `- YYYY-MM-DD [[атом]] - нэг мөр` (хэсэг байхгүй бол үүсгэ).
 
 Read → Edit ашигла. Байгаа note-ийг хэзээ ч Write-аар дарж бичихгүй. Хэрэглэгчийн мөрийг бүү устга, бүү зөө.
 
-**Task.** Шинэ task бүр `00-GTD/Tasks/<Тодорхой гарчиг>.md` (загвар `<V>/_system/templates/Task.md` эсвэл `/fm:task`). Заавал: `type: task`, `status` (`inbox` · `next-action` · `waiting` · `someday` · `completed` · `cancelled`), `owner` (`me` · `"@Нэр"` · дүрийн slug), `priority` (`high` · `medium` · `low`), `context` (`work` · `home`), `project` (wikilink эсвэл `TBD`), `tags: [task]`, `ai-first: true`. Дууссан бол `status: completed` (`done` биш) + `## Хүргэсэн` хэсэгт нэг мөр.
+**Task.** Шинэ task бүр `01-GTD/Tasks/<Тодорхой гарчиг>.md` (загвар `<V>/_system/templates/Task.md` эсвэл `/fm:task`). Заавал: `type: task`, `status` (`inbox` · `next-action` · `waiting` · `someday` · `completed` · `cancelled`), `owner` (`me` · `"@Нэр"` · дүрийн slug), `priority` (`high` · `medium` · `low`), `context` (`work` · `home`), `project` (wikilink эсвэл `TBD`), `tags: [task]`, `ai-first: true`. Дууссан бол `status: completed` (`done` биш) + `## Хүргэсэн` хэсэгт нэг мөр.
 
 **--checkpoint горим энд дуусна:** 7-р алхмын лог мөрийг нэмээд (`→ checkpoint:`), 8-р алхмын товч мэдэгдлийг өгөөд **яриагаа шууд үргэлжлүүл**.
 
 ## 6. Хүн, төсөл, өдрийн note (зөвхөн энгийн горим)
 
-- **Хүн:** `04-Areas/people/<Нэр>.md` байвал `## Харилцаа` хэсэгт огноотой мөр нэм, `last_interaction:`-ийг шинэчил. Байхгүй бөгөөд дахин гарах магадлалтай бол `/fm:people`-ийн журмаар үүсгэ. Дамжуулж дурдсан хүнд note бүү үүсгэ.
+- **Хүн:** `03-Areas/people/<Нэр>.md` байвал `## Харилцаа` хэсэгт огноотой мөр нэм, `last_interaction:`-ийг шинэчил. Байхгүй бөгөөд дахин гарах магадлалтай бол `/fm:people`-ийн журмаар үүсгэ. Дамжуулж дурдсан хүнд note бүү үүсгэ.
 - **Төсөл:** ахицыг төслийн `_BRAIN.md`-ийн тохирох хэсэгт нэг мөрөөр, холбоостой.
-- **Өдрийн note** `00-GTD/Daily/<огноо>.md`. Байхгүй бол `/fm:update daily`-ийн журмаар үүсгэ. `## 💼 Ажил` хэсэгт (хуучин загварт `## 💼 Work Log`) үүсгэсэн атом, task руу **зөвхөн холбоос** нэм.
+- **Өдрийн note** `01-GTD/Daily/<огноо>.md`. Байхгүй бол `/fm:update daily`-ийн журмаар үүсгэ. `## 💼 Ажил` хэсэгт (хуучин загварт `## 💼 Work Log`) үүсгэсэн атом, task руу **зөвхөн холбоос** нэм.
 
 ## 7. Лог мөр
 
 `_system/logs/<огноо>.md`-д Read → Edit-ээр, зөвхөн төгсгөлд нь нэг мөр. Файл байхгүй бол үүсгэ. Мөрөнд зөвхөн холбоос:
 
 ```
-- **HH:MM** · <дүр> → [[05-Resources/Atomic/decisions/YYYY-MM-DD - slug]] · [[00-GTD/Tasks/Гарчиг]]
+- **HH:MM** · <дүр> → [[04-Resources/Atomic/decisions/YYYY-MM-DD - slug]] · [[01-GTD/Tasks/Гарчиг]]
 - **HH:MM** · <дүр> → checkpoint: [[атом1]] · [[task]]
-- **HH:MM** · <дүр> → clip: [[05-Resources/references/...]] · [[атом1]]
+- **HH:MM** · <дүр> → clip: [[04-Resources/references/...]] · [[атом1]]
 ```
 
 Агуулгыг логт бүү бич. Өмнөх мөрийг бүү засварла.
@@ -129,7 +129,7 @@ Read → Edit ашигла. Байгаа note-ийг хэзээ ч Write-аар 
    ```
    Атом (3): [[...]], [[...]], [[...]]
    Task (1): [[...]] - owner: area
-   Шинэчилсэн: [[03-Projects/.../_BRAIN]], [[04-Areas/people/...]]
+   Шинэчилсэн: [[02-Projects/.../_BRAIN]], [[03-Areas/people/...]]
    Лог: _system/logs/YYYY-MM-DD.md (1 мөр)
    Алгассан: <яагаад>
    ```
@@ -138,14 +138,14 @@ Read → Edit ашигла. Байгаа note-ийг хэзээ ч Write-аар 
 
 ## 🔒 Хувийн санхүү
 
-Хувийн санхүү vault-аас **хэзээ ч гарахгүй**: git, Discord, STATUS, атом, лог руу орохгүй. Хавтас `04-Areas/Business/finances/private/`-ийг зөвхөн `private: true` бүхий **Finance** дүр (`role: finance`) уншиж, бичнэ.
+Хувийн санхүү vault-аас **хэзээ ч гарахгүй**: git, Discord, STATUS, атом, лог руу орохгүй. Хавтас `03-Areas/Business/finances/private/`-ийг зөвхөн `private: true` бүхий **Finance** дүр (`role: finance`) уншиж, бичнэ.
 
 **Finance дүргүй сешн** (context-д `PRIVATE сешн` байхгүй): хувийн санхүүгийн зүйлийг **бүү бич**, тэр хавтсанд бүү ор. Тайланд зөвхөн «🔒 хувийн санхүүгийн N зүйл алгассан - Finance дүрийн сешнд `/fm:save` ажиллуул». Дүн, данс, байгууллагын нэрийг давтахгүй. Санхүүтэй холбоотой линк (банкны хуулга, нэхэмжлэх) бол атом үүсгэхгүй.
 
 **Finance дүрийн сешн** (`PRIVATE сешн`):
 - Бичихийн өмнө хэрэглэгчээс асуу.
 - Сар бүр давтагддаг төлбөр → `type: bill` (загвар `_system/templates/Bill.md`); байгаа bill-ийн `last_paid`, `amount`-ийг шинэчил. Нэг удаагийн гүйлгээ → `Finance Record` (`sensitivity: private`).
-- `05-Resources/Atomic/` руу санхүүгийн атом **бүү** бич. Өдрийн note-д дүн бүү бич.
+- `04-Resources/Atomic/` руу санхүүгийн атом **бүү** бич. Өдрийн note-д дүн бүү бич.
 - Лог мөрөнд зөвхөн `- **HH:MM** · 🔒 → save` (холбоос, агуулгагүй).
 - Данс, картын дугаар, нууц үг, PIN, OTP-г **хэзээ ч** бичихгүй. `account-ref:` талбарт «Х банк ••12» маягийн танигч л.
 

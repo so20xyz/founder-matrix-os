@@ -1,5 +1,5 @@
 # FMOS n8n stack — "ears" layer (Gmail/Notion/Calendar/Telegram/IG → Discord).
-# Brief: vault 03-Projects/3-On-hold/Founder Matrix/n8n + Docker brief.md
+# Brief: vault 02-Projects/3-On-hold/Founder Matrix/n8n + Docker brief.md
 # Usage: cp .env.example .env  (fill secrets locally, never commit)  →  docker compose up -d  →  http://localhost:5678
 services:
   postgres:

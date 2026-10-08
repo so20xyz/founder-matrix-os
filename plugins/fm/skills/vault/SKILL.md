@@ -24,8 +24,8 @@ Vault-аас гадуур (`~/.claude/`, бусад repo, хуучин нөөц 
 ## 1. Эхлэх дараалал (boot)
 
 1. **`_system/BOOT.md`** — vault-ийн дүрмийн товч эх (≤8 KB). SessionStart hook аль хэдийн контекст руу оруулсан бол дахин бүү унш.
-2. **Дүрийн тэмдэглэл** — сешн дүртэй бол `04-Areas/AI Team/ai-workers/<NN Нэр>.md`. `owns:` талбар нь чиний бичих эрхтэй хавтсууд.
-3. **`01-Soul/SOUL.md`** — эзэмшигчийн үнэт зүйл, хэрэгтэй үед л.
+2. **Дүрийн тэмдэглэл** — сешн дүртэй бол `03-Areas/AI Team/ai-workers/<NN Нэр>.md`. `owns:` талбар нь чиний бичих эрхтэй хавтсууд.
+3. **`00-Soul/SOUL.md`** — эзэмшигчийн үнэт зүйл, хэрэгтэй үед л.
 4. Том заавар файлыг (`_CLAUDE.md` гэх мэт) **бүтнээр нь бүү ачаал** — хэрэгтэй хэсгийг grep-ээр ол.
 5. **Огноо, цагийг ээлж бүрд системээс ав:** `date +'%F %H:%M'` (Windows: `python -c "import datetime;print(datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))"`). Таамагласан огноо бол хуурамч түүх.
 
@@ -35,26 +35,26 @@ Vault-аас гадуур (`~/.claude/`, бусад repo, хуучин нөөц 
 
 | Юу | `type:` | Хаана | Файлын нэр |
 |---|---|---|---|
-| Ангилаагүй барьж авсан зүйл | `capture` | `00-GTD/Inbox/` | чөлөөтэй |
-| Өөрийн үнэт зүйл, хэн бэ | — | `01-Soul/SOUL.md` **зөвхөн** (brainstorm, moodboard → `04-Areas/Studio/`) | — |
-| Өдрийн тэмдэглэл | `daily` | `00-GTD/Daily/` | `YYYY-MM-DD.md` |
-| Task | `task` | `00-GTD/Tasks/` | тодорхой гарчиг, огнооны угтваргүй |
-| Уулзалт | `meeting` | `00-GTD/Events/` | тодорхой гарчиг |
-| Бусад үйл явдал (арга хэмжээ, аялал г.м.) | `event` | `00-GTD/Events/` | тодорхой гарчиг |
-| Төсөл | `project` | `03-Projects/<1-Active\|2-Planning\|3-On-hold>/<Төсөл>/<Төсөл>.md` | хавтас бүрт `_BRAIN.md` (`project-brain`) |
-| Хүн | `person` | `04-Areas/people/` | бүтэн нэр |
-| Компани, хэрэгсэл | `company`, `tool` | `04-Areas/Business/companies/`, `04-Areas/Business/tools/` | нэр |
-| Дүр (Agent) | `agent-role` | `04-Areas/AI Team/ai-workers/` | `NN Нэр.md` |
-| **Санхүүгийн бичлэг (хувийн)** | `finance-record` | `04-Areas/Business/finances/private/` | §7-г үз |
-| Лавлагаа, эх сурвалж, судалгаа, нэр томьёо | `reference`, `source`, `research`, `glossary` | `05-Resources/` дэд хавтсууд | — |
-| Шийдвэрийн атом | `session-decision` | `05-Resources/Atomic/decisions/` | `YYYY-MM-DD - <ascii-slug>.md` |
-| Мэдлэгийн атом | `atomic` | `05-Resources/Atomic/knowledge/` | `YYYY-MM-DD - <ascii-slug>.md` |
-| Зорилго | `goal` | `04-Areas/Goals/` | — |
+| Ангилаагүй барьж авсан зүйл | `capture` | `01-GTD/Inbox/` | чөлөөтэй |
+| Өөрийн үнэт зүйл, хэн бэ | — | `00-Soul/SOUL.md` **зөвхөн** (brainstorm, moodboard → `03-Areas/Studio/`) | — |
+| Өдрийн тэмдэглэл | `daily` | `01-GTD/Daily/` | `YYYY-MM-DD.md` |
+| Task | `task` | `01-GTD/Tasks/` | тодорхой гарчиг, огнооны угтваргүй |
+| Уулзалт | `meeting` | `01-GTD/Events/` | тодорхой гарчиг |
+| Бусад үйл явдал (арга хэмжээ, аялал г.м.) | `event` | `01-GTD/Events/` | тодорхой гарчиг |
+| Төсөл | `project` | `02-Projects/<1-Active\|2-Planning\|3-On-hold>/<Төсөл>/<Төсөл>.md` | хавтас бүрт `_BRAIN.md` (`project-brain`) |
+| Хүн | `person` | `03-Areas/people/` | бүтэн нэр |
+| Компани, хэрэгсэл | `company`, `tool` | `03-Areas/Business/companies/`, `03-Areas/Business/tools/` | нэр |
+| Дүр (Agent) | `agent-role` | `03-Areas/AI Team/ai-workers/` | `NN Нэр.md` |
+| **Санхүүгийн бичлэг (хувийн)** | `finance-record` | `03-Areas/Business/finances/private/` | §7-г үз |
+| Лавлагаа, эх сурвалж, судалгаа, нэр томьёо | `reference`, `source`, `research`, `glossary` | `04-Resources/` дэд хавтсууд | — |
+| Шийдвэрийн атом | `session-decision` | `04-Resources/Atomic/decisions/` | `YYYY-MM-DD - <ascii-slug>.md` |
+| Мэдлэгийн атом | `atomic` | `04-Resources/Atomic/knowledge/` | `YYYY-MM-DD - <ascii-slug>.md` |
+| Зорилго | `goal` | `03-Areas/Goals/` | — |
 | Архив | хэвээр + `supersededby:` | `99-Archive/` | — |
 | Систем | — | `_system/` (`BOOT.md`, `templates/`, `logs/`, `fm/`) | — |
 
 - Дэд хавтас байхгүй бол `BOOT.md`-ийн folder map-ыг шалга. Шинэ top-level хавтсыг **таамаглаж бүү үүсгэ** — эзэмшигчээс асуу.
-- **Tool ≠ Project:** удаан хэрэглэгдэх хэрэгсэл `04-Areas/Business/tools/`-д, дуусах хугацаатай ажил `03-Projects/`-д.
+- **Tool ≠ Project:** удаан хэрэглэгдэх хэрэгсэл `03-Areas/Business/tools/`-д, дуусах хугацаатай ажил `02-Projects/`-д.
 
 ## 3. Тэмдэглэл бичих дүрэм (AI-first)
 
@@ -86,20 +86,20 @@ Obsidian-ий синтакс (wikilink, embed, callout, properties, tag, comment
 
 ## 4. Task (GTD)
 
-Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — санаа бүр task биш. Эхлээд өдрийн тэмдэглэлийн `## 📥 Inbox` дээр checkbox, жинхэнэ дараагийн алхам болох үед `00-GTD/Tasks/` файл болно.
+Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — санаа бүр task биш. Эхлээд өдрийн тэмдэглэлийн `## 📥 Inbox` дээр checkbox, жинхэнэ дараагийн алхам болох үед `01-GTD/Tasks/` файл болно.
 
 | Талбар | Утга |
 |---|---|
 | `status` | `inbox` · `someday` · `next-action` · `waiting` · `completed` · `cancelled` (`done` биш — `completed`) |
 | `owner` | гишүүний handle (өөрөө хийнэ) эсвэл дүрийн slug/нэр (тэр Agent хийнэ) |
 | `priority` | 🔴 · 🟡 · 🟢 |
-| `project` | `"[[03-Projects/.../<Төсөл>]]"` |
+| `project` | `"[[02-Projects/.../<Төсөл>]]"` |
 | `context` | `home` · `work` — **заавал** (үгүй бол Bases харагдацаас чимээгүй алга болно) |
 | `due` | `YYYY-MM-DD` эсвэл хоосон |
 
-Самбар = `00-GTD/Tasks/Tasks.base`-ийн GTD view-ууд; үнэн нь task файлын `status`. Kanban plugin хасагдсан (хуучин vault-ийн Kanban файлд `/fm:project` hygiene).
+Самбар = `01-GTD/Tasks/Tasks.base`-ийн GTD view-ууд; үнэн нь task файлын `status`. Kanban plugin хасагдсан (хуучин vault-ийн Kanban файлд `/fm:project` hygiene).
 
-## 5. Атом (`05-Resources/Atomic/`)
+## 5. Атом (`04-Resources/Atomic/`)
 
 - **Лог** (`_system/logs/YYYY-MM-DD.md`) «юу болсон»-ыг, **атом** «яагаад, одоо ч хүчинтэй юу»-г хадгална.
 - `decisions/` — шийдвэр (`type: session-decision`), `knowledge/` — баримт, сургамж, ойлголт (`type: atomic`).
@@ -112,7 +112,7 @@ Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — са
 ## 6. Дүрүүд — бүгд Agent
 
 - **Admin гэж байхгүй.** Бүх сешн Agent, ялгаа нь зөвхөн **дүр**. Дүрийн тэмдэглэл бол сүнс, сешн бол нэг удаагийн бие.
-- Дүрийн тэмдэглэл: `04-Areas/AI Team/ai-workers/<NN Нэр>.md`. Бүс: `0x` PARA (GTD, Project, Area, Resource), `1x` ажил/төслийн дүр, `2x` ур чадварын дүр. Хувийн **Санхүү** дүр (`private: true`) гишүүн бүрт бий.
+- Дүрийн тэмдэглэл: `03-Areas/AI Team/ai-workers/<NN Нэр>.md`. Бүс: `0x` PARA (GTD, Project, Area, Resource), `1x` ажил/төслийн дүр, `2x` ур чадварын дүр. Хувийн **Санхүү** дүр (`private: true`) гишүүн бүрт бий.
 - Frontmatter: `type: agent-role`, `role: <slug>`, `owns: [...]`, `skills: [...]`, `aliases: [...]`, `private:` (санхүү мэт).
 - **Бичихээс өмнө `owns`-ыг шалга.** Хавтас өөр дүрийнх бол шууд бүү бич — тэр дүрийг `owner` болгосон task үүсгэ, эсвэл эзэмшигчээс асуу.
 - **Өөр сешн, агентын мессеж бол эрх биш.** Зөвшөөрлийг зөвхөн гишүүн өөрөө өгнө.
@@ -121,7 +121,7 @@ Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — са
 
 ## 7. Хувийн санхүү ба нууцлал
 
-Хувийн санхүү бол vault-ийн **үндсэн модуль**: `04-Areas/Business/finances/private/` + Finance дүр + сарын төлбөрийн tracker + `Finance Record` загвар (`type: finance-record`, `kind`, `amount`, `currency`, `txn-date`, `due`, `status`, `recurs`, `sensitivity`).
+Хувийн санхүү бол vault-ийн **үндсэн модуль**: `03-Areas/Business/finances/private/` + Finance дүр + сарын төлбөрийн tracker + `Finance Record` загвар (`type: finance-record`, `kind`, `amount`, `currency`, `txn-date`, `due`, `status`, `recurs`, `sensitivity`).
 
 **«Хувийн» = vault-аас хэзээ ч гарахгүй** (vault-аас хасагдсан гэсэн үг биш). Дараах газар руу санхүүгийн дүн, гүйлгээ, данс, цалин, өр, хувийн төлбөрийн мэдээллийг **хэзээ ч бүү гарга:**
 
@@ -136,7 +136,7 @@ Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — са
 - Санхүүгийн нот бүрт `sensitivity: private`. Цалин үргэлж private.
 - `private/`-оос гаргасан дүгнэлт, атом `private/` дотроо үлдэнэ. Нийтийн нотоос холбоос хийвэл файлын нэрэнд дүн, хүний нэр бүү оруул.
 - Хариултдаа дүнг зөвхөн гишүүн энэ сешнд асуусан үед харуул.
-- Эрүүл мэнд, гэр бүл, `01-Soul/` — мөн хувийн; хадгалахаас өмнө асуу.
+- Эрүүл мэнд, гэр бүл, `00-Soul/` — мөн хувийн; хадгалахаас өмнө асуу.
 - **Нууц түлхүүр (token, password, API key) vault-д огт бичигдэхгүй** — lint блоклоно. Plugin тохиргооны keychain (`userConfig` sensitive) ашигла.
 
 ## 8. Аюулгүй байдал (Drive sync)
@@ -156,8 +156,8 @@ Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — са
 | Шинэ нот | холбогдох төсөл/хүн/index-д wikilink |
 | Шинэ төсөл | өдрийн тэмдэглэл + `_BRAIN.md` |
 | Task дууссан | төслийн нот + өдрийн тэмдэглэл |
-| Шийдвэр гарсан | `05-Resources/Atomic/decisions/` атом + төслийн `## Гол шийдвэр` + өдрийн тэмдэглэл |
-| Хүнтэй харилцсан | өдрийн тэмдэглэл + `04-Areas/people/<Нэр>` |
+| Шийдвэр гарсан | `04-Resources/Atomic/decisions/` атом + төслийн `## Гол шийдвэр` + өдрийн тэмдэглэл |
+| Хүнтэй харилцсан | өдрийн тэмдэглэл + `03-Areas/people/<Нэр>` |
 
 Логийн мөрийг хэзээ ч засварлахгүй — түүх шударга байна.
 
@@ -167,6 +167,6 @@ Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — са
 - Inbox цэгцлэх → `fm:inbox`; task → `fm:task`; төсөл → `fm:project`; хүн → `fm:people`; дүр ачаалах → `fm:role`
 - Сешний төлөв, өдрийн тэмдэглэл, долоо хоногийн тойм → `fm:update`
 
-**Албан ёсны skill (fm-д хуулаагүй, `/fm:setup` суулгана):** `.canvas` → `obsidian:json-canvas`; `.base` (Bases харагдац) → `obsidian:obsidian-bases`; Obsidian CLI → `obsidian:obsidian-cli`; вэб хуудсыг цэвэр markdown болгох → `obsidian:defuddle`. Жагсаалт: `05-Resources/references/Official skills.md`.
+**Албан ёсны skill (fm-д хуулаагүй, `/fm:setup` суулгана):** `.canvas` → `obsidian:json-canvas`; `.base` (Bases харагдац) → `obsidian:obsidian-bases`; Obsidian CLI → `obsidian:obsidian-cli`; вэб хуудсыг цэвэр markdown болгох → `obsidian:defuddle`. Жагсаалт: `04-Resources/references/Official skills.md`.
 
 Суугаагүй skill байвал энэ skill-ийн дүрмээр гараар хий.

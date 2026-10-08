@@ -1,4 +1,4 @@
-"""Inbox Gallery — vault-ийн 00-GTD/Inbox-ийг localhost дээр gallery хэлбэрээр харуулж,
+"""Inbox Gallery — vault-ийн 01-GTD/Inbox-ийг localhost дээр gallery хэлбэрээр харуулж,
 зүйл бүрт очих газар сонгоод «Apply» дарахад л зөөнө.
 
 Ажиллуулах:  python server.py [--vault "<vault хавтас>"] [--port 5190]
@@ -32,11 +32,23 @@ ARGS = ap.parse_args()
 if not ARGS.vault:
     sys.exit("Vault олдсонгүй: --vault өг эсвэл ~/.fmos/config.json тохируул")
 VAULT = Path(ARGS.vault)
-INBOX_NEW, INBOX_OLDS = "00-GTD/Inbox", ("02-GTD/inbox", "00-Inbox")
+INBOX_NEW, INBOX_OLDS = "01-GTD/Inbox", ("00-GTD/Inbox", "02-GTD/inbox", "00-Inbox")
+LAYOUT_CUR = {"00-Soul": "01-Soul", "01-GTD": "00-GTD", "02-Projects": "03-Projects",
+              "03-Areas": "04-Areas", "04-Resources": "05-Resources"}  # layout 2026-10-09: шинэ -> одоогийн
+
+
+def L(rel, vault=None):
+    """Шинэ layout-ийн зам; vault-д зөвхөн одоогийн нэр байвал түүнийг (шилжилтийн хамгаалалт)."""
+    vault = Path(vault or VAULT)
+    top, sep, rest = rel.partition("/")
+    old = LAYOUT_CUR.get(top)
+    if old and not (vault / top).is_dir() and (vault / old).is_dir():
+        return old + sep + rest
+    return rel
 
 
 def resolve_inbox(vault):
-    """Шинэ зам 00-GTD/Inbox; байхгүй бол хуучин 02-GTD/inbox -> 00-Inbox (шилжилтийн хамгаалалт)."""
+    """Шинэ зам 01-GTD/Inbox; байхгүй бол одоогийн 00-GTD/Inbox -> хуучин 02-GTD/inbox -> 00-Inbox."""
     vault = Path(vault)
     if not (vault / INBOX_NEW).is_dir():
         for old in INBOX_OLDS:
@@ -70,13 +82,13 @@ def vault_text():
 
 def destinations():
     d = [{"id": "keep", "label": "Үлдээх"},
-         {"id": "resource", "label": "📚 Resource · 05-Resources/references"},
-         {"id": "atomic", "label": "⚛️ Атом · 05-Resources/Atomic/knowledge"},
+         {"id": "resource", "label": "📚 Resource · " + L("04-Resources/references")},
+         {"id": "atomic", "label": "⚛️ Атом · " + L("04-Resources/Atomic/knowledge")},
          {"id": "task", "label": "✅ Task үүсгэх (файл үлдэнэ)"},
          {"id": "archive", "label": "🗄 Archive · 99-Archive/inbox"},
          {"id": "trash", "label": "🗑 Trash · _trash (сэргээж болно)"}]
     for st in ("1-Active", "2-Planning", "3-On-hold"):
-        base = VAULT / "03-Projects" / st
+        base = VAULT / L("02-Projects") / st
         if base.is_dir():
             for p in sorted(base.iterdir()):
                 if p.is_dir():
@@ -97,7 +109,7 @@ def suggest(item, fm, body, embedded):
         return ("keep", f"{embedded} note-д embed хийгдсэн — note-оо дагана") if embedded else ("archive", "Ямар ч note-д embed хийгдээгүй")
     if n.startswith(("ref - ", "clip - ")) or "type: reference" in fm or re.search(r"\(.*(Instagram|Threads|YouTube|Facebook).*\)", n):
         return ("resource", "Гадаад линк/лавлагаа")
-    m = re.search(r"03-Projects/[^\]|]*?/?([^/\]|]+)/\1", fm)
+    m = re.search(r"0[23]-Projects/[^\]|]*?/?([^/\]|]+)/\1", fm)
     if m:
         for d in destinations():
             if d["id"].endswith("/" + m.group(1)):
@@ -180,12 +192,12 @@ def apply(decisions):
                 subprocess.run(cmd, check=True, capture_output=True, timeout=60)
                 done.append(f"✅ task ← {name}")
                 continue
-            target = {"resource": VAULT / "05-Resources/references",
-                      "atomic": (VAULT / "05-Resources/Atomic/knowledge") if (VAULT / "05-Resources/Atomic").exists() or not (VAULT / "06-Atomic").exists() else VAULT / "06-Atomic/knowledge",
+            target = {"resource": VAULT / L("04-Resources/references"),
+                      "atomic": (VAULT / L("04-Resources/Atomic/knowledge")) if (VAULT / L("04-Resources/Atomic")).exists() or not (VAULT / "06-Atomic").exists() else VAULT / "06-Atomic/knowledge",
                       "archive": VAULT / "99-Archive/inbox" / today,
                       "trash": VAULT / "_trash" / f"inbox-{today}"}.get(dest)
             if dest.startswith("project:"):
-                target = VAULT / "03-Projects" / dest.split(":", 1)[1] / ("Resources" if src.suffix.lower() != ".md" else "")
+                target = VAULT / L("02-Projects") / dest.split(":", 1)[1] / ("Resources" if src.suffix.lower() != ".md" else "")
             if target is None:
                 raise ValueError(f"тодорхойгүй очих газар: {dest}")
             target.mkdir(parents=True, exist_ok=True)
@@ -244,6 +256,6 @@ class H(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     if not INBOX.is_dir():
-        sys.exit(f"Inbox олдсонгүй (00-GTD/Inbox, 02-GTD/inbox эсвэл 00-Inbox): {INBOX}")
+        sys.exit(f"Inbox олдсонгүй (01-GTD/Inbox, 00-GTD/Inbox, 02-GTD/inbox эсвэл 00-Inbox): {INBOX}")
     print(f"Inbox Gallery → http://localhost:{ARGS.port}  (vault: {VAULT})", flush=True)
     ThreadingHTTPServer(("127.0.0.1", ARGS.port), H).serve_forever()

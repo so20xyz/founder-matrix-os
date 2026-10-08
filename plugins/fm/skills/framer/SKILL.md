@@ -31,5 +31,5 @@ argument-hint: "[status | pages | tree <path> | components | styles | run -f <sc
 ## Дүрэм
 
 - Эхлээд **уншиж** (pages, tree, styles), өөрчлөх бол юу хийхийг гишүүнд хэлж батлуул. Framer-ийн нийтлэх (Publish), домэйн, төлбөр - гишүүн өөрөө.
-- Template задлах: бүтэц, style-ийг vault-д (`03-Projects/<төсөл>/`) reference note болгон хадгал (`/fm:save`); бусдын template-ийг лицензгүй хуулахгүй.
+- Template задлах: бүтэц, style-ийг vault-д (`02-Projects/<төсөл>/`) reference note болгон хадгал (`/fm:save`); бусдын template-ийг лицензгүй хуулахгүй.
 - Том скриптийг түр файлд бичээд `-f`-ээр.

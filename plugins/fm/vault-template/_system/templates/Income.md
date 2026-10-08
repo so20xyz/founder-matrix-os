@@ -20,7 +20,7 @@ status: active
 
 ## For future agent
 
-🔒 Орлогын нэг эх үүсвэр (`type: income`): цалин, бизнесийн орлого, гэрээт ажил. Зөвхөн [[07 Finance]] дүр уншиж/бичнэ; агуулга нь vault-аас гарахгүй. Байршил: `04-Areas/Business/finances/private/income/`.
+🔒 Орлогын нэг эх үүсвэр (`type: income`): цалин, бизнесийн орлого, гэрээт ажил. Зөвхөн [[07 Finance]] дүр уншиж/бичнэ; агуулга нь vault-аас гарахгүй. Байршил: `03-Areas/Business/finances/private/income/`.
 
 - `kind`: salary | business | freelance | rent | other
 - `amount` = ердийн дүн (цэвэр тоо), `pay_day` = сарын хэдэнд орж ирдэг.

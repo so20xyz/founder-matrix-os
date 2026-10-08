@@ -38,7 +38,7 @@ fm Discord-гүйгээр бүрэн ажиллана. Relay-г зөвхөн х�
 ```bash
 python3 "$R/relay.py" send <суваг|@group|all> "текст"      # сувагт мессеж
 python3 "$R/relay.py" next "дараагийн алхам"               # энэ дүрийн baton-д тогтоох
-python3 "$R/relay.py" task "Гарчиг" --owner "<сешний title>" [--project "<03-Projects/... note>"] [--due YYYY-MM-DD]
+python3 "$R/relay.py" task "Гарчиг" --owner "<сешний title>" [--project "<02-Projects/... note>"] [--due YYYY-MM-DD]
 python3 "$R/relay.py" who                                   # бүртгэлтэй сешнүүд
 python3 "$R/relay.py" hub                                   # _system/STATUS.md-ийг baton-уудаас дахин үүсгэх
 python3 "$R/relay.py" sync-discord                          # ангилал, суваг (юу ч устгахгүй, хуучныг Archive руу)
@@ -53,7 +53,7 @@ python3 "$R/team.py" read [--all]                            # багийн су
 python3 "$R/team.py" send "#суваг|thread-id" "текст" --approved   # ЗӨВХӨН itge.e шууд хэлсэн үед
 ```
 
-`send` нь vault-ийн линк/зам, `04-Areas`, `03-Projects`, санхүү, 🔒 гэх мэт агуулгыг автоматаар хориглоно.
+`send` нь vault-ийн линк/зам, `03-Areas`, `02-Projects`, санхүү, 🔒 гэх мэт агуулгыг автоматаар хориглоно.
 
 Сешний id-г Claude Code өөрөө `CLAUDE_SESSION_ID`-ээр өгнө; олдохгүй бол `--sid <id>`. Тасралтгүй сонсох: Monitor tool-оор `python3 "$R/relay.py" watch --sid <id>`.
 

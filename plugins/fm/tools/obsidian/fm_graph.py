@@ -6,32 +6,43 @@
 Obsidian overwrites graph.json while open, so by default it closes Obsidian, writes, and reopens it.
 Vault: argument, else $FMOS_VAULT.
 """
-import json, os, subprocess, sys, time
+import json, os, re, subprocess, sys, time
 from pathlib import Path
 
 # One colour per agent's territory (itge.e 2026-10-09): first match wins, so specific paths come first.
-PALETTE = [('path:"03-Projects" OR path:"00-GTD/Tasks"', 0x4F8EF7),      # 💼 Project — blue
-           ('path:"00-GTD"', 0xF2784B),                                  # 📥 GTD — orange
-           ('path:"04-Areas/people"', 0xE85D9A),                         # 📥 GTD · people — pink
-           ('path:"04-Areas/Goals"', 0xFFB4A2),                          # 📥 GTD · goals — peach
-           ('path:"04-Areas/Studio"', 0xC08552),                         # 🎨 Creative — brown
-           ('path:"04-Areas/AI Team" OR path:"04-Areas/Business/INAI/tools"', 0x2EC4B6),  # 🏛️ Architect — teal
-           ('path:"04-Areas/Business/finances"', 0xE63946),              # 🔒 Finance — red
-           ('path:"04-Areas"', 0x3FBF7F),                                # areas — green
-           ('path:"05-Resources/Atomic"', 0xB57EDC),                     # 📚 Wiki · atoms — purple
-           ('path:"05-Resources"', 0xF2C14E),                            # 📚 Wiki — yellow
-           ('path:"01-Soul"', 0xFFFFFF),                                 # soul — white
+PALETTE = [('path:"02-Projects" OR path:"01-GTD/Tasks"', 0x4F8EF7),      # 💼 Project — blue
+           ('path:"01-GTD"', 0xF2784B),                                  # 📥 GTD — orange
+           ('path:"03-Areas/people"', 0xE85D9A),                         # 📥 GTD · people — pink
+           ('path:"03-Areas/Goals"', 0xFFB4A2),                          # 📥 GTD · goals — peach
+           ('path:"03-Areas/Studio"', 0xC08552),                         # 🎨 Creative — brown
+           ('path:"03-Areas/AI Team" OR path:"03-Areas/Business/INAI/tools"', 0x2EC4B6),  # 🏛️ Architect — teal
+           ('path:"03-Areas/Business/finances"', 0xE63946),              # 🔒 Finance — red
+           ('path:"03-Areas"', 0x3FBF7F),                                # areas — green
+           ('path:"04-Resources/Atomic"', 0xB57EDC),                     # 📚 Wiki · atoms — purple
+           ('path:"04-Resources"', 0xF2C14E),                            # 📚 Wiki — yellow
+           ('path:"00-Soul"', 0xFFFFFF),                                 # soul — white
            ('path:"99-Archive"', 0x666666)]                              # archive — grey
-SEARCH = '-path:"04-Areas/Studio/Social saves" -path:_system -path:_trash -path:.backups'
+SEARCH = '-path:"03-Areas/Studio/Social saves" -path:_system -path:_trash -path:.backups'
 FORCES = {"centerStrength": 0.518713248970312, "repelStrength": 10, "linkStrength": 1, "linkDistance": 250,
           "nodeSizeMultiplier": 1, "lineSizeMultiplier": 1, "textFadeMultiplier": 0}
 
 
+LAYOUT_CUR = {"00-Soul": "01-Soul", "01-GTD": "00-GTD", "02-Projects": "03-Projects",
+              "03-Areas": "04-Areas", "04-Resources": "05-Resources"}  # шинэ -> одоогийн (fallback)
+
+
+def lay(vault: Path, q: str) -> str:
+    """Query-ийн шинэ хавтасны нэрийг vault-д зөвхөн одоогийн нэр байвал түүгээр солино."""
+    return re.sub(r'"(0[0-4]-[A-Za-z]+)', lambda m: '"' + (LAYOUT_CUR[m.group(1)] if m.group(1) in LAYOUT_CUR
+                  and not (vault / m.group(1)).is_dir() and (vault / LAYOUT_CUR[m.group(1)]).is_dir() else m.group(1)), q)
+
+
 def write(obs: Path):
-    cg = [{"query": q, "color": {"a": 1, "rgb": c}} for q, c in PALETTE]
+    vault = obs.parent
+    cg = [{"query": lay(vault, q), "color": {"a": 1, "rgb": c}} for q, c in PALETTE]
     gp = obs / "graph.json"
     g = json.loads(gp.read_text(encoding="utf-8")) if gp.exists() else {}
-    g.update({"search": SEARCH, "hideUnresolved": True, "showOrphans": False, "showArrow": True,
+    g.update({"search": lay(vault, SEARCH), "hideUnresolved": True, "showOrphans": False, "showArrow": True,
               "colorGroups": cg, "collapse-color-groups": False, **FORCES})
     gp.write_text(json.dumps(g, indent=2, ensure_ascii=False), encoding="utf-8")
     wp = obs / "workspace.json"

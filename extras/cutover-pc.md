@@ -48,7 +48,7 @@ foreach ($d in 'agents','scheduled-tasks') { if (Test-Path "$Claude\$d") { Copy-
 Copy-Item "$Claude\plugins\*.json" "$BK\claude\plugins\"
 Copy-Item "$env:USERPROFILE\.claude.json" "$BK\claude.json"
 if (Test-Path "$env:USERPROFILE\.fmos\config.json") { Copy-Item "$env:USERPROFILE\.fmos\config.json" "$BK\fmos-config.json" }
-Copy-Item "$Vault\04-Areas\AI Team\ai-workers" "$BK\vault\ai-workers" -Recurse
+Copy-Item "$Vault\03-Areas\AI Team\ai-workers" "$BK\vault\ai-workers" -Recurse
 Get-FileHash "$Claude\settings.json" | Select-Object -ExpandProperty Hash | Set-Content "$BK\settings-sha256-before.txt"
 Get-ChildItem "$Claude\commands" -Name | Set-Content "$BK\commands-before.txt"
 Get-ChildItem "$Claude\skills"   -Name | Set-Content "$BK\skills-before.txt"

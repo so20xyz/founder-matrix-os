@@ -1,0 +1,81 @@
+filters:
+  and:
+    - file.ext == "md"
+    - type == "bill"
+    - file.inFolder("03-Areas/Business/finances/private")
+formulas:
+  paid_this_month: 'if(last_paid, date(last_paid).format("YYYY-MM") == today().format("YYYY-MM"), false)'
+  days_left: 'if(due_day, number(due_day) - today().day, "")'
+  state_icon: 'if(status == "closed", "⚫", if(status == "paused", "⏸️", if(last_paid && date(last_paid).format("YYYY-MM") == today().format("YYYY-MM"), "✅", if(due_day && number(due_day) < today().day, "🔴", if(due_day && number(due_day) - today().day <= 5, "🟡", "⚪")))))'
+properties:
+  formula.state_icon:
+    displayName: " "
+  formula.paid_this_month:
+    displayName: Энэ сар төлсөн
+  formula.days_left:
+    displayName: Хоног үлдсэн
+  name:
+    displayName: Нэр
+  category:
+    displayName: Ангилал
+  amount:
+    displayName: Дүн
+  currency:
+    displayName: Валют
+  due_day:
+    displayName: Төлөх өдөр
+  last_paid:
+    displayName: Сүүлд төлсөн
+  autopay:
+    displayName: Автомат
+views:
+  - type: table
+    name: Энэ сар
+    filters:
+      and:
+        - status == "active"
+    order:
+      - formula.state_icon
+      - file.basename
+      - category
+      - amount
+      - currency
+      - due_day
+      - formula.days_left
+      - last_paid
+      - autopay
+    summaries:
+      amount: Sum
+  - type: table
+    name: Төлөгдөөгүй
+    filters:
+      and:
+        - status == "active"
+        - '!formula.paid_this_month'
+    order:
+      - formula.state_icon
+      - file.basename
+      - amount
+      - due_day
+      - formula.days_left
+  - type: table
+    name: Ангиллаар
+    groupBy:
+      property: category
+      direction: ASC
+    order:
+      - file.basename
+      - amount
+      - due_day
+      - status
+    summaries:
+      amount: Sum
+  - type: table
+    name: Бүгд
+    order:
+      - formula.state_icon
+      - file.basename
+      - category
+      - amount
+      - status
+      - last_paid

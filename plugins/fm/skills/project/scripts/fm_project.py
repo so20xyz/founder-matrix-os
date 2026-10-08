@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""fm:project helper - projects in 03-Projects/<state>/<Name>/<Name>.md (+ _BRAIN.md).
+"""fm:project helper - projects in 02-Projects/<state>/<Name>/<Name>.md (+ _BRAIN.md).
 
 States (folder <-> status):
-    active   -> 03-Projects/1-Active      status: active
-    planning -> 03-Projects/2-Planning    status: planning
-    on-hold  -> 03-Projects/3-On-hold     status: on-hold
+    active   -> 02-Projects/1-Active      status: active
+    planning -> 02-Projects/2-Planning    status: planning
+    on-hold  -> 02-Projects/3-On-hold     status: on-hold
     archive  -> 99-Archive/Projects       status: completed | cancelled
 
 Usage:
@@ -25,15 +25,25 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 STATES = {
-    "active": ("03-Projects/1-Active", "active"),
-    "planning": ("03-Projects/2-Planning", "planning"),
-    "on-hold": ("03-Projects/3-On-hold", "on-hold"),
+    "active": ("02-Projects/1-Active", "active"),
+    "planning": ("02-Projects/2-Planning", "planning"),
+    "on-hold": ("02-Projects/3-On-hold", "on-hold"),
     "archive": ("99-Archive/Projects", "completed"),
 }
 OPEN_TASK = {"inbox", "next-action", "waiting"}
 LINK_EXT = {".md", ".base", ".canvas"}
 SKIP_DIRS = {".obsidian", "_trash", ".trash", ".git", ".backups", "node_modules"}
-BOARDS = Path("00-GTD") / "boards"  # хуучин vault-д л (template-д самбар байхгүй)
+PROJECTS_NEW, PROJECTS_CUR = "02-Projects", "03-Projects"  # layout 2026-10-09; одоогийн нэр = fallback
+
+
+def proj_rel(vault: Path, rel: str) -> str:
+    """02-Projects/...; vault-д зөвхөн одоогийн 03-Projects байвал түүн рүү."""
+    if rel.startswith(PROJECTS_NEW + "/") and not (vault / PROJECTS_NEW).is_dir() and (vault / PROJECTS_CUR).is_dir():
+        return PROJECTS_CUR + rel[len(PROJECTS_NEW):]
+    return rel
+
+
+BOARDS = Path("01-GTD") / "boards"  # хуучин vault-д л (template-д самбар байхгүй)
 COLUMN_STATUS = {"inbox": "inbox", "next action": "next-action", "waiting": "waiting",
                  "someday": "someday", "completed": "completed", "done": "completed"}
 MAX_REL_PATH = 60
@@ -143,7 +153,7 @@ def walk_vault(vault: Path, exts: set):
 
 def find_projects(vault: Path) -> List[Tuple[Path, Dict[str, str]]]:
     found = []
-    bases = [vault / "03-Projects", vault / "99-Archive" / "Projects"]
+    bases = [vault / proj_rel(vault, PROJECTS_NEW + "/").rstrip("/"), vault / "99-Archive" / "Projects"]
     for base in bases:
         if not base.is_dir():
             continue
@@ -160,9 +170,10 @@ def find_projects(vault: Path) -> List[Tuple[Path, Dict[str, str]]]:
 
 def open_tasks_by_project(vault: Path) -> Dict[str, int]:
     counts = {}  # type: Dict[str, int]
-    folder = vault / "00-GTD" / "Tasks"
-    if not folder.is_dir():  # хуучин layout (шилжилтийн хамгаалалт)
-        folder = vault / "02-GTD" / "tasks"
+    folder = vault / "01-GTD" / "Tasks"
+    for old in (vault / "00-GTD" / "Tasks", vault / "02-GTD" / "tasks"):  # одоогийн / хуучин layout
+        if not folder.is_dir():
+            folder = old
     if not folder.is_dir():
         return counts
     for t in folder.glob("*.md"):
@@ -180,7 +191,7 @@ def open_tasks_by_project(vault: Path) -> Dict[str, int]:
 def state_of(vault: Path, note: Path) -> str:
     rel = note.parent.parent.relative_to(vault).as_posix()
     for k, (folder, _) in STATES.items():
-        if rel == folder:
+        if rel == proj_rel(vault, folder):
             return k
     return "?"
 
@@ -223,6 +234,7 @@ def cmd_new(vault: Path, args: List[str]) -> None:
         if note.stem.lower() == name.lower():
             _die("Ийм төсөл байна: %s — шинэ бүү үүсгэ, түүнийг шинэчил." % note.relative_to(vault).as_posix(), 2)
     folder_rel, status = STATES[state]
+    folder_rel = proj_rel(vault, folder_rel)
     folder = vault / folder_rel / name
     note = folder / (name + ".md")
     brain = folder / "_BRAIN.md"
@@ -282,6 +294,7 @@ def cmd_move(vault: Path, args: List[str]) -> None:
     note = locate(vault, pos[0])
     target_state = pos[1]
     folder_rel, status = STATES[target_state]
+    folder_rel = proj_rel(vault, folder_rel)
     if target_state == "archive":
         status = _opt(args, "--status", "completed")
         if status not in ("completed", "cancelled"):
@@ -332,8 +345,9 @@ def cmd_move(vault: Path, args: List[str]) -> None:
 
 def cmd_board(vault: Path, args: List[str]) -> None:
     folder = vault / BOARDS
-    if not folder.is_dir():
-        folder = vault / "02-GTD" / "boards"
+    for old in (vault / "00-GTD" / "boards", vault / "02-GTD" / "boards"):  # одоогийн / хуучин layout
+        if not folder.is_dir():
+            folder = old
     boards = [b for b in sorted(folder.glob("*.md")) if "kanban-plugin" in read_text(b)[:400]] \
         if folder.is_dir() else []
     pos = _positional(args)
@@ -363,7 +377,7 @@ def cmd_board(vault: Path, args: List[str]) -> None:
             col_key = re.sub(r"[^\w\s]", "", column, flags=re.UNICODE).strip().lower()
             want = next((v for k, v in COLUMN_STATUS.items() if k in col_key), None)
             due = dm.group(1) if dm else ""
-            lm = re.search(r"\[\[((?:00-GTD/Tasks|02-GTD/tasks)/[^\]|#]+)", item)
+            lm = re.search(r"\[\[((?:01-GTD/Tasks|00-GTD/Tasks|02-GTD/tasks)/[^\]|#]+)", item)
             if lm:
                 t = vault / (lm.group(1) + ".md")
                 if not t.exists():

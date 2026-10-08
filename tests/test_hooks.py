@@ -66,9 +66,9 @@ class Vault(object):
         self.tmp = Path(tempfile.mkdtemp(prefix="fm-hooks-test-"))
         self.root = self.tmp / "Vault"
         self.outside = self.tmp / "elsewhere"
-        for d in ["00-GTD/Inbox", "00-GTD/Tasks", "05-Resources/Atomic", "_system/fm", "_system/templates",
-                  "_trash", "99-Archive", ".obsidian", "04-Areas/AI Team/ai-workers",
-                  "04-Areas/Business/finances/private"]:
+        for d in ["01-GTD/Inbox", "01-GTD/Tasks", "04-Resources/Atomic", "_system/fm", "_system/templates",
+                  "_trash", "99-Archive", ".obsidian", "03-Areas/AI Team/ai-workers",
+                  "03-Areas/Business/finances/private"]:
             (self.root / d).mkdir(parents=True, exist_ok=True)
         self.outside.mkdir()
 
@@ -147,7 +147,7 @@ def test_ctx_no_vault_configured_silent(v):
 
 def test_ctx_boot_and_no_role_hint(v):
     v.write("_system/BOOT.md", "# BOOT\n\nТүрүүлж SOUL.md унш.\n")
-    code, out, _ = run(CTX, ctx_payload(v.root / "00-GTD"), {"FM_VAULT": str(v.root)})
+    code, out, _ = run(CTX, ctx_payload(v.root / "01-GTD"), {"FM_VAULT": str(v.root)})
     assert code == 0, code
     ctx = context_of(out)
     assert "Түрүүлж SOUL.md унш." in ctx, ctx
@@ -162,7 +162,7 @@ def test_ctx_missing_boot_hint(v):
 
 def test_ctx_role_from_registry(v):
     v.write("_system/BOOT.md", "# BOOT\nboot-marker\n")
-    v.write("04-Areas/AI Team/ai-workers/00 GTD.md",
+    v.write("03-Areas/AI Team/ai-workers/00 GTD.md",
             "---\ntype: agent-role\nrole: gtd\nai-first: true\n---\n\n# GTD\n\nОршил текст.\n\n"
             "## Юуг эрэмбэлэх вэ\n\nэрэмбэ-маркер\n\n"
             "## Байнгын дүрэм\n\n- Inbox-оос зөөхөөс өмнө батлуул.\n\n### Дэд дүрэм\n\nдэд-маркер\n\n"
@@ -182,7 +182,7 @@ def test_ctx_role_from_registry(v):
 
 
 def test_ctx_role_scan_fallback(v):
-    v.write("04-Areas/AI Team/ai-workers/02 Area.md",
+    v.write("03-Areas/AI Team/ai-workers/02 Area.md",
             "---\ntype: agent-role\nrole: area\n---\n\n## Rules\n\narea-rule-marker\n")
     v.registry({"sessions": {"sess-9": {"role": "area"}}})
     code, out, _ = run(CTX, ctx_payload(v.root, "sess-9"), {"FM_VAULT": str(v.root)})
@@ -202,9 +202,9 @@ def test_ctx_boot_truncated_to_10kb(v):
     big = "# BOOT\n" + "".join("Мөр %04d: монгол кирилл текст урт урт урт.\n" % i for i in range(1500))
     assert len(big.encode("utf-8")) > 30000
     v.write("_system/BOOT.md", big)
-    v.write("04-Areas/AI Team/ai-workers/00 GTD.md",
+    v.write("03-Areas/AI Team/ai-workers/00 GTD.md",
             "---\nrole: gtd\n---\n\n## Дүрэм\n\n" + ("дүрмийн мөр\n" * 800))
-    v.registry({"roles": {"gtd": {"note": "04-Areas/AI Team/ai-workers/00 GTD.md"}},
+    v.registry({"roles": {"gtd": {"note": "03-Areas/AI Team/ai-workers/00 GTD.md"}},
                 "sessions": {"sess-1": {"role": "gtd"}}})
     code, out, _ = run(CTX, ctx_payload(v.root), {"FM_VAULT": str(v.root)})
     ctx = context_of(out)
@@ -249,12 +249,12 @@ def test_ctx_vault_from_fmos_config(v):
 def test_ctx_project_dir_inside_vault(v):
     v.write("_system/BOOT.md", "pd-boot\n")
     payload = {"session_id": "x", "hook_event_name": "SessionStart"}
-    code, out, _ = run(CTX, payload, {"FM_VAULT": str(v.root), "CLAUDE_PROJECT_DIR": str(v.root / "05-Resources/Atomic")})
+    code, out, _ = run(CTX, payload, {"FM_VAULT": str(v.root), "CLAUDE_PROJECT_DIR": str(v.root / "04-Resources/Atomic")})
     assert "pd-boot" in context_of(out)
 
 
 def test_ctx_private_session_reminder(v):
-    v.write("04-Areas/AI Team/ai-workers/30 Sankhuu.md",
+    v.write("03-Areas/AI Team/ai-workers/30 Sankhuu.md",
             "---\ntype: agent-role\nrole: sankhuu\nprivate: true\n---\n\n## Дүрэм\n\nsankhuu-rule\n")
     v.registry({"roles": {"sankhuu": {"note": "30 Sankhuu"}},
                 "sessions": {"sess-1": {"role": "sankhuu"}}})
@@ -289,14 +289,14 @@ def test_ctx_empty_stdin(v):
 # ----------------------------------------------------------------- lint tests
 
 def test_lint_clean_note_silent(v):
-    code, out, err = lint_write(v, "05-Resources/Atomic/Цэвэр атом.md", note(good_fm()))
+    code, out, err = lint_write(v, "04-Resources/Atomic/Цэвэр атом.md", note(good_fm()))
     assert code == 0 and out == "" and err == "", (code, out, err)
 
 
 def test_lint_missing_ai_first_warns_once(v):
     fm = good_fm()
     del fm["ai-first"]
-    code, out, err = lint_write(v, "05-Resources/Atomic/a.md", note(fm))
+    code, out, err = lint_write(v, "04-Resources/Atomic/a.md", note(fm))
     assert code == 0, (code, err)
     obj = json.loads(out)  # exactly one JSON object
     assert "ai-first: true" in obj["systemMessage"], obj
@@ -307,14 +307,14 @@ def test_lint_missing_ai_first_warns_once(v):
 def test_lint_missing_date_warns(v):
     fm = good_fm()
     del fm["date"]
-    code, out, _ = lint_write(v, "05-Resources/Atomic/b.md", note(fm))
+    code, out, _ = lint_write(v, "04-Resources/Atomic/b.md", note(fm))
     assert code == 0 and "`date:` алга" in json.loads(out)["systemMessage"], out
 
 
 def test_lint_non_note_silent(v):
-    code, out, err = lint_write(v, "00-GTD/Inbox/PROMPT.md", "# Prompt\n\nfree text\n")
+    code, out, err = lint_write(v, "01-GTD/Inbox/PROMPT.md", "# Prompt\n\nfree text\n")
     assert (code, out, err) == (0, "", ""), (code, out, err)
-    code, out, err = lint_write(v, "00-GTD/Inbox/kanban.md", "---\nkanban-plugin: board\n---\n\n## Todo\n")
+    code, out, err = lint_write(v, "01-GTD/Inbox/kanban.md", "---\nkanban-plugin: board\n---\n\n## Todo\n")
     assert (code, out, err) == (0, "", ""), (code, out, err)
 
 
@@ -326,24 +326,24 @@ def test_lint_skip_dirs_silent(v):
 
 
 def test_lint_dash_filename_warns(v):
-    code, out, _ = lint_write(v, "05-Resources/Atomic/Санаа — тест.md", note(good_fm()))
+    code, out, _ = lint_write(v, "04-Resources/Atomic/Санаа — тест.md", note(good_fm()))
     assert code == 0 and "em/en dash" in json.loads(out)["systemMessage"], out
-    code, out, _ = lint_write(v, "05-Resources/Atomic/Санаа – тест.md", note(good_fm()))
+    code, out, _ = lint_write(v, "04-Resources/Atomic/Санаа – тест.md", note(good_fm()))
     assert code == 0 and "em/en dash" in json.loads(out)["systemMessage"], out
 
 
 def test_lint_date_checks(v):
-    code, out, _ = lint_write(v, "05-Resources/Atomic/f.md", note(good_fm(date=TOMORROW.isoformat())))
+    code, out, _ = lint_write(v, "04-Resources/Atomic/f.md", note(good_fm(date=TOMORROW.isoformat())))
     assert "ирээдүйн огноо" in json.loads(out)["systemMessage"], out
-    code, out, _ = lint_write(v, "05-Resources/Atomic/u.md", note(good_fm(updated=YESTERDAY.isoformat())))
+    code, out, _ = lint_write(v, "04-Resources/Atomic/u.md", note(good_fm(updated=YESTERDAY.isoformat())))
     assert "`updated: %s`" % YESTERDAY.isoformat() in json.loads(out)["systemMessage"], out
-    code, out, _ = lint_write(v, "05-Resources/Atomic/y.md", note(good_fm(date=YESTERDAY.isoformat())))
+    code, out, _ = lint_write(v, "04-Resources/Atomic/y.md", note(good_fm(date=YESTERDAY.isoformat())))
     assert "өчигдрийн огноо" in json.loads(out)["systemMessage"], out
 
 
 def test_lint_old_note_body_edit_no_date_warning(v):
     old = note(good_fm(date="2026-01-15", updated="2026-01-20"))
-    p = v.write("05-Resources/Atomic/old.md", old + "\nшинэ мөр\n")
+    p = v.write("04-Resources/Atomic/old.md", old + "\nшинэ мөр\n")
     code, out, err = run(LINT, edit_payload(p, "шинэ мөр"), {"FM_VAULT": str(v.root)})
     assert (code, out, err) == (0, "", ""), (code, out, err)
     code, out, _ = run(LINT, edit_payload(p, "updated: 2026-01-20"), {"FM_VAULT": str(v.root)})
@@ -363,7 +363,7 @@ def test_lint_secret_blocks_each_kind(v):
     }
     for label, tok in samples.items():
         text = note(good_fm(), "token: %s\n" % tok)
-        code, out, err = lint_write(v, "00-GTD/Tasks/leak.md", text)
+        code, out, err = lint_write(v, "01-GTD/Tasks/leak.md", text)
         assert code == 2, (label, code, out, err)
         assert label in err, (label, err)
         assert tok not in err, (label, "full token echoed")
@@ -372,12 +372,12 @@ def test_lint_secret_blocks_each_kind(v):
 def test_lint_placeholders_not_blocked(v):
     text = note(good_fm(), "OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
                            "token: ghp_" + "x" * 36 + "\nNotion: ntn_<your-token-here>\n")
-    code, out, err = lint_write(v, "05-Resources/Atomic/placeholder.md", text)
+    code, out, err = lint_write(v, "04-Resources/Atomic/placeholder.md", text)
     assert code == 0 and err == "", (code, out, err)
 
 
 def test_lint_secret_in_edit_and_multiedit(v):
-    p = v.write("05-Resources/Atomic/e.md", note(good_fm(), "x"))
+    p = v.write("04-Resources/Atomic/e.md", note(good_fm(), "x"))
     code, _, err = run(LINT, edit_payload(p, "key " + fake("gh" + "p_", 40)), {"FM_VAULT": str(v.root)})
     assert code == 2 and "GitHub token" in err, (code, err)
     payload = {"tool_name": "MultiEdit", "cwd": str(v.root),
@@ -400,27 +400,27 @@ def test_lint_obsidian_dir_ignored(v):
 
 def test_lint_private_finance_outside_blocks(v):
     fin = note(good_fm(type="finance-record", amount="100000"))
-    code, _, err = lint_write(v, "00-GTD/Tasks/Төлбөр.md", fin)
+    code, _, err = lint_write(v, "01-GTD/Tasks/Төлбөр.md", fin)
     assert code == 2 and "finances/private" in err, (code, err)
     priv = note(good_fm(private="true"))
-    code, _, err = lint_write(v, "05-Resources/Atomic/хувийн.md", priv)
+    code, _, err = lint_write(v, "04-Resources/Atomic/хувийн.md", priv)
     assert code == 2 and "finances/private" in err, (code, err)
 
 
 def test_lint_team_finance_outside_ok_but_bill_and_salary_block(v):
     team = note(good_fm(type="finance-record", scope="team", private="false", kind="invoice"))
-    code, out, err = lint_write(v, "04-Areas/Business/finances/2026-10 Нэхэмжлэх.md", team)
+    code, out, err = lint_write(v, "03-Areas/Business/finances/2026-10 Нэхэмжлэх.md", team)
     assert code == 0 and "finances/private" not in err, (code, err)
     for extra in ({"type": "bill"},
                   {"type": "finance-record", "scope": "team", "kind": "salary"},
                   {"type": "finance-record", "scope": "team", "private": "true"}):
-        code, _, err = lint_write(v, "04-Areas/Business/finances/x.md", note(good_fm(**extra)))
+        code, _, err = lint_write(v, "03-Areas/Business/finances/x.md", note(good_fm(**extra)))
         assert code == 2 and "finances/private" in err, (extra, code, err)
 
 
 def test_lint_private_finance_inside_ok(v):
     fin = note(good_fm(type="finance-record", private="true"))
-    code, out, err = lint_write(v, "04-Areas/Business/finances/private/2026-10 Төлбөр.md", fin)
+    code, out, err = lint_write(v, "03-Areas/Business/finances/private/2026-10 Төлбөр.md", fin)
     assert (code, out, err) == (0, "", ""), (code, out, err)
     code, out, err = lint_write(v, "_system/templates/Finance Record.md", fin)
     assert (code, out, err) == (0, "", ""), (code, out, err)
@@ -428,7 +428,7 @@ def test_lint_private_finance_inside_ok(v):
 
 def test_lint_private_role_note_not_blocked(v):
     role = note(good_fm(type="agent-role", role="sankhuu", private="true"))
-    code, out, err = lint_write(v, "04-Areas/AI Team/ai-workers/30 Sankhuu.md", role)
+    code, out, err = lint_write(v, "03-Areas/AI Team/ai-workers/30 Sankhuu.md", role)
     assert (code, out, err) == (0, "", ""), (code, out, err)
 
 
@@ -437,12 +437,12 @@ def test_lint_outside_vault_and_non_md_silent(v):
     text = "t " + fake("gh" + "p_", 40)
     p.write_text(text, encoding="utf-8")
     assert run(LINT, write_payload(p, text), {"FM_VAULT": str(v.root)}) == (0, "", "")
-    p2 = v.write("05-Resources/Atomic/data.json", text)
+    p2 = v.write("04-Resources/Atomic/data.json", text)
     assert run(LINT, write_payload(p2, text), {"FM_VAULT": str(v.root)}) == (0, "", "")
 
 
 def test_lint_no_vault_configured_silent(v):
-    p = v.write("05-Resources/Atomic/a.md", note({"type": "x"}))
+    p = v.write("04-Resources/Atomic/a.md", note({"type": "x"}))
     assert run(LINT, write_payload(p, note({"type": "x"}))) == (0, "", "")
 
 
@@ -456,29 +456,29 @@ def test_lint_relative_path_resolved_from_cwd(v):
     fm = good_fm()
     del fm["ai-first"]
     text = note(fm)
-    v.write("05-Resources/Atomic/rel.md", text)
-    payload = write_payload("05-Resources/Atomic/rel.md", text, cwd=v.root)
+    v.write("04-Resources/Atomic/rel.md", text)
+    payload = write_payload("04-Resources/Atomic/rel.md", text, cwd=v.root)
     code, out, _ = run(LINT, payload, {"FM_VAULT": str(v.root)})
     assert code == 0 and "ai-first" in json.loads(out)["systemMessage"], out
 
 
 def test_lint_cli(v):
-    good = v.write("05-Resources/Atomic/good.md", note(good_fm()))
+    good = v.write("04-Resources/Atomic/good.md", note(good_fm()))
     fm = good_fm()
     del fm["ai-first"]
-    warn = v.write("05-Resources/Atomic/warn.md", note(fm))
+    warn = v.write("04-Resources/Atomic/warn.md", note(fm))
     code, out, _ = run(LINT, args=[str(good)], raw=b"", env_extra={"FM_VAULT": str(v.root)})
     assert code == 0 and "цэвэр" in out, (code, out)
     code, out, _ = run(LINT, args=[str(warn)], raw=b"", env_extra={"FM_VAULT": str(v.root)})
-    assert code == 1 and "ai-first" in out and "05-Resources/Atomic/warn.md" in out, (code, out)
-    leak = v.write("05-Resources/Atomic/leak.md", note(good_fm(), "k " + fake("gh" + "p_", 40)))
+    assert code == 1 and "ai-first" in out and "04-Resources/Atomic/warn.md" in out, (code, out)
+    leak = v.write("04-Resources/Atomic/leak.md", note(good_fm(), "k " + fake("gh" + "p_", 40)))
     code, out, _ = run(LINT, args=[str(leak), "--vault", str(v.root)], raw=b"")
     assert code == 2 and "GitHub token" in out, (code, out)
     # folder mode, vault auto-detected via .obsidian/
-    code, out, _ = run(LINT, args=[str(v.root / "05-Resources/Atomic")], raw=b"")
+    code, out, _ = run(LINT, args=[str(v.root / "04-Resources/Atomic")], raw=b"")
     assert code == 2 and "3 файл" in out, (code, out)
     # CLI does not nag about old `updated:` dates
-    old = v.write("05-Resources/Atomic/old2.md", note(good_fm(date="2026-01-01", updated="2026-01-02")))
+    old = v.write("04-Resources/Atomic/old2.md", note(good_fm(date="2026-01-01", updated="2026-01-02")))
     code, out, _ = run(LINT, args=[str(old)], raw=b"", env_extra={"FM_VAULT": str(v.root)})
     assert code == 0, (code, out)
 

@@ -16,15 +16,15 @@ Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт 
 
 | Хавтас | Юу | Эзэн дүр |
 |---|---|---|
-| `00-GTD/Inbox/` | Хураалт, ангилаагүй | [[02 Area]] |
-| `01-Soul/` | [[SOUL]], үнэт зүйл, хэв маяг | [[02 Area]] |
-| `00-GTD/` | `Inbox/` · `Daily/` · `Tasks/` · `Events/` | [[02 Area]] |
-| `03-Projects/` | `1-Active/` · `2-Planning/` · `3-On-hold/` | [[01 Project]] |
-| `04-Areas/` | `Business/` (companies · finances · tools) · `people/` · `AI Team/` · `Life/` | [[02 Area]] |
-| `04-Areas/Business/finances/private/` | 🔒 Хувийн санхүү | [[07 Finance]] |
-| `05-Resources/` | `references/` · `glossary/` · `sources/` · `library/` | [[03 Resource]] |
-| `05-Resources/Atomic/` | `decisions/` · `knowledge/` | [[03 Resource]] |
-| `04-Areas/Goals/` | Зорилго | [[02 Area]] |
+| `01-GTD/Inbox/` | Хураалт, ангилаагүй | [[02 Area]] |
+| `00-Soul/` | [[SOUL]], үнэт зүйл, хэв маяг | [[02 Area]] |
+| `01-GTD/` | `Inbox/` · `Daily/` · `Tasks/` · `Events/` | [[02 Area]] |
+| `02-Projects/` | `1-Active/` · `2-Planning/` · `3-On-hold/` | [[01 Project]] |
+| `03-Areas/` | `Business/` (companies · finances · tools) · `people/` · `AI Team/` · `Life/` | [[02 Area]] |
+| `03-Areas/Business/finances/private/` | 🔒 Хувийн санхүү | [[07 Finance]] |
+| `04-Resources/` | `references/` · `glossary/` · `sources/` · `library/` | [[03 Resource]] |
+| `04-Resources/Atomic/` | `decisions/` · `knowledge/` | [[03 Resource]] |
+| `03-Areas/Goals/` | Зорилго | [[02 Area]] |
 | `99-Archive/` | Архив | [[02 Area]] |
 | `_system/` | BOOT · STATUS · templates · bases · logs · fm | [[02 Area]] |
 
@@ -34,7 +34,7 @@ Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт 
 - [[_system/STATUS]] — дүрүүдийн төлөв
 - [[Home]] — нүүр
 - `_system/fm/registry.json` — сешн ↔ дүрийн бүртгэл (машин уншина)
-- Bases: хавтас бүр өөрийн `<Нэр>.base`-тэй — `00-GTD/Tasks/Tasks.base` · `03-Projects/Projects.base` · `04-Areas/people/People.base` · `04-Areas/Business/companies/Companies.base` · `04-Areas/AI Team/ai-workers/Agents.base` · `05-Resources/references/References.base` · `05-Resources/library/Reading.base` · `05-Resources/Atomic/decisions/Decisions.base` · `05-Resources/Atomic/knowledge/Atoms.base` · 🔒 `04-Areas/Business/finances/private/Monthly Bills.base`, `Finance Records.base`
+- Bases: хавтас бүр өөрийн `<Нэр>.base`-тэй — `01-GTD/Tasks/Tasks.base` · `02-Projects/Projects.base` · `03-Areas/people/People.base` · `03-Areas/Business/companies/Companies.base` · `03-Areas/AI Team/ai-workers/Agents.base` · `04-Resources/references/References.base` · `04-Resources/library/Reading.base` · `04-Resources/Atomic/decisions/Decisions.base` · `04-Resources/Atomic/knowledge/Atoms.base` · 🔒 `03-Areas/Business/finances/private/Monthly Bills.base`, `Finance Records.base`
 
 ## Идэвхтэй төслүүд
 
@@ -42,4 +42,4 @@ _(одоогоор байхгүй — `/fm:project`-оор нэм)_
 
 ## Шийдвэрүүд
 
-Бүрэн жагсаалт: `05-Resources/Atomic/decisions/Decisions.base`.
+Бүрэн жагсаалт: `04-Resources/Atomic/decisions/Decisions.base`.

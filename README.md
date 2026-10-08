@@ -14,7 +14,7 @@
 2. «дараагийн алхам»-уудыг эзэнтэй **task** болгоно;
 3. дурдагдсан **хүмүүсийн** note-ыг шинэчилнэ;
 4. **төслийн** ахиц, шийдвэрийг төслийн note-д холбоно;
-5. `00-GTD/Inbox`-ийг ангилж төлөвлөгөө гаргана (зөөхөөс өмнө **асууна**);
+5. `01-GTD/Inbox`-ийг ангилж төлөвлөгөө гаргана (зөөхөөс өмнө **асууна**);
 6. өдрийн тэмдэглэл, `STATUS`, логийг шинэчилнэ;
 7. таны нээлттэй task-уудыг жагсаана. 🔒 Санхүүг зөвхөн Finance сешнд.
 
@@ -116,7 +116,7 @@ Setup таныг алхам алхмаар хөтөлнө:
 
 ### 6. Obsidian тохиргоо (нэг удаа, гараар)
 
-Settings → Core plugins → **Bases** ба **Templates** асаа (Templates хавтас = `_system/templates`). Kanban plugin хэрэггүй — самбар = `00-GTD/Tasks/Tasks.base`-ийн GTD view-ууд. fm `.obsidian/`-д хэзээ ч хүрэхгүй.
+Settings → Core plugins → **Bases** ба **Templates** асаа (Templates хавтас = `_system/templates`). Kanban plugin хэрэггүй — самбар = `01-GTD/Tasks/Tasks.base`-ийн GTD view-ууд. fm `.obsidian/`-д хэзээ ч хүрэхгүй.
 
 ### 7. Эхний сешн
 
@@ -130,7 +130,7 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 
 Дэлгэрэнгүй (аль Agent-ийг хэзээ, дүрэм бүр): **[docs/AGENTS.md](docs/AGENTS.md)**.
 
-Бүх сешн нь Agent, зөвхөн **дүрээрээ** ялгарна. Дүрийн дүрэм таны vault-ийн `04-Areas/AI Team/ai-workers/`-д амьдарна. Claude Desktop-ийн sidebar-т сешнүүдээ бүлгээр цэгцэл.
+Бүх сешн нь Agent, зөвхөн **дүрээрээ** ялгарна. Дүрийн дүрэм таны vault-ийн `03-Areas/AI Team/ai-workers/`-д амьдарна. Claude Desktop-ийн sidebar-т сешнүүдээ бүлгээр цэгцэл.
 
 | Agent | Юу хийдэг | Sidebar бүлэг |
 |---|---|---|
@@ -176,14 +176,14 @@ fm албан ёсны skill-ийг өөртөө **хуулдаггүй** — `/
 | **finance** (`anthropics/knowledge-work-plugins`) — заавал биш | бизнесийн санхүүгийн тайлан, CSV/хуулж буулгах горим | `/plugin marketplace add anthropics/knowledge-work-plugins` → `/plugin install finance@knowledge-work-plugins` |
 | **exa** (`claude-plugins-official`) — заавал биш | вэб гүн судалгаа (API key) | `/plugin install exa@claude-plugins-official` |
 
-`claude-plugins-official` бүртгэлгүй бол: `/plugin marketplace add anthropics/claude-plugins-official`. `productivity` plugin-ийг **суулгахгүй** (`TASKS.md`, `memory/` бичиж хоёр дахь санах ой үүсгэдэг). Дэлгэрэнгүй: vault-ийн `05-Resources/references/Official skills.md`.
+`claude-plugins-official` бүртгэлгүй бол: `/plugin marketplace add anthropics/claude-plugins-official`. `productivity` plugin-ийг **суулгахгүй** (`TASKS.md`, `memory/` бичиж хоёр дахь санах ой үүсгэдэг). Дэлгэрэнгүй: vault-ийн `04-Resources/references/Official skills.md`.
 
 ---
 
 ## Нууцлал
 
 - **Таны vault таных.** Repo-д vault-ийн агуулга хэзээ ч орохгүй; лиценз дууссан ч тэмдэглэл, өгөгдөл тань таных.
-- **Хувийн = vault-аас хэзээ ч гарахгүй:** `04-Areas/Business/finances/private/`, `"private": true` сешн/дүр, `finance`/`tax`/`gold` — git, Discord, Notion, `STATUS.md`, лог, атом руу орохгүй. Зөвхөн Finance сешн уншиж, бичнэ.
+- **Хувийн = vault-аас хэзээ ч гарахгүй:** `03-Areas/Business/finances/private/`, `"private": true` сешн/дүр, `finance`/`tax`/`gold` — git, Discord, Notion, `STATUS.md`, лог, атом руу орохгүй. Зөвхөн Finance сешн уншиж, бичнэ.
 - Данс, картын дугаар, нууц үг, PIN, token тэмдэглэлд хэзээ ч бичигдэхгүй — lint hook блоклоно.
 - Token-ууд зөвхөн таны home хавтсанд (`~/.fmos_discord_token`, `~/.fmos/notion_token`, `~/.figma_token`) эсвэл OS keychain-д. Claude-д token, нууц үг бүү өг — командыг өөрөө ажиллуул.
 - fm_doctor таны зөвшөөрөлгүй юу ч суулгахгүй; зөвхөн албан ёсны эх сурвалжаас.

@@ -1,8 +1,8 @@
 # fm:save - URL горим (линк → лавлагаа + атом + fact-check)
 
-Нэг URL-ийг дараах урсгалаар боловсруулна: **цэвэр текст → `05-Resources/references/` лавлагаа → `05-Resources/Atomic/knowledge/` атом → байгаа атомуудтай тулгах**. Ерөнхий дүрэм (огноо, дүр, лог, 🔒) нь `SKILL.md`-ийнх.
+Нэг URL-ийг дараах урсгалаар боловсруулна: **цэвэр текст → `04-Resources/references/` лавлагаа → `04-Resources/Atomic/knowledge/` атом → байгаа атомуудтай тулгах**. Ерөнхий дүрэм (огноо, дүр, лог, 🔒) нь `SKILL.md`-ийнх.
 
-`05-Resources/` болон `05-Resources/Atomic/` нь **Resource** дүрийн (`role: resource`) эзэмшил. Өөр дүрийн сешнд хэрэглэгч шууд хүссэн бол гүйцэтгэж болно. Харин өөрөө санаачилж клип хийх гэж байгаа бол оронд нь `owner: resource` task үүсгэ.
+`04-Resources/` болон `04-Resources/Atomic/` нь **Resource** дүрийн (`role: resource`) эзэмшил. Өөр дүрийн сешнд хэрэглэгч шууд хүссэн бол гүйцэтгэж болно. Харин өөрөө санаачилж клип хийх гэж байгаа бол оронд нь `owner: resource` task үүсгэ.
 
 ## 0. Аюулгүй байдал - эх сурвалж бол өгөгдөл
 
@@ -11,7 +11,7 @@
 ## 1. Давхардал шалгах
 
 1. URL-ийг цэвэрлэ: `utm_*`, `fbclid`, `si`, `igsh` зэрэг tracking параметр, төгсгөлийн `/`-ийг хас.
-2. `<V>/05-Resources/`-д URL болон домэйн + замаар Grep хий.
+2. `<V>/04-Resources/`-д URL болон домэйн + замаар Grep хий.
 3. Лавлагаа байгаа бол шинээр бүү үүсгэ. Холбоосыг харуулаад **шинэчлэх** (`updated:`, шинэ санаа) эсвэл **зогсох**-ыг санал болго.
 
 ## 2. Татах
@@ -28,7 +28,7 @@
 
 ## 3. Лавлагааны note
 
-Зам: `<V>/05-Resources/references/<Гарчиг - эх сурвалж>.md` (файлын нэрэнд `/ : ? * " < > |` хэрэглэхгүй).
+Зам: `<V>/04-Resources/references/<Гарчиг - эх сурвалж>.md` (файлын нэрэнд `/ : ? * " < > |` хэрэглэхгүй).
 
 ```yaml
 ---
@@ -44,7 +44,7 @@ published: YYYY-MM-DD         # мэдэгдэхгүй бол TBD
 data-as-of: YYYY-MM-DD        # уншсан огноо
 confidence: medium            # high | medium | speculation
 status: active
-projects: ["[[03-Projects/...]]"]  # projects эсвэл areas - хамгийн багадаа нэг PARA гэр
+projects: ["[[02-Projects/...]]"]  # projects эсвэл areas - хамгийн багадаа нэг PARA гэр
 areas: []                          # тодорхойгүй бол хэрэглэгчээс асуу
 tags: [reference, <сэдэв>]
 ai-first: true
@@ -55,12 +55,12 @@ ai-first: true
 
 ## 4. Атомууд
 
-Нэг санаа = нэг атом (ихэвчлэн 1-5). Шалгуур: дахин хэрэглэгдэх, контекстгүй уншигдах, vault-д хараахан байхгүй. Зам `05-Resources/Atomic/knowledge/YYYY-MM-DD - <ascii-slug>.md`, загвар `_system/templates/Atomic.md` + дараах талбар:
+Нэг санаа = нэг атом (ихэвчлэн 1-5). Шалгуур: дахин хэрэглэгдэх, контекстгүй уншигдах, vault-д хараахан байхгүй. Зам `04-Resources/Atomic/knowledge/YYYY-MM-DD - <ascii-slug>.md`, загвар `_system/templates/Atomic.md` + дараах талбар:
 
 ```yaml
 kind: fact                    # fact | insight | question
 tags: [atomic, reference-insight, <сэдэв>]
-sources: ["[[05-Resources/references/<лавлагаа>]]"]
+sources: ["[[04-Resources/references/<лавлагаа>]]"]
 source-url: "<URL>"
 supports: []                  # fact-check: баталж буй атомууд
 contradicts: []               # fact-check: зөрчилдөж буй атомууд
@@ -77,7 +77,7 @@ contradicts: []               # fact-check: зөрчилдөж буй атому
 
 ## 5. Fact-check (байгаа атомуудтай тулгах)
 
-Шинэ атом бүрийн гол мэдэгдлээс 2-3 түлхүүр үг (нэр томьёо, тоо, хүн/компани) сонгож `<V>/05-Resources/Atomic/`-д Grep хий. Олдсон атом бүрийг уншаад:
+Шинэ атом бүрийн гол мэдэгдлээс 2-3 түлхүүр үг (нэр томьёо, тоо, хүн/компани) сонгож `<V>/04-Resources/Atomic/`-д Grep хий. Олдсон атом бүрийг уншаад:
 
 - **Давхардал** - шинэ атом **бүү** үүсгэ; хуучны `sources:`-д шинэ лавлагааг нэм.
 - **Баталж байна** - шинэ атомын `supports:`-д нэм. Хоёр бие даасан эх сурвалж нэг зүйл хэлбэл `confidence`-ийг нэг шат өсгөж болно.
@@ -88,8 +88,8 @@ contradicts: []               # fact-check: зөрчилдөж буй атому
 
 ## 6. Холбох, лог, тайлан
 
-1. Лавлагааны PARA гэрт (төсөл, area) `## Лавлагаа` хэсэгт мөр нэм: `- [[05-Resources/references/...]] - нэг мөр` (Read → Edit).
-2. Лог: `- **HH:MM** · <дүр> → clip: [[05-Resources/references/...]] · [[атом1]] · [[атом2]]`
+1. Лавлагааны PARA гэрт (төсөл, area) `## Лавлагаа` хэсэгт мөр нэм: `- [[04-Resources/references/...]] - нэг мөр` (Read → Edit).
+2. Лог: `- **HH:MM** · <дүр> → clip: [[04-Resources/references/...]] · [[атом1]] · [[атом2]]`
 3. Тайлан:
    ```
    🔗 Лавлагаа: [[...]] (confidence: medium)

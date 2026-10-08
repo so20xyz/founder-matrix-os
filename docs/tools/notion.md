@@ -25,7 +25,7 @@
 2. «notion sync» → Claude эхлээд `nt sync --dry-run`-ий жагсаалтыг үзүүлнэ → батлахад `nt sync`.
 3. Холбоос: `<vault>/_system/fm/notion_sync.json` — дахин түлхэхэд page давхардахгүй, шинэчлэгдэнэ.
 
-🔒 Хэзээ ч явахгүй: `private: true`, `sensitivity: private`, `type: bill|income`, `04-Areas/Business/finances/private/`, `01-Soul/`, `04-Areas/Life/`.
+🔒 Хэзээ ч явахгүй: `private: true`, `sensitivity: private`, `type: bill|income`, `03-Areas/Business/finances/private/`, `00-Soul/`, `03-Areas/Life/`.
 
 ## Асуудал шийдэх
 

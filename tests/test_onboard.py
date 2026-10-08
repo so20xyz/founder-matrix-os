@@ -28,7 +28,7 @@ ONBOARD = SCRIPTS / "fm_onboard.py"
 LINT = SCRIPTS / "fm_lint.py"
 TEMPLATE = PLUGIN / "vault-template"
 TODAY = datetime.date.today().isoformat()
-PRIVATE = "04-Areas/Business/finances/private"
+PRIVATE = "03-Areas/Business/finances/private"
 
 sys.path.insert(0, str(SCRIPTS))
 sys.dont_write_bytecode = True
@@ -194,25 +194,25 @@ def test_template_registry_matches_role_notes(c):
 def test_onboard_creates_life_structure(c):
     onboarded(c)
     expected = [
-        "04-Areas/Business/companies/Нарны Студи.md",
-        "04-Areas/Business/companies/Хөх Тэнгэр ТББ.md",
-        "04-Areas/Life/Эрүүл мэнд/Эрүүл мэнд.md",
-        "04-Areas/Life/Гэр бүл/Гэр бүл.md",
-        "03-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md",
-        "03-Projects/1-Active/Нарны вэбсайт/_BRAIN.md",
-        "03-Projects/2-Planning/Подкаст 2026/Подкаст 2026.md",
-        "03-Projects/1-Active/Марафон бэлтгэл/Марафон бэлтгэл.md",
-        "04-Areas/people/Батболд.md", "04-Areas/people/Сарангэрэл.md",
-        "04-Areas/people/Отгонбаяр.md", "04-Areas/people/Должин.md",
+        "03-Areas/Business/companies/Нарны Студи.md",
+        "03-Areas/Business/companies/Хөх Тэнгэр ТББ.md",
+        "03-Areas/Life/Эрүүл мэнд/Эрүүл мэнд.md",
+        "03-Areas/Life/Гэр бүл/Гэр бүл.md",
+        "02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md",
+        "02-Projects/1-Active/Нарны вэбсайт/_BRAIN.md",
+        "02-Projects/2-Planning/Подкаст 2026/Подкаст 2026.md",
+        "02-Projects/1-Active/Марафон бэлтгэл/Марафон бэлтгэл.md",
+        "03-Areas/people/Батболд.md", "03-Areas/people/Сарангэрэл.md",
+        "03-Areas/people/Отгонбаяр.md", "03-Areas/people/Должин.md",
         PRIVATE + "/Юнител интернэт.md", PRIVATE + "/Орон сууцны зээл.md",
         PRIVATE + "/Спотифай гэр бүл.md", PRIVATE + "/income/Студийн цалин.md",
-        "05-Resources/references/Obsidian Help.md", "05-Resources/references/Deep Work.md",
-        "04-Areas/Business/tools/Figma.md",
-        "04-Areas/Goals/2026 Goals.md",
-        "04-Areas/AI Team/ai-workers/10 Нарны сайт.md",
-        "04-Areas/AI Team/ai-workers/11 Марафон бэлтгэл.md",
-        "05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY,
-        "00-GTD/Daily/%s.md" % TODAY,
+        "04-Resources/references/Obsidian Help.md", "04-Resources/references/Deep Work.md",
+        "03-Areas/Business/tools/Figma.md",
+        "03-Areas/Goals/2026 Goals.md",
+        "03-Areas/AI Team/ai-workers/10 Нарны сайт.md",
+        "03-Areas/AI Team/ai-workers/11 Марафон бэлтгэл.md",
+        "04-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY,
+        "01-GTD/Daily/%s.md" % TODAY,
         "_system/logs/%s.md" % TODAY,
     ]
     missing = [r for r in expected if not (c.vault / r).is_file()]
@@ -222,19 +222,19 @@ def test_onboard_creates_life_structure(c):
 def test_frontmatter_conventions(c):
     onboarded(c)
     want_type = {
-        "04-Areas/Business/companies/Нарны Студи.md": "company",
-        "04-Areas/Life/Эрүүл мэнд/Эрүүл мэнд.md": "area",
-        "03-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md": "project",
-        "03-Projects/1-Active/Нарны вэбсайт/_BRAIN.md": "project-brain",
-        "04-Areas/people/Батболд.md": "person",
+        "03-Areas/Business/companies/Нарны Студи.md": "company",
+        "03-Areas/Life/Эрүүл мэнд/Эрүүл мэнд.md": "area",
+        "02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md": "project",
+        "02-Projects/1-Active/Нарны вэбсайт/_BRAIN.md": "project-brain",
+        "03-Areas/people/Батболд.md": "person",
         PRIVATE + "/Юнител интернэт.md": "bill",
         PRIVATE + "/income/Студийн цалин.md": "income",
-        "05-Resources/references/Obsidian Help.md": "reference",
-        "04-Areas/Business/tools/Figma.md": "tool",
-        "04-Areas/Goals/2026 Goals.md": "goal",
-        "04-Areas/AI Team/ai-workers/10 Нарны сайт.md": "agent-role",
-        "05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY: "session-decision",
-        "00-GTD/Daily/%s.md" % TODAY: "daily",
+        "04-Resources/references/Obsidian Help.md": "reference",
+        "03-Areas/Business/tools/Figma.md": "tool",
+        "03-Areas/Goals/2026 Goals.md": "goal",
+        "03-Areas/AI Team/ai-workers/10 Нарны сайт.md": "agent-role",
+        "04-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY: "session-decision",
+        "01-GTD/Daily/%s.md" % TODAY: "daily",
     }
     for rel, typ in want_type.items():
         f = c.fm(rel)
@@ -246,15 +246,15 @@ def test_frontmatter_conventions(c):
                                          "session-decision"), rel
         body = c.read(rel)
         assert "{{" not in body, (rel, re.findall(r"\{\{[^}]*\}\}", body))
-    proj = c.fm("03-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md")
+    proj = c.fm("02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md")
     assert proj["status"] == "active" and proj["context"] == "work" and proj["due"] == "2026-11-30"
     assert proj["start"] == TODAY
-    plan = c.fm("03-Projects/2-Planning/Подкаст 2026/Подкаст 2026.md")
+    plan = c.fm("02-Projects/2-Planning/Подкаст 2026/Подкаст 2026.md")
     assert plan["status"] == "planning" and plan["start"] == ""
-    run_ = c.fm("03-Projects/1-Active/Марафон бэлтгэл/Марафон бэлтгэл.md")
+    run_ = c.fm("02-Projects/1-Active/Марафон бэлтгэл/Марафон бэлтгэл.md")
     assert run_["context"] == "home", run_
-    assert "Үүсгэн байгуулагч" in c.read("04-Areas/Business/companies/Нарны Студи.md")
-    soul = c.read("01-Soul/SOUL.md")
+    assert "Үүсгэн байгуулагч" in c.read("03-Areas/Business/companies/Нарны Студи.md")
+    soul = c.read("00-Soul/SOUL.md")
     assert "Монгол залууст" in soul and "1. Үнэт зүйл" not in soul and "2. Гар бие оролцох" in soul
     assert "<Нэг догол мөр" not in soul
     assert "## Намайг ингэж дууд\n\nНомин" in soul and "<Agent-ууд таныг" not in soul
@@ -264,35 +264,35 @@ def test_frontmatter_conventions(c):
 
 def test_links_both_ways(c):
     onboarded(c)
-    proj = "03-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт"
-    company = "04-Areas/Business/companies/Нарны Студи"
-    person = "04-Areas/people/Батболд"
+    proj = "02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт"
+    company = "03-Areas/Business/companies/Нарны Студи"
+    person = "03-Areas/people/Батболд"
     p = c.fm(proj + ".md")
     assert p["area"] == "[[%s|Нарны Студи]]" % company, p["area"]
     assert p["company"] == "[[%s|Нарны Студи]]" % company
     assert "[[%s|Батболд]]" % person in p["people"], p["people"]
-    assert p["goals"] == ["[[04-Areas/Goals/2026 Goals|2026 Goals]]"], p["goals"]
+    assert p["goals"] == ["[[03-Areas/Goals/2026 Goals|2026 Goals]]"], p["goals"]
     per = c.fm(person + ".md")
     assert "[[%s|Нарны Студи]]" % company in per["companies"], per
     assert "[[%s|Нарны вэбсайт]]" % proj in per["projects"], per
     co = c.fm(company + ".md")
     assert "[[%s|Батболд]]" % person in co["people"], co
-    assert "[[%s|Сарангэрэл]]" % "04-Areas/people/Сарангэрэл" in co["people"], co
+    assert "[[%s|Сарангэрэл]]" % "03-Areas/people/Сарангэрэл" in co["people"], co
     assert "[[%s|Нарны вэбсайт]]" % proj in co["projects"], co
     # Сарангэрэл lists the podcast; the podcast must list her back
-    pod = c.fm("03-Projects/2-Planning/Подкаст 2026/Подкаст 2026.md")
-    assert "[[04-Areas/people/Сарангэрэл|Сарангэрэл]]" in pod["people"], pod
-    area = c.fm("04-Areas/Life/Эрүүл мэнд/Эрүүл мэнд.md")
-    assert "[[03-Projects/1-Active/Марафон бэлтгэл/Марафон бэлтгэл|Марафон бэлтгэл]]" in area["projects"]
-    brain = c.fm("03-Projects/1-Active/Нарны вэбсайт/_BRAIN.md")
+    pod = c.fm("02-Projects/2-Planning/Подкаст 2026/Подкаст 2026.md")
+    assert "[[03-Areas/people/Сарангэрэл|Сарангэрэл]]" in pod["people"], pod
+    area = c.fm("03-Areas/Life/Эрүүл мэнд/Эрүүл мэнд.md")
+    assert "[[02-Projects/1-Active/Марафон бэлтгэл/Марафон бэлтгэл|Марафон бэлтгэл]]" in area["projects"]
+    brain = c.fm("02-Projects/1-Active/Нарны вэбсайт/_BRAIN.md")
     assert brain["project"] == "[[%s|Нарны вэбсайт]]" % proj
-    tool = c.fm("04-Areas/Business/tools/Figma.md")
+    tool = c.fm("03-Areas/Business/tools/Figma.md")
     assert tool["serves"] == ["[[%s|Нарны вэбсайт]]" % proj], tool
-    goals = c.fm("04-Areas/Goals/2026 Goals.md")
+    goals = c.fm("03-Areas/Goals/2026 Goals.md")
     assert len(goals["projects"]) == 2 and goals["year"] == "2026", goals
     # every wikilink target written by the onboarding exists
-    for rel in [proj + ".md", person + ".md", company + ".md", "04-Areas/Goals/2026 Goals.md",
-                "05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY, "00-GTD/Daily/%s.md" % TODAY]:
+    for rel in [proj + ".md", person + ".md", company + ".md", "03-Areas/Goals/2026 Goals.md",
+                "04-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY, "01-GTD/Daily/%s.md" % TODAY]:
         for target in re.findall(r"\[\[([^\]|#]+)", c.read(rel)):
             if "/" in target:
                 assert (c.vault / (target + ".md")).is_file() or (c.vault / target).is_file(), \
@@ -332,16 +332,16 @@ def test_finance_private_only(c):
 
 def test_atom_and_log_have_no_amounts(c):
     onboarded(c)
-    atom = c.read("05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY)
+    atom = c.read("04-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY)
     log = c.read("_system/logs/%s.md" % TODAY)
     for s in PRIVATE_STRINGS:
         assert s not in atom and s not in log, s
     assert "Хувийн санхүү" in atom
-    f = c.fm("05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY)
+    f = c.fm("04-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY)
     assert f["changetype"] == "structure" and f["projects"] and f["areas"], f
-    assert re.match(r"^- \*\*\d\d:\d\d\*\* · area → \[\[05-Resources/Atomic/decisions/", log.strip()), log
+    assert re.match(r"^- \*\*\d\d:\d\d\*\* · area → \[\[04-Resources/Atomic/decisions/", log.strip()), log
     assert len(log.strip().splitlines()) == 1
-    daily = c.read("00-GTD/Daily/%s.md" % TODAY)
+    daily = c.read("01-GTD/Daily/%s.md" % TODAY)
     assert "Vault онбординг" in daily and "Нарны вэбсайт" in daily
 
 
@@ -350,15 +350,15 @@ def test_roles_and_registry(c):
     reg = json.loads(c.read("_system/fm/registry.json"))
     roles = reg["roles"]
     assert reg["sessions"] == {}
-    assert roles["narny-site"]["note"] == "04-Areas/AI Team/ai-workers/10 Нарны сайт.md"
-    assert roles["narny-site"]["folders"] == ["03-Projects/1-Active/Нарны вэбсайт/"]
+    assert roles["narny-site"]["note"] == "03-Areas/AI Team/ai-workers/10 Нарны сайт.md"
+    assert roles["narny-site"]["folders"] == ["02-Projects/1-Active/Нарны вэбсайт/"]
     assert roles["marafon-beltgel"]["active"] is True
     for slug in ("project", "area", "resource", "finance"):
         assert roles[slug]["active"] is True, slug       # "gtd" in the answers maps to "area"
     for slug in ("research", "developer", "creative"):
         assert roles[slug]["active"] is False, slug
-    note = c.fm("04-Areas/AI Team/ai-workers/10 Нарны сайт.md")
-    assert note["role"] == "narny-site" and note["owns"] == ["03-Projects/1-Active/Нарны вэбсайт/"]
+    note = c.fm("03-Areas/AI Team/ai-workers/10 Нарны сайт.md")
+    assert note["role"] == "narny-site" and note["owns"] == ["02-Projects/1-Active/Нарны вэбсайт/"]
     assert note["private"] == "false"
     # fm_role sees the new role
     code, out, err = run(PLUGIN / "skills/role/scripts/fm_role.py", "list", c.vault)
@@ -405,7 +405,7 @@ def test_role_new_note_names_and_legacy_aliases(c):
     """2026-10-05 consolidation: role notes are GTD.md / Wiki.md / Architect.md (no NN prefix);
     old slugs (research, tool-developer, 00 Inbox Admin, wiki) still resolve to the new notes."""
     NOTE_TMPL = "\n".join(["---", "type: ai-worker", "role: %s", "---", "# %s", ""])
-    folder = c.vault / "04-Areas/AI Team/ai-workers"
+    folder = c.vault / "03-Areas/AI Team/ai-workers"
     folder.mkdir(parents=True, exist_ok=True)
     for name, slug in (("GTD", "area"), ("Wiki", "resource"), ("Architect", "developer"), ("Operator", "operator")):
         (folder / ("%s.md" % name)).write_text(NOTE_TMPL % (slug, name), encoding="utf-8")
@@ -416,7 +416,7 @@ def test_role_new_note_names_and_legacy_aliases(c):
         code, out, err = run(role, "bind", c.vault, query, "--sid", "sid-" + slug, "--device", "PC")
         assert code == 0, (query, out, err)
         res = json.loads(out)
-        assert res["role"] == slug and res["note"] == "04-Areas/AI Team/ai-workers/" + note, (query, res)
+        assert res["role"] == slug and res["note"] == "03-Areas/AI Team/ai-workers/" + note, (query, res)
 
 
 def test_idempotent_second_run(c):
@@ -435,20 +435,20 @@ def test_idempotent_second_run(c):
 
 def test_never_overwrites_user_notes(c):
     c.setup()
-    mine = c.vault / "04-Areas/people/Батболд.md"
+    mine = c.vault / "03-Areas/people/Батболд.md"
     mine.parent.mkdir(parents=True, exist_ok=True)
     mine.write_text("---\ntype: person\n---\n\nМиний өөрийн тэмдэглэл\n", encoding="utf-8")
-    soul = c.vault / "01-Soul/SOUL.md"
+    soul = c.vault / "00-Soul/SOUL.md"
     soul.write_text("---\ntype: soul\n---\n\n# SOUL\n\nАль хэдийн бичсэн.\n", encoding="utf-8")
     code, out, err = c.onboard(None, "--json")
     assert code == 0, err
     rep = json.loads(out)
-    assert "04-Areas/people/Батболд.md" in rep["skipped"], rep["skipped"]
+    assert "03-Areas/people/Батболд.md" in rep["skipped"], rep["skipped"]
     assert mine.read_text(encoding="utf-8").endswith("Миний өөрийн тэмдэглэл\n")
     assert soul.read_text(encoding="utf-8").endswith("Аль хэдийн бичсэн.\n")
     # still linked from the project
-    proj = c.fm("03-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md")
-    assert "[[04-Areas/people/Батболд|Батболд]]" in proj["people"]
+    proj = c.fm("02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md")
+    assert "[[03-Areas/people/Батболд|Батболд]]" in proj["people"]
 
 
 def test_existing_project_is_reused(c):
@@ -459,10 +459,10 @@ def test_existing_project_is_reused(c):
     code, out, err = c.onboard(None, "--json")
     assert code == 0, err
     rep = json.loads(out)
-    assert "03-Projects/3-On-hold/Подкаст 2026/Подкаст 2026.md" in rep["skipped"], rep["skipped"]
-    assert not (c.vault / "03-Projects/2-Planning/Подкаст 2026").exists()
-    per = c.fm("04-Areas/people/Сарангэрэл.md")
-    assert per["projects"] == ["[[03-Projects/3-On-hold/Подкаст 2026/Подкаст 2026|Подкаст 2026]]"], per
+    assert "02-Projects/3-On-hold/Подкаст 2026/Подкаст 2026.md" in rep["skipped"], rep["skipped"]
+    assert not (c.vault / "02-Projects/2-Planning/Подкаст 2026").exists()
+    per = c.fm("03-Areas/people/Сарангэрэл.md")
+    assert per["projects"] == ["[[02-Projects/3-On-hold/Подкаст 2026/Подкаст 2026|Подкаст 2026]]"], per
 
 
 def test_dry_run_writes_nothing(c):
@@ -497,7 +497,7 @@ def test_quick_mode(c):
              "roles": {"activate": ["gtd", "project"], "work": "auto"}}
     code, out, err = c.onboard(quick, "--json")
     assert code == 0, (out, err)
-    assert (c.vault / "03-Projects/1-Active/Хичээлийн төлөвлөгөө/Хичээлийн төлөвлөгөө.md").is_file()
+    assert (c.vault / "02-Projects/1-Active/Хичээлийн төлөвлөгөө/Хичээлийн төлөвлөгөө.md").is_file()
     reg = json.loads(c.read("_system/fm/registry.json"))
     assert reg["roles"]["khicheeliin-tuluvluguu"]["active"] is True, list(reg["roles"])
     assert reg["roles"]["finance"]["active"] is False
@@ -510,14 +510,14 @@ def test_secrets_never_written(c):
     ans = {"references": [{"name": "Leaky", "url": "https://example.com/?t=" + tok}]}
     code, out, err = c.onboard(ans)
     assert code == 1, (code, out, err)
-    assert not (c.vault / "05-Resources/references/Leaky.md").exists()
+    assert not (c.vault / "04-Resources/references/Leaky.md").exists()
     assert tok not in out
 
 
 def test_lint_clean_after_onboarding(c):
     onboarded(c)
-    targets = [c.vault / d for d in ("03-Projects", "04-Areas", "05-Resources", "05-Resources/Atomic",
-                                     "04-Areas/Goals", "00-GTD/Daily", "01-Soul")]
+    targets = [c.vault / d for d in ("02-Projects", "03-Areas", "04-Resources", "04-Resources/Atomic",
+                                     "03-Areas/Goals", "01-GTD/Daily", "00-Soul")]
     code, out, err = run(LINT, *targets, "--vault", c.vault)
     assert code == 0, (code, out, err)
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """fm:role helper - bind a Claude Code session to a vault role.
 
-Role notes live in <vault>/04-Areas/AI Team/ai-workers/*.md (one note = one role).
+Role notes live in <vault>/03-Areas/AI Team/ai-workers/*.md (one note = one role).
 The session -> role map lives in <vault>/_system/fm/registry.json:
 
     {"sessions": {"<sid>": {"role": "area", "project": "area", "group": "areas", "device": "Mac",
                             "title": "Area · Mac", "since": "YYYY-MM-DD"}},
-     "roles":    {"area": {"note": "04-Areas/AI Team/ai-workers/GTD.md", "group": "areas"}}}
+     "roles":    {"area": {"note": "03-Areas/AI Team/ai-workers/GTD.md", "group": "areas"}}}
 
 A bound session gets project = <role slug> (and the role's group), so the relay groups the same role on every
 device into ONE Discord channel and ONE baton (state/<slug>.md); the " · <device>" title suffix is display only.
@@ -29,7 +29,16 @@ import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional
 
-ROLES_DIR = Path("04-Areas") / "AI Team" / "ai-workers"
+ROLES_DIR_NEW = Path("03-Areas") / "AI Team" / "ai-workers"
+ROLES_DIR_CUR = Path("04-Areas") / "AI Team" / "ai-workers"  # одоогийн layout (fallback)
+ROLES_DIR = ROLES_DIR_NEW
+
+
+def roles_dir(vault):
+    """03-Areas/...; vault-д зөвхөн одоогийн 04-Areas/... байвал түүнийг."""
+    if not (vault / ROLES_DIR_NEW).is_dir() and (vault / ROLES_DIR_CUR).is_dir():
+        return ROLES_DIR_CUR
+    return ROLES_DIR_NEW
 REGISTRY = Path("_system") / "fm" / "registry.json"
 ROLE_TYPES = {"agent-role", "ai-worker"}
 # 2026-10-05 consolidation: old role slugs/names -> current role slug (role: frontmatter of the new notes).
@@ -105,7 +114,7 @@ def slugify(text: str) -> str:
 
 def load_roles(vault: Path) -> List[Dict[str, object]]:
     roles = []
-    folder = vault / ROLES_DIR
+    folder = vault / roles_dir(vault)
     if not folder.is_dir():
         return roles
     for note in sorted(folder.glob("*.md")):
@@ -120,7 +129,7 @@ def load_roles(vault: Path) -> List[Dict[str, object]]:
         roles.append({
             "slug": slug,
             "name": name,
-            "note": (ROLES_DIR / note.name).as_posix(),
+            "note": (roles_dir(vault) / note.name).as_posix(),
             "private": str(fm.get("private", "")).lower() == "true",
             "group": str(fm.get("group", "")),
             "aliases": aliases,
@@ -203,7 +212,7 @@ def _opt(args: List[str], key: str, default: str = "") -> str:
 def cmd_list(vault: Path, args: List[str]) -> None:
     roles = load_roles(vault)
     if not roles:
-        _die("Дүрийн тэмдэглэл олдсонгүй: %s (type: agent-role). Эхлээд /fm:setup ажиллуул." % (vault / ROLES_DIR))
+        _die("Дүрийн тэмдэглэл олдсонгүй: %s (type: agent-role). Эхлээд /fm:setup ажиллуул." % (vault / roles_dir(vault)))
     reg = load_registry(vault)
     sessions = reg.get("sessions", {})
     _out("slug | дүр | private | холбогдсон сешн | тэмдэглэл")

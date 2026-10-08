@@ -12,7 +12,7 @@
       "role": "<project-slug>",
       "title": "📁 <Төслийн нэр>",
       "group": "Projects",
-      "cwd": "03-Projects/1-Active/<Төсөл>",
+      "cwd": "02-Projects/1-Active/<Төсөл>",
       "required": true,
       "per": "active-project",
       "note": "Active төсөл бүрт нэг тогтмол сешн."
@@ -22,7 +22,7 @@
       "role": "project",
       "title": "📁 Portfolio",
       "group": "Projects",
-      "cwd": "03-Projects",
+      "cwd": "02-Projects",
       "required": true,
       "note": "Бүх төслийн төлөв, самбар, төсөл нээх/хаах (хуучин нэр: Project Manager)."
     },
@@ -58,7 +58,7 @@
       "role": "resource",
       "title": "📚 Wiki",
       "group": "Resources",
-      "cwd": "05-Resources",
+      "cwd": "04-Resources",
       "required": true,
       "note": "Лавлагаа, атом, fact-check."
     },
@@ -67,7 +67,7 @@
       "role": "resource",
       "title": "📖 Library",
       "group": "Resources",
-      "cwd": "05-Resources/library",
+      "cwd": "04-Resources/library",
       "required": false,
       "note": "Номын сан: ном нэмэх, байршуулах, задлах, судлах — Second Brain-ийн гол хүч."
     },
@@ -76,7 +76,7 @@
       "role": "research",
       "title": "🔍 Research · <сэдэв>",
       "group": "Resources",
-      "cwd": "05-Resources/Research",
+      "cwd": "04-Resources/Research",
       "required": false,
       "per": "topic",
       "note": "Судалгааны сэдэв бүрт (хэрэгтэй бол)."

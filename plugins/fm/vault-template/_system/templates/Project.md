@@ -38,7 +38,7 @@ subprojects: []
 ```base
 filters:
   and:
-    - file.inFolder("00-GTD/Tasks")
+    - file.inFolder("01-GTD/Tasks")
     - type == "task"
     - status != "completed"
     - status != "cancelled"
@@ -59,7 +59,7 @@ views:
 ```base
 filters:
   and:
-    - file.inFolder("05-Resources/Atomic")
+    - file.inFolder("04-Resources/Atomic")
     - list(projects).contains(this)
 views:
   - type: table

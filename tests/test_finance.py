@@ -129,12 +129,12 @@ def test_rebalance_sums(c):
 
 def test_guard_blocks_outside_private(c):
     try:
-        fb.write(c.vault, c.vault / "00-GTD/Inbox" / "x.md", "nope")
+        fb.write(c.vault, c.vault / "01-GTD/Inbox" / "x.md", "nope")
     except SystemExit as e:
         assert e.code == 5
     else:
         raise AssertionError("guard did not block")
-    assert not (c.vault / "00-GTD/Inbox" / "x.md").exists()
+    assert not (c.vault / "01-GTD/Inbox" / "x.md").exists()
     for p in c.vault.rglob("*.md"):
         assert "_system" in p.parts or fb.private_root(c.vault) in p.resolve().parents, p
 
@@ -145,7 +145,7 @@ def test_template_fields_match(c):
         assert re.search(r"^%s:" % key, rec, re.M), key
     bill = (TEMPLATE / "_system" / "templates" / "Bill.md").read_text(encoding="utf-8")
     assert "```base" in bill and "this.file" in bill and "| Сар |" not in bill
-    base = TEMPLATE / "04-Areas" / "Business" / "finances" / "private"
+    base = TEMPLATE / "03-Areas" / "Business" / "finances" / "private"
     assert (base / "Monthly Bills.base").is_file() and (base / "Finance Records.base").is_file()
     assert (base / "_balance.md").is_file()
 

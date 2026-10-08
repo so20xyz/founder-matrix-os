@@ -1,0 +1,36 @@
+filters:
+  and:
+    - file.ext == "md"
+    - type == "agent-role"
+    - file.inFolder("03-Areas/AI Team/ai-workers")
+formulas:
+  lock: 'if(private == true, "🔒", "")'
+properties:
+  formula.lock:
+    displayName: " "
+  role:
+    displayName: Slug
+  owns:
+    displayName: Эзэмшил
+  group:
+    displayName: Бүлэг
+  discord:
+    displayName: Суваг
+  skills:
+    displayName: Skills
+views:
+  - type: table
+    name: Ростер
+    order:
+      - formula.lock
+      - file.basename
+      - role
+      - group
+      - owns
+      - skills
+  - type: cards
+    name: Картууд
+    order:
+      - file.basename
+      - role
+      - owns

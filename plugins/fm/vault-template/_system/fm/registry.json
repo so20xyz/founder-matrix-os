@@ -3,11 +3,11 @@
   "sessions": {},
   "roles": {
     "project": {
-      "note": "04-Areas/AI Team/ai-workers/01 Project.md",
+      "note": "03-Areas/AI Team/ai-workers/01 Project.md",
       "channel": "01-project",
       "group": "projects",
       "folders": [
-        "03-Projects/"
+        "02-Projects/"
       ],
       "skills": [
         "fm:project",
@@ -22,14 +22,14 @@
       "active": true
     },
     "area": {
-      "note": "04-Areas/AI Team/ai-workers/02 Area.md",
+      "note": "03-Areas/AI Team/ai-workers/02 Area.md",
       "channel": "02-area",
       "group": "areas",
       "folders": [
-        "00-GTD/",
-        "04-Areas/",
-        "01-Soul/",
-        "04-Areas/Goals/",
+        "01-GTD/",
+        "03-Areas/",
+        "00-Soul/",
+        "03-Areas/Goals/",
         "99-Archive/",
         "_system/",
         "Home.md"
@@ -51,12 +51,12 @@
       "active": true
     },
     "resource": {
-      "note": "04-Areas/AI Team/ai-workers/03 Resource.md",
+      "note": "03-Areas/AI Team/ai-workers/03 Resource.md",
       "channel": "03-resource",
       "group": "resources",
       "folders": [
-        "05-Resources/",
-        "05-Resources/Atomic/"
+        "04-Resources/",
+        "04-Resources/Atomic/"
       ],
       "skills": [
         "fm:save",
@@ -69,11 +69,11 @@
       "active": true
     },
     "research": {
-      "note": "04-Areas/AI Team/ai-workers/04 Research.md",
+      "note": "03-Areas/AI Team/ai-workers/04 Research.md",
       "channel": "04-research",
       "group": "research",
       "folders": [
-        "05-Resources/sources/"
+        "04-Resources/sources/"
       ],
       "skills": [
         "fm:save",
@@ -84,11 +84,11 @@
       "active": true
     },
     "developer": {
-      "note": "04-Areas/AI Team/ai-workers/05 Developer.md",
+      "note": "03-Areas/AI Team/ai-workers/05 Developer.md",
       "channel": "05-developer",
       "group": "development",
       "folders": [
-        "04-Areas/AI Team/skills/"
+        "03-Areas/AI Team/skills/"
       ],
       "skills": [
         "fm:vault",
@@ -102,7 +102,7 @@
       "active": true
     },
     "creative": {
-      "note": "04-Areas/AI Team/ai-workers/06 Creative.md",
+      "note": "03-Areas/AI Team/ai-workers/06 Creative.md",
       "channel": "06-creative",
       "group": "development",
       "folders": [],
@@ -117,11 +117,11 @@
       "active": true
     },
     "finance": {
-      "note": "04-Areas/AI Team/ai-workers/07 Finance.md",
+      "note": "03-Areas/AI Team/ai-workers/07 Finance.md",
       "channel": "",
       "group": "areas",
       "folders": [
-        "04-Areas/Business/finances/"
+        "03-Areas/Business/finances/"
       ],
       "skills": [
         "fm:finance",

@@ -23,7 +23,7 @@
 2. Figma-д файлаа нээгээд **Plugins → Development → Claude Bridge**.
 3. Claude: `fig.py status` → `'plugin': True` бол бэлэн.
 
-Төлөв (коммент, stash) `~/.fmos/figma/`-д хадгалагдана (`FIGMA_BRIDGE_STATE`). Порт солих: `FIGMA_BRIDGE_PORT`. Галерей (vault-ийн зургууд → plugin): `FIGMA_GALLERY_ROOTS="01-Soul,03-Projects,05-Resources"`.
+Төлөв (коммент, stash) `~/.fmos/figma/`-д хадгалагдана (`FIGMA_BRIDGE_STATE`). Порт солих: `FIGMA_BRIDGE_PORT`. Галерей (vault-ийн зургууд → plugin): `FIGMA_GALLERY_ROOTS="00-Soul,02-Projects,04-Resources"`.
 
 ## Хэрэглээ
 

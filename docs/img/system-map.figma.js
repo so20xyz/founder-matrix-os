@@ -51,7 +51,7 @@ root.appendChild(hero);
 const flow = box('flow', 'HORIZONTAL', 16); flow.counterAxisAlignItems = 'CENTER';
 const step = (t, s, a) => { const b = box(t, 'VERTICAL', 4, 20, C.card, 14); b.strokes = [hex(a)]; b.strokeWeight = 1.5; b.appendChild(txt(t, 18, F.b)); b.appendChild(txt(s, 13, F.r, C.mute)); return b; };
 const arrow = () => txt('→', 28, F.b, C.mute);
-[['Та', '«update» · /fm:<skill>', C.text], ['Agent (сешн + дүр)', 'hook: BOOT.md + дүрийн дүрэм', C.area], ['Skill', 'save · task · inbox · project …', C.developer], ['Obsidian vault', '00-GTD/Inbox … 04-Areas/Goals · _system', C.resource], ['Bridge / хэрэгсэл', 'Figma · Framer · Notion · Discord', C.creative]]
+[['Та', '«update» · /fm:<skill>', C.text], ['Agent (сешн + дүр)', 'hook: BOOT.md + дүрийн дүрэм', C.area], ['Skill', 'save · task · inbox · project …', C.developer], ['Obsidian vault', '01-GTD/Inbox … 03-Areas/Goals · _system', C.resource], ['Bridge / хэрэгсэл', 'Figma · Framer · Notion · Discord', C.creative]]
   .forEach((s, i) => { if (i) flow.appendChild(arrow()); flow.appendChild(step(...s)); });
 root.appendChild(flow);
 
@@ -95,8 +95,8 @@ const rb = row();
  ['Framer bridge', ':3056', 'Framer development plugin · fr.py', C.creative, 'fr.py'],
  ['Inbox Gallery', ':5190', 'Inbox-ийг gallery-аар харж, газар сонгоод Apply', C.area, 'tools/'],
  ['Side panel', ':8770', 'Нарийн GTD dashboard — task, төсөл, өдөр', C.area, 'tools/'],
- ['Save to Inbox', 'Chrome', 'Хуудсыг шууд 00-GTD/Inbox руу хадгалах extension', C.resource, 'tools/'],
- ['Inbox shortcut', 'macOS', 'Finder-ийн файл, screenshot → 00-GTD/Inbox', C.resource, 'Shortcuts'],
+ ['Save to Inbox', 'Chrome', 'Хуудсыг шууд 01-GTD/Inbox руу хадгалах extension', C.resource, 'tools/'],
+ ['Inbox shortcut', 'macOS', 'Finder-ийн файл, screenshot → 01-GTD/Inbox', C.resource, 'Shortcuts'],
  ['n8n', ':5678', 'Telegram, Notion коммент → Discord', C.developer, 'docker']]
   .forEach(a => rb.appendChild(card(236, a[3], a[0], a[1], a[2], a[4])));
 sb.appendChild(rb); root.appendChild(sb);

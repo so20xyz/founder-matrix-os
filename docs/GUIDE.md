@@ -21,7 +21,7 @@
 
 ## 1. Agent-ууд (7) — «хэн»
 
-Сешн бүр нэг дүртэй. Дүрээ `/fm:role <slug>`-ээр холбоно. Дүрийн дүрэм vault-ийн `04-Areas/AI Team/ai-workers/`-д.
+Сешн бүр нэг дүртэй. Дүрээ `/fm:role <slug>`-ээр холбоно. Дүрийн дүрэм vault-ийн `03-Areas/AI Team/ai-workers/`-д.
 
 | Agent | Slug | Хариуцна | Гол skill | Sidebar |
 |---|---|---|---|---|
@@ -58,7 +58,7 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 |---|---|
 | `/fm:update` | **Ганц команд.** save → task → хүмүүс → төсөл → inbox → өдрийн note → STATUS. `daily`, `weekly` горимтой |
 | `/fm:save` | Яриаг атом + PARA холбоос болгоно. `--checkpoint` = дундуур барьж авах; `<url>` = лавлагаа + атом |
-| `/fm:inbox` | 00-GTD/Inbox-ийг ангилж төлөвлөгөө гаргаад **зогсоно**; батласны дараа зөөнө |
+| `/fm:inbox` | 01-GTD/Inbox-ийг ангилж төлөвлөгөө гаргаад **зогсоно**; батласны дараа зөөнө |
 | `/fm:task` | Task үүсгэх, 🙋 авах, ✅ дуусгах, жагсаах |
 | `/fm:project` | Төсөл нээх, төлөв (Active/Planning/On-hold/Archive), хаах, самбар цэгцлэх |
 | `/fm:people` | Хүний note, харилцааны бүртгэл, hot list |
@@ -91,7 +91,7 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 
 | Хэрэгсэл | Юу | Ажиллуулах |
 |---|---|---|
-| **Inbox Gallery** | 00-GTD/Inbox-ийг gallery-аар харж, очих газрыг сонгоод Apply | `python3 tools/inbox-gallery/server.py` → localhost:5190 |
+| **Inbox Gallery** | 01-GTD/Inbox-ийг gallery-аар харж, очих газрыг сонгоод Apply | `python3 tools/inbox-gallery/server.py` → localhost:5190 |
 | **Side panel** | Нарийн GTD dashboard (task, төсөл, өдөр) | `python3 tools/sidepanel/server.py` → localhost:8770 |
 | **Save to Inbox** | Chrome extension: хуудсыг vault-ийн inbox руу | `tools/save-to-inbox/README.txt` |
 | **move-to-inbox.sh** | Finder-ийн файл → inbox (Shortcuts-аар товчлол) | Shortcuts → Run Shell Script |

@@ -50,7 +50,8 @@ def _load_registry(vault):
 
 def _resolve_note(vault, note):
     """Role note reference -> existing file inside the vault, or None."""
-    from fm_common import ROLES_DIR, is_inside
+    from fm_common import ROLES_DIR, is_inside, layout_rel
+    ROLES_DIR = layout_rel(vault, ROLES_DIR)
     if not isinstance(note, str) or not note.strip():
         return None
     ref = note.strip()
@@ -73,7 +74,8 @@ def _resolve_note(vault, note):
 
 def _scan_for_role(vault, slug):
     """Fallback: a note in ROLES_DIR whose frontmatter says role: <slug>."""
-    from fm_common import ROLES_DIR, read_text, split_frontmatter
+    from fm_common import ROLES_DIR, read_text, split_frontmatter, layout_rel
+    ROLES_DIR = layout_rel(vault, ROLES_DIR)
     folder = vault / ROLES_DIR
     if not folder.is_dir():
         return None

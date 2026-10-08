@@ -3,9 +3,9 @@
 
   python _system/tools/sidepanel/server.py        → http://127.0.0.1:8770
 
-Reads on every request: 00-GTD/Tasks, 03-Projects/*/<name>.md, 00-GTD/Events, 00-GTD/Daily,
+Reads on every request: 01-GTD/Tasks, 02-Projects/*/<name>.md, 01-GTD/Events, 01-GTD/Daily,
 research/reference notes, today's _system/logs. Writes only: task `status:` (mark done / change) and
-new captures in 00-GTD/Inbox/. Nothing else in the vault is touched.
+new captures in 01-GTD/Inbox/. Nothing else in the vault is touched.
 """
 import json, re, sys, uuid, shutil, subprocess, datetime as dt
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -27,9 +27,23 @@ VAULT = _vault()
 HERE = Path(__file__).parent
 
 
+LAYOUT_CUR = {"00-Soul": "01-Soul", "01-GTD": "00-GTD", "02-Projects": "03-Projects",
+              "03-Areas": "04-Areas", "04-Resources": "05-Resources"}  # layout 2026-10-09: шинэ -> одоогийн
+
+
+def L(rel, vault=None):
+    """Шинэ layout-ийн зам; vault-д зөвхөн одоогийн нэр байвал түүнийг (шилжилтийн хамгаалалт)."""
+    vault = Path(vault) if vault else VAULT
+    top, sep, rest = rel.partition("/")
+    old = LAYOUT_CUR.get(top)
+    if old and not (vault / top).is_dir() and (vault / old).is_dir():
+        return old + sep + rest
+    return rel
+
+
 def gtd_dir(new, *olds, vault=None):
     """Шинэ зам байхгүй бол хуучин замуудаас эхний байгааг нь дарааллаар (шилжилтийн хамгаалалт):
-    00-GTD/<Нэр> -> 02-GTD/<нэр> -> 00-Inbox / 02-GTD/meetings."""
+    01-GTD/<Нэр> -> 00-GTD/<Нэр> -> 02-GTD/<нэр> -> 00-Inbox / 02-GTD/meetings."""
     vault = Path(vault) if vault else VAULT
     if not (vault / new).is_dir():
         for old in olds:
@@ -39,19 +53,19 @@ def gtd_dir(new, *olds, vault=None):
 
 
 def inbox_dir(vault=None):
-    return gtd_dir("00-GTD/Inbox", "02-GTD/inbox", "00-Inbox", vault=vault)
+    return gtd_dir("01-GTD/Inbox", "00-GTD/Inbox", "02-GTD/inbox", "00-Inbox", vault=vault)
 
 
 def events_dir(vault=None):
-    return gtd_dir("00-GTD/Events", "02-GTD/events", "02-GTD/meetings", vault=vault)
+    return gtd_dir("01-GTD/Events", "00-GTD/Events", "02-GTD/events", "02-GTD/meetings", vault=vault)
 
 
 def tasks_dir(vault=None):
-    return gtd_dir("00-GTD/Tasks", "02-GTD/tasks", vault=vault)
+    return gtd_dir("01-GTD/Tasks", "00-GTD/Tasks", "02-GTD/tasks", vault=vault)
 
 
 def daily_dir(vault=None):
-    return gtd_dir("00-GTD/Daily", "02-GTD/daily", vault=vault)
+    return gtd_dir("01-GTD/Daily", "00-GTD/Daily", "02-GTD/daily", vault=vault)
 PORT = 8770
 FM = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.S)
 
@@ -113,7 +127,7 @@ def tasks():
 
 def projects(all_tasks):
     out = []
-    for d in sorted((VAULT / "03-Projects").iterdir()):
+    for d in sorted((VAULT / L("02-Projects")).iterdir()):
         f = d / f"{d.name}.md"
         if not d.is_dir() or not f.exists():
             continue
@@ -143,7 +157,7 @@ def meetings():
 
 
 def research(limit=14):
-    roots = ["05-Resources", "04-Areas/Studio/brainstorm", "03-Projects", "05-Resources/Atomic" if (VAULT / "05-Resources/Atomic").exists() or not (VAULT / "06-Atomic").exists() else "06-Atomic", inbox_dir().relative_to(VAULT).as_posix()]
+    roots = [L("04-Resources"), L("03-Areas/Studio/brainstorm"), L("02-Projects"), L("04-Resources/Atomic") if (VAULT / L("04-Resources/Atomic")).exists() or not (VAULT / "06-Atomic").exists() else "06-Atomic", inbox_dir().relative_to(VAULT).as_posix()]
     cand = []
     for r in roots:
         for p in (VAULT / r).rglob("*.md"):
@@ -153,7 +167,7 @@ def research(limit=14):
                 continue
             fm, _ = frontmatter(head + "\n")
             t = fm.get("type", "")
-            if r in ("05-Resources", "04-Areas/Studio/brainstorm") or t in ("research", "reference", "source", "decision", "brainstorm"):
+            if r in (L("04-Resources"), L("03-Areas/Studio/brainstorm")) or t in ("research", "reference", "source", "decision", "brainstorm"):
                 cand.append((p.stat().st_mtime, p, t))
     cand.sort(reverse=True)
     out = []
@@ -174,7 +188,7 @@ def today_log():
 
 def set_status(rel, status):
     p = (VAULT / rel).resolve()
-    if VAULT not in p.parents or not any(s in str(p).replace("\\", "/") for s in ("/00-GTD/Tasks/", "/02-GTD/tasks/")):
+    if VAULT not in p.parents or not any(s in str(p).replace("\\", "/") for s in ("/01-GTD/Tasks/", "/00-GTD/Tasks/", "/02-GTD/tasks/")):
         raise ValueError("only task files")
     text = p.read_text(encoding="utf-8")
     today = dt.date.today().isoformat()
@@ -187,7 +201,7 @@ def set_status(rel, status):
 
 
 PROPS = {"status", "priority", "due", "project", "owner", "publish_date"}
-SOCIAL = "04-Areas/Studio/Social Posts"
+SOCIAL = L("03-Areas/Studio/Social Posts")
 if not (VAULT / SOCIAL).exists() and (VAULT / "08-Studio/Social Posts").exists():  # pre-2026-10-09 layout
     SOCIAL = "08-Studio/Social Posts"
 
@@ -216,11 +230,11 @@ def set_prop(rel, key, val):
     if key == "status" and not is_soc:
         return set_status(rel, val)
     p = (VAULT / rel).resolve()
-    if VAULT not in p.parents or not (any(s in str(p).replace("\\", "/") for s in ("/00-GTD/Tasks/", "/02-GTD/tasks/")) or is_soc):
+    if VAULT not in p.parents or not (any(s in str(p).replace("\\", "/") for s in ("/01-GTD/Tasks/", "/00-GTD/Tasks/", "/02-GTD/tasks/")) or is_soc):
         raise ValueError("only task files")
     text = p.read_text(encoding="utf-8")
     if key == "project" and val and not val.startswith("[["):
-        val = f'"[[03-Projects/{val}/{val}]]"'
+        val = f'"[[{L("02-Projects")}/{val}/{val}]]"'
     m = FM.match(text)
     fm = m.group(1)
     if re.search(rf"(?m)^{key}:", fm):
@@ -282,11 +296,11 @@ addEventListener('message',async e=>{const r=await fetch('/api/save-image',{meth
 
 
 def save_image(rel_dir, name, data):
-    """Evidence screenshots -> 03-Projects/**/ only (base64 data URL)."""
+    """Evidence screenshots -> 02-Projects/**/ only (base64 data URL)."""
     import base64
     d = (VAULT / rel_dir).resolve()
-    if (VAULT / "03-Projects") not in [d, *d.parents]:
-        raise ValueError("only 03-Projects")
+    if (VAULT / L("02-Projects")) not in [d, *d.parents]:
+        raise ValueError("only " + L("02-Projects"))
     d.mkdir(parents=True, exist_ok=True)
     name = re.sub(r'[\/:*?"<>|]', "-", name)
     (d / name).write_bytes(base64.b64decode(data.split(",", 1)[1]))

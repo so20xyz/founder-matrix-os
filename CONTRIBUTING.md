@@ -130,8 +130,8 @@ description: Юу хийдгийг монголоор товч. «task үүсг�
 - `description` бол Claude skill-ийг хэзээ ачаалахыг шийддэг гол текст: юу хийдэг + монгол trigger үгс.
 - Их бие нь богино, алхам алхмаар; урт лавлах материалыг `references/` руу.
 - Script-ийг `python3 "${CLAUDE_PLUGIN_ROOT}/skills/<slug>/scripts/x.py"` гэж дууд; vault-ийн зам `${user_config.vault_path}`. Зай агуулсан замыг заавал хашилтад.
-- Шинэ дүр (Agent role) нь plugin-д биш, vault-template-ийн `04-Areas/AI Team/ai-workers/`-д тэмдэглэл болж орно.
-- Skill нэмэх, нэр солих бол `README.md` (skill хүснэгт) болон `CHANGELOG.md`-г шинэчил. fm-ийн үндсэн skill 10 + хэрэгсэл 6 — шинэ skill нэмэхээсээ өмнө албан ёсны skill (`05-Resources/references/Official skills.md`) хэрэгцээг хангаж байгаа эсэхийг шалга: **нэг хэрэгцээ = нэг эзэн**.
+- Шинэ дүр (Agent role) нь plugin-д биш, vault-template-ийн `03-Areas/AI Team/ai-workers/`-д тэмдэглэл болж орно.
+- Skill нэмэх, нэр солих бол `README.md` (skill хүснэгт) болон `CHANGELOG.md`-г шинэчил. fm-ийн үндсэн skill 10 + хэрэгсэл 6 — шинэ skill нэмэхээсээ өмнө албан ёсны skill (`04-Resources/references/Official skills.md`) хэрэгцээг хангаж байгаа эсэхийг шалга: **нэг хэрэгцээ = нэг эзэн**.
 - Албан ёсны skill-ийг (kepano, anthropics, superpowers…) fm-д **хуулахгүй** — `/fm:setup` эх сурвалжаас нь суулгана. Гадны код, текст оруулахгүй.
 - `claude plugin validate --strict plugins/fm` болон `claude plugin validate --strict .` алдаагүй байх ёстой.
 

@@ -244,7 +244,8 @@ def cmd_done(a):
 
 def cmd_pull(a):
     cfg = load_cfg(); name, db = db_of(cfg, a.db); s = db['schema']
-    out = pathlib.Path(a.out or f'00-GTD/Inbox/notion/{name}'); out.mkdir(parents=True, exist_ok=True)
+    gtd = '00-GTD' if not pathlib.Path('01-GTD').is_dir() and pathlib.Path('00-GTD').is_dir() else '01-GTD'  # одоогийн layout = fallback
+    out = pathlib.Path(a.out or f'{gtd}/Inbox/notion/{name}'); out.mkdir(parents=True, exist_ok=True)
     pages = paged('POST', f'/data_sources/{db["id"]}/query', {'page_size': 100}); n = 0
     for pg in pages:
         t, d, st = row(pg, s)
@@ -257,7 +258,8 @@ def cmd_pull(a):
 
 
 # ── vault → Notion (only notes marked `notion: <alias>`; private notes never leave the vault)
-PRIVATE_PREFIXES = ('04-Areas/Business/finances/private/', '01-Soul/', '04-Areas/Life/', '04-Areas/Personal/')
+PRIVATE_PREFIXES = ('03-Areas/Business/finances/private/', '00-Soul/', '03-Areas/Life/', '03-Areas/Personal/',
+                    '04-Areas/Business/finances/private/', '01-Soul/', '04-Areas/Life/', '04-Areas/Personal/')  # шинэ + одоогийн layout
 SKIP_PARTS = {'.obsidian', '_trash', '.trash', '_system', '99-Archive', 'node_modules', '.git'}
 PRIVATE_TYPES = {'bill', 'income'}
 TYPE_ALIAS = {'task': 'task', 'project': 'project', 'meeting': 'meeting', 'event': 'meeting', 'reference': 'ref', 'person': 'note'}

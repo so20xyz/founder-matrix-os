@@ -1,12 +1,12 @@
 ---
 name: task
-description: GTD таск үүсгэх, авах (🙋), дуусгах (✅), төлөв солих, жагсаах — 00-GTD/Tasks дотор эзэн дүртэй, frontmatter-тэй нот. «task үүсгэ», «таск үүсгэ», «таск нэм», «даалгавар өг», «хэнд оноох», «таск авлаа», «таск дууслаа», «миний таскууд», «нээлттэй таскууд», «дараагийн алхам бичээд өг» гэвэл энэ skill-ийг ашигла.
+description: GTD таск үүсгэх, авах (🙋), дуусгах (✅), төлөв солих, жагсаах — 01-GTD/Tasks дотор эзэн дүртэй, frontmatter-тэй нот. «task үүсгэ», «таск үүсгэ», «таск нэм», «даалгавар өг», «хэнд оноох», «таск авлаа», «таск дууслаа», «миний таскууд», «нээлттэй таскууд», «дараагийн алхам бичээд өг» гэвэл энэ skill-ийг ашигла.
 argument-hint: "[гарчиг | claim | done | list]"
 ---
 
 # /fm:task — GTD таск
 
-**Таск санаатайгаар үүсгэгдэнэ, эзэнтэй.** PARA-д таск өөрөө байдаггүй — хэн нэгэн «дараагийн алхам» гэж шийдэхэд л `00-GTD/Tasks/<Гарчиг>.md` болж төрнө. Санаа төдий бол өдрийн тэмдэглэлийн `## 📥 Inbox`-д checkbox хангалттай.
+**Таск санаатайгаар үүсгэгдэнэ, эзэнтэй.** PARA-д таск өөрөө байдаггүй — хэн нэгэн «дараагийн алхам» гэж шийдэхэд л `01-GTD/Tasks/<Гарчиг>.md` болж төрнө. Санаа төдий бол өдрийн тэмдэглэлийн `## 📥 Inbox`-д checkbox хангалттай.
 
 Эзэн дүр: **Area** (хуучин GTD; үүсгэх, оноох, төлөв). Төслийн task-ийг тухайн төслийн Project агент өөрийн тогтмол сешнд хийнэ. Бусад дүр өөрт оноосон таскаа авч, дуусгана.
 
@@ -21,7 +21,7 @@ Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
 | `status` | `inbox` · `someday` · `next-action` · `waiting` · `completed` · `cancelled` (`done` биш — `completed`) |
 | `owner` | **дүрийн slug** (`area`, `project`, `creative`, төслийн slug …) — тэр Agent хийнэ · `me` — гишүүн өөрөө · `"@Нэр"` — багийн гишүүн. Скрипт дүрийн нэрийг (`"Content Writer"`) slug болгож хувиргана |
 | `priority` | `high` · `medium` · `low` (🔴 🟡 🟢 гэж өгсөн ч болно — үг болгон хадгална) |
-| `project` | `"[[03-Projects/<төлөв>/<Нэр>/<Нэр>]]"` эсвэл хоосон |
+| `project` | `"[[02-Projects/<төлөв>/<Нэр>/<Нэр>]]"` эсвэл хоосон |
 | `due` | `YYYY-MM-DD` эсвэл хоосон |
 | `context` | `home` · `work` — төслөөс өвлөнө |
 
@@ -34,7 +34,7 @@ Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
 3. Үүсгэ:
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py" new "${user_config.vault_path}" "<Гарчиг>" \
-     --owner "<дүрийн slug | me | @Нэр>" --project "03-Projects/1-Active/<Нэр>/<Нэр>" --status next-action \
+     --owner "<дүрийн slug | me | @Нэр>" --project "02-Projects/1-Active/<Нэр>/<Нэр>" --status next-action \
      --priority medium --due 2026-10-31 --context work --body "<юу хийх, яагаад, дууссаны шалгуур>"
    ```
    - Vault-ийн `_system/templates/Task.md` загвараар үүснэ (байхгүй бол дотоод араг яс).
@@ -77,7 +77,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py" list "${user_conf
 
 ## Самбар
 
-Самбар = `00-GTD/Tasks/Tasks.base`-ийн GTD view-ууд — `status`-аас шууд уншдаг тул тусад нь зөөх зүйлгүй. Kanban plugin хасагдсан; хуучин vault-д Kanban файл үлдсэн бол `/fm:project` → hygiene горим.
+Самбар = `01-GTD/Tasks/Tasks.base`-ийн GTD view-ууд — `status`-аас шууд уншдаг тул тусад нь зөөх зүйлгүй. Kanban plugin хасагдсан; хуучин vault-д Kanban файл үлдсэн бол `/fm:project` → hygiene горим.
 
 ## Хориг
 

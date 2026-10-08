@@ -14,7 +14,8 @@ import os, re, sys
 from pathlib import Path
 
 LINK = re.compile(r"\[\[([^\]|#]+)(?:\|[^\]]*)?\]\]")
-SKIP = ("_trash/", ".backups/", ".obsidian/", "04-Areas/Business/finances/private/")
+SKIP = ("_trash/", ".backups/", ".obsidian/", "03-Areas/Business/finances/private/",
+        "04-Areas/Business/finances/private/")
 
 
 def split(t):
@@ -118,7 +119,7 @@ def pack(v: Vault, start: str):
             how.append(f"- ⚠️ `{v.title(a)}`-д SOP алга (SOP loop: эзэн `{scalar(afm, 'sop_owner') or '—'}`)")
     owner = scalar(fm, "owner").strip('"')
     if owner:
-        role = next((r for r in v.notes if r.startswith("04-Areas/AI Team/ai-workers/") and owner.split()[-1].lower() in r.lower()), None)
+        role = next((r for r in v.notes if r.startswith(("03-Areas/AI Team/ai-workers/", "04-Areas/AI Team/ai-workers/")) and owner.split()[-1].lower() in r.lower()), None)
         if role:
             rfm = v.notes[role][0]
             skills = re.findall(r"^\s+-\s+\"?([\w:.-]+)\"?\s*$", (re.search(r"^skills:\s*\n((?:\s+-.*\n?)*)", rfm + "\n", re.M) or [None, ""])[1], re.M)
@@ -136,7 +137,7 @@ def pack(v: Vault, start: str):
     # 4. memory — atoms/decisions pointing at the project (bridges first)
     mem = []
     for p in projects:
-        atoms = [a for a in v.backrefs(p, "projects") if a.startswith(("05-Resources/Atomic/", "06-Atomic/"))]
+        atoms = [a for a in v.backrefs(p, "projects") if a.startswith(("04-Resources/Atomic/", "05-Resources/Atomic/", "06-Atomic/"))]
         atoms.sort(key=lambda a: (-int(scalar(v.notes[a][0], "bridge") or 0), a), reverse=False)
         for a in atoms[:15]:
             b = scalar(v.notes[a][0], "bridge")

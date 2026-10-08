@@ -62,7 +62,7 @@ def main():
 
     rc, out = child("team.send('#general', 'hello team', False)", env)
     check(rc != 0 and "--approved" in out, "send: refused without --approved", out)
-    for leak in ("[[03-Projects/Acme]] шинэчлэгдлээ", "D:/Vault/x.md", "санхүүгийн тайлан", "04-Areas/Business"):
+    for leak in ("[[02-Projects/Acme]] шинэчлэгдлээ", "D:/Vault/x.md", "санхүүгийн тайлан", "03-Areas/Business"):
         rc, out = child(f"team.send('#general', {leak!r}, True)\nprint('SENT', len(SENT))", env)
         check(rc != 0 and "SENT" not in out, f"send: blocks vault/finance leak: {leak[:24]}", out)
     rc, out = child("team.send('#general', 'Маргааш 10:00-д уулзъя', True)\nprint('SENT', json.dumps(SENT, ensure_ascii=False))", env)

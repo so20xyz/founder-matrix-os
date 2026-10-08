@@ -12,8 +12,8 @@ Vault: `{{VAULT}}`. Эхлээд `_system/BOOT.md`-г уншиж дага.
 
 1. `python3 "{{HARVEST}}"` ажиллуул (Discord хэрэггүй — зөвхөн `~/.fmos/config.json` ба `_system/fm/registry.json`). «nothing» гэвэл энд зогс.
 2. Гарсан digest файлыг (`~/.fmos_harvest/<ts>.md`) унш. Зөвхөн шийдвэр / баримт / үйл явдал / нээлттэй асуулт ялга; жижиг яриа, техникийн noise, relay мэдэгдлийг алгас.
-3. Тус бүрд `05-Resources/Atomic/`-оос (хуучин vault-д `06-Atomic/`) ижил атом хай. `Atomic/`-ийн үндэс рүү бүү бич — шийдвэр → `decisions/`, баримт → `knowledge/`. Байвал шинэчил, байхгүй бол шинэ атом үүсгэ (frontmatter: `type`, `created`, `tags`; монголоор, өөрийгөө тайлбарладаг).
-4. Атом бүрийг ≥1 PARA гэртэй холбо (`[[03-Projects/..]]`, `[[04-Areas/..]]` …).
+3. Тус бүрд `04-Resources/Atomic/`-оос (хуучин vault-д `06-Atomic/`) ижил атом хай. `Atomic/`-ийн үндэс рүү бүү бич — шийдвэр → `decisions/`, баримт → `knowledge/`. Байвал шинэчил, байхгүй бол шинэ атом үүсгэ (frontmatter: `type`, `created`, `tags`; монголоор, өөрийгөө тайлбарладаг).
+4. Атом бүрийг ≥1 PARA гэртэй холбо (`[[02-Projects/..]]`, `[[03-Areas/..]]` …).
 5. `_system/logs/<YYYY-MM-DD>.md`-д зөвхөн холбоос мөр **нэм**: `- **HH:MM** · {{DEVICE}}-Harvester → [[атом]]`.
 6. Digest файлыг устга.
 
@@ -21,7 +21,7 @@ Vault: `{{VAULT}}`. Эхлээд `_system/BOOT.md`-г уншиж дага.
 
 ## Ажлын цикл
 
-Атом бичихдээ: `projects:` (төсөл), `from:` (яриан дахь лавлагаа/save-ийн note байвал), `topics:` (1–2 сэдэв), `up:` (Atoms эсвэл Decisions). Атомын шинэчлэлийг **зөвхөн** `05-Resources/Atomic/knowledge/` эсвэл `05-Resources/Atomic/decisions/` доторх тухайн атомд нэм — `05-Resources/Atomic/`-ийн үндсэнд хэзээ ч шинэ файл бүү үүсгэ.
+Атом бичихдээ: `projects:` (төсөл), `from:` (яриан дахь лавлагаа/save-ийн note байвал), `topics:` (1–2 сэдэв), `up:` (Atoms эсвэл Decisions). Атомын шинэчлэлийг **зөвхөн** `04-Resources/Atomic/knowledge/` эсвэл `04-Resources/Atomic/decisions/` доторх тухайн атомд нэм — `04-Resources/Atomic/`-ийн үндсэнд хэзээ ч шинэ файл бүү үүсгэ.
 
 ## Гүүр атом (тархины загвар)
 

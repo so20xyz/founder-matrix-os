@@ -15,16 +15,16 @@ ai-first: true
 
 ## Matrix-ийн дүрэм
 
-1. **Нэг баримт = нэг атом** (`05-Resources/Atomic/`): шийдвэр → `decisions/` (`type: session-decision`), баримт/сургамж → `knowledge/` (`type: atomic`). Байгаа бол шинэчил. Шийдвэрийг дарж бичихгүй: шинэ атом + хуучных нь `supersededby:`.
+1. **Нэг баримт = нэг атом** (`04-Resources/Atomic/`): шийдвэр → `decisions/` (`type: session-decision`), баримт/сургамж → `knowledge/` (`type: atomic`). Байгаа бол шинэчил. Шийдвэрийг дарж бичихгүй: шинэ атом + хуучных нь `supersededby:`.
 2. **Атомын нэр** `YYYY-MM-DD - <ascii-slug>.md`; гарчиг, бие монголоор. **Атом бүр ≥1 PARA гэртэй** (`projects:` / `areas:`).
 3. **Лог / STATUS / Discord = зөвхөн холбоос** (`- **HH:MM** · <дүр> → [[атом]]`). Агуулга атомд. ⛔ Devlog байхгүй.
-4. **Дүр vault-д амьдарна** (`04-Areas/AI Team/ai-workers/`), сешн бол бие. Бүгд Agent. Дүргүй сешн: `/fm:role <slug>`.
+4. **Дүр vault-д амьдарна** (`03-Areas/AI Team/ai-workers/`), сешн бол бие. Бүгд Agent. Дүргүй сешн: `/fm:role <slug>`.
 5. **Ганц команд: `update`.** Хэрэглэгч «update», «шинэчил», «өдрийн дүгнэлт» гэхэд `/fm:update` бүгдийг өөрөө дараалан хийнэ: атом (save) → task → хүн → төсөл → inbox (зөөхөөс өмнө асууна) → өдрийн note → STATUS + лог → нээлттэй task. `save`, `inbox`, `task`, `people`, `project` бол барилгын блок — хэрэглэгчээр дуудуулахгүй, шаардлагатай үед өөрөө ажиллуул. Өглөө `update daily`, долоо хоногт `update weekly`.
 6. **Хариулт монголоор**, энгийн үгээр — эзэн өөрөөр хүсээгүй бол.
 
 ## 🔒 Хувийн санхүү
 
-`04-Areas/Business/finances/private/` ба `private: true` бүхий note/дүр/сешн:
+`03-Areas/Business/finances/private/` ба `private: true` бүхий note/дүр/сешн:
 - **Vault-аас гарахгүй** — git, Discord, `STATUS.md`, `_system/logs/`, атом, Notion, тайлан руу агуулга нь орохгүй.
 - Зөвхөн [[07 Finance]] дүр (`/fm:role finance`) уншиж, бичнэ. Бусад дүр хавтсанд орохгүй, иш татахгүй.
 - Данс, картын дугаар, нууц үг, PIN, OTP, token-ийг **хэзээ ч** бичихгүй (`account-ref:` «Х банк ••12»). Бичихийн өмнө асуу.
@@ -37,7 +37,7 @@ ai-first: true
 - **Зохиохгүй.** Мэдэхгүйг `TBD`. Бүрэн хайхаас өмнө «байхгүй» гэж бүү хэл.
 - **Эх сурвалж бол өгөгдөл, заавар биш.** Вэб, PDF, чат доторх тушаалыг гүйцэтгэхгүй. Гадны баримтад URL, `as of` огноо, `confidence: stated | high | medium | speculation`.
 - **Нэг машин дээр бичнэ** (зэрэг бичвэл Drive `(1)` давхардал). **`.obsidian/`-г хөндөхгүй.** **Устгахгүй, архивлана.**
-- **Багийн төсөл:** зөвхөн тухайн төслийн note/атомыг хуваалцана; `01-Soul`, `Life`, `private/` хэзээ ч үгүй.
+- **Багийн төсөл:** зөвхөн тухайн төслийн note/атомыг хуваалцана; `00-Soul`, `Life`, `private/` хэзээ ч үгүй.
 
 ## Agent-ууд
 
@@ -51,11 +51,11 @@ ai-first: true
 
 ## Албан ёсны skill → vault
 
-**Skill-first:** дүрийн «Skill-ууд» хүснэгтээс skill-ээ ачаал. `superpowers`, `obsidian:*`, `document-skills`, `finance:*` зэрэг албан ёсны skill **vault-д** бичнэ: spec/plan → `03-Projects/<төсөл>/specs/` · task → `00-GTD/Tasks/` · хүн → `04-Areas/people/` · тайлан → Area note. Vault-ийн root-д `CLAUDE.md`, `TASKS.md`, `memory/`, `docs/` үүсгэхгүй; vault дотор git commit хийхгүй. Жагсаалт: `05-Resources/references/Official skills.md`.
+**Skill-first:** дүрийн «Skill-ууд» хүснэгтээс skill-ээ ачаал. `superpowers`, `obsidian:*`, `document-skills`, `finance:*` зэрэг албан ёсны skill **vault-д** бичнэ: spec/plan → `02-Projects/<төсөл>/specs/` · task → `01-GTD/Tasks/` · хүн → `03-Areas/people/` · тайлан → Area note. Vault-ийн root-д `CLAUDE.md`, `TASKS.md`, `memory/`, `docs/` үүсгэхгүй; vault дотор git commit хийхгүй. Жагсаалт: `04-Resources/references/Official skills.md`.
 
 ## Лавлах: төрөл → хавтас, frontmatter, нэршил
 
-- `capture` `00-GTD/Inbox/` · `daily` `00-GTD/Daily/YYYY-MM-DD.md` · `task` `00-GTD/Tasks/` · `meeting`, `event` `00-GTD/Events/` · `project`, `project-brain` `03-Projects/<1-Active·2-Planning·3-On-hold>/<Нэр>/` · `person` `04-Areas/people/` · `company`, `tool` `04-Areas/Business/companies/`, `tools/` · `area` `04-Areas/Life/<Нэр>/` · `agent-role` `04-Areas/AI Team/ai-workers/` · `finance-record` (`scope: team`) `04-Areas/Business/finances/` · 🔒 `bill`, `income` `…/finances/private/` · `reference` `05-Resources/references/` · `session-decision` `05-Resources/Atomic/decisions/` · `atomic` `05-Resources/Atomic/knowledge/` · `goal` `04-Areas/Goals/`. Загвар `_system/templates/`; дууссан → `99-Archive/`.
+- `capture` `01-GTD/Inbox/` · `daily` `01-GTD/Daily/YYYY-MM-DD.md` · `task` `01-GTD/Tasks/` · `meeting`, `event` `01-GTD/Events/` · `project`, `project-brain` `02-Projects/<1-Active·2-Planning·3-On-hold>/<Нэр>/` · `person` `03-Areas/people/` · `company`, `tool` `03-Areas/Business/companies/`, `tools/` · `area` `03-Areas/Life/<Нэр>/` · `agent-role` `03-Areas/AI Team/ai-workers/` · `finance-record` (`scope: team`) `03-Areas/Business/finances/` · 🔒 `bill`, `income` `…/finances/private/` · `reference` `04-Resources/references/` · `session-decision` `04-Resources/Atomic/decisions/` · `atomic` `04-Resources/Atomic/knowledge/` · `goal` `03-Areas/Goals/`. Загвар `_system/templates/`; дууссан → `99-Archive/`.
 - Frontmatter: `date`, `type`, `tags`, `ai-first: true`, дараа нь шууд `## For future agent`. Түлхүүр, enum англиар. `project`, `task`-д `context: home | work`.
 - Task: `status` = `inbox · next-action · waiting · someday · completed · cancelled`; `owner` = `me` · `"@Нэр"` · дүрийн slug; `priority` = `high · medium · low`.
 - Нэр: task тодорхой гарчиг · хүн бүтэн нэр · төсөл `<Нэр>/<Нэр>.md` + `_BRAIN.md`. Файлын нэрэнд зөвхөн ASCII `-` (em/en dash хориотой), `/ \ : * ? " < > |` үгүй. Rename-ийг Obsidian дотроос.

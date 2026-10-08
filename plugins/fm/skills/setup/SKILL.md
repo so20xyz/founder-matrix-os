@@ -73,7 +73,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_doctor.py" --json   # шийдвэр �
 
 ## 1. Албан ёсны plugin-ууд
 
-fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — эх сурвалжаас нь суулгана. Тайлбар: vault-ийн `05-Resources/references/Official skills.md`. Нэг нэгээр асуу («… суулгах уу?»), тийм бол **Claude Code CLI** байгаа үед Bash-аар ажиллуулж болно (`claude plugin …`), эсвэл гишүүн чатад `/plugin …` гэж бичнэ:
+fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — эх сурвалжаас нь суулгана. Тайлбар: vault-ийн `04-Resources/references/Official skills.md`. Нэг нэгээр асуу («… суулгах уу?»), тийм бол **Claude Code CLI** байгаа үед Bash-аар ажиллуулж болно (`claude plugin …`), эсвэл гишүүн чатад `/plugin …` гэж бичнэ:
 
 | Plugin | Юунд | Санал | Команд (CLI) / чатад |
 |---|---|---|---|
@@ -128,12 +128,12 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 ### 3.2 Бизнесийн хүрээ — байгууллагууд
 
 «Ямар компани, байгууллага, баг, нийгэмлэгт хамаардаг вэ? Тус бүрд ямар үүрэгтэй вэ?» Байгууллага бүрд (нэг нэгээр): нэр, төрөл (`company` · `organization` · `community` · `client` · `partner`), миний үүрэг, нэг өгүүлбэр тайлбар, вэб (байвал).
-→ `companies[]` → `04-Areas/Business/companies/<Нэр>.md`
+→ `companies[]` → `03-Areas/Business/companies/<Нэр>.md`
 
 ### 3.3 Хувийн хүрээ
 
 «Ажлаас гадна тогтмол анхаардаг хүрээ чинь юу вэ — эрүүл мэнд, гэр бүл, суралцах, гэр, санхүүгийн эрүүл байдал…?» Хүрээ бүрд: одоогийн гол анхаарал (`focus`), «хэвийн байдал гэж юу вэ» (`standard`), дадал (`habits`).
-→ `life_areas[]` → `04-Areas/Life/<Нэр>/<Нэр>.md`. Эмзэг мэдээллийг (онош, гэр бүлийн хувийн асуудал) асуухгүй.
+→ `life_areas[]` → `03-Areas/Life/<Нэр>/<Нэр>.md`. Эмзэг мэдээллийг (онош, гэр бүлийн хувийн асуудал) асуухгүй.
 
 ### 3.4 Төслүүд
 
@@ -141,12 +141,12 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 - нэр (**кириллээр батлуул** — латин галиг хоёр утгатай), төлөв: **Active** (одоо хийж байна) / **Planning** (удахгүй) / **On-hold** (зогссон);
 - нэг мөр зорилт (`goal`), хугацаа (`due`, YYYY-MM-DD, мэдэхгүй бол алгас), яагаад (`why`), дууссан гэж юуг хэлэх (`done_when`), хамт ажилладаг хүмүүс (`people`).
 
-`area` = 3.2/3.3-р алхмын байгууллага эсвэл хүрээний **яг ижил нэр**. → `03-Projects/<1-Active|2-Planning|3-On-hold>/<Нэр>/<Нэр>.md` + `_BRAIN.md`. Хурдан горимд нэр + төлөв + зорилт хангалттай.
+`area` = 3.2/3.3-р алхмын байгууллага эсвэл хүрээний **яг ижил нэр**. → `02-Projects/<1-Active|2-Planning|3-On-hold>/<Нэр>/<Нэр>.md` + `_BRAIN.md`. Хурдан горимд нэр + төлөв + зорилт хангалттай.
 
 ### 3.5 Хүмүүс
 
 «Ажил, амьдралд чинь хамгийн чухал 5–10 хүн хэн бэ?» Хүн бүрд: нэр, холбоо (`team` · `client` · `partner` · `mentor` · `network` · `family` · `friend`), үүрэг, аль байгууллага (`companies`), аль төсөл (`projects`).
-→ `04-Areas/people/<Нэр>.md`. Холбоосыг скрипт хоёр талд нь бичнэ (хүн ↔ байгууллага ↔ төсөл). Утас, хаяг, хувийн мэдээлэл асуухгүй.
+→ `03-Areas/people/<Нэр>.md`. Холбоосыг скрипт хоёр талд нь бичнэ (хүн ↔ байгууллага ↔ төсөл). Утас, хаяг, хувийн мэдээлэл асуухгүй.
 
 ### 3.6 🔒 Хувийн санхүү
 
@@ -154,17 +154,17 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 - **Орлого** (`finance.income[]`): эх үүсвэрийн нэр, төрөл (`salary` · `business` · `freelance` · `rent` · `other`), ердийн дүн (цэвэр тоо), сарын хэдэнд орж ирдэг (`pay_day`).
 - **Сарын төлбөр** (`finance.bills[]`): нэр, ангилал (`housing` · `utilities` · `telecom` · `loan` · `insurance` · `subscription` · `education` · `other`), ердийн дүн, төлөх өдөр (`due_day` 1–31), автомат эсэх (`autopay`), яаж төлдөг (`pay_via`: «банкны апп» гэх мэт **арга**).
 
-Хураангуйд зөвхөн тоо хэл («3 төлбөр, 1 орлого бүртгэнэ»), нэр/дүнг давтахгүй. → `04-Areas/Business/finances/private/` (`private: true`). Цаашид Finance агент: `/fm:role finance` + `/fm:finance`.
+Хураангуйд зөвхөн тоо хэл («3 төлбөр, 1 орлого бүртгэнэ»), нэр/дүнг давтахгүй. → `03-Areas/Business/finances/private/` (`private: true`). Цаашид Finance агент: `/fm:role finance` + `/fm:finance`.
 
 ### 3.7 Лавлагаа ба хэрэгсэл
 
 «Өдөр бүр ашигладаг хэрэгсэл (Figma, Notion, банкны апп биш…) болон байнга эргэж хардаг линк, ном, курс?» Тус бүрд: нэр, url, төрөл (`tool` · `link` · `doc` · `book` · `course` · `video`), яагаад, холбогдох хүрээ/төсөл.
-→ `kind: tool` бол `04-Areas/Business/tools/`, бусад нь `05-Resources/references/`. Нууц үг, token бүхий линк бичихгүй (скрипт өөрөө татгалзана).
+→ `kind: tool` бол `03-Areas/Business/tools/`, бусад нь `04-Resources/references/`. Нууц үг, token бүхий линк бичихгүй (скрипт өөрөө татгалзана).
 
 ### 3.8 Зорилго
 
 «Энэ онд юуг заавал бүтээх вэ? 3–5 зорилго.» Тус бүрд: гарчиг, хэмжүүр (`measure`), хүрээ (`area`), холбогдох төслүүд (`projects`). Мөн «яагаад энэ зорилгууд?» (`goals.why`).
-→ `04-Areas/Goals/<он> Goals.md`; холбогдсон төслүүдэд `goals:` автоматаар нэмэгдэнэ.
+→ `03-Areas/Goals/<он> Goals.md`; холбогдсон төслүүдэд `goals:` автоматаар нэмэгдэнэ.
 
 ## 4. Agent-ууд
 
@@ -181,9 +181,9 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 | `creative` | Creative | Moodboard (Pinterest → Soulcatcher), Figma, пост, бичвэр | хэрэгтэй бол |
 
 Мөн **Active төсөл бүрт нэг Project агентын дүр** санал болго: slug = англи kebab (жишээ `narny-site`), нэр = кирилл. Гишүүн батална. Тэр төслийн бүх ажил нэг сешнд.
-→ `roles.activate[]`, `roles.work[]` (эсвэл `"auto"` = Active төсөл бүрт). Скрипт дүрийн note-ыг `04-Areas/AI Team/ai-workers/<NN Нэр>.md`-д бичиж, `_system/fm/registry.json`-ийн `roles`-д нэмнэ (сонгоогүй дүр `active: false`). Хуучин slug (`gtd`, `content-writer`, `creative-director`, `tool-developer`) автоматаар шинэ Agent руу хөрвөнө.
+→ `roles.activate[]`, `roles.work[]` (эсвэл `"auto"` = Active төсөл бүрт). Скрипт дүрийн note-ыг `03-Areas/AI Team/ai-workers/<NN Нэр>.md`-д бичиж, `_system/fm/registry.json`-ийн `roles`-д нэмнэ (сонгоогүй дүр `active: false`). Хуучин slug (`gtd`, `content-writer`, `creative-director`, `tool-developer`) автоматаар шинэ Agent руу хөрвөнө.
 
-Өдрийн тэмдэглэл ба Home-д тусдаа асуулт хэрэггүй: скрипт өнөөдрийн `00-GTD/Daily/<огноо>.md`-г (Active төслүүдийг «гол 3»-д) үүсгэж, `Home.md`, `_system/index.md`-г бөглөнө.
+Өдрийн тэмдэглэл ба Home-д тусдаа асуулт хэрэггүй: скрипт өнөөдрийн `01-GTD/Daily/<огноо>.md`-г (Active төслүүдийг «гол 3»-д) үүсгэж, `Home.md`, `_system/index.md`-г бөглөнө.
 
 ## 5. Нэмэлт хэрэгсэл (заавал биш)
 
@@ -203,16 +203,16 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
 ## 6. Бичих
 
 1. **JSON хадгал** — vault **дотор**, хувийн хавтсанд (санхүү агуулж болох тул vault-аас гаргахгүй):
-   `<vault>/04-Areas/Business/finances/private/_onboarding.json` (Write tool, UTF-8).
+   `<vault>/03-Areas/Business/finances/private/_onboarding.json` (Write tool, UTF-8).
 2. **Dry run:**
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_onboard.py" "${user_config.vault_path}" "${user_config.vault_path}/04-Areas/Business/finances/private/_onboarding.json" --dry-run
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_onboard.py" "${user_config.vault_path}" "${user_config.vault_path}/03-Areas/Business/finances/private/_onboarding.json" --dry-run
    ```
 
    Exit 2 = хариултын алдаа (stderr-т шалтгаан) → JSON-оо засаад дахин. `⚠` анхааруулгыг гишүүнд тайлбарла (жишээ нь «Х байгууллага олдсонгүй» = нэр зөрсөн).
 3. Тайланг хураангуйл (хэдэн note, юу алгасагдах) → **«бичих үү?»** → тийм бол `--dry-run`-гүйгээр дахин ажиллуул.
-4. Амжилттай бол `_onboarding.json`-г устга (энэ сешнд өөрөө үүсгэсэн файл). Шийдвэрийн атом `05-Resources/Atomic/decisions/<огноо> - fm-onboarding.md`, лог мөр, өдрийн тэмдэглэлийг скрипт өөрөө бичнэ — дахин бүү бич.
+4. Амжилттай бол `_onboarding.json`-г устга (энэ сешнд өөрөө үүсгэсэн файл). Шийдвэрийн атом `04-Resources/Atomic/decisions/<огноо> - fm-onboarding.md`, лог мөр, өдрийн тэмдэглэлийг скрипт өөрөө бичнэ — дахин бүү бич.
 
 ### answers.json бүтэц
 
@@ -283,7 +283,7 @@ Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй о
 
 Гишүүнд хэл:
 - Obsidian-оор vault-аа нээж **Home**-оос эхэл (`.obsidian/` тохиргоог гишүүн өөрөө удирдана: Settings → Core plugins → **Bases**, **Templates** асаа; Templates хавтас = `_system/templates`; Community plugins → **Kanban**).
-- **Folder-base дүрэм:** хавтас бүр өөрийн Bases харагдацтай — `<хавтас>/<Нэр>.base` (жишээ `00-GTD/Tasks/Tasks.base`, `04-Areas/people/People.base`); төв `_system/bases/` хавтас байхгүй.
+- **Folder-base дүрэм:** хавтас бүр өөрийн Bases харагдацтай — `<хавтас>/<Нэр>.base` (жишээ `01-GTD/Tasks/Tasks.base`, `03-Areas/people/People.base`); төв `_system/bases/` хавтас байхгүй.
 - Sidebar бэлэн (7-р алхам): энэ сешн **📥 GTD**; бусад сешнийг chip-ээр дээрээс доош нээ. Төсөл бүр **тусдаа нэг тогтмол сешн**, Finance тусдаа 🔒 сешн.
 - **Ганц команд: «update».** Ажлынхаа дараа «update» гэж бичихэд Agent атом, task, хүн, төсөл, inbox, STATUS-ыг өөрөө цэгцэлнэ. Өглөө «update daily», орой «update дүгнэлт», долоо хоногт «update weekly».
 - Дутуу үлдсэн алхмууд (алгассан програм, plugin, ярилцлагын хэсэг) → дараа `/fm:setup doctor`, `/fm:setup plugins`, эсвэл `/fm:setup`-ийг дахин; байгаа note хөндөгдөхгүй.

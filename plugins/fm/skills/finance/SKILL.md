@@ -8,11 +8,11 @@ argument-hint: "[status | paid <нэр> | new-bill | record | rebalance]"
 
 Санхүү бол гишүүн бүрийн vault-ийн **үндсэн, хувийн** модуль. «Хувийн» гэдэг нь vault-аас **хэзээ ч гарахгүй** гэсэн үг — vault-аас хасагдсан гэсэн үг биш.
 
-Хавтас: `${user_config.vault_path}/04-Areas/Business/finances/private/`
+Хавтас: `${user_config.vault_path}/03-Areas/Business/finances/private/`
 
 ```
 private/
-├── Сарын төлбөр.md         самбар — 04-Areas/Business/finances/private/Monthly Bills.base-ийн харагдацууд
+├── Сарын төлбөр.md         самбар — 03-Areas/Business/finances/private/Monthly Bills.base-ийн харагдацууд
 ├── <Төлбөрийн нэр>.md      type: bill — нэг тогтмол төлбөр = нэг нот (_system/templates/Bill.md)
 └── records/                type: finance-record, scope: personal — нэг гүйлгээ = нэг нот
 ```
@@ -24,7 +24,7 @@ private/
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/role/scripts/fm_role.py" show "${user_config.vault_path}" --sid "${CLAUDE_SESSION_ID}"
    ```
    `role` нь `finance` биш бол **зогс**: «Санхүүг зөвхөн Finance сешнд хөтөлнө. Тусдаа сешн нээгээд `/fm:role finance` ажиллуул.» Өөр дүрийн сешнд тоо, нэр давтаж хэлэхгүй.
-2. **Санхүүгийн агуулгыг `finances/private/`-аас гадуур хэзээ ч бичихгүй**: өдрийн тэмдэглэл, `_system/logs`, STATUS, devlog, Discord, relay, git, `05-Resources/Atomic` атом, төслийн нот, бусад сешн рүү мессеж — бүгд хориотой. Task үүсгэх бол гарчиг нь зөвхөн «💰 Төлбөрийн тойм» шиг агуулгагүй байна (нэр, дүн, байгууллагагүй). Тайлагнах шаардлагатай бол «санхүүгийн ажил хийгдэв» гэхээс илүүг бичихгүй.
+2. **Санхүүгийн агуулгыг `finances/private/`-аас гадуур хэзээ ч бичихгүй**: өдрийн тэмдэглэл, `_system/logs`, STATUS, devlog, Discord, relay, git, `04-Resources/Atomic` атом, төслийн нот, бусад сешн рүү мессеж — бүгд хориотой. Task үүсгэх бол гарчиг нь зөвхөн «💰 Төлбөрийн тойм» шиг агуулгагүй байна (нэр, дүн, байгууллагагүй). Тайлагнах шаардлагатай бол «санхүүгийн ажил хийгдэв» гэхээс илүүг бичихгүй.
 3. **Төлбөр хэзээ ч гүйцэтгэхгүй.** Банк, апп, карт, QPay руу нэвтрэхгүй, данс/картын дугаар, нууц үг, OTP оруулахгүй, асуухгүй, хадгалахгүй. Төлбөрийг гишүүн өөрөө хийнэ; энэ skill зөвхөн **бүртгэнэ**.
 4. Данс, картын бүтэн дугаар, нэвтрэх мэдээллийг нотод бичихгүй. Гишүүн өгвөл сүүлийн 4 оронтой л үлдээхийг санал болго.
 5. Санхүүгийн зөвлөгөө (хөрөнгө оруулалт, зээлийн сонголт) өгөхгүй — тоог цэгцэлж харуулна, шийдвэр гишүүнийх.
@@ -75,7 +75,7 @@ Vault-ийн `_system/templates/Bill.md` загвараар үүснэ. `categor
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/finance/scripts/fm_bills.py" record "${user_config.vault_path}" "<label>" --kind expense --amount 120000 --date 2026-10-05
 ```
 
-`kind`: `invoice` · `payment` · `expense` · `subscription` · `salary`. `_system/templates/Finance Record.md` загвараар `records/` дотор үүснэ; бүх бичлэг `scope: personal`, `private: true`. Багийн/төслийн санхүү (`scope: team`) энэ skill-ийн хүрээнд биш — `04-Areas/Business/finances/`-д Project дүртэй хамт. `date` = үүсгэсэн огноо, `txn-date` = гүйлгээний огноо — хольж болохгүй. `uid`-ийг хэзээ ч өөрчлөхгүй.
+`kind`: `invoice` · `payment` · `expense` · `subscription` · `salary`. `_system/templates/Finance Record.md` загвараар `records/` дотор үүснэ; бүх бичлэг `scope: personal`, `private: true`. Багийн/төслийн санхүү (`scope: team`) энэ skill-ийн хүрээнд биш — `03-Areas/Business/finances/`-д Project дүртэй хамт. `date` = үүсгэсэн огноо, `txn-date` = гүйлгээний огноо — хольж болохгүй. `uid`-ийг хэзээ ч өөрчлөхгүй.
 
 Талбарууд (багийн app-тэй ижил нэр; ялгаа зөвхөн `scope` ба хавтас): `net` (орлого +, зарлага −), `flow` (in|out — `salary`/`invoice` анхдагч in), `month` ("YYYY-MM"), `state` (`--state actual|saved|forecast`), `variable` (`--variable`), `bill`, `balance_after`. Загварын `{{date…}}`, `{{title}}`, `<% %>` тэмдэгт хэзээ ч үлдэхгүй.
 

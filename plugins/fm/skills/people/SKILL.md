@@ -1,15 +1,15 @@
 ---
 name: people
-description: Хүмүүсийн note (04-Areas/people/<Нэр>.md) үүсгэх, шинэчлэх - харилцааны төрөл, үүрэг, компани/төслийн холбоос, сүүлд харилцсан огноо, дахин холбогдох огноо, «hot list» (идэвхтэй харилцаатай хүмүүс). «хүн нэм», «хүний note», «энэ хүнийг тэмдэглэ», «уулзсан», «ярилцсан», «хэнтэй холбогдох вэ», «hot list», «хүмүүс», «харилцагч», «people», «CRM», «follow up» гэвэл ашигла. Create/update person notes, log an interaction, show the hot list.
+description: Хүмүүсийн note (03-Areas/people/<Нэр>.md) үүсгэх, шинэчлэх - харилцааны төрөл, үүрэг, компани/төслийн холбоос, сүүлд харилцсан огноо, дахин холбогдох огноо, «hot list» (идэвхтэй харилцаатай хүмүүс). «хүн нэм», «хүний note», «энэ хүнийг тэмдэглэ», «уулзсан», «ярилцсан», «хэнтэй холбогдох вэ», «hot list», «хүмүүс», «харилцагч», «people», «CRM», «follow up» гэвэл ашигла. Create/update person notes, log an interaction, show the hot list.
 argument-hint: "[<Нэр>] [new | touch | hot | follow-up]"
 ---
 
 # fm:people - хүмүүс
 
-Хүн бүр нэг note: `04-Areas/people/<Бүтэн нэр>.md` (`type: person`). Энэ бол vault-ийн CRM - HubSpot г.м. гадны CRM skill энд бичихгүй.
+Хүн бүр нэг note: `03-Areas/people/<Бүтэн нэр>.md` (`type: person`). Энэ бол vault-ийн CRM - HubSpot г.м. гадны CRM skill энд бичихгүй.
 
 - Vault: `${user_config.vault_path}` (доор `<V>`). Дүрэм: `<V>/_system/BOOT.md`.
-- Загвар: `<V>/_system/templates/Person.md`. Харагдац: `<V>/04-Areas/people/People.base` (Бүгд · Hot · Холбогдох · Баг).
+- Загвар: `<V>/_system/templates/Person.md`. Харагдац: `<V>/03-Areas/people/People.base` (Бүгд · Hot · Холбогдох · Баг).
 - Эзэн дүр: **Area**. Бусад дүр (Project, Creative…) өөрийн ажлын явцад хүний note-д харилцааны мөр нэмж болно.
 
 ## Frontmatter
@@ -18,8 +18,8 @@ argument-hint: "[<Нэр>] [new | touch | hot | follow-up]"
 type: person
 role: "Хөгжүүлэгч"            # тухайн хүний үүрэг
 relationship: client          # team | client | partner | mentor | network | family | friend
-companies: ["[[04-Areas/Business/companies/Нарны Студи]]"]
-projects: ["[[03-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт]]"]
+companies: ["[[03-Areas/Business/companies/Нарны Студи]]"]
+projects: ["[[02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт]]"]
 last_interaction: YYYY-MM-DD  # сүүлд харилцсан огноо
 follow_up_date: YYYY-MM-DD    # дахин холбогдох (заавал биш)
 hot: true                     # идэвхтэй харилцаа → hot list
@@ -30,23 +30,23 @@ aliases: ["Бат", "Batbold"]   # товч нэр, латин бичлэг - х
 
 ### new - шинэ хүн
 
-1. **Эхлээд хай** (`<V>/04-Areas/people/` + бүх vault, нэр, товч нэр, латин бичлэгээр). Байгаа бол шинээр бүү үүсгэ - `touch` горимоор баяжуул.
+1. **Эхлээд хай** (`<V>/03-Areas/people/` + бүх vault, нэр, товч нэр, латин бичлэгээр). Байгаа бол шинээр бүү үүсгэ - `touch` горимоор баяжуул.
 2. Хэрэглэгчээс зөвхөн дутуу зүйлийг нэг нэгээр асуу: харилцаа (`relationship`), үүрэг, аль компани/төсөл. **Утас, хаяг, хувийн мэдээллийг асуухгүй**; хэрэглэгч өөрөө хэлсэн бол л бич.
 3. Загвараас үүсгэ (тэмдэгтүүдийг бодит утгаар соль). `## For future agent`-д 2-3 өгүүлбэр: хэн бэ, бидэнтэй ямар холбоотой, юунд анхаарах.
-4. **Хоёр талд холбо:** компанийн note (`04-Areas/Business/companies/`) болон төслийн note-д `## Хүмүүс` хэсэгт `- [[04-Areas/people/<Нэр>]] - үүрэг` мөр (хэсэг байхгүй бол үүсгэ; Read → Edit).
+4. **Хоёр талд холбо:** компанийн note (`03-Areas/Business/companies/`) болон төслийн note-д `## Хүмүүс` хэсэгт `- [[03-Areas/people/<Нэр>]] - үүрэг` мөр (хэсэг байхгүй бол үүсгэ; Read → Edit).
 5. Дамжуулж нэг удаа дурдсан, дахин гарахгүй хүнд note бүү үүсгэ.
 
 ### touch - харилцаа бүртгэх
 
 «<Нэр>-тэй уулзсан / ярьсан / мессеж бичсэн»:
 1. `last_interaction:`-ийг өнөөдөр (`date +%F`) болго, `updated:`-ийг шинэчил.
-2. `## Харилцаа` хэсэгт мөр нэм: `- YYYY-MM-DD · <уулзалт|утас|чат|имэйл> - <нэг мөр> · [[холбогдох атом/task/meeting]]`. Агуулга урт бол атом (`/fm:save`) эсвэл meeting note (`00-GTD/Events/`) болгоод энд холбоос л.
+2. `## Харилцаа` хэсэгт мөр нэм: `- YYYY-MM-DD · <уулзалт|утас|чат|имэйл> - <нэг мөр> · [[холбогдох атом/task/meeting]]`. Агуулга урт бол атом (`/fm:save`) эсвэл meeting note (`01-GTD/Events/`) болгоод энд холбоос л.
 3. Шинэ амлалт, дараагийн алхам гарсан бол `/fm:task`-аар task (owner, project) үүсгэ; хэзээ дахин холбогдох нь тодорхой бол `follow_up_date:`.
 4. Хүн одоо идэвхтэй ажилтай холбоотой бол `hot: true` болгох эсэхийг асуу.
 
 ### hot - hot list
 
-1. `04-Areas/people/`-д Grep: `^hot:\s*true`. Тус бүрийн `last_interaction`, `follow_up_date`, `relationship`, `projects`-ийг унш.
+1. `03-Areas/people/`-д Grep: `^hot:\s*true`. Тус бүрийн `last_interaction`, `follow_up_date`, `relationship`, `projects`-ийг унш.
 2. Хүснэгт: хамгийн удаан харилцаагүй нь эхэнд; `follow_up_date` ≤ өнөөдөр бол ⚠️.
    | Хүн | Холбоо | Сүүлд | Хоног | Холбогдох | Төсөл |
    |---|---|---|---|---|---|
@@ -58,7 +58,7 @@ aliases: ["Бат", "Batbold"]   # товч нэр, латин бичлэг - х
 
 ## Лог ба тайлан
 
-- Шинэ хүн эсвэл харилцаа бүртгэвэл `_system/logs/<огноо>.md`-д нэг мөр: `- **HH:MM** · <дүр> → people: [[04-Areas/people/<Нэр>]]`.
+- Шинэ хүн эсвэл харилцаа бүртгэвэл `_system/logs/<огноо>.md`-д нэг мөр: `- **HH:MM** · <дүр> → people: [[03-Areas/people/<Нэр>]]`.
 - Тайлан: `👤 [[<Нэр>]] - шинэ | шинэчлэгдсэн (last_interaction YYYY-MM-DD) · холбосон: [[компани]], [[төсөл]]`.
 
 ## Хориг

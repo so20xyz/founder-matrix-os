@@ -29,7 +29,7 @@ supersededby: []
 - URL эсвэл [[note]] — огноотой
 
 <!--
-Нэг баримт = нэг атом. Файлын нэр: 05-Resources/Atomic/knowledge/YYYY-MM-DD - <ascii-slug>.md
+Нэг баримт = нэг атом. Файлын нэр: 04-Resources/Atomic/knowledge/YYYY-MM-DD - <ascii-slug>.md
 projects/areas хоёрын ядаж нэг нь ≥1 PARA холбоостой.
 Ижил атом байвал шинээр бүү үүсгэ — шинэчил.
 confidence: stated | high | medium | speculation

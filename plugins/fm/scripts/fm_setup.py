@@ -19,7 +19,7 @@ What it does:
     from the template skeleton (vault-template/_system/fm/registry.json, never
     copied verbatim). The roles map is the skeleton's roles overlaid with the
     role notes (type: agent-role) that are in
-    <target_vault>/04-Areas/AI Team/ai-workers/ after the copy. An existing
+    <target_vault>/03-Areas/AI Team/ai-workers/ after the copy. An existing
     registry.json is left untouched unless --merge-registry is given; then only
     missing role slugs are added (sessions and existing roles are kept).
   * --config (opt-in) also writes the per-machine file ~/.fmos/config.json
@@ -43,7 +43,7 @@ from typing import Dict, List, Optional, Tuple
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = SCRIPT_DIR.parent / "vault-template"
 IGNORE_FILE = ".templateignore"
-ROLES_DIR = "04-Areas/AI Team/ai-workers"
+ROLES_DIR = "03-Areas/AI Team/ai-workers"
 REGISTRY_REL = "_system/fm/registry.json"
 CONFIG_ENV = "FMOS_CONFIG"
 NO_SUBST_PREFIX = "_system/templates/"
@@ -204,6 +204,8 @@ def collect_roles(vault):
     # type: (Path) -> Dict[str, Dict[str, object]]
     roles = {}  # type: Dict[str, Dict[str, object]]
     folder = vault / ROLES_DIR
+    if not folder.is_dir() and (vault / "04-Areas").is_dir() and not (vault / "03-Areas").is_dir():
+        folder = vault / ROLES_DIR.replace("03-Areas", "04-Areas", 1)  # одоогийн (хуучин) layout
     if not folder.is_dir():
         return roles
     for f in sorted(folder.glob("*.md")):

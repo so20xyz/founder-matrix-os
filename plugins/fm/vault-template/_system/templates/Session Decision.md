@@ -52,6 +52,6 @@ enum:
   changetype: task | project | skill | structure | tool | schema | config | content
   decidedby: me | "@Нэр" | <дүрийн slug>
   confidence: stated | high | medium | speculation
-Файлын нэр: 05-Resources/Atomic/decisions/YYYY-MM-DD - <ascii-slug>.md
+Файлын нэр: 04-Resources/Atomic/decisions/YYYY-MM-DD - <ascii-slug>.md
 projects/areas хоёрын ядаж нэг нь ≥1 холбоостой байна.
 -->

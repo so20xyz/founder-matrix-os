@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """fm:finance helper - PRIVATE monthly bills + finance records.
 
-Everything lives in <vault>/04-Areas/Business/finances/private/ and NOTHING is written
+Everything lives in <vault>/03-Areas/Business/finances/private/ and NOTHING is written
 anywhere else. Output goes to stdout only (the current conversation) - never to logs.
 
 Bill note (one recurring payment = one note, template _system/templates/Bill.md):
@@ -38,7 +38,8 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-PRIVATE = Path("04-Areas") / "Business" / "finances" / "private"
+PRIVATE = Path("03-Areas") / "Business" / "finances" / "private"
+PRIVATE_CUR = Path("04-Areas") / "Business" / "finances" / "private"
 TEMPLATES = Path("_system") / "templates"
 RECORDS = "records"
 KINDS = ["invoice", "payment", "expense", "subscription", "salary"]
@@ -90,6 +91,8 @@ def _positional(args: List[str]) -> List[str]:
 
 
 def private_root(vault: Path) -> Path:
+    if not (vault / "03-Areas").is_dir() and (vault / "04-Areas").is_dir():  # одоогийн layout (fallback)
+        return (vault / PRIVATE_CUR).resolve()
     return (vault / PRIVATE).resolve()
 
 

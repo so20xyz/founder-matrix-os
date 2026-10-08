@@ -14,10 +14,10 @@
                               │ бичнэ
                               ▼
             Гишүүний Obsidian vault (Google Drive-аар Mac ↔ PC)
-   01-Soul · 00-GTD (inbox · tasks · events · daily) · 03-Projects · 04-Areas · 05-Resources · 05-Resources/Atomic · 04-Areas/Goals
+   00-Soul · 01-GTD (inbox · tasks · events · daily) · 02-Projects · 03-Areas · 04-Resources · 04-Resources/Atomic · 03-Areas/Goals
    _system/BOOT.md (дүрэм) · STATUS.md (дүр бүрийн мөр) · logs/ (зөвхөн холбоос)
    _system/fm/registry.json (сешн ↔ дүр; project = дүрийн slug) · state/<дүр>.md (baton)
-   04-Areas/AI Team/ai-workers/01–07 (Agent-уудын «сүнс»)
+   03-Areas/AI Team/ai-workers/01–07 (Agent-уудын «сүнс»)
 ```
 
 - **Нэг эх үүсвэр = vault.** Албан ёсны skill-ууд (superpowers, kepano obsidian, document-skills, finance, exa) суусан ч vault-д бичнэ (BOOT «албан ёсны skill → vault»).

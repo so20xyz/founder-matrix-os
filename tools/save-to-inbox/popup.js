@@ -1,4 +1,4 @@
-// Save to Inbox - Obsidian vault-iin 00-GTD/Inbox ruu hadgalna.
+// Save to Inbox - Obsidian vault-iin 01-GTD/Inbox ruu hadgalna.
 // Ded 1 (heregtei): Obsidian "Local REST API" plugin asaasan bol localhost ruu HTTP
 //   bичдег => Obsidian NEEGDDEGGUI (fokus solihgui), urt niitlel ч buten orno.
 // Ded 2 (fallback): API key togiruulaagui bol obsidian://new URI (Obsidian urd garna).
@@ -35,8 +35,8 @@ async function getSelection(tabId) {
     return (res && res[0] && res[0].result) ? res[0].result : "";
   } catch (e) { return ""; }
 }
-// Inbox-ийн зам: шинэ 00-GTD/Inbox; vault-д байхгүй бол хуучин 02-GTD/inbox -> 00-Inbox (шилжилтийн хамгаалалт).
-const INBOX_NEW = "00-GTD/Inbox", INBOX_OLDS = ["02-GTD/inbox", "00-Inbox"];
+// Inbox-ийн зам: шинэ 01-GTD/Inbox; vault-д байхгүй бол одоогийн 00-GTD/Inbox -> хуучин 02-GTD/inbox -> 00-Inbox (шилжилтийн хамгаалалт).
+const INBOX_NEW = "01-GTD/Inbox", INBOX_OLDS = ["00-GTD/Inbox", "02-GTD/inbox", "00-Inbox"];
 async function inboxDir(apiKey, endpoint) {
   if (!apiKey) return INBOX_NEW;
   const ls = async (d) => {

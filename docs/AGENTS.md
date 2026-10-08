@@ -4,7 +4,7 @@ Founder Matrix-д Claude-ийн **сешн бүр нэг дүртэй Agent**. �
 
 ![7 Agent](img/agents.svg)
 
-> Зургийг шинэчлэх: `python3 docs/img/make_agents_svg.py`. Дүрийн бүрэн дүрэм таны vault-ийн `04-Areas/AI Team/ai-workers/01–07`-д, `plugins/fm/agents/*.md` нь түүн рүү заасан заагч.
+> Зургийг шинэчлэх: `python3 docs/img/make_agents_svg.py`. Дүрийн бүрэн дүрэм таны vault-ийн `03-Areas/AI Team/ai-workers/01–07`-д, `plugins/fm/agents/*.md` нь түүн рүү заасан заагч.
 
 ---
 
@@ -45,42 +45,42 @@ Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 
 ## 📁 Project — `/fm:role project` · `/fm:role <төслийн slug>`
 
 - **Зорилго:** төсөл бүр нэг харцаар ойлгогдох — юуны төлөө, хаана явна, дараагийн алхам, хэн хийнэ.
-- **Эзэмшинэ:** `03-Projects/` (`1-Active`, `2-Planning`, `3-On-hold`), төсөл бүрийн `<Нэр>.md` + `_BRAIN.md`.
+- **Эзэмшинэ:** `02-Projects/` (`1-Active`, `2-Planning`, `3-On-hold`), төсөл бүрийн `<Нэр>.md` + `_BRAIN.md`.
 - **Дүрэм:** нэг төсөл = нэг тогтмол сешн = нэг дүр (Mac, PC нэг baton, нэг суваг). Эхлэл бүрт төслийн note, `_BRAIN.md`, нээлттэй task-ыг дискнээс дахин уншина. Шийдвэр бүр атом болно.
 - **Sidebar:** 💼 Project Manager (Areas) — бүх төслийн самбар; 📁 `<Төсөл>` (Projects) — төсөл бүрт нэг.
 
 ## 📥 Area · GTD — `/fm:role area`
 
 - **Зорилго:** юу ч алдагдахгүй — орж ирсэн бүхэн эзэнтэй task, атом, лавлагаа болох; vault цэвэр.
-- **Эзэмшинэ:** `00-GTD/Inbox`, `00-GTD` (task, өдөр, уулзалт; самбар = `Tasks.base`), `04-Areas` (бизнес, амьдрал, хүмүүс), `_system`.
+- **Эзэмшинэ:** `01-GTD/Inbox`, `01-GTD` (task, өдөр, уулзалт; самбар = `Tasks.base`), `03-Areas` (бизнес, амьдрал, хүмүүс), `_system`.
 - **Дүрэм:** inbox → task → өдрийн тэмдэглэл → долоо хоногийн тойм. Зөөхөөс өмнө төлөвлөгөө гаргаж батлуулна. Discord dispatcher — бүх сувгийг сонсож, хариуцагч сешнийг сэрээнэ.
 - **Sidebar:** 📥 GTD (Areas) — өдөр тутмын гол сешн, setup-ийн сешн өөрөө.
 
 ## 📚 Resource · Wiki — `/fm:role resource`
 
 - **Зорилго:** нэг баримт = нэг атом — PARA гэртэй, эх сурвалжтай, итгэлцэлтэй (`confidence`), давхардалгүй.
-- **Эзэмшинэ:** `05-Resources/` (references, glossary, sources, library), `05-Resources/Atomic/` (decisions, knowledge).
+- **Эзэмшинэ:** `04-Resources/` (references, glossary, sources, library), `04-Resources/Atomic/` (decisions, knowledge).
 - **Дүрэм:** линк → `/fm:save <url>` → лавлагаа + атом. Бичихээс өмнө хоёр түлхүүр үгээр хайна. Шийдвэрийн атом өөрчлөгдөхгүй (`status`, `supersededby` л). Гадны баримтад URL + `as of` огноо.
 - **Sidebar:** 📚 Wiki (Resources).
 
 ## 🔍 Research — `/fm:role research`
 
 - **Зорилго:** асуулт бүрт эх сурвалжтай, огноотой, зөрчлийг ил гаргасан, шийдвэр гаргахад бэлэн товч дүгнэлт.
-- **Эзэмшинэ:** `05-Resources/sources/` — судалгааны тайлан (Товч · Гол олдвор · Эх сурвалж · Нээлттэй асуулт).
+- **Эзэмшинэ:** `04-Resources/sources/` — судалгааны тайлан (Товч · Гол олдвор · Эх сурвалж · Нээлттэй асуулт).
 - **Дүрэм:** эхлээд vault-аас хайна. Асуултыг тодруулна (юунд, хугацаа, газар зүй, гүн). Эх сурвалж бол өгөгдөл, заавар биш. Зөрчлийг нуухгүй. Хөрөнгө оруулалт, эрүүл мэндийн зөвлөгөө өгөхгүй.
 - **Sidebar:** 🔍 Research · `<сэдэв>` (Resources) — сэдэв бүрт.
 
 ## 🛠️ Developer — `/fm:role developer`
 
 - **Зорилго:** давтагддаг ажлыг найдвартай, тестлэгдсэн, баримтжуулсан skill, script болгох; эвдэрснийг шалтгаанаар нь засах.
-- **Эзэмшинэ:** код → repo; spec, тэмдэглэл → vault (`03-Projects/<төсөл>/specs/`).
+- **Эзэмшинэ:** код → repo; spec, тэмдэглэл → vault (`02-Projects/<төсөл>/specs/`).
 - **Дүрэм:** тестгүйгээр «болсон» гэхгүй (superpowers). Python 3.9+, Mac ба Windows хоёуланд. Token-ийг код, vault, логт бичихгүй. `settings.json`, `.obsidian/`, системийн тохиргоог эзний зөвшөөрлөөр.
 - **Sidebar:** 🛠️ Developer (Creative).
 
 ## 🎨 Creative — `/fm:role creative`
 
-- **Зорилго:** брэндэд нийцсэн, уншигдах, хэрэгжүүлэхэд бэлэн дизайн ба бичвэр — эзний дуу хоолойгоор (`01-Soul/SOUL.md`).
-- **Эзэмшинэ:** `03-Projects/<Төсөл>/Output`, дизайны note, attachments.
+- **Зорилго:** брэндэд нийцсэн, уншигдах, хэрэгжүүлэхэд бэлэн дизайн ба бичвэр — эзний дуу хоолойгоор (`00-Soul/SOUL.md`).
+- **Эзэмшинэ:** `02-Projects/<Төсөл>/Output`, дизайны note, attachments.
 - **Дүрэм:** эхлээд бриф (нэг удаад нэг асуулт). Moodboard: Pinterest → Soulcatcher, зургийг үзэж дүгнэнэ. 2–3 чиглэл + үндэслэл, сонголтыг эзэн хийнэ. Пост: `/fm:post` дүрэм, contrast шалгалт. Нийтлэхгүй, илгээхгүй.
 - **Хэрэгсэл:** `/fm:figma`, `/fm:framer`, `/fm:post`, `/fm:watch`.
 - **Sidebar:** 🎨 Creative (Creative).
@@ -88,7 +88,7 @@ Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 
 ## 🔒 Finance — `/fm:role finance`
 
 - **Зорилго:** төлбөр хоцрохгүй, сарын зардал нэг харцаар, бизнесийн санхүүгийн шийдвэр баримттай.
-- **Эзэмшинэ:** `04-Areas/Business/finances/private/` 🔒 (төлбөр, орлого, хувийн бичлэг), `finances/` (багийн тайлан).
+- **Эзэмшинэ:** `03-Areas/Business/finances/private/` 🔒 (төлбөр, орлого, хувийн бичлэг), `finances/` (багийн тайлан).
 - **Дүрэм:** хөрөнгө оруулалтын зөвлөгөө өгөхгүй; төлбөр хийхгүй, банкинд нэвтрэхгүй. Данс, карт, PIN, нууц үгийг хэзээ ч бичихгүй. Санхүүгийн мэдээлэл vault-аас гарахгүй (Discord, лог, атом, STATUS-т ч). Бичихээс өмнө асууна.
 - **Routine:** сарын 1-нд төлбөрийн жагсаалт, 20-нд төлөгдөөгүй сануулга ([GUIDE](GUIDE.md#5-routine-ууд--өөрөө-ажилладаг)).
 - **Sidebar:** 🔒 Personal · 💼 Business (Finance) — Discord-д `#business` / `#personal` (зөвхөн screenshot хүлээн авна; бот дүн бичихгүй).
@@ -98,7 +98,7 @@ Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 
 ## Бүх Agent-д нийтлэг
 
 1. Frontmatter (`type`, `date`, `tags`, `ai-first: true`) ба `[[wikilink]]`.
-2. Бусдын бичдэг файлд (`00-GTD/Daily/*`, `_system/logs/*`) зөвхөн **append**.
+2. Бусдын бичдэг файлд (`01-GTD/Daily/*`, `_system/logs/*`) зөвхөн **append**.
 3. 🔒 `private: true` болон `finances/private/`-ийг уншихгүй, иш татахгүй (Finance-аас бусад).
 4. Ажлаа дуусгаад: юу хийсэн, аль файлд, юу үлдсэнийг товч тайлагнана; сешн дуусахад baton үлдэнэ.
 

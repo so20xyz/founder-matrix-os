@@ -103,7 +103,7 @@ def main():
         write(repo / "state" / f"{priv}.md", f"# {priv}\nSECRET\n")
     write(repo / "state" / "mac-drive-manifest.tsv", "a\t1\tx\n")
     write(repo / "state" / "vault-diff.md", "# diff\n")
-    write(repo / "state" / "pc-merge" / "00-GTD" / "x.md", "x\n")
+    write(repo / "state" / "pc-merge" / "01-GTD" / "x.md", "x\n")
 
     base = {k: v for k, v in os.environ.items()
             if k not in ("FM_VAULT", "FMOS_CONFIG", "FMOS_DEVICE", "FM_MEMBER", "FMOS_REPO", "OBSIDIAN_VAULT_PATH", "CLAUDE_SESSION_ID")}
@@ -227,7 +227,7 @@ def main():
     check(d["map"] == ["business", "personal", "business", "personal", None, "personal", None, None], "finance: session → #business/#personal (role finance is always private), others none", str(d["map"]))
     check(d["ack"] == [True, True, False, False, False], "finance: only short number-free 🙋/✅ receipts", str(d["ack"]))
     check(d["cats"] == ["projects"], "finance: #business/#personal never parked in Archive", str(d["cats"]))
-    task = vault / "00-GTD" / "Tasks" / "Тест даалгавар.md"
+    task = vault / "01-GTD" / "Tasks" / "Тест даалгавар.md"
     check(task.exists() and 'owner: "Тестер"' in task.read_text(encoding="utf-8"), "task: vault task, default owner = member")
 
     # ── 6. private sessions: harvest + status card filters

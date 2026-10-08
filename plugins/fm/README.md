@@ -1,6 +1,6 @@
 # `fm`: Founder Matrix Second Brain (marketplace `founder-matrix`)
 
-**Founder Matrix Second Brain**-ийн Claude Code plugin. Гишүүн бүрийн **хувийн Obsidian vault**-ийг GTD + PARA + атом тэмдэглэлээр ажиллуулж, бизнес ба хувийн амьдралыг нэг дор цэгцэлнэ. Бүх сешн нь **Agent**: Project, Area, Resource, Research, Developer, Creative, Finance 🔒 + төсөл тус бүрийн Project агент. Дүрийн тэмдэглэлүүд plugin-д биш, таны vault-ийн `04-Areas/AI Team/ai-workers/`-д амьдарна.
+**Founder Matrix Second Brain**-ийн Claude Code plugin. Гишүүн бүрийн **хувийн Obsidian vault**-ийг GTD + PARA + атом тэмдэглэлээр ажиллуулж, бизнес ба хувийн амьдралыг нэг дор цэгцэлнэ. Бүх сешн нь **Agent**: Project, Area, Resource, Research, Developer, Creative, Finance 🔒 + төсөл тус бүрийн Project агент. Дүрийн тэмдэглэлүүд plugin-д биш, таны vault-ийн `03-Areas/AI Team/ai-workers/`-д амьдарна.
 
 > **Суулгах, өдөр тутмын хэрэглээ, нууцлал, асуудал шийдэх:** repo-гийн үндсэн [README.md](../../README.md). Энэ файл plugin-ийн дотоод бүтцийг тайлбарлана.
 

@@ -10,11 +10,11 @@ a JSON file and calls this script. The script is deterministic:
   * it NEVER overwrites an existing note - existing files are reported as
     "skipped" and are still used as link targets;
   * the only edits to existing files are: filling a still-untouched template
-    (01-Soul/SOUL.md, the owner line of Home.md, the "active projects"
+    (00-Soul/SOUL.md, the owner line of Home.md, the "active projects"
     placeholder of _system/index.md), appending link lines to today's daily
     note and log, and merging roles into _system/fm/registry.json (sessions
     are never touched);
-  * personal finance goes ONLY to 04-Areas/Business/finances/private/
+  * personal finance goes ONLY to 03-Areas/Business/finances/private/
     (private: true). Finance names and amounts never appear in other notes,
     the decision atom, the log or this script's output. Account / card
     numbers, passwords and PINs are dropped, never written;
@@ -45,7 +45,7 @@ Answers schema (every section is optional; "quick mode" = soul, projects, roles)
                          "amount": 0, "currency": "MNT", "due_day": 5, "autopay": false,
                          "pay_via": "bank app"}]},
   "references": [{"name": "...", "url": "https://...", "kind": "link|doc|book|course|video|tool",
-                  "why": "...", "areas": ["..."], "projects": ["..."]}],   # kind "tool" -> 04-Areas/Business/tools/
+                  "why": "...", "areas": ["..."], "projects": ["..."]}],   # kind "tool" -> 03-Areas/Business/tools/
   "goals": {"year": 2026, "why": "...",
             "items": [{"title": "...", "measure": "...", "area": "...", "projects": ["..."]}]},
   "roles": {"activate": ["project", "area", "resource", "finance"],
@@ -81,30 +81,68 @@ except Exception:  # pragma: no cover - lint is shipped next to this file
 # ------------------------------------------------------------------ layout
 
 TEMPLATES = "_system/templates"
-COMPANIES = "04-Areas/Business/companies"
-TOOLS = "04-Areas/Business/tools"
-LIFE = "04-Areas/Life"
+COMPANIES = "03-Areas/Business/companies"
+TOOLS = "03-Areas/Business/tools"
+LIFE = "03-Areas/Life"
 # Reorganised vaults (itge.e 2026-10-09): Business/<company>/{companies,tools}, Personal/Life — used when present.
-LAYOUT_ALT = {"COMPANIES": "04-Areas/Business/INAI/companies", "TOOLS": "04-Areas/Business/INAI/tools",
-              "LIFE": "04-Areas/Personal/Life"}
-PEOPLE = "04-Areas/people"
-PRIVATE = "04-Areas/Business/finances/private"
+LAYOUT_ALT = {"COMPANIES": "03-Areas/Business/INAI/companies", "TOOLS": "03-Areas/Business/INAI/tools",
+              "LIFE": "03-Areas/Personal/Life"}
+PEOPLE = "03-Areas/people"
+PRIVATE = "03-Areas/Business/finances/private"
 INCOME = PRIVATE + "/income"
-REFERENCES = "05-Resources/references"
-GOALS = "04-Areas/Goals"
-ROLES_DIR = "04-Areas/AI Team/ai-workers"
+REFERENCES = "04-Resources/references"
+GOALS = "03-Areas/Goals"
+ROLES_DIR = "03-Areas/AI Team/ai-workers"
 REGISTRY = "_system/fm/registry.json"
-DECISIONS = "05-Resources/Atomic/decisions"
+DECISIONS = "04-Resources/Atomic/decisions"
 # Pre-2026-10-09 layout: used only when the vault still has the old folder and not the new one.
 LEGACY = {GOALS: "07-Goals", DECISIONS: "06-Atomic/decisions"}
-DAILY = "00-GTD/Daily"
+DAILY = "01-GTD/Daily"
 LOGS = "_system/logs"
-SOUL = "01-Soul/SOUL.md"
-STATES = {"active": ("03-Projects/1-Active", "active"),
-          "planning": ("03-Projects/2-Planning", "planning"),
-          "on-hold": ("03-Projects/3-On-hold", "on-hold")}
-PROJECT_ROOTS = ["03-Projects/1-Active", "03-Projects/2-Planning", "03-Projects/3-On-hold",
+SOUL = "00-Soul/SOUL.md"
+STATES = {"active": ("02-Projects/1-Active", "active"),
+          "planning": ("02-Projects/2-Planning", "planning"),
+          "on-hold": ("02-Projects/3-On-hold", "on-hold")}
+PROJECT_ROOTS = ["02-Projects/1-Active", "02-Projects/2-Planning", "02-Projects/3-On-hold",
                  "99-Archive/Projects"]
+# Vault layout 2026-10-09: new top folder -> current (pre-rename) name. A vault that still has
+# only the current name keeps working: Onboard rebinds the path constants below per vault.
+LAYOUT_CUR = {"00-Soul": "01-Soul", "01-GTD": "00-GTD", "02-Projects": "03-Projects",
+              "03-Areas": "04-Areas", "04-Resources": "05-Resources"}
+_LAYOUT_NAMES = ("COMPANIES", "TOOLS", "LIFE", "LAYOUT_ALT", "PEOPLE", "PRIVATE", "INCOME", "REFERENCES",
+                 "GOALS", "ROLES_DIR", "DECISIONS", "LEGACY", "DAILY", "SOUL", "STATES", "PROJECT_ROOTS")
+_LAYOUT_BASE = {k: globals()[k] for k in _LAYOUT_NAMES}
+
+
+def layout_rel(vault, rel):
+    # type: (Path, str) -> str
+    """New-layout rel path, or its current-layout twin if only that top folder exists."""
+    top, sep, rest = rel.partition("/")
+    old = LAYOUT_CUR.get(top)
+    if old and not (vault / top).is_dir() and (vault / old).is_dir():
+        return old + sep + rest
+    return rel
+
+
+def _remap(vault, v):
+    if isinstance(v, str):
+        return layout_rel(vault, v)
+    if isinstance(v, tuple):
+        return tuple(_remap(vault, x) for x in v)
+    if isinstance(v, list):
+        return [_remap(vault, x) for x in v]
+    if isinstance(v, dict):
+        return dict((_remap(vault, k), _remap(vault, x)) for k, x in v.items())
+    return v
+
+
+def apply_layout(vault):
+    # type: (Path) -> None
+    """Rebind the module path constants for this vault (new layout first, current as fallback)."""
+    for k, v in _LAYOUT_BASE.items():
+        globals()[k] = _remap(vault, v)
+
+
 CORE_ROLES = ["project", "area", "resource", "research", "developer", "creative", "finance"]
 # v0.2 slugs → v0.3 agents (old answers.json files keep working)
 ROLE_ALIASES = {"gtd": "area", "architect": "developer", "wiki": "resource", "content-writer": "creative", "creative-director": "creative",
@@ -336,6 +374,7 @@ class Onboard(object):
     def __init__(self, vault, answers, dry_run=False, today=None):
         # type: (Path, Dict[str, object], bool, Optional[datetime.date]) -> None
         self.vault = vault
+        apply_layout(vault)
         for k, alt in LAYOUT_ALT.items():
             setattr(self, k, alt if (vault / alt).is_dir() else globals()[k])
         self.a = answers
@@ -359,7 +398,10 @@ class Onboard(object):
     def folder(self, rel):
         # type: (str) -> str
         """New-layout folder, or its legacy name if only that exists in this vault."""
-        old = LEGACY.get(rel)
+        top, sep, rest = rel.partition("/")
+        new = next((n for n, c in LAYOUT_CUR.items() if c == top), top) + sep + rest
+        old = _LAYOUT_BASE["LEGACY"].get(new)
+        rel = layout_rel(self.vault, new)
         if old and not (self.vault / rel).exists() and (self.vault / old).exists():
             return old
         return rel
@@ -1162,7 +1204,7 @@ class Onboard(object):
             if proj_links:
                 decision.append("- **Төслүүд:** " + ", ".join(proj_links))
             if n_people:
-                decision.append("- **Хүмүүс:** %d хүн (`04-Areas/people/`)" % n_people)
+                decision.append("- **Хүмүүс:** %d хүн (`03-Areas/people/`)" % n_people)
             if n_refs:
                 decision.append("- **Лавлагаа, хэрэгсэл:** %d" % n_refs)
             if isinstance(self.a.get("goals"), dict) and self.a["goals"].get("items"):
@@ -1173,7 +1215,7 @@ class Onboard(object):
                     " + %d төслийн ажлын дүр" % work_n if work_n else ""))
             if has_fin:
                 decision.append("- 🔒 **Хувийн санхүү:** модуль бөглөгдсөн. Дэлгэрэнгүй зөвхөн "
-                                "`04-Areas/Business/finances/private/`-д — энд бичихгүй.")
+                                "`03-Areas/Business/finances/private/`-д — энд бичихгүй.")
             note.set_section("Шийдвэр", decision or ["- Үндсэн бүтэц үүсгэв."])
             note.set_section("Нөхцөл байдал", ["Шинэ гишүүний онбординг (`/fm:setup` → `fm_onboard.py`). "
                                                "Хариултыг эзэн өөрөө өгсөн, Agent зохиогоогүй."])

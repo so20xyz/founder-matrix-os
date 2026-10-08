@@ -14,11 +14,16 @@ Private finance (`finances/private/`, `private: true`), `_system/`, `_trash/`, `
 import json, os, re, sys
 from pathlib import Path
 
-SKIP = ("_trash/", ".backups/", ".obsidian/", "_system/", "04-Areas/Business/finances/private/")
-# New layout (2026-10-09) first; old top-level folders kept as fallback for un-migrated vaults.
-RES = ("05-Resources/references/", "05-Resources/sources/", "04-Areas/Studio/Social saves/zettel/",
+SKIP = ("_trash/", ".backups/", ".obsidian/", "_system/", "03-Areas/Business/finances/private/",
+        "04-Areas/Business/finances/private/")
+# New layout (renamed 2026-10-09) first; the current names (00-GTD, 01-Soul, 03-Projects, 04-Areas,
+# 05-Resources) and older top-level folders kept as fallback for un-migrated vaults.
+RES = ("04-Resources/references/", "04-Resources/sources/", "03-Areas/Studio/Social saves/zettel/",
+       "05-Resources/references/", "05-Resources/sources/", "04-Areas/Studio/Social saves/zettel/",
        "08-Studio/Social saves/zettel/")
-ATOM = ("05-Resources/Atomic/knowledge/", "05-Resources/Atomic/decisions/", "06-Atomic/knowledge/", "06-Atomic/decisions/")
+ATOM = ("04-Resources/Atomic/knowledge/", "04-Resources/Atomic/decisions/",
+        "05-Resources/Atomic/knowledge/", "05-Resources/Atomic/decisions/", "06-Atomic/knowledge/", "06-Atomic/decisions/")
+TASKS = ("01-GTD/Tasks/", "00-GTD/Tasks/", "02-GTD/tasks/")
 LINK = re.compile(r"\[\[([^\]|#]+)")
 
 
@@ -30,10 +35,14 @@ def split(text):
 
 
 # Order matters: nested organs (Atomic, Goals, Studio) before their parent folders.
-ORGANS = (("00-GTD/Tasks/", "Tasks"), ("02-GTD/tasks/", "Tasks"), ("00-GTD/", "GTD"), ("02-GTD/", "GTD"), ("03-Projects/", "Projects"), ("99-Archive/Projects/", "Projects"),
+ORGANS = (("01-GTD/Tasks/", "Tasks"), ("00-GTD/Tasks/", "Tasks"), ("02-GTD/tasks/", "Tasks"),
+          ("01-GTD/", "GTD"), ("00-GTD/", "GTD"), ("02-GTD/", "GTD"),
+          ("02-Projects/", "Projects"), ("03-Projects/", "Projects"), ("99-Archive/Projects/", "Projects"),
+          ("03-Areas/Goals/", "Goals"), ("03-Areas/Studio/", "Studio"), ("03-Areas/", "Areas"),
           ("04-Areas/Goals/", "Goals"), ("04-Areas/Studio/", "Studio"), ("04-Areas/", "Areas"),
+          ("04-Resources/Atomic/", "Atomic"), ("04-Resources/library/", "Library"), ("04-Resources/", "Resources"),
           ("05-Resources/Atomic/", "Atomic"), ("05-Resources/library/", "Library"), ("05-Resources/", "Resources"),
-          ("06-Atomic/", "Atomic"), ("01-Soul/", "Soul"), ("07-Goals/", "Goals"), ("08-Studio/", "Studio"))
+          ("06-Atomic/", "Atomic"), ("00-Soul/", "Soul"), ("01-Soul/", "Soul"), ("07-Goals/", "Goals"), ("08-Studio/", "Studio"))
 
 
 ATTACH = {".pdf", ".docx", ".pptx", ".xlsx", ".key", ".pages"}  # documents (images/build assets live with their project)
@@ -136,7 +145,7 @@ def scan(vault: Path):
     used = set()
     for k, (fm, body) in notes.items():
         targets = {r for r in (resolve(t) for t in LINK.findall(fm + body)) if r}
-        if k.startswith(("00-GTD/Tasks/", "02-GTD/tasks/") + ATOM):
+        if k.startswith(TASKS + ATOM):
             used |= {t for t in targets if t.startswith(RES)}
         is_index = re.search(r"^type:\s*(index|moc)", fm, re.M)
         if fm and not is_index and not re.search(r"^up:", fm, re.M) and k.split("/")[0] not in ("Home", "sortspec"):

@@ -29,7 +29,7 @@ recurs:
 
 ## For future agent
 
-Нэг санхүүгийн бичлэг = нэг файл. `kind`: invoice | payment | expense | subscription | salary. Анхдагч нь 🔒 хувийн: `scope: personal` + `private: true` → `04-Areas/Business/finances/private/`. Багийн бичлэг бол `scope: team` + `private: false` болгож `04-Areas/Business/finances/`-д хадгална (lint үүнийг л гадуур зөвшөөрнө). `salary` үргэлж хувийн.
+Нэг санхүүгийн бичлэг = нэг файл. `kind`: invoice | payment | expense | subscription | salary. Анхдагч нь 🔒 хувийн: `scope: personal` + `private: true` → `03-Areas/Business/finances/private/`. Багийн бичлэг бол `scope: team` + `private: false` болгож `03-Areas/Business/finances/`-д хадгална (lint үүнийг л гадуур зөвшөөрнө). `salary` үргэлж хувийн.
 
 - `date` = үүсгэсэн огноо, `txn-date` = гүйлгээний огноо — хольж болохгүй.
 - `amount` цэвэр тоо, `currency` тусад нь («1 сая» гэх мэт текст биш).

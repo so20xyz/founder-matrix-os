@@ -29,10 +29,25 @@ VAULT_ENV_KEYS = (
 
 CONFIG_ENV = "FMOS_CONFIG"
 
-ROLES_DIR = "04-Areas/AI Team/ai-workers"
+ROLES_DIR = "03-Areas/AI Team/ai-workers"
 REGISTRY_REL = "_system/fm/registry.json"
 BOOT_REL = "_system/BOOT.md"
-PRIVATE_FINANCE_DIR = "04-Areas/Business/finances/private"
+PRIVATE_FINANCE_DIR = "03-Areas/Business/finances/private"
+# Vault layout 2026-10-09: new top folder -> current (pre-rename) name. New wins; the
+# current name is used only when the vault has it and not the new one.
+LAYOUT_CUR = {"00-Soul": "01-Soul", "01-GTD": "00-GTD", "02-Projects": "03-Projects",
+              "03-Areas": "04-Areas", "04-Resources": "05-Resources"}
+PRIVATE_FINANCE_DIRS = (PRIVATE_FINANCE_DIR, "04-Areas/Business/finances/private")
+
+
+def layout_rel(vault, rel):
+    """New-layout rel path, or its current-layout twin if only that top folder exists."""
+    rel = str(rel).replace("\\", "/")
+    top, sep, rest = rel.partition("/")
+    old = LAYOUT_CUR.get(top)
+    if old and vault and not (Path(vault) / top).is_dir() and (Path(vault) / old).is_dir():
+        return old + sep + rest
+    return rel
 
 _CASE_INSENSITIVE_FS = sys.platform in ("darwin", "win32")
 

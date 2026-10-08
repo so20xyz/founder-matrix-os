@@ -12,17 +12,17 @@ aliases:
 
 > Эзэн: **{{fm:member}}**
 >
-> Хувийн Second Brain + багийн төслүүд. Agent-ууд энэ vault-ийн дүрмээр ажиллана: [[_system/BOOT|📖 BOOT]]. Би хэн бэ: [[01-Soul/SOUL|🌱 SOUL]].
+> Хувийн Second Brain + багийн төслүүд. Agent-ууд энэ vault-ийн дүрмээр ажиллана: [[_system/BOOT|📖 BOOT]]. Би хэн бэ: [[00-Soul/SOUL|🌱 SOUL]].
 
 ## ⚡ Хурдан навигаци
 
 | Ажил | Амьдрал | Мэдлэг |
 |---|---|---|
-| [[00-GTD/Tasks/Tasks.base\|📋 GTD самбар · ✅ Task-ууд]] | `00-GTD/Daily/` 📅 Өдрийн тэмдэглэл | [[05-Resources/Atomic/knowledge/Atoms.base\|🧩 Атомууд]] |
-| `00-GTD/Events/` 📆 Уулзалт, үйл явдал | [[04-Areas/people/People.base\|👥 Хүмүүс]] | [[05-Resources/Atomic/decisions/Decisions.base\|🔑 Шийдвэрүүд]] |
-| [[03-Projects/Projects.base\|🔨 Төслүүд]] | `04-Areas/Life/` 🏠 Хувийн хүрээ | [[05-Resources/references/References.base\|📚 Лавлагаа ба хэрэгсэл]] |
-| [[04-Areas/Business/companies/Companies.base\|🏢 Байгууллагууд]] | `04-Areas/Goals/` 🎯 Зорилго | `00-GTD/Inbox/` 📥 Хураалт |
-| [[04-Areas/AI Team/ai-workers/Agents.base\|🤖 Agent-ууд]] | [[04-Areas/Business/finances/private/Сарын төлбөр\|🔒 Сарын төлбөр]] | [[_system/index\|🗂 Каталог]] |
+| [[01-GTD/Tasks/Tasks.base\|📋 GTD самбар · ✅ Task-ууд]] | `01-GTD/Daily/` 📅 Өдрийн тэмдэглэл | [[04-Resources/Atomic/knowledge/Atoms.base\|🧩 Атомууд]] |
+| `01-GTD/Events/` 📆 Уулзалт, үйл явдал | [[03-Areas/people/People.base\|👥 Хүмүүс]] | [[04-Resources/Atomic/decisions/Decisions.base\|🔑 Шийдвэрүүд]] |
+| [[02-Projects/Projects.base\|🔨 Төслүүд]] | `03-Areas/Life/` 🏠 Хувийн хүрээ | [[04-Resources/references/References.base\|📚 Лавлагаа ба хэрэгсэл]] |
+| [[03-Areas/Business/companies/Companies.base\|🏢 Байгууллагууд]] | `03-Areas/Goals/` 🎯 Зорилго | `01-GTD/Inbox/` 📥 Хураалт |
+| [[03-Areas/AI Team/ai-workers/Agents.base\|🤖 Agent-ууд]] | [[03-Areas/Business/finances/private/Сарын төлбөр\|🔒 Сарын төлбөр]] | [[_system/index\|🗂 Каталог]] |
 
 ## 🔨 Идэвхтэй төслүүд
 
@@ -72,4 +72,4 @@ aliases:
 
 Барилгын блокууд (update өөрөө дууддаг; шууд дуудаж ч болно): `/fm:save` хадгалах (`--checkpoint`, `<url>`) · `/fm:inbox` · `/fm:task` · `/fm:project` · `/fm:people` · `/fm:finance` 🔒 · `/fm:role` · `/fm:setup` онбординг
 
-Хэрэгсэл (заавал биш): `/fm:post` пост · `/fm:figma` · `/fm:framer` · `/fm:watch` бичлэг · `/fm:notion` · `/fm:relay` Discord. Албан ёсны skill-ууд: [[05-Resources/references/Official skills|Official skills]].
+Хэрэгсэл (заавал биш): `/fm:post` пост · `/fm:figma` · `/fm:framer` · `/fm:watch` бичлэг · `/fm:notion` · `/fm:relay` Discord. Албан ёсны skill-ууд: [[04-Resources/references/Official skills|Official skills]].

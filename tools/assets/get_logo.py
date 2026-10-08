@@ -1,6 +1,6 @@
 """Brand logo library — reuse first, collect only when missing.
 
-Library: <vault>/04-Areas/Studio/assets/social-logos/  (index: logos.json)
+Library: <vault>/03-Areas/Studio/assets/social-logos/  (index: logos.json)
   logos.json  "<slug>": "#hex brand color"      (existing format, kept)
               "_sources": {"<slug>": {"file", "from", "license", "date"}}
 
@@ -21,7 +21,9 @@ def _vault():
     cfg = Path.home() / ".fmos" / "config.json"
     if cfg.exists(): return Path(json.loads(cfg.read_text(encoding="utf-8"))["vault"])
     sys.exit("vault алга: FM_VAULT эсвэл ~/.fmos/config.json тохируул")
-LIB = _vault() / "04-Areas/Studio" / "assets" / "social-logos"
+LIB = _vault() / "03-Areas/Studio" / "assets" / "social-logos"
+if not LIB.exists() and (_vault() / "04-Areas/Studio").exists():  # одоогийн layout (fallback)
+    LIB = _vault() / "04-Areas/Studio" / "assets" / "social-logos"
 if not LIB.exists() and (_vault() / "08-Studio").exists():  # pre-2026-10-09 layout
     LIB = _vault() / "08-Studio" / "assets" / "social-logos"
 INDEX = LIB / "logos.json"

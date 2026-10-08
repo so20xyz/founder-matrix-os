@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""fm:task helper - GTD task notes in <vault>/00-GTD/Tasks/.
+"""fm:task helper - GTD task notes in <vault>/01-GTD/Tasks/.
 
 Usage:
-    fm_task.py new   <vault> "<title>" --owner <role-slug|Role name|me|@Name> [--project "03-Projects/.../Name/Name"]
+    fm_task.py new   <vault> "<title>" --owner <role-slug|Role name|me|@Name> [--project "02-Projects/.../Name/Name"]
                      [--status next-action] [--priority high|medium|low] [--due YYYY-MM-DD] [--context work|home]
                      [--body "..."]
     fm_task.py claim <vault> "<task title or file>" --by "<Role> · <device>"
@@ -14,7 +14,7 @@ Claim rule: the first session that takes a task appends `🙋 <who> авлаа` 
 when finished it appends `✅ дууслаа: ...` and sets status: completed. A task with an open
 🙋 by someone else cannot be claimed (exit 4).
 
-Pure standard library, Python 3.9+, macOS / Windows / Linux. Writes only inside 00-GTD/Tasks/.
+Pure standard library, Python 3.9+, macOS / Windows / Linux. Writes only inside 01-GTD/Tasks/.
 """
 import datetime
 import os
@@ -23,18 +23,19 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-TASKS = Path("00-GTD") / "Tasks"
-LEGACY_TASKS = (Path("02-GTD") / "tasks",)  # хуучин layout (шилжилтийн хамгаалалт)
+TASKS = Path("01-GTD") / "Tasks"
+LEGACY_TASKS = (Path("00-GTD") / "Tasks", Path("02-GTD") / "tasks")  # хуучин layout (шилжилтийн хамгаалалт)
 
 
 def tasks_dir(vault: Path) -> Path:
-    """00-GTD/Tasks; байхгүй ч хуучин 02-GTD/tasks байвал түүнийг."""
+    """01-GTD/Tasks; байхгүй ч одоогийн 00-GTD/Tasks эсвэл хуучин 02-GTD/tasks байвал түүнийг."""
     if not (vault / TASKS).is_dir():
         for old in LEGACY_TASKS:
             if (vault / old).is_dir():
                 return vault / old
     return vault / TASKS
-ROLES_DIR = Path("04-Areas") / "AI Team" / "ai-workers"
+ROLES_DIR = Path("03-Areas") / "AI Team" / "ai-workers"
+ROLES_DIR_CUR = Path("04-Areas") / "AI Team" / "ai-workers"  # одоогийн layout (fallback)
 STATUSES = ["inbox", "someday", "next-action", "waiting", "completed", "cancelled"]
 PRIORITIES = ["high", "medium", "low"]
 PRIORITY_ALIASES = {"🔴": "high", "🟡": "medium", "🟢": "low", "h": "high", "m": "medium", "l": "low"}
@@ -146,6 +147,8 @@ def known_roles(vault: Path) -> Dict[str, str]:
     """Map every accepted spelling (slug, display name, lower-case) -> role slug."""
     names = {}  # type: Dict[str, str]
     folder = vault / ROLES_DIR
+    if not folder.is_dir() and (vault / ROLES_DIR_CUR).is_dir():
+        folder = vault / ROLES_DIR_CUR
     if folder.is_dir():
         for note in sorted(folder.glob("*.md")):
             fm, _ = split_note(note.read_text(encoding="utf-8-sig"))
@@ -281,7 +284,7 @@ def cmd_new(vault: Path, args: List[str]) -> None:
                 "Task: юу хийх, яагаад, хэн хийх, юу хүргэсэн.", "", "## Шаардлага", "", "## Хүргэсэн", ""]
     for key, val in (("type", "task"), ("status", status), ("owner", yaml_str(owner)), ("priority", priority),
                      ("due", due), ("project", yaml_str("[[%s]]" % project) if project else ""),
-                     ("context", context), ("up", yaml_str("[[00-GTD/Tasks/Tasks]]"))):
+                     ("context", context), ("up", yaml_str("[[%s/Tasks]]" % tasks_dir(vault).relative_to(vault).as_posix()))):
         fm = fm_set(fm, key, val)
     if name != title:
         fm.append("aliases:\n  - %s" % yaml_str(title))

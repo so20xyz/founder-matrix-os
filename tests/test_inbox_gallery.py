@@ -25,9 +25,9 @@ def free_port():
 
 def make_vault(tmp):
     v = tmp / "vault"
-    inbox = v / "00-GTD/Inbox"
+    inbox = v / "01-GTD/Inbox"
     (inbox / "Empty").mkdir(parents=True)
-    (v / "03-Projects" / "1-Active" / "Demo").mkdir(parents=True)
+    (v / "02-Projects" / "1-Active" / "Demo").mkdir(parents=True)
     (v / "_system" / "logs").mkdir(parents=True)
     (inbox / "ref - demo.md").write_text("---\ntype: reference\nurl: \"https://example.com\"\nai-first: true\n---\n\n## For future agent\n\nДемо лавлагаа.\n", encoding="utf-8")
     (inbox / "raw thought.md").write_text("түүхий бодол\n", encoding="utf-8")
@@ -116,11 +116,11 @@ def test_apply_moves_never_deletes(srv, vault):
         "used.png": "project:1-Active/Demo", "raw thought.md": "keep", "../secret.md": "trash"}})
     assert len(r["done"]) == 4, r
     assert len(r["errors"]) == 1 and "secret" in r["errors"][0], r
-    assert (vault / "05-Resources/references/ref - demo.md").is_file()
+    assert (vault / "04-Resources/references/ref - demo.md").is_file()
     assert list((vault / "99-Archive/inbox").rglob("orphan.png"))
     assert list((vault / "_trash").glob("inbox-*/Empty"))
-    assert (vault / "03-Projects/1-Active/Demo/Resources/used.png").is_file()
-    assert (vault / "00-GTD/Inbox/raw thought.md").is_file()
+    assert (vault / "02-Projects/1-Active/Demo/Resources/used.png").is_file()
+    assert (vault / "01-GTD/Inbox/raw thought.md").is_file()
     assert (vault / "secret.md").is_file()
     logs = list((vault / "_system/logs").glob("*.md"))
     assert logs and "inbox-gallery" in logs[0].read_text(encoding="utf-8")
@@ -128,27 +128,27 @@ def test_apply_moves_never_deletes(srv, vault):
 
 @with_server
 def test_apply_does_not_overwrite(srv, vault):
-    (vault / "05-Resources/references").mkdir(parents=True)
-    (vault / "05-Resources/references/ref - demo.md").write_text("old", encoding="utf-8")
+    (vault / "04-Resources/references").mkdir(parents=True)
+    (vault / "04-Resources/references/ref - demo.md").write_text("old", encoding="utf-8")
     srv.post("/api/apply", {"decisions": {"ref - demo.md": "resource"}})
-    assert (vault / "05-Resources/references/ref - demo.md").read_text(encoding="utf-8") == "old"
-    assert (vault / "05-Resources/references/ref - demo (2).md").is_file()
+    assert (vault / "04-Resources/references/ref - demo.md").read_text(encoding="utf-8") == "old"
+    assert (vault / "04-Resources/references/ref - demo (2).md").is_file()
 
 
 def test_legacy_00_inbox_fallback():
-    """Шинэ 00-GTD/Inbox байхгүй, хуучин 00-Inbox байвал түүнийг уншина (шилжилтийн хамгаалалт)."""
+    """Шинэ 01-GTD/Inbox байхгүй, хуучин 00-Inbox байвал түүнийг уншина (шилжилтийн хамгаалалт)."""
     tmp = Path(tempfile.mkdtemp(prefix="fm-gallery-legacy-"))
     try:
         vault = make_vault(tmp)
-        shutil.move(str(vault / "00-GTD/Inbox"), str(vault / "00-Inbox"))
+        shutil.move(str(vault / "01-GTD/Inbox"), str(vault / "00-Inbox"))
         srv = Server(vault)
         try:
             d = json.loads(srv.get("/api/items")[1])
             assert "raw thought.md" in {i["name"] for i in d["items"]}, d["items"]
             r = srv.post("/api/apply", {"decisions": {"ref - demo.md": "resource"}})
             assert len(r["done"]) == 1, r
-            assert (vault / "05-Resources/references/ref - demo.md").is_file()
-            assert not (vault / "00-GTD/Inbox").exists()
+            assert (vault / "04-Resources/references/ref - demo.md").is_file()
+            assert not (vault / "01-GTD/Inbox").exists()
         finally:
             srv.stop()
     finally:
