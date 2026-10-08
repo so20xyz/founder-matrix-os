@@ -11,7 +11,7 @@ Usage:
     fm_project.py list  <vault>                                   status table + scope-contract check
     fm_project.py new   <vault> "<Name>" [--state planning] [--area Business] [--context work] [--goal "..."]
     fm_project.py move  <vault> "<Name>" <active|planning|on-hold|archive> [--status completed|cancelled] [--apply]
-    fm_project.py board <vault> [<board name>] [--stale-days 14]  kanban hygiene report (read-only)
+    fm_project.py board <vault> [<board name>] [--stale-days 14]  legacy kanban hygiene report (read-only; boards archived, Tasks.base replaces them)
 
 `move` is a dry run unless --apply: it lists every file whose links would be rewritten.
 Pure standard library, Python 3.9+, macOS / Windows / Linux.
@@ -33,7 +33,7 @@ STATES = {
 OPEN_TASK = {"inbox", "next-action", "waiting"}
 LINK_EXT = {".md", ".base", ".canvas"}
 SKIP_DIRS = {".obsidian", "_trash", ".trash", ".git", ".backups", "node_modules"}
-BOARDS = Path("00-GTD") / "boards"
+BOARDS = Path("00-GTD") / "boards"  # хуучин vault-д л (template-д самбар байхгүй)
 COLUMN_STATUS = {"inbox": "inbox", "next action": "next-action", "waiting": "waiting",
                  "someday": "someday", "completed": "completed", "done": "completed"}
 MAX_REL_PATH = 60

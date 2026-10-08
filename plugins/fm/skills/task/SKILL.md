@@ -75,9 +75,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py" list "${user_conf
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py" list "${user_config.vault_path}" --owner area --status next-action
 ```
 
-## Kanban самбар
+## Самбар
 
-`00-GTD/boards/*.md` нь тусдаа файл — таскийн `status` солигдоход карт өөрөө зөөгдөхгүй. Төлөв солисны дараа самбарт тухайн карт байвал зөв багана руу зөө. Олон зөрүү байвал `/fm:project` → hygiene горим.
+Самбар = `00-GTD/Tasks/Tasks.base`-ийн GTD view-ууд — `status`-аас шууд уншдаг тул тусад нь зөөх зүйлгүй. Kanban plugin хасагдсан; хуучин vault-д Kanban файл үлдсэн бол `/fm:project` → hygiene горим.
 
 ## Хориг
 

@@ -78,7 +78,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${use
 
 ## 5. Самбарын цэгцлэл (hygiene горим)
 
-Самбар (`00-GTD/boards/*.md`, Kanban plugin) нь таскийн файлаас **тусдаа** — карт чирэхэд таскийн `status` өөрчлөгдөхгүй. Hygiene горим хоёуланг нь тулгана.
+**Kanban самбар архивлагдсан (itge.e)** — шинэ vault-д самбар = `00-GTD/Tasks/Tasks.base`-ийн GTD view-ууд (task-ийн `status`-аас шууд). Энэ горим зөвхөн **хуучин vault-д** Kanban файл (`00-GTD/boards/` эсвэл `02-GTD/boards/`) үлдсэн үед. Шинэ самбар **үүсгэхгүй**. Kanban файл нь таскийн файлаас **тусдаа** — карт чирэхэд таскийн `status` өөрчлөгдөхгүй. Hygiene горим хоёуланг нь тулгана.
 
 1. Тайлан (зөвхөн уншина):
    ```bash

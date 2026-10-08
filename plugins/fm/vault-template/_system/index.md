@@ -18,7 +18,7 @@ Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт 
 |---|---|---|
 | `00-GTD/Inbox/` | Хураалт, ангилаагүй | [[02 Area]] |
 | `01-Soul/` | [[SOUL]], үнэт зүйл, хэв маяг | [[02 Area]] |
-| `00-GTD/` | `inbox/` · `daily/` · `tasks/` · `boards/` · `events/` | [[02 Area]] |
+| `00-GTD/` | `Inbox/` · `Daily/` · `Tasks/` · `Events/` | [[02 Area]] |
 | `03-Projects/` | `1-Active/` · `2-Planning/` · `3-On-hold/` | [[01 Project]] |
 | `04-Areas/` | `Business/` (companies · finances · tools) · `people/` · `AI Team/` · `Life/` | [[02 Area]] |
 | `04-Areas/Business/finances/private/` | 🔒 Хувийн санхүү | [[07 Finance]] |

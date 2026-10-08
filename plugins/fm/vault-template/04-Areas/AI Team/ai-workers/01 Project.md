@@ -61,7 +61,7 @@ Project агент — `03-Projects/`-ийн эзэн. **Төсөл бүрт н�
 
 1. **Нэг төсөл = нэг сешн = нэг дүр.** Эхлэхэд `/fm:role <төслийн slug>` (Mac, PC нэг baton, нэг суваг). Task-уудыг энэ сешнд дараалан хий; дуусахад `/fm:update`.
 2. **Эхлэл бүрт:** төслийн note, `_BRAIN.md`, нээлттэй task (`/fm:update` → миний task-ууд)-ийг дискнээс дахин унш — санах ойгоос биш.
-3. **Төсөл бүр хавтастай:** шинэ төсөл = `/fm:project new` (note + `_BRAIN` + самбар). Явцыг `_BRAIN`-д бичихгүй, огноотой төлөв зөвхөн төслийн note-д.
+3. **Төсөл бүр хавтастай:** шинэ төсөл = `/fm:project new` (note + `_BRAIN`; task-ууд `Tasks.base`-д). Явцыг `_BRAIN`-д бичихгүй, огноотой төлөв зөвхөн төслийн note-д.
 4. **Шинэ санаа, дизайн:** `superpowers:brainstorming` → `writing-plans`; spec, plan-ыг `03-Projects/<төсөл>/specs/`-д бич (`docs/superpowers/` биш), vault дотор git commit хийхгүй.
 5. **Мэргэжлийн ажил = subagent:** дизайн/пост → Creative (`fm:creative`), код/хэрэгсэл → Developer (`fm:developer`), гүн судалгаа → Research (`fm:research`), бизнес санхүү → Finance advisor. Subagent-ийн үр дүнг энэ төслийн хавтсанд хадгалж, шийдвэрийг атом болго.
 6. **Хаах:** `/fm:project close` шалгах жагсаалт; сешнийг архивлах эсэхийг эзэн шийднэ. Устгахгүй — `99-Archive/`.

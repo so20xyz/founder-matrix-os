@@ -59,7 +59,7 @@ ai-first: true
 - Frontmatter: `date`, `type`, `tags`, `ai-first: true`, дараа нь шууд `## For future agent`. Түлхүүр, enum англиар. `project`, `task`-д `context: home | work`.
 - Task: `status` = `inbox · next-action · waiting · someday · completed · cancelled`; `owner` = `me` · `"@Нэр"` · дүрийн slug; `priority` = `high · medium · low`.
 - Нэр: task тодорхой гарчиг · хүн бүтэн нэр · төсөл `<Нэр>/<Нэр>.md` + `_BRAIN.md`. Файлын нэрэнд зөвхөн ASCII `-` (em/en dash хориотой), `/ \ : * ? " < > |` үгүй. Rename-ийг Obsidian дотроос.
-- `type:` ба `ai-first:` хоёулаа байхгүй `.md` бол гадны файл. Чөлөөлөгдөх: `Home.md`, `_system/index.md`, `STATUS.md`, `logs/`, `boards/`, `README.md`.
+- `type:` ба `ai-first:` хоёулаа байхгүй `.md` бол гадны файл. Чөлөөлөгдөх: `Home.md`, `_system/index.md`, `STATUS.md`, `logs/`, `README.md`.
 
 ## Бичих дүрэм (чат + Discord, бүх agent)
 

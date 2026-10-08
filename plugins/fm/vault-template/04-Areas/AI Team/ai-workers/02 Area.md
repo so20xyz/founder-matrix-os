@@ -54,7 +54,7 @@ Area агент — өдөр тутмын урсгал (inbox → task → өд�
 
 ## Эзэмшдэг хавтас
 
-- `00-GTD/Inbox/`, `00-GTD/` (`inbox/`, `daily/`, `tasks/`, `boards/`, `events/`)
+- `00-GTD/Inbox/`, `00-GTD/` (`Inbox/`, `Daily/`, `Tasks/`, `Events/`)
 - `04-Areas/` (`people/`, `Business/`, `Life/`, `AI Team/`) — 🔒 `Business/finances/private/`-ээс бусад
 - `01-Soul/`, `07-Goals/`, `99-Archive/`, `_system/`, `Home.md`
 
