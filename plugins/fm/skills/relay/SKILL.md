@@ -28,7 +28,7 @@ fm Discord-гүйгээр бүрэн ажиллана. Relay-г зөвхөн х�
 1. `python3 "$R/fmconfig.py"` → `"vault_mode": true`, `"data": ".../_system/fm"` гарах ёстой. Үгүй бол `/fm:setup`-ийн `--config` алхам.
 2. Discord server + bot (Developer Portal, **Message Content Intent**, эрх: Manage Channels, View Channels, Send Messages, Read Message History) - гишүүн өөрөө вэбээр хийнэ.
 3. Token хадгалах - гишүүн **өөрөө** терминалд ажиллуулна (Mac: `printf '%s' '<TOKEN>' > ~/.fmos_discord_token && chmod 600 ~/.fmos_discord_token`; Windows: `save-discord-token.ps1`).
-4. `_system/fm/discord.json` = `{"guild": {"id": "<server ID>"}, "member": "<нэр>", "broadcast": "03-sys-admin"}`.
+4. `_system/fm/discord.json` = `{"guild": {"id": "<server ID>"}, "member": "<нэр>", "broadcast": "03-sys-admin", "owner_ids": ["<эзний Discord user ID>"]}`. `owner_ids` → эзний мессеж event-д `from_owner: true` (author.id-аар, нэрээр биш). Эзэн ажлыг үндсэндээ Remote Control-оор өгнө; Discord = тайлан, баг.
 5. Сувгууд: `python3 "$R/relay.py" sync-discord`.
 6. Hook-ууд (`~/.claude/settings.json`) - **гишүүний зөвшөөрлөөр**, байгаа hook-ийг дарж бичихгүй, нэгтгэнэ. Тогтвортой зам хэрэгтэй тул repo-гийн clone-ийн `tools/relay/relay.py`-г (`inbox` - SessionStart, UserPromptSubmit; `baton` - Stop) заана. Clone байхгүй бол `${CLAUDE_PLUGIN_ROOT}`-ийн бодит замыг (`echo`-оор) өг - plugin шинэчлэгдэхэд зам өөрчлөгдөхийг сануул.
 7. Dispatcher (Node 24): `cd "$R/dispatcher" && npm install && node dispatcher.mjs` - байнга ажиллуулах бол Mac LaunchAgent / Windows Task Scheduler (docs).
@@ -37,6 +37,8 @@ fm Discord-гүйгээр бүрэн ажиллана. Relay-г зөвхөн х�
 
 ```bash
 python3 "$R/relay.py" send <суваг|@group|all> "текст"      # сувагт мессеж
+python3 "$R/relay.py" send <суваг> --file <зам>             # олон мөрт тайлан (нэг мөр команд)
+printf '%s' "$TEXT" | python3 "$R/relay.py" send <суваг> -  # stdin-ээс
 python3 "$R/relay.py" next "дараагийн алхам"               # энэ дүрийн baton-д тогтоох
 python3 "$R/relay.py" task "Гарчиг" --owner "<сешний title>" [--project "<02-Projects/... note>"] [--due YYYY-MM-DD]
 python3 "$R/relay.py" who                                   # бүртгэлтэй сешнүүд
