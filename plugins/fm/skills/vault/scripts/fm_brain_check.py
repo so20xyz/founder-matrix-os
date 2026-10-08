@@ -124,7 +124,7 @@ def scan(vault: Path):
         c = names.get(t.rsplit("/", 1)[-1], [])
         return c[0] if len(c) == 1 else None
 
-    out = {"no-up": [], "no-base": [], "orphan-file": [], "lonely-res": [], "rootless": [], "why-missing": [], "bridges": []}
+    out = {"no-up": [], "no-base": [], "orphan-file": [], "lonely-res": [], "rootless": [], "why-missing": [], "bridges": [], "no-owner": [], "bad-skill": []}
     # every note lives under a folder that has a base (organ); every attachment is linked from some note
     base_dirs = {p.parent.relative_to(vault).as_posix() for p in vault.rglob("*.base")
                  if not p.relative_to(vault).as_posix().startswith(SKIP)}
@@ -172,6 +172,27 @@ def scan(vault: Path):
     used |= {k for k, (fm, _) in notes.items() if re.search(r"^(task|project|projects|source|from):[ \t]*(\S|\n\s+-)", fm, re.M)}
     out["lonely-res"] = sorted(k for k in notes if k.startswith(RES) and k not in used
                                and not re.search(r"^type:\s*(index|moc|topic)", notes[k][0], re.M))
+    # every base has an owning agent (registry roles.*.bases); every skill an agent lists exists
+    reg_p = vault / "_system" / "fm" / "registry.json"
+    if reg_p.is_file():
+        try:
+            roles = json.loads(reg_p.read_text(encoding="utf-8")).get("roles", {})
+        except ValueError:
+            roles = {}
+        owned = {b for r in roles.values() for b in r.get("bases", [])}
+        for p in sorted(vault.rglob("*.base")):
+            rel = p.relative_to(vault).as_posix()
+            if not rel.startswith(SKIP) and rel not in owned:
+                out["no-owner"].append(rel)
+        fm_skills = Path(__file__).resolve().parents[2]
+        for name, r in roles.items():
+            if not r.get("active", True):
+                continue
+            for sk in r.get("skills", []):
+                if sk.startswith("fm:") and not (fm_skills / sk[3:] / "SKILL.md").is_file():
+                    out["bad-skill"].append(f"{name} → {sk}")
+                elif ":" not in sk:
+                    out["bad-skill"].append(f"{name} → {sk} (plugin-гүй нэр)")
     out["_notes"] = notes
     return out
 
@@ -190,7 +211,7 @@ def main(argv):
         print(f"bridge талбар бичигдэв: {mark_bridges(vault)}")
     if "--json" in argv:
         print(json.dumps({k: len(v) for k, v in out.items()} | {"items": out}, ensure_ascii=False, indent=1)); return 0
-    labels = {"no-up": "харьяалалгүй (up)", "no-base": "base-гүй хавтсанд буй note", "orphan-file": "холбоосгүй файл (pdf, зураг…)", "lonely-res": "ашиглагдаагүй resource", "rootless": "эхгүй атом (projects/from)",
+    labels = {"no-owner": "эзэнгүй base (agent-гүй)", "bad-skill": "байхгүй skill (дүрийн жагсаалтад)", "no-up": "харьяалалгүй (up)", "no-base": "base-гүй хавтсанд буй note", "orphan-file": "холбоосгүй файл (pdf, зураг…)", "lonely-res": "ашиглагдаагүй resource", "rootless": "эхгүй атом (projects/from)",
               "why-missing": "«яагаад»-гүй холбоос", "bridges": "🌉 гүүр атом (≥3 base)"}
     for k, v in out.items():
         print(f"{labels[k]}: {len(v)}")
