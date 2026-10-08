@@ -144,7 +144,7 @@ def scan(vault: Path):
         if fm and "/" in k and not is_index and not re.search(r"^type:\s*(area|soul|project)", fm, re.M) and not has_base(k):
             out["no-base"].append(k)
         if k.startswith(ATOM) and not is_index:
-            if not re.search(r"^(projects|from):\s*\S|^(projects|from):\s*\n\s+-", fm, re.M):
+            if not re.search(r"^(projects|from|areas):[ \t]*(\S|\n\s+-)", fm, re.M):
                 out["rootless"].append(k)
             # synapses that carry meaning: body links + projects/from/related (not structural up/topics/areas/source)
             meaning = re.sub(r"^(up|topics|areas|tags|source|supersededby):.*(?:\n\s+-.*)*", "", fm, flags=re.M)
@@ -159,6 +159,8 @@ def scan(vault: Path):
             for t in LINK.findall(rel_block.group(1) if rel_block else ""):
                 if t.rsplit("/", 1)[-1] not in why:
                     out["why-missing"].append(f"{k} → {t}")
+    # a resource is used when a task/atom links it, or it names its own task/project (work cycle: resource task:+project:)
+    used |= {k for k, (fm, _) in notes.items() if re.search(r"^(task|project|projects|source|from):[ \t]*(\S|\n\s+-)", fm, re.M)}
     out["lonely-res"] = sorted(k for k in notes if k.startswith(RES) and k not in used
                                and not re.search(r"^type:\s*(index|moc|topic)", notes[k][0], re.M))
     out["_notes"] = notes
