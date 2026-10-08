@@ -41,7 +41,7 @@ Vault-аас гадуур (`~/.claude/`, бусад repo, хуучин нөөц 
 | Task | `task` | `01-GTD/Tasks/` | тодорхой гарчиг, огнооны угтваргүй |
 | Уулзалт | `meeting` | `01-GTD/Events/` | тодорхой гарчиг |
 | Бусад үйл явдал (арга хэмжээ, аялал г.м.) | `event` | `01-GTD/Events/` | тодорхой гарчиг |
-| Төсөл | `project` | `02-Projects/<1-Active\|2-Planning\|3-On-hold>/<Төсөл>/<Төсөл>.md` | хавтас бүрт `_BRAIN.md` (`project-brain`) |
+| Төсөл | `project` | `02-Projects/<Төсөл>/<Төсөл>.md` (төлөв = `status:`) | хавтас бүрт `_BRAIN.md` (`project-brain`) |
 | Хүн | `person` | `03-Areas/people/` | бүтэн нэр |
 | Компани, хэрэгсэл | `company`, `tool` | `03-Areas/Business/companies/`, `03-Areas/Business/tools/` | нэр |
 | Дүр (Agent) | `agent-role` | `03-Areas/AI Team/ai-workers/` | `NN Нэр.md` |

@@ -77,11 +77,11 @@ def current_layout():
     checks.append(("current: onboard paths use current names",
                    (m.PEOPLE, m.SOUL, m.DAILY, m.REFERENCES, m.ROLES_DIR, m.STATES["active"][0]) ==
                    ("04-Areas/people", "01-Soul/SOUL.md", "00-GTD/Daily", "05-Resources/references",
-                    "04-Areas/AI Team/ai-workers", "03-Projects/1-Active") and o.folder(m.GOALS) == "04-Areas/Goals"))
+                    "04-Areas/AI Team/ai-workers", "03-Projects") and o.folder(m.GOALS) == "04-Areas/Goals"))
     n = Path(tempfile.mkdtemp())
     m.Onboard(n, {})
     checks.append(("current: fresh vault gets new names", (m.PEOPLE, m.SOUL, m.STATES["active"][0]) ==
-                   ("03-Areas/people", "00-Soul/SOUL.md", "02-Projects/1-Active")))
+                   ("03-Areas/people", "00-Soul/SOUL.md", "02-Projects")))
     return checks
 
 

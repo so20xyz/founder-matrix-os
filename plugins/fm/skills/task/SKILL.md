@@ -21,7 +21,7 @@ Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
 | `status` | `inbox` · `someday` · `next-action` · `waiting` · `completed` · `cancelled` (`done` биш — `completed`) |
 | `owner` | **дүрийн slug** (`area`, `project`, `creative`, төслийн slug …) — тэр Agent хийнэ · `me` — гишүүн өөрөө · `"@Нэр"` — багийн гишүүн. Скрипт дүрийн нэрийг (`"Content Writer"`) slug болгож хувиргана |
 | `priority` | `high` · `medium` · `low` (🔴 🟡 🟢 гэж өгсөн ч болно — үг болгон хадгална) |
-| `project` | `"[[02-Projects/<төлөв>/<Нэр>/<Нэр>]]"` эсвэл хоосон |
+| `project` | `"[[02-Projects/<Нэр>/<Нэр>]]"` эсвэл хоосон |
 | `due` | `YYYY-MM-DD` эсвэл хоосон |
 | `context` | `home` · `work` — төслөөс өвлөнө |
 
@@ -34,7 +34,7 @@ Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
 3. Үүсгэ:
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/fm_task.py" new "${user_config.vault_path}" "<Гарчиг>" \
-     --owner "<дүрийн slug | me | @Нэр>" --project "02-Projects/1-Active/<Нэр>/<Нэр>" --status next-action \
+     --owner "<дүрийн slug | me | @Нэр>" --project "02-Projects/<Нэр>/<Нэр>" --status next-action \
      --priority medium --due 2026-10-31 --context work --body "<юу хийх, яагаад, дууссаны шалгуур>"
    ```
    - Vault-ийн `_system/templates/Task.md` загвараар үүснэ (байхгүй бол дотоод араг яс).

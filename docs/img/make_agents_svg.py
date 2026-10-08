@@ -5,7 +5,7 @@ from xml.sax.saxutils import escape as e
 A = [  # icon, name, slug, color, sidebar, mission, owns, rules, handoff
  ("📁", "Project", "project · <төслийн slug>", "#F5A524", "Projects",
   "Төсөл бүр нэг харцаар: юуны төлөө, хаана явна, дараагийн алхам, хэн хийнэ.",
-  "02-Projects/ (1-Active · 2-Planning · 3-On-hold) · _BRAIN.md",
+  "02-Projects/<төсөл> (status: frontmatter) · _BRAIN.md",
   ["Нэг төсөл = нэг тогтмол сешн = нэг дүр", "Эхлэл бүрт note, _BRAIN, task-ыг дискнээс уншина", "Дизайн, код, судалгааг subagent-аар хийлгэнэ"],
   "Creative · Developer · Research"),
  ("📥", "Area · GTD", "area", "#3B82F6", "Areas",

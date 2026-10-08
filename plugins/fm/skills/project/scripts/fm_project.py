@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
-"""fm:project helper - projects in 02-Projects/<state>/<Name>/<Name>.md (+ _BRAIN.md).
+"""fm:project helper - projects in 02-Projects/<Name>/<Name>.md (+ _BRAIN.md).
 
-States (folder <-> status):
-    active   -> 02-Projects/1-Active      status: active
-    planning -> 02-Projects/2-Planning    status: planning
-    on-hold  -> 02-Projects/3-On-hold     status: on-hold
-    archive  -> 99-Archive/Projects       status: completed | cancelled
+Layout 2026-10-09: projects are FLAT; `status:` frontmatter is the only status source
+(active | planning | on-hold | waiting | completed ...). Only archive moves a folder:
+    archive  -> 99-Archive/Projects/<Name>/   status: completed | cancelled
+Legacy vaults with status subfolders (02-Projects/{1-Active,2-Planning,3-On-hold}/<Name>/)
+are still read; a status change there edits frontmatter only (the folder stays put).
+
+After new/move the Obsidian snippet <vault>/.obsidian/snippets/fm-project-status.css is
+regenerated (file-explorer folder title coloured by status). Enable it once in
+Settings -> Appearance -> CSS snippets.
 
 Usage:
     fm_project.py list  <vault>                                   status table + scope-contract check
     fm_project.py new   <vault> "<Name>" [--state planning] [--area Business] [--context work] [--goal "..."]
-    fm_project.py move  <vault> "<Name>" <active|planning|on-hold|archive> [--status completed|cancelled] [--apply]
+    fm_project.py move  <vault> "<Name>" <active|planning|on-hold|waiting|archive> [--status completed|cancelled] [--apply]
+    fm_project.py status-css <vault>                              only regenerate the status CSS snippet
     fm_project.py board <vault> [<board name>] [--stale-days 14]  legacy kanban hygiene report (read-only; boards archived, Tasks.base replaces them)
 
-`move` is a dry run unless --apply: it lists every file whose links would be rewritten.
+`move` is a dry run unless --apply (archive / un-archive also lists every file whose links would be rewritten).
 Pure standard library, Python 3.9+, macOS / Windows / Linux.
 """
 import datetime
@@ -24,12 +29,18 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-STATES = {
-    "active": ("02-Projects/1-Active", "active"),
-    "planning": ("02-Projects/2-Planning", "planning"),
-    "on-hold": ("02-Projects/3-On-hold", "on-hold"),
+STATES = {  # target -> (folder for new / un-archived projects, status)
+    "active": ("02-Projects", "active"),
+    "planning": ("02-Projects", "planning"),
+    "on-hold": ("02-Projects", "on-hold"),
+    "waiting": ("02-Projects", "waiting"),
     "archive": ("99-Archive/Projects", "completed"),
 }
+ARCHIVE = "99-Archive/Projects"
+LEGACY_DIRS = {"1-Active": "active", "2-Planning": "planning", "3-On-hold": "on-hold"}  # хуучин vault (fallback)
+CSS_REL = ".obsidian/snippets/fm-project-status.css"
+STATUS_COLORS = {"active": "#3A7BF0", "planning": "#8FB8FF", "on-hold": "#E0962E", "waiting": "#E0962E"}
+OTHER_COLOR = "#6E6E6E"  # completed / cancelled / unknown
 OPEN_TASK = {"inbox", "next-action", "waiting"}
 LINK_EXT = {".md", ".base", ".canvas"}
 SKIP_DIRS = {".obsidian", "_trash", ".trash", ".git", ".backups", "node_modules"}
@@ -38,7 +49,7 @@ PROJECTS_NEW, PROJECTS_CUR = "02-Projects", "03-Projects"  # layout 2026-10-09; 
 
 def proj_rel(vault: Path, rel: str) -> str:
     """02-Projects/...; vault-д зөвхөн одоогийн 03-Projects байвал түүн рүү."""
-    if rel.startswith(PROJECTS_NEW + "/") and not (vault / PROJECTS_NEW).is_dir() and (vault / PROJECTS_CUR).is_dir():
+    if (rel == PROJECTS_NEW or rel.startswith(PROJECTS_NEW + "/")) and not (vault / PROJECTS_NEW).is_dir() and (vault / PROJECTS_CUR).is_dir():
         return PROJECTS_CUR + rel[len(PROJECTS_NEW):]
     return rel
 
@@ -189,11 +200,54 @@ def open_tasks_by_project(vault: Path) -> Dict[str, int]:
 
 
 def state_of(vault: Path, note: Path) -> str:
+    """archive | legacy folder state (active/planning/on-hold) | "" for flat projects."""
     rel = note.parent.parent.relative_to(vault).as_posix()
-    for k, (folder, _) in STATES.items():
-        if rel == proj_rel(vault, folder):
-            return k
-    return "?"
+    if rel == ARCHIVE:
+        return "archive"
+    parent = note.parent.parent.name
+    if parent in LEGACY_DIRS and rel == proj_rel(vault, "02-Projects/" + parent):
+        return LEGACY_DIRS[parent]
+    return ""
+
+
+def _write_note(path: Path, fm: List[str], body: List[str], eol: str = "\n") -> None:
+    text = "---\n" + "\n".join(fm) + "\n---\n" + "\n".join(body)
+    if eol != "\n":
+        text = text.replace("\n", eol)
+    with open(str(path), "w", encoding="utf-8", newline="") as fh:
+        fh.write(text)
+
+
+def _css_str(s: str) -> str:
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def status_css(vault: Path) -> Path:
+    """Regenerate <vault>/.obsidian/snippets/fm-project-status.css (no other .obsidian file is touched)."""
+    rules = ["/* fm-project-status - generated by fm_project.py (status-css). Do not edit by hand. */",
+             "/* Colours each project folder in the file explorer by its `status:` frontmatter. */", ""]
+    projects = sorted(find_projects(vault), key=lambda x: x[0].parent.relative_to(vault).as_posix())
+    for note, d in projects:
+        rel = note.parent.relative_to(vault).as_posix()
+        if rel.startswith(ARCHIVE + "/"):
+            continue
+        status = (d.get("status") or "").lower()
+        color = STATUS_COLORS.get(status, OTHER_COLOR)
+        sel = '.nav-folder-title[data-path="%s"]' % _css_str(rel)
+        rules.append("/* %s: %s */" % (note.stem.replace("*/", "* /"), status or "?"))
+        rules.append("%s .nav-folder-title-content { color: %s; }" % (sel, color))
+        rules.append('%s .nav-folder-title-content::before { content: "\\25CF"; color: %s; '
+                     "font-size: 0.7em; margin-right: 0.35em; vertical-align: middle; }" % (sel, color))
+        rules.append("")
+    css = vault / CSS_REL
+    css.parent.mkdir(parents=True, exist_ok=True)
+    with open(str(css), "w", encoding="utf-8", newline="\n") as fh:
+        fh.write("\n".join(rules))
+    return css
+
+
+def cmd_status_css(vault: Path, args: List[str]) -> None:
+    _out("css → %s" % status_css(vault).relative_to(vault).as_posix())
 
 
 def cmd_list(vault: Path, args: List[str]) -> None:
@@ -205,11 +259,10 @@ def cmd_list(vault: Path, args: List[str]) -> None:
         state = state_of(vault, note)
         mark = "[*]" if status in ("active", "planning") else "[ ]"
         mism = ""
-        expected = {"active": "active", "planning": "planning", "on-hold": "on-hold"}.get(state)
         if state == "archive" and status not in ("completed", "cancelled"):
             mism = " ⚠️ хавтас=archive, status=%s" % status
-        elif expected and status != expected:
-            mism = " ⚠️ хавтас=%s, status=%s" % (state, status)
+        elif state:  # хуучин статус хавтас — status frontmatter л үнэн
+            mism = " (хуучин хавтас %s)" % note.parent.parent.name
         contract = [k for k in ("goal", "due", "milestones", "anti-goal") if d.get(k)]
         cflag = "гэрээ %d/4" % len(contract) + (" 🔴" if not contract and status in ("active", "planning") else "")
         mtime = datetime.date.fromtimestamp(note.stat().st_mtime).strftime("%m-%d")
@@ -228,8 +281,8 @@ def cmd_new(vault: Path, args: List[str]) -> None:
     if re.search(r'[\\/:*?"<>|#^\[\]]', name):
         _die("Нэрэнд хориотой тэмдэгт байна: \\ / : * ? \" < > | # ^ [ ]")
     state = _opt(args, "--state", "planning")
-    if state not in ("active", "planning", "on-hold"):
-        _die("--state: active | planning | on-hold")
+    if state not in ("active", "planning", "on-hold", "waiting"):
+        _die("--state: active | planning | on-hold | waiting")
     for note, _ in find_projects(vault):
         if note.stem.lower() == name.lower():
             _die("Ийм төсөл байна: %s — шинэ бүү үүсгэ, түүнийг шинэчил." % note.relative_to(vault).as_posix(), 2)
@@ -265,12 +318,14 @@ def cmd_new(vault: Path, args: List[str]) -> None:
                  "## ⛔ Юу хийж болохгүй", "", "## Нээлттэй асуултууд", ""]
     bfm = fm_set(bfm, "project", '"[[%s]]"' % rel[:-3])
     bbody = [l.replace("<Төслийн нэр>", name) for l in bbody]
+    if folder.exists():
+        _die("Хавтас аль хэдийн байна: %s" % folder.relative_to(vault).as_posix(), 2)
     folder.mkdir(parents=True, exist_ok=False)
     for path, f, b in ((note, fm, body), (brain, bfm, bbody)):
-        with open(str(path), "w", encoding="utf-8", newline="\n") as fh:
-            fh.write("---\n" + "\n".join(f) + "\n---\n" + "\n".join(b) + "\n")
+        _write_note(path, f, b + [""])
     _out("project → %s" % rel)
     _out("brain   → %s" % brain.relative_to(vault).as_posix())
+    _out("css     → %s" % status_css(vault).relative_to(vault).as_posix())
     if len(rel) > MAX_REL_PATH:
         _out("⚠️ Зам %d тэмдэгт (> %d). Богино нэр + aliases-ийг санал болго." % (len(rel), MAX_REL_PATH))
 
@@ -290,7 +345,7 @@ def locate(vault: Path, name: str) -> Path:
 def cmd_move(vault: Path, args: List[str]) -> None:
     pos = _positional(args)
     if len(pos) < 2 or pos[1] not in STATES:
-        _die("Хэрэглээ: fm_project.py move <vault> \"<Нэр>\" <active|planning|on-hold|archive> [--apply]")
+        _die("Хэрэглээ: fm_project.py move <vault> \"<Нэр>\" <active|planning|on-hold|waiting|archive> [--apply]")
     note = locate(vault, pos[0])
     target_state = pos[1]
     folder_rel, status = STATES[target_state]
@@ -300,11 +355,14 @@ def cmd_move(vault: Path, args: List[str]) -> None:
         if status not in ("completed", "cancelled"):
             _die("archive үед --status completed | cancelled")
     old_dir = note.parent
-    new_dir = vault / folder_rel / old_dir.name
+    if target_state == "archive" or state_of(vault, note) == "archive":
+        new_dir = vault / folder_rel / old_dir.name  # archive / un-archive = хавтас зөөнө
+    else:
+        new_dir = old_dir  # flat layout: status = frontmatter л (хуучин статус хавтас ч байрандаа)
     old_rel = old_dir.relative_to(vault).as_posix()
     new_rel = new_dir.relative_to(vault).as_posix()
     if old_dir == new_dir:
-        _out("Хавтас аль хэдийн %s дотор. Зөвхөн status шалгана." % folder_rel)
+        _out("Хавтас байрандаа (%s) — зөвхөн status frontmatter солино." % old_rel)
     elif new_dir.exists():
         _die("Зорилтот хавтас байна: %s" % new_rel, 2)
     pattern = re.compile(re.escape(old_rel) + r"(?=[/\]|#\"'`)]|$)", re.MULTILINE)
@@ -326,11 +384,11 @@ def cmd_move(vault: Path, args: List[str]) -> None:
     if "--apply" not in args:
         _out("DRY RUN — хэрэглэгч батласны дараа --apply-тэй дахин ажиллуул.")
         return
-    fm, body = split_note(read_text(note))
+    raw = read_text(note)
+    fm, body = split_note(raw)
     fm = fm_set(fm, "status", status)
     fm = fm_set(fm, "updated", datetime.date.today().isoformat())
-    with open(str(note), "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("---\n" + "\n".join(fm) + "\n---\n" + "\n".join(body))
+    _write_note(note, fm, body, "\r\n" if b"\r\n" in note.read_bytes() else "\n")
     if old_dir != new_dir:
         new_dir.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(old_dir), str(new_dir))
@@ -340,7 +398,8 @@ def cmd_move(vault: Path, args: List[str]) -> None:
             text = read_text(p)
             with open(str(p), "w", encoding="utf-8", newline="") as fh:
                 fh.write(pattern.sub(new_rel, text))
-    _out("✅ шилжүүлэв.")
+    _out("✅ %s." % ("шилжүүлэв" if old_dir != new_dir else "status шинэчлэв"))
+    _out("css → %s" % status_css(vault).relative_to(vault).as_posix())
 
 
 def cmd_board(vault: Path, args: List[str]) -> None:
@@ -421,9 +480,10 @@ def main(argv: List[str]) -> None:
     cmd, vault = argv[1], Path(os.path.expanduser(argv[2]))
     if not vault.is_dir():
         _die("Vault олдсонгүй: %s" % vault)
-    handlers = {"list": cmd_list, "new": cmd_new, "move": cmd_move, "board": cmd_board}
+    handlers = {"list": cmd_list, "new": cmd_new, "move": cmd_move, "board": cmd_board,
+                "status-css": cmd_status_css}
     if cmd not in handlers:
-        _die("Үл мэдэх команд: %s (list|new|move|board)" % cmd)
+        _die("Үл мэдэх команд: %s (list|new|move|board|status-css)" % cmd)
     handlers[cmd](vault, argv[3:])
 
 

@@ -198,10 +198,10 @@ def test_onboard_creates_life_structure(c):
         "03-Areas/Business/companies/Хөх Тэнгэр ТББ.md",
         "03-Areas/Life/Эрүүл мэнд/Эрүүл мэнд.md",
         "03-Areas/Life/Гэр бүл/Гэр бүл.md",
-        "02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md",
-        "02-Projects/1-Active/Нарны вэбсайт/_BRAIN.md",
-        "02-Projects/2-Planning/Подкаст 2026/Подкаст 2026.md",
-        "02-Projects/1-Active/Марафон бэлтгэл/Марафон бэлтгэл.md",
+        "02-Projects/Нарны вэбсайт/Нарны вэбсайт.md",
+        "02-Projects/Нарны вэбсайт/_BRAIN.md",
+        "02-Projects/Подкаст 2026/Подкаст 2026.md",
+        "02-Projects/Марафон бэлтгэл/Марафон бэлтгэл.md",
         "03-Areas/people/Батболд.md", "03-Areas/people/Сарангэрэл.md",
         "03-Areas/people/Отгонбаяр.md", "03-Areas/people/Должин.md",
         PRIVATE + "/Юнител интернэт.md", PRIVATE + "/Орон сууцны зээл.md",
@@ -224,8 +224,8 @@ def test_frontmatter_conventions(c):
     want_type = {
         "03-Areas/Business/companies/Нарны Студи.md": "company",
         "03-Areas/Life/Эрүүл мэнд/Эрүүл мэнд.md": "area",
-        "02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md": "project",
-        "02-Projects/1-Active/Нарны вэбсайт/_BRAIN.md": "project-brain",
+        "02-Projects/Нарны вэбсайт/Нарны вэбсайт.md": "project",
+        "02-Projects/Нарны вэбсайт/_BRAIN.md": "project-brain",
         "03-Areas/people/Батболд.md": "person",
         PRIVATE + "/Юнител интернэт.md": "bill",
         PRIVATE + "/income/Студийн цалин.md": "income",
@@ -246,12 +246,12 @@ def test_frontmatter_conventions(c):
                                          "session-decision"), rel
         body = c.read(rel)
         assert "{{" not in body, (rel, re.findall(r"\{\{[^}]*\}\}", body))
-    proj = c.fm("02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md")
+    proj = c.fm("02-Projects/Нарны вэбсайт/Нарны вэбсайт.md")
     assert proj["status"] == "active" and proj["context"] == "work" and proj["due"] == "2026-11-30"
     assert proj["start"] == TODAY
-    plan = c.fm("02-Projects/2-Planning/Подкаст 2026/Подкаст 2026.md")
+    plan = c.fm("02-Projects/Подкаст 2026/Подкаст 2026.md")
     assert plan["status"] == "planning" and plan["start"] == ""
-    run_ = c.fm("02-Projects/1-Active/Марафон бэлтгэл/Марафон бэлтгэл.md")
+    run_ = c.fm("02-Projects/Марафон бэлтгэл/Марафон бэлтгэл.md")
     assert run_["context"] == "home", run_
     assert "Үүсгэн байгуулагч" in c.read("03-Areas/Business/companies/Нарны Студи.md")
     soul = c.read("00-Soul/SOUL.md")
@@ -264,7 +264,7 @@ def test_frontmatter_conventions(c):
 
 def test_links_both_ways(c):
     onboarded(c)
-    proj = "02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт"
+    proj = "02-Projects/Нарны вэбсайт/Нарны вэбсайт"
     company = "03-Areas/Business/companies/Нарны Студи"
     person = "03-Areas/people/Батболд"
     p = c.fm(proj + ".md")
@@ -280,11 +280,11 @@ def test_links_both_ways(c):
     assert "[[%s|Сарангэрэл]]" % "03-Areas/people/Сарангэрэл" in co["people"], co
     assert "[[%s|Нарны вэбсайт]]" % proj in co["projects"], co
     # Сарангэрэл lists the podcast; the podcast must list her back
-    pod = c.fm("02-Projects/2-Planning/Подкаст 2026/Подкаст 2026.md")
+    pod = c.fm("02-Projects/Подкаст 2026/Подкаст 2026.md")
     assert "[[03-Areas/people/Сарангэрэл|Сарангэрэл]]" in pod["people"], pod
     area = c.fm("03-Areas/Life/Эрүүл мэнд/Эрүүл мэнд.md")
-    assert "[[02-Projects/1-Active/Марафон бэлтгэл/Марафон бэлтгэл|Марафон бэлтгэл]]" in area["projects"]
-    brain = c.fm("02-Projects/1-Active/Нарны вэбсайт/_BRAIN.md")
+    assert "[[02-Projects/Марафон бэлтгэл/Марафон бэлтгэл|Марафон бэлтгэл]]" in area["projects"]
+    brain = c.fm("02-Projects/Нарны вэбсайт/_BRAIN.md")
     assert brain["project"] == "[[%s|Нарны вэбсайт]]" % proj
     tool = c.fm("03-Areas/Business/tools/Figma.md")
     assert tool["serves"] == ["[[%s|Нарны вэбсайт]]" % proj], tool
@@ -351,14 +351,14 @@ def test_roles_and_registry(c):
     roles = reg["roles"]
     assert reg["sessions"] == {}
     assert roles["narny-site"]["note"] == "03-Areas/AI Team/ai-workers/10 Нарны сайт.md"
-    assert roles["narny-site"]["folders"] == ["02-Projects/1-Active/Нарны вэбсайт/"]
+    assert roles["narny-site"]["folders"] == ["02-Projects/Нарны вэбсайт/"]
     assert roles["marafon-beltgel"]["active"] is True
     for slug in ("project", "area", "resource", "finance"):
         assert roles[slug]["active"] is True, slug       # "gtd" in the answers maps to "area"
     for slug in ("research", "developer", "creative"):
         assert roles[slug]["active"] is False, slug
     note = c.fm("03-Areas/AI Team/ai-workers/10 Нарны сайт.md")
-    assert note["role"] == "narny-site" and note["owns"] == ["02-Projects/1-Active/Нарны вэбсайт/"]
+    assert note["role"] == "narny-site" and note["owns"] == ["02-Projects/Нарны вэбсайт/"]
     assert note["private"] == "false"
     # fm_role sees the new role
     code, out, err = run(PLUGIN / "skills/role/scripts/fm_role.py", "list", c.vault)
@@ -447,7 +447,7 @@ def test_never_overwrites_user_notes(c):
     assert mine.read_text(encoding="utf-8").endswith("Миний өөрийн тэмдэглэл\n")
     assert soul.read_text(encoding="utf-8").endswith("Аль хэдийн бичсэн.\n")
     # still linked from the project
-    proj = c.fm("02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт.md")
+    proj = c.fm("02-Projects/Нарны вэбсайт/Нарны вэбсайт.md")
     assert "[[03-Areas/people/Батболд|Батболд]]" in proj["people"]
 
 
@@ -459,10 +459,10 @@ def test_existing_project_is_reused(c):
     code, out, err = c.onboard(None, "--json")
     assert code == 0, err
     rep = json.loads(out)
-    assert "02-Projects/3-On-hold/Подкаст 2026/Подкаст 2026.md" in rep["skipped"], rep["skipped"]
-    assert not (c.vault / "02-Projects/2-Planning/Подкаст 2026").exists()
+    assert "02-Projects/Подкаст 2026/Подкаст 2026.md" in rep["skipped"], rep["skipped"]
+    assert len(list((c.vault / "02-Projects").rglob("Подкаст 2026.md"))) == 1
     per = c.fm("03-Areas/people/Сарангэрэл.md")
-    assert per["projects"] == ["[[02-Projects/3-On-hold/Подкаст 2026/Подкаст 2026|Подкаст 2026]]"], per
+    assert per["projects"] == ["[[02-Projects/Подкаст 2026/Подкаст 2026|Подкаст 2026]]"], per
 
 
 def test_dry_run_writes_nothing(c):
@@ -497,7 +497,7 @@ def test_quick_mode(c):
              "roles": {"activate": ["gtd", "project"], "work": "auto"}}
     code, out, err = c.onboard(quick, "--json")
     assert code == 0, (out, err)
-    assert (c.vault / "02-Projects/1-Active/Хичээлийн төлөвлөгөө/Хичээлийн төлөвлөгөө.md").is_file()
+    assert (c.vault / "02-Projects/Хичээлийн төлөвлөгөө/Хичээлийн төлөвлөгөө.md").is_file()
     reg = json.loads(c.read("_system/fm/registry.json"))
     assert reg["roles"]["khicheeliin-tuluvluguu"]["active"] is True, list(reg["roles"])
     assert reg["roles"]["finance"]["active"] is False

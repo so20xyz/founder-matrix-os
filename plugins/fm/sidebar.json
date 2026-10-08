@@ -12,7 +12,7 @@
       "role": "<project-slug>",
       "title": "📁 <Төслийн нэр>",
       "group": "Projects",
-      "cwd": "02-Projects/1-Active/<Төсөл>",
+      "cwd": "02-Projects/<Төсөл>",
       "required": true,
       "per": "active-project",
       "note": "Active төсөл бүрт нэг тогтмол сешн."

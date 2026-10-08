@@ -3,7 +3,7 @@
 
   python _system/tools/sidepanel/server.py        → http://127.0.0.1:8770
 
-Reads on every request: 01-GTD/Tasks, 02-Projects/*/<name>.md, 01-GTD/Events, 01-GTD/Daily,
+Reads on every request: 01-GTD/Tasks, 02-Projects/<name>/<name>.md (legacy 02-Projects/<1-Active|...>/ too), 01-GTD/Events, 01-GTD/Daily,
 research/reference notes, today's _system/logs. Writes only: task `status:` (mark done / change) and
 new captures in 01-GTD/Inbox/. Nothing else in the vault is touched.
 """
@@ -125,9 +125,33 @@ def tasks():
     return out
 
 
+LEGACY_PROJECT_DIRS = ("1-Active", "2-Planning", "3-On-hold")  # хуучин статус хавтас (шилжүүлээгүй vault)
+
+
+def project_dirs():
+    """Flat 02-Projects/<Name>/ (layout 2026-10-09, status = frontmatter) + legacy status subfolders."""
+    root = VAULT / L("02-Projects")
+    if not root.is_dir():
+        return []
+    out = []
+    for d in sorted(root.iterdir()):
+        if d.is_dir() and d.name in LEGACY_PROJECT_DIRS:
+            out += [q for q in sorted(d.iterdir()) if q.is_dir()]
+        elif d.is_dir():
+            out.append(d)
+    return out
+
+
+def project_link(name):
+    for d in project_dirs():
+        if d.name == name:
+            return d.relative_to(VAULT).as_posix() + "/" + name
+    return f"{L('02-Projects')}/{name}/{name}"
+
+
 def projects(all_tasks):
     out = []
-    for d in sorted((VAULT / L("02-Projects")).iterdir()):
+    for d in project_dirs():
         f = d / f"{d.name}.md"
         if not d.is_dir() or not f.exists():
             continue
@@ -234,7 +258,7 @@ def set_prop(rel, key, val):
         raise ValueError("only task files")
     text = p.read_text(encoding="utf-8")
     if key == "project" and val and not val.startswith("[["):
-        val = f'"[[{L("02-Projects")}/{val}/{val}]]"'
+        val = f'"[[{project_link(val)}]]"'
     m = FM.match(text)
     fm = m.group(1)
     if re.search(rf"(?m)^{key}:", fm):

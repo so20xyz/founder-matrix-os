@@ -106,7 +106,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 
 1. **Хүрээ:** сүүлийн 7 хоногийн лог (`_system/logs/`), өдрийн note-ууд, шинэ атомууд.
 2. **Task-ууд** (`01-GTD/Tasks/`, нээлттэй): хугацаа хэтэрсэн; `updated` 14+ хоног хөдлөөгүй `next-action`/`waiting`; эзэнгүй (`owner` хоосон) эсвэл `project: TBD`. Тус бүрд санал: дуусгах · хойшлуулах (`due`) · `someday` · цуцлах · эзэн оноох.
-3. **Төслүүд** (`02-Projects/1-Active/`): энэ 7 хоногт ямар ч task, атом, `_BRAIN` хөдөлгөөнгүй төсөл → «On-hold болгох уу?» (`/fm:project`).
+3. **Төслүүд** (`02-Projects/`, `status: active`): энэ 7 хоногт ямар ч task, атом, `_BRAIN` хөдөлгөөнгүй төсөл → «On-hold болгох уу?» (`/fm:project`).
 4. **Хүмүүс:** `03-Areas/people/`-ийн hot list (`hot: true`) дотор `last_interaction` 30+ хоног болсон хүн → «холбогдох уу?» (`/fm:people`).
 5. **Inbox:** `01-GTD/Inbox/` дахь зүйлийн тоо; 7+ хоносон зүйл байвал `/fm:inbox` санал болго.
 6а. **🧠 Тархины шалгалт:** `python3 "${CLAUDE_PLUGIN_ROOT}/skills/vault/scripts/fm_brain_check.py" <V> --mark-bridges` → харьяалалгүй, ашиглагдаагүй resource, эхгүй атом, «яагаад»-гүй холбоосын тоо + жишээ 3; гүүр атомуудыг тайланд нэрлэ. Засварыг зөвшөөрлөөр.

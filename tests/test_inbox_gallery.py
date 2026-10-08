@@ -27,7 +27,8 @@ def make_vault(tmp):
     v = tmp / "vault"
     inbox = v / "01-GTD/Inbox"
     (inbox / "Empty").mkdir(parents=True)
-    (v / "02-Projects" / "1-Active" / "Demo").mkdir(parents=True)
+    (v / "02-Projects" / "1-Active" / "Demo").mkdir(parents=True)  # хуучин статус хавтас
+    (v / "02-Projects" / "Flat").mkdir(parents=True)  # flat (layout 2026-10-09)
     (v / "_system" / "logs").mkdir(parents=True)
     (inbox / "ref - demo.md").write_text("---\ntype: reference\nurl: \"https://example.com\"\nai-first: true\n---\n\n## For future agent\n\nДемо лавлагаа.\n", encoding="utf-8")
     (inbox / "raw thought.md").write_text("түүхий бодол\n", encoding="utf-8")
@@ -95,7 +96,9 @@ def test_items_and_suggestions(srv, vault):
     assert by["orphan.png"]["suggest"] == "archive"
     assert by["Empty"]["suggest"] == "trash"
     assert by["raw thought.md"]["suggest"] == "task"
-    assert any(x["id"] == "project:1-Active/Demo" for x in d["destinations"])
+    ids = [x["id"] for x in d["destinations"]]
+    assert "project:1-Active/Demo" in ids and "project:Flat" in ids, ids
+    assert "project:1-Active" not in ids, ids
 
 
 @with_server
@@ -107,6 +110,13 @@ def test_file_serving_stays_inside_inbox(srv, vault):
         raise AssertionError("path traversal not blocked")
     except urllib.error.HTTPError as e:
         assert e.code == 400
+
+
+@with_server
+def test_apply_to_flat_project(srv, vault):
+    r = srv.post("/api/apply", {"decisions": {"orphan.png": "project:Flat"}})
+    assert len(r["done"]) == 1 and not r["errors"], r
+    assert (vault / "02-Projects/Flat/Resources/orphan.png").is_file()
 
 
 @with_server

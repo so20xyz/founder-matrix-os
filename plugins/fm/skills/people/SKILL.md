@@ -19,7 +19,7 @@ type: person
 role: "Хөгжүүлэгч"            # тухайн хүний үүрэг
 relationship: client          # team | client | partner | mentor | network | family | friend
 companies: ["[[03-Areas/Business/companies/Нарны Студи]]"]
-projects: ["[[02-Projects/1-Active/Нарны вэбсайт/Нарны вэбсайт]]"]
+projects: ["[[02-Projects/Нарны вэбсайт/Нарны вэбсайт]]"]
 last_interaction: YYYY-MM-DD  # сүүлд харилцсан огноо
 follow_up_date: YYYY-MM-DD    # дахин холбогдох (заавал биш)
 hot: true                     # идэвхтэй харилцаа → hot list

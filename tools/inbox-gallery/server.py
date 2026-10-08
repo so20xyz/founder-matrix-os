@@ -87,8 +87,14 @@ def destinations():
          {"id": "task", "label": "✅ Task үүсгэх (файл үлдэнэ)"},
          {"id": "archive", "label": "🗄 Archive · 99-Archive/inbox"},
          {"id": "trash", "label": "🗑 Trash · _trash (сэргээж болно)"}]
-    for st in ("1-Active", "2-Planning", "3-On-hold"):
-        base = VAULT / L("02-Projects") / st
+    root = VAULT / L("02-Projects")
+    legacy = ("1-Active", "2-Planning", "3-On-hold")  # хуучин статус хавтас (шилжүүлээгүй vault)
+    if root.is_dir():
+        for p in sorted(root.iterdir()):  # flat 02-Projects/<Name>/ (layout 2026-10-09)
+            if p.is_dir() and p.name not in legacy and not p.name.startswith((".", "_")):
+                d.append({"id": f"project:{p.name}", "label": f"📁 {p.name}"})
+    for st in legacy:
+        base = root / st
         if base.is_dir():
             for p in sorted(base.iterdir()):
                 if p.is_dir():

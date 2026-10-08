@@ -100,10 +100,12 @@ LEGACY = {GOALS: "07-Goals", DECISIONS: "06-Atomic/decisions"}
 DAILY = "01-GTD/Daily"
 LOGS = "_system/logs"
 SOUL = "00-Soul/SOUL.md"
-STATES = {"active": ("02-Projects/1-Active", "active"),
-          "planning": ("02-Projects/2-Planning", "planning"),
-          "on-hold": ("02-Projects/3-On-hold", "on-hold")}
-PROJECT_ROOTS = ["02-Projects/1-Active", "02-Projects/2-Planning", "02-Projects/3-On-hold",
+# Layout 2026-10-09: projects are flat (02-Projects/<Name>/<Name>.md); `status:` is the only status source.
+STATES = {"active": ("02-Projects", "active"),
+          "planning": ("02-Projects", "planning"),
+          "on-hold": ("02-Projects", "on-hold")}
+# Flat first; legacy status subfolders (unmigrated vaults) are still found.
+PROJECT_ROOTS = ["02-Projects", "02-Projects/1-Active", "02-Projects/2-Planning", "02-Projects/3-On-hold",
                  "99-Archive/Projects"]
 # Vault layout 2026-10-09: new top folder -> current (pre-rename) name. A vault that still has
 # only the current name keeps working: Onboard rebinds the path constants below per vault.
@@ -584,9 +586,12 @@ class Onboard(object):
             self.projects[name] = existing or "%s/%s/%s" % (STATES[state][0], name, name)
             self.project_state[name] = state
             self.project_goal[name] = text(p.get("goal"))
-            if existing and not existing.startswith(STATES[state][0]):
-                self.warnings.append("«%s» төсөл аль хэдийн %s-д байна — төлөвийг өөрчлөхгүй"
-                                     % (name, existing.split("/")[1]))
+            if existing:
+                m = re.search(r"(?m)^status:\s*[\"']?([\w-]+)", (self.vault / (existing + ".md")).read_text(encoding="utf-8-sig"))
+                cur = m.group(1) if m else "?"
+                if cur != STATES[state][1]:
+                    self.warnings.append("«%s» төсөл аль хэдийн байна (status: %s) — төлөвийг өөрчлөхгүй"
+                                         % (name, cur))
         for pe in self._items("people"):
             name = clean_name(pe.get("name"), "Хүн", self.warnings)
             if name:

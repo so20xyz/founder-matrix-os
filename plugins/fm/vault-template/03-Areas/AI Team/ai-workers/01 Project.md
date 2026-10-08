@@ -44,7 +44,7 @@ Project агент — `02-Projects/`-ийн эзэн. **Төсөл бүрт н�
 
 ## Эзэмшдэг хавтас
 
-- `02-Projects/` — `1-Active/`, `2-Planning/`, `3-On-hold/` (төсөл бүр `<Нэр>/<Нэр>.md` + `_BRAIN.md`)
+- `02-Projects/` — хавтгай: төсөл бүр `<Нэр>/<Нэр>.md` + `_BRAIN.md`; төлөв = зөвхөн `status:` frontmatter (archive л `99-Archive/Projects/` руу зөөгдөнө)
 
 ## Skill-ууд — эхлээд хай
 

@@ -6,16 +6,19 @@ argument-hint: "[нэр] [new|status|close|hygiene]"
 
 # /fm:project — төсөл ба самбар
 
-Төсөл бүр нэг хавтас: `02-Projects/<төлөв>/<Нэр>/<Нэр>.md` + `_BRAIN.md`.
+Төсөл бүр нэг хавтас, **хавтгай**: `02-Projects/<Нэр>/<Нэр>.md` + `_BRAIN.md` (layout 2026-10-09 — төлөвийн дэд хавтас байхгүй).
 
 | Төлөв | Хавтас | `status:` |
 |---|---|---|
-| Active | `02-Projects/1-Active/` | `active` |
-| Planning | `02-Projects/2-Planning/` | `planning` |
-| On-hold | `02-Projects/3-On-hold/` | `on-hold` |
-| Archive | `99-Archive/Projects/` | `completed` эсвэл `cancelled` |
+| Active | `02-Projects/<Нэр>/` | `active` |
+| Planning | `02-Projects/<Нэр>/` | `planning` |
+| On-hold / Waiting | `02-Projects/<Нэр>/` | `on-hold` / `waiting` |
+| Archive | `99-Archive/Projects/<Нэр>/` | `completed` эсвэл `cancelled` |
 
-**Frontmatter = үнэн.** Хавтас, самбар, дашбоард нь түүнийг дагана.
+**Frontmatter `status:` = цорын ганц үнэн.** Төлөв солиход хавтас зөөгдөхгүй (archive-аас бусад). File explorer дахь хавтасны өнгийг
+`.obsidian/snippets/fm-project-status.css` өгнө — `new`/`move` бүрийн дараа скрипт өөрөө дахин үүсгэнэ, гараар: `fm_project.py status-css <vault>`
+(active #3A7BF0 · planning #8FB8FF · on-hold/waiting #E0962E · бусад #6E6E6E). Гишүүн Settings → Appearance → CSS snippets-д нэг удаа асаана; бусад `.obsidian/` файлыг хөндөхгүй.
+Хуучин vault (`02-Projects/1-Active|2-Planning|3-On-hold/<Нэр>/`) ч уншигдана — тэнд төлөв солиход мөн зөвхөн frontmatter өөрчлөгдөнө.
 Эзэн дүр: **Project**. Бусад дүр төслийн хавтсанд зөвхөн өөрийн ажлын файлыг бичнэ.
 
 Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
@@ -27,7 +30,7 @@ Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" list "${user_config.vault_path}"
 ```
 
-`гэрээ n/4` = `goal`, `due`, `milestones`, `anti-goal` дөрвөөс хэд нь бөглөгдсөн. `⚠️ хавтас≠status` гарвал засахыг санал болго.
+`гэрээ n/4` = `goal`, `due`, `milestones`, `anti-goal` дөрвөөс хэд нь бөглөгдсөн. `⚠️ хавтас=archive, status=…` гарвал засахыг санал болго; `(хуучин хавтас 1-Active)` = шилжүүлээгүй хуучин бүтэц.
 
 ## 1. Шинэ төсөл
 
@@ -50,14 +53,15 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" list "${use
 ## 3. Төлөв солих
 
 ```bash
-# эхлээд dry run — ямар файлын холбоос солигдохыг харуулна
+# эхлээд dry run (archive / архиваас сэргээх үед ямар файлын холбоос солигдохыг ч харуулна)
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${user_config.vault_path}" "<Нэр>" on-hold
 # гишүүн батласны дараа
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${user_config.vault_path}" "<Нэр>" on-hold --apply
 ```
 
-- Скрипт хавтсыг зөөж, `status`-ыг тавьж, vault доторх бүх `02-Projects/<хуучин>/<Нэр>` холбоосыг шинэ зам руу солино (`.obsidian/`, `_trash/`-ийг хөндөхгүй).
-- **Obsidian нээлттэй бол** түүний «Move file to…» командаар зөөх нь илүү найдвартай (Obsidian холбоосыг өөрөө шинэчилнэ) — дараа нь зөвхөн `status`-ыг засна.
+- active / planning / on-hold / waiting: скрипт зөвхөн `status`, `updated`-ийг солиод CSS snippet-ийг дахин үүсгэнэ. Хавтас, холбоос хөдлөхгүй.
+- archive (эсвэл архиваас буцаах): хавтсыг `99-Archive/Projects/` руу (буцахдаа `02-Projects/` руу) зөөж, vault доторх бүх хуучин замын холбоосыг шинэ зам руу солино (`.obsidian/`, `_trash/`-ийг хөндөхгүй).
+- **Obsidian нээлттэй бол** archive-ийг түүний «Move file to…» командаар зөөх нь илүү найдвартай (Obsidian холбоосыг өөрөө шинэчилнэ) — дараа нь зөвхөн `status`-ыг засаад `status-css` ажиллуул.
 - Хоёр машин зэрэг бичиж байгаа бол зөөхгүй (Drive `(1)` давхардал үүсгэнэ).
 - Active/Planning биш төлөв рүү шилжсэн төсөлд Project agent-ийн сешн байвал гишүүнд мэдэгдэ - сешнийг архивлах эсэхийг гишүүн шийднэ (өөрөө хаахгүй).
 
