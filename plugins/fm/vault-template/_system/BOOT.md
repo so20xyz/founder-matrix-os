@@ -43,7 +43,7 @@ ai-first: true
 
 | Slug | Хариуцлага |
 |---|---|
-| `project` + төслийн дүрүүд | Төсөл бүрт **нэг тогтмол сешн**; task-ууд тэр сешн дотор; мэргэжлийн ажлыг subagent-аар (`fm:creative`, `fm:developer`, `fm:research`) |
+| `project` + төслийн дүрүүд | Төсөл бүрт **нэг тогтмол сешн**; task-ууд тэр сешн дотор; мэргэжлийн ажлыг subagent-аар (`fm:creative`, `fm:architect`, `fm:wiki`) |
 | `area` | Inbox/GTD, өдөр, хүмүүс, хүрээ, систем |
 | `resource` · `research` | Лавлагаа, атом · гүн судалгаа |
 | `developer` · `creative` | Код, хэрэгсэл · дизайн, пост, moodboard |

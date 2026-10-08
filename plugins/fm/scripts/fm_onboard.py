@@ -107,7 +107,7 @@ PROJECT_ROOTS = ["03-Projects/1-Active", "03-Projects/2-Planning", "03-Projects/
                  "99-Archive/Projects"]
 CORE_ROLES = ["project", "area", "resource", "research", "developer", "creative", "finance"]
 # v0.2 slugs → v0.3 agents (old answers.json files keep working)
-ROLE_ALIASES = {"gtd": "area", "content-writer": "creative", "creative-director": "creative",
+ROLE_ALIASES = {"gtd": "area", "architect": "developer", "wiki": "resource", "content-writer": "creative", "creative-director": "creative",
                 "tool-developer": "developer"}
 
 SOUL_PLACEHOLDER = "<Нэг догол мөр: юу хийдэг, юуны төлөө>"
