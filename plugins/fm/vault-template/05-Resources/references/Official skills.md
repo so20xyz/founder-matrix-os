@@ -50,7 +50,7 @@ projects: []
 ## Дүрэм
 
 - **Нэг хэрэгцээ = нэг эзэн.** Албан ёсны skill хангаж байвал fm-д дахин бичихгүй.
-- **Цорын ганц санах ой бол vault.** Албан ёсны skill `CLAUDE.md`, `TASKS.md`, `memory/`, `docs/superpowers/` гэх мэт өөр газар бичих гэвэл vault руу чиглүүл: spec → `03-Projects/<төсөл>/specs/`, task → `02-GTD/tasks/`, тайлан → холбогдох Area note. Vault дотор git commit хийхгүй.
+- **Цорын ганц санах ой бол vault.** Албан ёсны skill `CLAUDE.md`, `TASKS.md`, `memory/`, `docs/superpowers/` гэх мэт өөр газар бичих гэвэл vault руу чиглүүл: spec → `03-Projects/<төсөл>/specs/`, task → `00-GTD/Tasks/`, тайлан → холбогдох Area note. Vault дотор git commit хийхгүй.
 - **`productivity` plugin-ийг суулгахгүй**: тэр `TASKS.md`, `memory/` бичиж хоёр дахь санах ой үүсгэдэг. Түүний update процедурыг `/fm:update` аль хэдийн хийдэг.
 - **Хэл:** албан ёсны skill-ийн тайлбар англиар тул монгол үгээр өөрөө дуудагдахгүй байж магадгүй. Шууд нэрээр нь дууд: `/superpowers:brainstorming`, `/obsidian:obsidian-bases`.
 - **Санхүүгийн хориг:** хөрөнгө оруулалтын зөвлөгөө өгөхгүй, төлбөр шилжүүлэхгүй. 🔒 Хувийн санхүү зөвхөн `/fm:finance`-ээр.

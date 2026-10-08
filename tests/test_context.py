@@ -21,7 +21,7 @@ def main():
     w(v, "06-Atomic/decisions/D1.md", "---\ntype: session-decision\nprojects:\n  - \"[[03-Projects/1-Active/Alpha/Alpha]]\"\nbridge: 4\n---\nx\n")
     w(v, "06-Atomic/knowledge/K1.md", "---\ntype: atomic\nprojects:\n  - \"[[03-Projects/1-Active/Alpha/Alpha]]\"\n---\ny\n")
     w(v, "04-Areas/Business/finances/private/Secret.md", "---\ntype: bill\nprojects:\n  - \"[[03-Projects/1-Active/Alpha/Alpha]]\"\n---\nSECRET\n")
-    w(v, "02-GTD/tasks/Do it.md", "---\ntype: task\nstatus: next-action\nowner: me\nproject: \"[[03-Projects/1-Active/Alpha/Alpha]]\"\nactivity: \"[[04-Areas/Business/activities/Design]]\"\nresources:\n  - \"[[05-Resources/references/Ref]]\"\n---\nt\n")
+    w(v, "00-GTD/Tasks/Do it.md", "---\ntype: task\nstatus: next-action\nowner: me\nproject: \"[[03-Projects/1-Active/Alpha/Alpha]]\"\nactivity: \"[[04-Areas/Business/activities/Design]]\"\nresources:\n  - \"[[05-Resources/references/Ref]]\"\n---\nt\n")
     out = subprocess.run([sys.executable, str(S), str(v), "Do it"], capture_output=True, text=True, encoding="utf-8").stdout
     checks = [("project + _BRAIN", "Alpha|Alpha" in out and "_BRAIN" in out),
               ("activity + missing SOP warning", "Design" in out and "SOP алга" in out),

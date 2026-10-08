@@ -1,4 +1,4 @@
-# 02-GTD — ажил хөдөлгөх хөдөлгүүр
+# 00-GTD — ажил хөдөлгөх хөдөлгүүр
 
 Getting Things Done: Урсгал: **Inbox → Task → Events** (+ Daily = өдөр бүрийн habit). Хураах → тодруулах → зохион байгуулах → тойм → гүйцэтгэх.
 
@@ -12,4 +12,4 @@ Getting Things Done: Урсгал: **Inbox → Task → Events** (+ Daily = өд
 
 - **Эзэн дүр:** [[02 Area]]
 - Task-ийн `status`: `inbox → next-action → waiting → completed / cancelled` (+ `someday`).
-- Бүх task: `02-GTD/tasks/Tasks.base`.
+- Бүх task: `00-GTD/Tasks/Tasks.base`.

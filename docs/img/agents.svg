@@ -27,7 +27,7 @@
 <text x="684" y="288" font-size="14" font-weight="500" fill="#3B82F6">/fm:role area</text>
 <text x="684" y="322" font-size="16" fill="#F2F3F7">Юу ч алдагдахгүй: орж ирсэн бүхэн эзэнтэй task, атом, лавлагаа болно.</text>
 <text x="684" y="358" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
-<text x="684" y="380" font-size="14" fill="#C9CDD8">02-GTD (inbox) · 04-Areas · хүмүүс · _system</text>
+<text x="684" y="380" font-size="14" fill="#C9CDD8">00-GTD (inbox) · 04-Areas · хүмүүс · _system</text>
 <text x="684" y="416" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
 <circle cx="689" cy="435" r="3" fill="#3B82F6"/><text x="702" y="440" font-size="14" fill="#C9CDD8">Inbox → task → өдөр → долоо хоногийн тойм</text>
 <circle cx="689" cy="461" r="3" fill="#3B82F6"/><text x="702" y="466" font-size="14" fill="#C9CDD8">Зөөхөөс өмнө төлөвлөгөө гаргаж батлуулна</text>

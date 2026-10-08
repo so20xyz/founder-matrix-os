@@ -66,7 +66,7 @@ class Vault(object):
         self.tmp = Path(tempfile.mkdtemp(prefix="fm-hooks-test-"))
         self.root = self.tmp / "Vault"
         self.outside = self.tmp / "elsewhere"
-        for d in ["02-GTD/inbox", "02-GTD/tasks", "06-Atomic", "_system/fm", "_system/templates",
+        for d in ["00-GTD/Inbox", "00-GTD/Tasks", "06-Atomic", "_system/fm", "_system/templates",
                   "_trash", "99-Archive", ".obsidian", "04-Areas/AI Team/ai-workers",
                   "04-Areas/Business/finances/private"]:
             (self.root / d).mkdir(parents=True, exist_ok=True)
@@ -147,7 +147,7 @@ def test_ctx_no_vault_configured_silent(v):
 
 def test_ctx_boot_and_no_role_hint(v):
     v.write("_system/BOOT.md", "# BOOT\n\nТүрүүлж SOUL.md унш.\n")
-    code, out, _ = run(CTX, ctx_payload(v.root / "02-GTD"), {"FM_VAULT": str(v.root)})
+    code, out, _ = run(CTX, ctx_payload(v.root / "00-GTD"), {"FM_VAULT": str(v.root)})
     assert code == 0, code
     ctx = context_of(out)
     assert "Түрүүлж SOUL.md унш." in ctx, ctx
@@ -312,9 +312,9 @@ def test_lint_missing_date_warns(v):
 
 
 def test_lint_non_note_silent(v):
-    code, out, err = lint_write(v, "02-GTD/inbox/PROMPT.md", "# Prompt\n\nfree text\n")
+    code, out, err = lint_write(v, "00-GTD/Inbox/PROMPT.md", "# Prompt\n\nfree text\n")
     assert (code, out, err) == (0, "", ""), (code, out, err)
-    code, out, err = lint_write(v, "02-GTD/inbox/kanban.md", "---\nkanban-plugin: board\n---\n\n## Todo\n")
+    code, out, err = lint_write(v, "00-GTD/Inbox/kanban.md", "---\nkanban-plugin: board\n---\n\n## Todo\n")
     assert (code, out, err) == (0, "", ""), (code, out, err)
 
 
@@ -363,7 +363,7 @@ def test_lint_secret_blocks_each_kind(v):
     }
     for label, tok in samples.items():
         text = note(good_fm(), "token: %s\n" % tok)
-        code, out, err = lint_write(v, "02-GTD/tasks/leak.md", text)
+        code, out, err = lint_write(v, "00-GTD/Tasks/leak.md", text)
         assert code == 2, (label, code, out, err)
         assert label in err, (label, err)
         assert tok not in err, (label, "full token echoed")
@@ -400,7 +400,7 @@ def test_lint_obsidian_dir_ignored(v):
 
 def test_lint_private_finance_outside_blocks(v):
     fin = note(good_fm(type="finance-record", amount="100000"))
-    code, _, err = lint_write(v, "02-GTD/tasks/Төлбөр.md", fin)
+    code, _, err = lint_write(v, "00-GTD/Tasks/Төлбөр.md", fin)
     assert code == 2 and "finances/private" in err, (code, err)
     priv = note(good_fm(private="true"))
     code, _, err = lint_write(v, "06-Atomic/хувийн.md", priv)

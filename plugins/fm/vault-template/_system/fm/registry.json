@@ -26,7 +26,7 @@
       "channel": "02-area",
       "group": "areas",
       "folders": [
-        "02-GTD/",
+        "00-GTD/",
         "04-Areas/",
         "01-Soul/",
         "07-Goals/",

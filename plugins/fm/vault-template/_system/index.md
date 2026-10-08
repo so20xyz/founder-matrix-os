@@ -16,9 +16,9 @@ Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт 
 
 | Хавтас | Юу | Эзэн дүр |
 |---|---|---|
-| `02-GTD/inbox/` | Хураалт, ангилаагүй | [[02 Area]] |
+| `00-GTD/Inbox/` | Хураалт, ангилаагүй | [[02 Area]] |
 | `01-Soul/` | [[SOUL]], үнэт зүйл, хэв маяг | [[02 Area]] |
-| `02-GTD/` | `inbox/` · `daily/` · `tasks/` · `boards/` · `events/` | [[02 Area]] |
+| `00-GTD/` | `inbox/` · `daily/` · `tasks/` · `boards/` · `events/` | [[02 Area]] |
 | `03-Projects/` | `1-Active/` · `2-Planning/` · `3-On-hold/` | [[01 Project]] |
 | `04-Areas/` | `Business/` (companies · finances · tools) · `people/` · `AI Team/` · `Life/` | [[02 Area]] |
 | `04-Areas/Business/finances/private/` | 🔒 Хувийн санхүү | [[07 Finance]] |
@@ -34,7 +34,7 @@ Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт 
 - [[_system/STATUS]] — дүрүүдийн төлөв
 - [[Home]] — нүүр
 - `_system/fm/registry.json` — сешн ↔ дүрийн бүртгэл (машин уншина)
-- Bases: хавтас бүр өөрийн `<Нэр>.base`-тэй — `02-GTD/tasks/Tasks.base` · `03-Projects/Projects.base` · `04-Areas/people/People.base` · `04-Areas/Business/companies/Companies.base` · `04-Areas/AI Team/ai-workers/Agents.base` · `05-Resources/references/References.base` · `05-Resources/library/Reading.base` · `06-Atomic/decisions/Decisions.base` · `06-Atomic/knowledge/Atoms.base` · 🔒 `04-Areas/Business/finances/private/Monthly Bills.base`, `Finance Records.base`
+- Bases: хавтас бүр өөрийн `<Нэр>.base`-тэй — `00-GTD/Tasks/Tasks.base` · `03-Projects/Projects.base` · `04-Areas/people/People.base` · `04-Areas/Business/companies/Companies.base` · `04-Areas/AI Team/ai-workers/Agents.base` · `05-Resources/references/References.base` · `05-Resources/library/Reading.base` · `06-Atomic/decisions/Decisions.base` · `06-Atomic/knowledge/Atoms.base` · 🔒 `04-Areas/Business/finances/private/Monthly Bills.base`, `Finance Records.base`
 
 ## Идэвхтэй төслүүд
 

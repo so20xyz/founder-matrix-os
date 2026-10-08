@@ -1,5 +1,5 @@
 #!/bin/bash
-# Screenshot -> vault-ийн 02-GTD/inbox. AL CH app-aas ajillana (Messages g.m native app-uud) -
+# Screenshot -> vault-ийн 00-GTD/Inbox. AL CH app-aas ajillana (Messages g.m native app-uud) -
 # browser extension-ees yalgaatai ni macOS-iin screencapture tab bish buh delgetsiig zurna.
 # Zurag avsny daraa "Claude-d yuu hiilgeh ve?" gej asууna -> notod bichigdene.
 #
@@ -14,8 +14,9 @@ if [ -z "$VAULT" ] || [ ! -d "$VAULT" ]; then
   echo "Vault олдсонгүй: ~/.fmos/config.json-д \"vault\" бич эсвэл FM_VAULT тавь" >&2
   exit 1
 fi
-INBOX="$VAULT/02-GTD/inbox"
+INBOX="$VAULT/00-GTD/Inbox"
 # shiljiltiin hamgaalalt: shine zam baihgui ch huuchin 00-Inbox baival tuuniig
+[ ! -d "$INBOX" ] && [ -d "$VAULT/02-GTD/inbox" ] && INBOX="$VAULT/02-GTD/inbox"
 [ ! -d "$INBOX" ] && [ -d "$VAULT/00-Inbox" ] && INBOX="$VAULT/00-Inbox"
 ATT="$VAULT/_system/attachments"
 mkdir -p "$ATT"

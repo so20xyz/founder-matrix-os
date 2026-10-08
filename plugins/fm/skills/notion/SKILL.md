@@ -29,7 +29,7 @@ argument-hint: "[setup | sync [--dry-run] | push <note> | tasks | add | done | p
 | Нэг note | `nt push "<vault доторх зам.md>" [--db task] --dry-run` → `nt push ...` |
 | Notion-ийн task-ууд | `nt tasks [--overdue|--week|--today|--all]` |
 | Notion-д task нэмэх / дуусгах | `nt add task "Нэр" [--due YYYY-MM-DD]` · `nt done <id>` |
-| Notion → vault (зөвхөн унших толь) | `nt pull <бааз> --out "02-GTD/inbox/notion/<бааз>"` - vault-ийн үндсэн note-уудыг хөндөхгүй; `/fm:inbox` ангилна |
+| Notion → vault (зөвхөн унших толь) | `nt pull <бааз> --out "00-GTD/Inbox/notion/<бааз>"` - vault-ийн үндсэн note-уудыг хөндөхгүй; `/fm:inbox` ангилна |
 
 Түлхэлт: шинэ note → Notion page үүсгэнэ (гарчиг, due, status + `## For future agent`-ийн эхний догол мөр + vault зам); дахин түлхэхэд зөвхөн гарчиг/due/status шинэчлэгдэнэ. Vault-ийн `status` → Notion төлөв: `status_map` (config) эсвэл нэрээр (inbox → Inbox, next-action → Next Action, completed → Completed...).
 

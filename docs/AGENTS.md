@@ -52,7 +52,7 @@ Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 
 ## 📥 Area · GTD — `/fm:role area`
 
 - **Зорилго:** юу ч алдагдахгүй — орж ирсэн бүхэн эзэнтэй task, атом, лавлагаа болох; vault цэвэр.
-- **Эзэмшинэ:** `02-GTD/inbox`, `02-GTD` (task, өдөр, уулзалт, самбар), `04-Areas` (бизнес, амьдрал, хүмүүс), `_system`.
+- **Эзэмшинэ:** `00-GTD/Inbox`, `00-GTD` (task, өдөр, уулзалт, самбар), `04-Areas` (бизнес, амьдрал, хүмүүс), `_system`.
 - **Дүрэм:** inbox → task → өдрийн тэмдэглэл → долоо хоногийн тойм. Зөөхөөс өмнө төлөвлөгөө гаргаж батлуулна. Discord dispatcher — бүх сувгийг сонсож, хариуцагч сешнийг сэрээнэ.
 - **Sidebar:** 📥 GTD (Areas) — өдөр тутмын гол сешн, setup-ийн сешн өөрөө.
 
@@ -98,7 +98,7 @@ Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 
 ## Бүх Agent-д нийтлэг
 
 1. Frontmatter (`type`, `date`, `tags`, `ai-first: true`) ба `[[wikilink]]`.
-2. Бусдын бичдэг файлд (`02-GTD/daily/*`, `_system/logs/*`) зөвхөн **append**.
+2. Бусдын бичдэг файлд (`00-GTD/Daily/*`, `_system/logs/*`) зөвхөн **append**.
 3. 🔒 `private: true` болон `finances/private/`-ийг уншихгүй, иш татахгүй (Finance-аас бусад).
 4. Ажлаа дуусгаад: юу хийсэн, аль файлд, юу үлдсэнийг товч тайлагнана; сешн дуусахад baton үлдэнэ.
 

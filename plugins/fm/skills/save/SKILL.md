@@ -41,7 +41,7 @@ argument-hint: "[--checkpoint] [<url>] [онцлох сэдэв]"
 | Шийдвэр | `06-Atomic/decisions/` (`type: session-decision`) | Сонголт хийгдэж чиглэл тогтсон | ✅ |
 | Ойлголт / баримт / сургамж | `06-Atomic/knowledge/` (`type: atomic`) | Дахин хэрэглэгдэх, контекстгүй уншигдах нэг санаа | ✅ |
 | Нээлттэй асуулт | `06-Atomic/knowledge/` (`kind: question`) | Хариулт хараахан алга. Хожим хариулт гарвал шинэ атом + `answeredby:` | ✅ |
-| Task | `02-GTD/tasks/` (`/fm:task`-ийн журам) | Хэн нэгэн «дараагийн алхам» гэж шийдсэн | ✅ |
+| Task | `00-GTD/Tasks/` (`/fm:task`-ийн журам) | Хэн нэгэн «дараагийн алхам» гэж шийдсэн | ✅ |
 | Төслийн ахиц | Төслийн note / `_BRAIN.md` | `03-Projects/`-ийн төсөлд хамаарна | - |
 | Хүн | `04-Areas/people/` (`/fm:people`-ийн журам) | Нэр, үүрэг, харилцаа дурдагдсан | - |
 | Линк | URL горим | Хадгалах үнэ цэнэтэй URL | - |
@@ -100,7 +100,7 @@ ai-first: true
 
 Read → Edit ашигла. Байгаа note-ийг хэзээ ч Write-аар дарж бичихгүй. Хэрэглэгчийн мөрийг бүү устга, бүү зөө.
 
-**Task.** Шинэ task бүр `02-GTD/tasks/<Тодорхой гарчиг>.md` (загвар `<V>/_system/templates/Task.md` эсвэл `/fm:task`). Заавал: `type: task`, `status` (`inbox` · `next-action` · `waiting` · `someday` · `completed` · `cancelled`), `owner` (`me` · `"@Нэр"` · дүрийн slug), `priority` (`high` · `medium` · `low`), `context` (`work` · `home`), `project` (wikilink эсвэл `TBD`), `tags: [task]`, `ai-first: true`. Дууссан бол `status: completed` (`done` биш) + `## Хүргэсэн` хэсэгт нэг мөр.
+**Task.** Шинэ task бүр `00-GTD/Tasks/<Тодорхой гарчиг>.md` (загвар `<V>/_system/templates/Task.md` эсвэл `/fm:task`). Заавал: `type: task`, `status` (`inbox` · `next-action` · `waiting` · `someday` · `completed` · `cancelled`), `owner` (`me` · `"@Нэр"` · дүрийн slug), `priority` (`high` · `medium` · `low`), `context` (`work` · `home`), `project` (wikilink эсвэл `TBD`), `tags: [task]`, `ai-first: true`. Дууссан бол `status: completed` (`done` биш) + `## Хүргэсэн` хэсэгт нэг мөр.
 
 **--checkpoint горим энд дуусна:** 7-р алхмын лог мөрийг нэмээд (`→ checkpoint:`), 8-р алхмын товч мэдэгдлийг өгөөд **яриагаа шууд үргэлжлүүл**.
 
@@ -108,14 +108,14 @@ Read → Edit ашигла. Байгаа note-ийг хэзээ ч Write-аар 
 
 - **Хүн:** `04-Areas/people/<Нэр>.md` байвал `## Харилцаа` хэсэгт огноотой мөр нэм, `last_interaction:`-ийг шинэчил. Байхгүй бөгөөд дахин гарах магадлалтай бол `/fm:people`-ийн журмаар үүсгэ. Дамжуулж дурдсан хүнд note бүү үүсгэ.
 - **Төсөл:** ахицыг төслийн `_BRAIN.md`-ийн тохирох хэсэгт нэг мөрөөр, холбоостой.
-- **Өдрийн note** `02-GTD/daily/<огноо>.md`. Байхгүй бол `/fm:update daily`-ийн журмаар үүсгэ. `## 💼 Ажил` хэсэгт (хуучин загварт `## 💼 Work Log`) үүсгэсэн атом, task руу **зөвхөн холбоос** нэм.
+- **Өдрийн note** `00-GTD/Daily/<огноо>.md`. Байхгүй бол `/fm:update daily`-ийн журмаар үүсгэ. `## 💼 Ажил` хэсэгт (хуучин загварт `## 💼 Work Log`) үүсгэсэн атом, task руу **зөвхөн холбоос** нэм.
 
 ## 7. Лог мөр
 
 `_system/logs/<огноо>.md`-д Read → Edit-ээр, зөвхөн төгсгөлд нь нэг мөр. Файл байхгүй бол үүсгэ. Мөрөнд зөвхөн холбоос:
 
 ```
-- **HH:MM** · <дүр> → [[06-Atomic/decisions/YYYY-MM-DD - slug]] · [[02-GTD/tasks/Гарчиг]]
+- **HH:MM** · <дүр> → [[06-Atomic/decisions/YYYY-MM-DD - slug]] · [[00-GTD/Tasks/Гарчиг]]
 - **HH:MM** · <дүр> → checkpoint: [[атом1]] · [[task]]
 - **HH:MM** · <дүр> → clip: [[05-Resources/references/...]] · [[атом1]]
 ```

@@ -170,12 +170,12 @@ def test_notion_sync_selects_only_marked_non_private():
     try:
         v = tmp / "vault"
         notes = {
-            "02-GTD/tasks/Нэхэмжлэл.md": "---\ntype: task\nstatus: next-action\ndue: 2026-10-10\nnotion: task\nai-first: true\n---\n\n# Нэхэмжлэл илгээх\n\n## For future agent\n\n[[04-Areas/people/Бат|Бат]]-д нэхэмжлэл.\n",
+            "00-GTD/Tasks/Нэхэмжлэл.md": "---\ntype: task\nstatus: next-action\ndue: 2026-10-10\nnotion: task\nai-first: true\n---\n\n# Нэхэмжлэл илгээх\n\n## For future agent\n\n[[04-Areas/people/Бат|Бат]]-д нэхэмжлэл.\n",
             "03-Projects/1-Active/A/A.md": "---\ntype: project\nnotion: true\n---\n# A төсөл\n",
-            "02-GTD/tasks/Хувийн.md": "---\ntype: task\nnotion: task\nprivate: true\n---\n# x\n",
+            "00-GTD/Tasks/Хувийн.md": "---\ntype: task\nnotion: task\nprivate: true\n---\n# x\n",
             "04-Areas/Business/finances/private/Bill.md": "---\ntype: bill\nnotion: true\n---\n# b\n",
             "01-Soul/SOUL.md": "---\ntype: soul\nnotion: note\n---\n# s\n",
-            "02-GTD/tasks/Тэмдэглээгүй.md": "---\ntype: task\n---\n# y\n",
+            "00-GTD/Tasks/Тэмдэглээгүй.md": "---\ntype: task\n---\n# y\n",
             "_system/templates/Task.md": "---\ntype: task\nnotion: task\n---\n# t\n",
         }
         for rel, txt in notes.items():
@@ -186,12 +186,12 @@ def test_notion_sync_selects_only_marked_non_private():
         items = nt.collect(v.resolve())
         sent = {i["rel"]: i for i in items if "skip" not in i}
         skipped = {i["rel"] for i in items if "skip" in i}
-        assert set(sent) == {"02-GTD/tasks/Нэхэмжлэл.md", "03-Projects/1-Active/A/A.md"}, sent
+        assert set(sent) == {"00-GTD/Tasks/Нэхэмжлэл.md", "03-Projects/1-Active/A/A.md"}, sent
         assert sent["03-Projects/1-Active/A/A.md"]["alias"] == "project"
-        t = sent["02-GTD/tasks/Нэхэмжлэл.md"]
+        t = sent["00-GTD/Tasks/Нэхэмжлэл.md"]
         assert t["title"] == "Нэхэмжлэл илгээх" and t["due"] == "2026-10-10" and t["status"] == "next-action", t
         assert "Бат-д" in t["summary"] and "[[" not in t["summary"], t["summary"]
-        assert skipped == {"02-GTD/tasks/Хувийн.md", "04-Areas/Business/finances/private/Bill.md", "01-Soul/SOUL.md"}, skipped
+        assert skipped == {"00-GTD/Tasks/Хувийн.md", "04-Areas/Business/finances/private/Bill.md", "01-Soul/SOUL.md"}, skipped
         # dry-run through the CLI: no network, no token, no config needed
         env = child_env(tmp)
         r = subprocess.run([sys.executable, str(TOOLS / "notion" / "fm_notion.py"), "sync", "--vault", str(v), "--dry-run"],
@@ -298,19 +298,24 @@ def test_sidebar_titles_resolve_to_roles():
 # ------------------------------------------------------------------ GTD layout (itge.e 2026-10-09)
 
 def test_gtd_layout_inbox_task_events():
-    """Inbox -> Task -> Events: vault-template-д 02-GTD/inbox, 02-GTD/events; хуучин хавтас алга."""
+    """Inbox -> Task -> Events: vault-template-д 00-GTD/Inbox, 00-GTD/Events; хуучин хавтас алга."""
     tpl = REPO / "plugins" / "fm" / "vault-template"
-    for d in ("02-GTD/inbox", "02-GTD/events", "02-GTD/tasks", "02-GTD/daily"):
+    for d in ("00-GTD/Inbox", "00-GTD/Events", "00-GTD/Tasks", "00-GTD/Daily"):
         assert (tpl / d).is_dir(), d
-    for d in ("00-Inbox", "02-GTD/meetings", "02-GTD/quests"):
+    for d in ("00-Inbox", "02-GTD"):
         assert not (tpl / d).exists(), d
+    names = {x.name for x in (tpl / "00-GTD").iterdir()}  # case-sensitive (Windows/macOS FS нь үгүй)
+    assert {"Inbox", "Tasks", "Events", "Daily"} <= names and not names & {"inbox", "tasks", "events", "daily"}, names
 
 
 def test_no_stale_gtd_paths_in_repo():
-    stale = re.compile(r"00-Inbox|02-GTD/meetings|02-GTD/quests")
+    stale = re.compile(r"00-Inbox|02-GTD")
     # шилжилтийн хамгаалалтын код, тест, CHANGELOG хуучин нэрийг санаатай дурдана
     allowed = {"tools/inbox-gallery/server.py", "tools/sidepanel/server.py", "tools/save-to-inbox/popup.js",
-               "tools/move-to-inbox.sh", "tools/screenshot-to-inbox.sh", "CHANGELOG.md"}
+               "tools/move-to-inbox.sh", "tools/screenshot-to-inbox.sh", "CHANGELOG.md",
+               "plugins/fm/tools/relay/relay.py", "plugins/fm/skills/task/scripts/fm_task.py",
+               "plugins/fm/skills/project/scripts/fm_project.py", "plugins/fm/skills/vault/scripts/fm_brain_check.py",
+               "plugins/fm/scripts/fm_onboard.py"}
     bad = []
     for p in REPO.rglob("*"):
         rel = p.relative_to(REPO).as_posix()
@@ -326,23 +331,45 @@ def test_sidepanel_gtd_dirs_fall_back_to_legacy():
     sp = load_module("fm_sidepanel", REPO / "tools" / "sidepanel" / "server.py")
     with tempfile.TemporaryDirectory() as t:
         v = Path(t)
-        assert sp.inbox_dir(v) == v / "02-GTD/inbox"          # юу ч байхгүй -> шинэ зам
-        assert sp.events_dir(v) == v / "02-GTD/events"
+        assert sp.inbox_dir(v) == v / "00-GTD/Inbox"          # юу ч байхгүй -> шинэ зам
+        assert sp.events_dir(v) == v / "00-GTD/Events"
+        assert sp.tasks_dir(v) == v / "00-GTD/Tasks" and sp.daily_dir(v) == v / "00-GTD/Daily"
         (v / "00-Inbox").mkdir(); (v / "02-GTD/meetings").mkdir(parents=True)
-        assert sp.inbox_dir(v) == v / "00-Inbox"              # зөвхөн хуучин -> хуучин
+        assert sp.inbox_dir(v) == v / "00-Inbox"              # зөвхөн хамгийн хуучин -> түүнийг
         assert sp.events_dir(v) == v / "02-GTD/meetings"
-        (v / "02-GTD/inbox").mkdir(); (v / "02-GTD/events").mkdir()
-        assert sp.inbox_dir(v) == v / "02-GTD/inbox"          # хоёулаа -> шинэ
+        for d in ("inbox", "events", "tasks", "daily"):
+            (v / "02-GTD" / d).mkdir()
+        assert sp.inbox_dir(v) == v / "02-GTD/inbox"          # 02-GTD/<жижиг> нь 00-Inbox-оос түрүүнд
         assert sp.events_dir(v) == v / "02-GTD/events"
+        assert sp.tasks_dir(v) == v / "02-GTD/tasks" and sp.daily_dir(v) == v / "02-GTD/daily"
+        (v / "00-GTD/Inbox").mkdir(parents=True); (v / "00-GTD/Events").mkdir()
+        assert sp.inbox_dir(v) == v / "00-GTD/Inbox"          # хоёулаа -> шинэ
+        assert sp.events_dir(v) == v / "00-GTD/Events"
 
 
 def test_save_to_inbox_has_legacy_fallback():
     js = (REPO / "tools" / "save-to-inbox" / "popup.js").read_text(encoding="utf-8")
-    assert 'INBOX_NEW = "02-GTD/inbox"' in js and 'INBOX_OLD = "00-Inbox"' in js
+    assert 'INBOX_NEW = "00-GTD/Inbox", INBOX_OLDS = ["02-GTD/inbox", "00-Inbox"]' in js
     assert "await inboxDir(apiKey, endpoint)" in js
     for sh in ("move-to-inbox.sh", "screenshot-to-inbox.sh"):
         t = (REPO / "tools" / sh).read_text(encoding="utf-8")
-        assert '$VAULT/02-GTD/inbox' in t and '$VAULT/00-Inbox' in t, sh
+        assert '$VAULT/00-GTD/Inbox' in t and '$VAULT/02-GTD/inbox' in t and '$VAULT/00-Inbox' in t, sh
+        assert t.index('$VAULT/02-GTD/inbox') < t.index('$VAULT/00-Inbox'), sh
+
+
+def test_task_writers_fall_back_to_legacy_tasks():
+    """00-GTD/Tasks байхгүй, 02-GTD/tasks байвал task бичигчид хуучин руу бичнэ."""
+    import tempfile
+    ft = load_module("fm_task_fb", REPO / "plugins" / "fm" / "skills" / "task" / "scripts" / "fm_task.py")
+    with tempfile.TemporaryDirectory() as t:
+        v = Path(t)
+        assert ft.tasks_dir(v) == v / "00-GTD/Tasks"
+        (v / "02-GTD/tasks").mkdir(parents=True)
+        assert ft.tasks_dir(v) == v / "02-GTD/tasks"
+        (v / "00-GTD/Tasks").mkdir(parents=True)
+        assert ft.tasks_dir(v) == v / "00-GTD/Tasks"
+    relay = (REPO / "plugins" / "fm" / "tools" / "relay" / "relay.py").read_text(encoding="utf-8")
+    assert 'vault / "00-GTD" / "Tasks"' in relay and '(vault / "02-GTD" / "tasks").is_dir()' in relay
 
 
 # ------------------------------------------------------------------ runner

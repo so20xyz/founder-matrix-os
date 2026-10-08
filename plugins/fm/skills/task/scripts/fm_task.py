@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fm:task helper - GTD task notes in <vault>/02-GTD/tasks/.
+"""fm:task helper - GTD task notes in <vault>/00-GTD/Tasks/.
 
 Usage:
     fm_task.py new   <vault> "<title>" --owner <role-slug|Role name|me|@Name> [--project "03-Projects/.../Name/Name"]
@@ -14,7 +14,7 @@ Claim rule: the first session that takes a task appends `🙋 <who> авлаа` 
 when finished it appends `✅ дууслаа: ...` and sets status: completed. A task with an open
 🙋 by someone else cannot be claimed (exit 4).
 
-Pure standard library, Python 3.9+, macOS / Windows / Linux. Writes only inside 02-GTD/tasks/.
+Pure standard library, Python 3.9+, macOS / Windows / Linux. Writes only inside 00-GTD/Tasks/.
 """
 import datetime
 import os
@@ -23,7 +23,17 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-TASKS = Path("02-GTD") / "tasks"
+TASKS = Path("00-GTD") / "Tasks"
+LEGACY_TASKS = (Path("02-GTD") / "tasks",)  # хуучин layout (шилжилтийн хамгаалалт)
+
+
+def tasks_dir(vault: Path) -> Path:
+    """00-GTD/Tasks; байхгүй ч хуучин 02-GTD/tasks байвал түүнийг."""
+    if not (vault / TASKS).is_dir():
+        for old in LEGACY_TASKS:
+            if (vault / old).is_dir():
+                return vault / old
+    return vault / TASKS
 ROLES_DIR = Path("04-Areas") / "AI Team" / "ai-workers"
 STATUSES = ["inbox", "someday", "next-action", "waiting", "completed", "cancelled"]
 PRIORITIES = ["high", "medium", "low"]
@@ -170,7 +180,7 @@ def resolve_priority(p: str) -> str:
 
 
 def find_task(vault: Path, ref: str) -> Path:
-    folder = vault / TASKS
+    folder = tasks_dir(vault)
     cand = Path(ref)
     if cand.is_absolute() and cand.exists():
         return cand
@@ -256,7 +266,7 @@ def cmd_new(vault: Path, args: List[str]) -> None:
         if not proj_file.exists():
             _die("Төслийн нот олдсонгүй: %s" % proj_file, 2)
         project = project[:-3] if project.endswith(".md") else project
-    folder = vault / TASKS
+    folder = tasks_dir(vault)
     folder.mkdir(parents=True, exist_ok=True)
     name = safe_filename(title)
     path = folder / (name + ".md")
@@ -373,7 +383,7 @@ def cmd_set(vault: Path, args: List[str]) -> None:
 
 
 def cmd_list(vault: Path, args: List[str]) -> None:
-    folder = vault / TASKS
+    folder = tasks_dir(vault)
     if not folder.is_dir():
         _die("Таскийн хавтас алга: %s" % folder)
     owner = _opt(args, "--owner")

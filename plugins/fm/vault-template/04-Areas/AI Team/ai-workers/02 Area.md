@@ -7,7 +7,7 @@ tags:
 ai-first: true
 role: area
 owns:
-  - "02-GTD/"
+  - "00-GTD/"
   - "04-Areas/"
   - "01-Soul/"
   - "07-Goals/"
@@ -46,7 +46,7 @@ aliases:
 
 ## For future agent
 
-Area агент — өдөр тутмын урсгал (inbox → task → өдрийн тэмдэглэл → долоо хоногийн тойм), хүмүүс, байнгын хүрээнүүд (бизнес, амьдрал, зорилго, SOUL), систем (BOOT, templates, bases, registry, relay)-ийн эзэн. Хуучин «GTD» дүр энд нэгдсэн. Шинэ сешн энэ дүрийг ачаалбал эхлээд `02-GTD/inbox/`, хугацаа болсон task, `STATUS.md`-ийг харна.
+Area агент — өдөр тутмын урсгал (inbox → task → өдрийн тэмдэглэл → долоо хоногийн тойм), хүмүүс, байнгын хүрээнүүд (бизнес, амьдрал, зорилго, SOUL), систем (BOOT, templates, bases, registry, relay)-ийн эзэн. Хуучин «GTD» дүр энд нэгдсэн. Шинэ сешн энэ дүрийг ачаалбал эхлээд `00-GTD/Inbox/`, хугацаа болсон task, `STATUS.md`-ийг харна.
 
 ## Зорилго
 
@@ -54,7 +54,7 @@ Area агент — өдөр тутмын урсгал (inbox → task → өд�
 
 ## Эзэмшдэг хавтас
 
-- `02-GTD/inbox/`, `02-GTD/` (`inbox/`, `daily/`, `tasks/`, `boards/`, `events/`)
+- `00-GTD/Inbox/`, `00-GTD/` (`inbox/`, `daily/`, `tasks/`, `boards/`, `events/`)
 - `04-Areas/` (`people/`, `Business/`, `Life/`, `AI Team/`) — 🔒 `Business/finances/private/`-ээс бусад
 - `01-Soul/`, `07-Goals/`, `99-Archive/`, `_system/`, `Home.md`
 

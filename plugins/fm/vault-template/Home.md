@@ -18,10 +18,10 @@ aliases:
 
 | Ажил | Амьдрал | Мэдлэг |
 |---|---|---|
-| [[02-GTD/boards/Work\|📋 Ажлын самбар]] | [[02-GTD/boards/Personal\|📋 Хувийн самбар]] | [[06-Atomic/knowledge/Atoms.base\|🧩 Атомууд]] |
-| [[02-GTD/tasks/Tasks.base\|✅ Task-ууд]] | [[04-Areas/people/People.base\|👥 Хүмүүс]] | [[06-Atomic/decisions/Decisions.base\|🔑 Шийдвэрүүд]] |
+| [[00-GTD/boards/Work\|📋 Ажлын самбар]] | [[00-GTD/boards/Personal\|📋 Хувийн самбар]] | [[06-Atomic/knowledge/Atoms.base\|🧩 Атомууд]] |
+| [[00-GTD/Tasks/Tasks.base\|✅ Task-ууд]] | [[04-Areas/people/People.base\|👥 Хүмүүс]] | [[06-Atomic/decisions/Decisions.base\|🔑 Шийдвэрүүд]] |
 | [[03-Projects/Projects.base\|🔨 Төслүүд]] | `04-Areas/Life/` 🏠 Хувийн хүрээ | [[05-Resources/references/References.base\|📚 Лавлагаа ба хэрэгсэл]] |
-| [[04-Areas/Business/companies/Companies.base\|🏢 Байгууллагууд]] | `07-Goals/` 🎯 Зорилго | `02-GTD/inbox/` 📥 Хураалт |
+| [[04-Areas/Business/companies/Companies.base\|🏢 Байгууллагууд]] | `07-Goals/` 🎯 Зорилго | `00-GTD/Inbox/` 📥 Хураалт |
 | [[04-Areas/AI Team/ai-workers/Agents.base\|🤖 Agent-ууд]] | [[04-Areas/Business/finances/private/Сарын төлбөр\|🔒 Сарын төлбөр]] | [[_system/index\|🗂 Каталог]] |
 
 ## 🔨 Идэвхтэй төслүүд

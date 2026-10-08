@@ -38,7 +38,7 @@ subprojects: []
 ```base
 filters:
   and:
-    - file.inFolder("02-GTD/tasks")
+    - file.inFolder("00-GTD/Tasks")
     - type == "task"
     - status != "completed"
     - status != "cancelled"

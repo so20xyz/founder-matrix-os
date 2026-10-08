@@ -1,4 +1,4 @@
-"""Inbox Gallery — vault-ийн 02-GTD/inbox-ийг localhost дээр gallery хэлбэрээр харуулж,
+"""Inbox Gallery — vault-ийн 00-GTD/Inbox-ийг localhost дээр gallery хэлбэрээр харуулж,
 зүйл бүрт очих газар сонгоод «Apply» дарахад л зөөнө.
 
 Ажиллуулах:  python server.py [--vault "<vault хавтас>"] [--port 5190]
@@ -32,14 +32,16 @@ ARGS = ap.parse_args()
 if not ARGS.vault:
     sys.exit("Vault олдсонгүй: --vault өг эсвэл ~/.fmos/config.json тохируул")
 VAULT = Path(ARGS.vault)
-INBOX_NEW, INBOX_OLD = "02-GTD/inbox", "00-Inbox"
+INBOX_NEW, INBOX_OLDS = "00-GTD/Inbox", ("02-GTD/inbox", "00-Inbox")
 
 
 def resolve_inbox(vault):
-    """Шинэ зам 02-GTD/inbox; байхгүй ч хуучин 00-Inbox байвал түүнийг (шилжилтийн хамгаалалт)."""
+    """Шинэ зам 00-GTD/Inbox; байхгүй бол хуучин 02-GTD/inbox -> 00-Inbox (шилжилтийн хамгаалалт)."""
     vault = Path(vault)
-    if not (vault / INBOX_NEW).is_dir() and (vault / INBOX_OLD).is_dir():
-        return vault / INBOX_OLD
+    if not (vault / INBOX_NEW).is_dir():
+        for old in INBOX_OLDS:
+            if (vault / old).is_dir():
+                return vault / old
     return vault / INBOX_NEW
 
 
@@ -242,6 +244,6 @@ class H(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     if not INBOX.is_dir():
-        sys.exit(f"Inbox олдсонгүй (02-GTD/inbox эсвэл 00-Inbox): {INBOX}")
+        sys.exit(f"Inbox олдсонгүй (00-GTD/Inbox, 02-GTD/inbox эсвэл 00-Inbox): {INBOX}")
     print(f"Inbox Gallery → http://localhost:{ARGS.port}  (vault: {VAULT})", flush=True)
     ThreadingHTTPServer(("127.0.0.1", ARGS.port), H).serve_forever()

@@ -28,7 +28,7 @@ project:
 
 | Юу | Хаана |
 |---|---|
-| Task | `02-GTD/tasks/` + `project:` |
+| Task | `00-GTD/Tasks/` + `project:` |
 | Шийдвэр | `06-Atomic/decisions/` + `projects:` |
 | Сургамж, баримт | `06-Atomic/knowledge/` + `projects:` |
 | Судалгаа, баримт бичиг | энэ хавтас (`<дугаар> <Үүрэг> - <Нэр>.md`) |

@@ -1,6 +1,6 @@
 ---
 name: inbox
-description: 02-GTD/inbox-ийг цэгцэлнэ - эхлээд зүйл бүрийг уншиж ангилаад төлөвлөгөөний хүснэгт гаргаж ЗОГСОНО; хэрэглэгч баталсны дараа л байршуулна (task → 02-GTD/tasks эзэнтэй, линк → лавлагаа (`/fm:save <url>`), санаа → атом, чат/док → төсөл, хувийн санхүү → finances/private). Хэрэглэгч «inbox цэгцэл», «inbox», «inbox-оо ангил», «inbox хоосол», «route», «inbox-ийг байршуул», «шинэ ирсэн зүйлсийг цэгцэл» гэвэл ашигла.
+description: 00-GTD/Inbox-ийг цэгцэлнэ - эхлээд зүйл бүрийг уншиж ангилаад төлөвлөгөөний хүснэгт гаргаж ЗОГСОНО; хэрэглэгч баталсны дараа л байршуулна (task → 00-GTD/Tasks эзэнтэй, линк → лавлагаа (`/fm:save <url>`), санаа → атом, чат/док → төсөл, хувийн санхүү → finances/private). Хэрэглэгч «inbox цэгцэл», «inbox», «inbox-оо ангил», «inbox хоосол», «route», «inbox-ийг байршуул», «шинэ ирсэн зүйлсийг цэгцэл» гэвэл ашигла.
 argument-hint: "[route | <дугаарууд, жишээ 1,3,5> - хоосон бол зөвхөн төлөвлөгөө]"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "[route | <дугаарууд, жишээ 1,3,5> - хоосон �
 
 Энэ skill хоёр үе шаттай. Тэдгээрийн хооронд **заавал хэрэглэгчийн батлалт** байна.
 
-1. **Triage (зөвхөн унших).** `02-GTD/inbox`-ийг уншиж, зүйл бүрийг ангилаад төлөвлөгөөний хүснэгт гаргана. Дараа нь **зогсоно**.
+1. **Triage (зөвхөн унших).** `00-GTD/Inbox`-ийг уншиж, зүйл бүрийг ангилаад төлөвлөгөөний хүснэгт гаргана. Дараа нь **зогсоно**.
 2. **Route (гүйцэтгэл).** Хэрэглэгч «тийм», «бүгдийг», «1,3,5» гэх мэтээр баталсны **дараа л** зөөж, үүсгэж, холбоно.
 
 Vault: `${user_config.vault_path}` (доор `<V>`). Дүрэм: `<V>/_system/BOOT.md`.
@@ -21,7 +21,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Дүрэм: `<V>/_system/BO
 
 ### 1. Жагсаах
 
-`<V>/02-GTD/inbox/` доторх бүх файлыг рекурсивээр Glob-оор ол (`02-GTD/inbox/**/*`). Дараахыг тоохгүй:
+`<V>/00-GTD/Inbox/` доторх бүх файлыг рекурсивээр Glob-оор ол (`00-GTD/Inbox/**/*`). Дараахыг тоохгүй:
 - `.DS_Store`;
 - `README.md` (хавтасны тайлбар).
 
@@ -68,11 +68,11 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Дүрэм: `<V>/_system/BO
 
 | Төрөл | Газар | Тэмдэглэл |
 |---|---|---|
-| Task | `02-GTD/tasks/<Тодорхой гарчиг>.md` | Загвар `_system/templates/Task.md` (эсвэл `/fm:task`). `type: task`, `status: inbox`, `owner`, `context: work\|home`, `priority: high\|medium\|low`, `project`, `ai-first: true` |
+| Task | `00-GTD/Tasks/<Тодорхой гарчиг>.md` | Загвар `_system/templates/Task.md` (эсвэл `/fm:task`). `type: task`, `status: inbox`, `owner`, `context: work\|home`, `priority: high\|medium\|low`, `project`, `ai-first: true` |
 | Линк / URL | Resource клип | Доорх «Линк» хэсгийг үз |
 | Санаа / ойлголт | `06-Atomic/knowledge/YYYY-MM-DD - <ascii-slug>.md` | Загвар `Atomic.md`. `type: atomic`, `confidence`, `projects:`/`areas:` PARA гэртэй |
 | Шийдвэр | `06-Atomic/decisions/YYYY-MM-DD - <ascii-slug>.md` | Загвар `Session Decision.md` |
-| Уулзалт | `02-GTD/events/<YYYY-MM-DD Хэнтэй - сэдэв>.md` | Загвар `Meeting.md`, `type: meeting`. Task биш. Уулзалтаас гарсан ажлыг тусад нь task болго |
+| Уулзалт | `00-GTD/Events/<YYYY-MM-DD Хэнтэй - сэдэв>.md` | Загвар `Meeting.md`, `type: meeting`. Task биш. Уулзалтаас гарсан ажлыг тусад нь task болго |
 | Чат (дэлгэцийн зураг) | `03-Projects/<Төсөл>/chats/<YYYY-MM-DD Хүн - сэдэв>.png` | Төсөл `TBD` бол `_system/attachments/chats/` |
 | Док (PDF, deck) | `03-Projects/<Төсөл>/docs/` | Төсөл `TBD` бол `_system/attachments/docs/` |
 | Төслийн санхүү | `03-Projects/<Төсөл>/docs/` + `04-Areas/Business/finances/` (Finance Record, `scope: team`) | Хувийнх биш |
@@ -97,7 +97,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Дүрэм: `<V>/_system/BO
 
 3. **Линк → Resource клип.** URL бүрд хэрэглэгчээс аль аргыг хүсэхийг асуу (хүснэгтийн «Эзэн» баганад урьдчилан санал болго):
    - **одоо клип:** `/fm:save <url>`-ийн URL горимыг энэ сешнд гүйцэтгэ (reference note + атом + fact-check);
-   - **дараа:** `02-GTD/tasks/Клип - <гарчиг эсвэл домэйн>.md` task үүсгэ:
+   - **дараа:** `00-GTD/Tasks/Клип - <гарчиг эсвэл домэйн>.md` task үүсгэ:
      - `owner: resource`;
      - `status: inbox`;
      - биед нь URL болон inbox-ийн эх текстийг бич.

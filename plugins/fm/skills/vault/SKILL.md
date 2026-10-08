@@ -35,13 +35,13 @@ Vault-аас гадуур (`~/.claude/`, бусад repo, хуучин нөөц 
 
 | Юу | `type:` | Хаана | Файлын нэр |
 |---|---|---|---|
-| Ангилаагүй барьж авсан зүйл | `capture` | `02-GTD/inbox/` | чөлөөтэй |
+| Ангилаагүй барьж авсан зүйл | `capture` | `00-GTD/Inbox/` | чөлөөтэй |
 | Өөрийн үнэт зүйл, хэн бэ | — | `01-Soul/` (`SOUL.md`) | — |
-| Өдрийн тэмдэглэл | `daily` | `02-GTD/daily/` | `YYYY-MM-DD.md` |
-| Task | `task` | `02-GTD/tasks/` | тодорхой гарчиг, огнооны угтваргүй |
-| Уулзалт | `meeting` | `02-GTD/events/` | тодорхой гарчиг |
-| Бусад үйл явдал (арга хэмжээ, аялал г.м.) | `event` | `02-GTD/events/` | тодорхой гарчиг |
-| Kanban самбар | (plugin формат) | `02-GTD/boards/` | — |
+| Өдрийн тэмдэглэл | `daily` | `00-GTD/Daily/` | `YYYY-MM-DD.md` |
+| Task | `task` | `00-GTD/Tasks/` | тодорхой гарчиг, огнооны угтваргүй |
+| Уулзалт | `meeting` | `00-GTD/Events/` | тодорхой гарчиг |
+| Бусад үйл явдал (арга хэмжээ, аялал г.м.) | `event` | `00-GTD/Events/` | тодорхой гарчиг |
+| Kanban самбар | (plugin формат) | `00-GTD/boards/` | — |
 | Төсөл | `project` | `03-Projects/<1-Active\|2-Planning\|3-On-hold>/<Төсөл>/<Төсөл>.md` | хавтас бүрт `_BRAIN.md` (`project-brain`) |
 | Хүн | `person` | `04-Areas/people/` | бүтэн нэр |
 | Компани, хэрэгсэл | `company`, `tool` | `04-Areas/Business/companies/`, `04-Areas/Business/tools/` | нэр |
@@ -87,7 +87,7 @@ Obsidian-ий синтакс (wikilink, embed, callout, properties, tag, comment
 
 ## 4. Task (GTD)
 
-Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — санаа бүр task биш. Эхлээд өдрийн тэмдэглэлийн `## 📥 Inbox` дээр checkbox, жинхэнэ дараагийн алхам болох үед `02-GTD/tasks/` файл болно.
+Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — санаа бүр task биш. Эхлээд өдрийн тэмдэглэлийн `## 📥 Inbox` дээр checkbox, жинхэнэ дараагийн алхам болох үед `00-GTD/Tasks/` файл болно.
 
 | Талбар | Утга |
 |---|---|

@@ -505,7 +505,10 @@ def d_task(args, sid):
     title = args[0]; owner = opt("--owner", fmconfig.DEFAULT_OWNER); status = opt("--status", "next-action")
     vault = fmconfig.vault_dir()
     safe = _re.sub(r'[\\/:*?"<>|]', "-", title)[:80]
-    f = vault / "02-GTD" / "tasks" / f"{safe}.md"; f.parent.mkdir(parents=True, exist_ok=True)
+    tdir = vault / "00-GTD" / "Tasks"
+    if not tdir.is_dir() and (vault / "02-GTD" / "tasks").is_dir():  # хуучин layout (шилжилтийн хамгаалалт)
+        tdir = vault / "02-GTD" / "tasks"
+    f = tdir / f"{safe}.md"; f.parent.mkdir(parents=True, exist_ok=True)
     today = datetime.date.today().isoformat()
     proj = opt("--project")
     f.write_text("---\n" + "\n".join([
@@ -514,7 +517,7 @@ def d_task(args, sid):
         "tags:", "  - task"]) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
     reg = load(REG, {"sessions": {}})["sessions"]; cm = chmap()
     ch = next((cm[s] for s, v in reg.items() if (v.get("title") or "").strip() == owner.strip() and s in cm), None)
-    msg = f"📌 TASK → **{owner}** · `{status}` · [[02-GTD/tasks/{safe}]]\n{title}" + (f"\n{opt('--body')}" if opt("--body") else "")
+    msg = f"📌 TASK → **{owner}** · `{status}` · [[{tdir.relative_to(vault).as_posix()}/{safe}]]\n{title}" + (f"\n{opt('--body')}" if opt("--body") else "")
     if not ch and VAULT_MODE:  # unowned (no channel) → the inbox role catches it (discord.json "inbox_role")
         for want in dict.fromkeys([fmconfig.INBOX_ROLE, "🗂️ GTD", "GTD", "00 Inbox Admin"]):  # new GTD note title + legacy
             ch = next((cm[s] for s, v in reg.items() if (v.get("title") or "").strip() == want and s in cm), None)

@@ -1,13 +1,13 @@
 # Save to Inbox - Obsidian vault
 
-Chrome/Brave/Edge extension. Одоогийн вэб хуудсыг **шууд** Obsidian vault-ийн `02-GTD/inbox/` руу reference болгон хадгална. Notion-оор дамжихгүй.
+Chrome/Brave/Edge extension. Одоогийн вэб хуудсыг **шууд** Obsidian vault-ийн `00-GTD/Inbox/` руу reference болгон хадгална. Notion-оор дамжихгүй.
 
 ## Хэрхэн ажилладаг (2 горим)
 
 1. **Local REST API (санал болгож буй - Obsidian урд гарахгүй):** Obsidian "Local REST API" plugin суулгаж, extension-ий Options-д API key оруулбал extension нь localhost руу HTTP бичнэ. **Фокус солихгүй**, урт нийтлэл ч бүрэн орно.
 2. **obsidian:// fallback:** API key байхгүй бол `obsidian://new` URI (Obsidian урд гарна).
 
-Аль ч горимд нот `02-GTD/inbox/clip - <гарчиг>-<цаг>.md` болж, Command Center 📥 Inbox таб-д гарна.
+Аль ч горимд нот `00-GTD/Inbox/clip - <гарчиг>-<цаг>.md` болж, Command Center 📥 Inbox таб-д гарна.
 
 ## Суулгах (2 минут)
 

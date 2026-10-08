@@ -244,7 +244,7 @@ def cmd_done(a):
 
 def cmd_pull(a):
     cfg = load_cfg(); name, db = db_of(cfg, a.db); s = db['schema']
-    out = pathlib.Path(a.out or f'02-GTD/inbox/notion/{name}'); out.mkdir(parents=True, exist_ok=True)
+    out = pathlib.Path(a.out or f'00-GTD/Inbox/notion/{name}'); out.mkdir(parents=True, exist_ok=True)
     pages = paged('POST', f'/data_sources/{db["id"]}/query', {'page_size': 100}); n = 0
     for pg in pages:
         t, d, st = row(pg, s)

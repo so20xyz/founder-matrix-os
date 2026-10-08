@@ -27,7 +27,7 @@ def split(text):
     return (text[4:i], text[i + 4:]) if i != -1 else ("", text)
 
 
-ORGANS = (("02-GTD/tasks/", "Tasks"), ("02-GTD/", "GTD"), ("03-Projects/", "Projects"), ("99-Archive/Projects/", "Projects"),
+ORGANS = (("00-GTD/Tasks/", "Tasks"), ("02-GTD/tasks/", "Tasks"), ("00-GTD/", "GTD"), ("02-GTD/", "GTD"), ("03-Projects/", "Projects"), ("99-Archive/Projects/", "Projects"),
           ("04-Areas/", "Areas"), ("05-Resources/library/", "Library"), ("05-Resources/", "Resources"),
           ("06-Atomic/", "Atomic"), ("01-Soul/", "Soul"), ("07-Goals/", "Goals"), ("08-Studio/", "Studio"))
 
@@ -82,7 +82,7 @@ def scan(vault: Path):
     used = set()
     for k, (fm, body) in notes.items():
         targets = {r for r in (resolve(t) for t in LINK.findall(fm + body)) if r}
-        if k.startswith(("02-GTD/tasks/",) + ATOM):
+        if k.startswith(("00-GTD/Tasks/", "02-GTD/tasks/") + ATOM):
             used |= {t for t in targets if t.startswith(RES)}
         is_index = re.search(r"^type:\s*(index|moc)", fm, re.M)
         if fm and not is_index and not re.search(r"^up:", fm, re.M) and k.split("/")[0] not in ("Home",):

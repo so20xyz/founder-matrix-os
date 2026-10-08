@@ -33,7 +33,7 @@ STATES = {
 OPEN_TASK = {"inbox", "next-action", "waiting"}
 LINK_EXT = {".md", ".base", ".canvas"}
 SKIP_DIRS = {".obsidian", "_trash", ".trash", ".git", ".backups", "node_modules"}
-BOARDS = Path("02-GTD") / "boards"
+BOARDS = Path("00-GTD") / "boards"
 COLUMN_STATUS = {"inbox": "inbox", "next action": "next-action", "waiting": "waiting",
                  "someday": "someday", "completed": "completed", "done": "completed"}
 MAX_REL_PATH = 60
@@ -160,7 +160,9 @@ def find_projects(vault: Path) -> List[Tuple[Path, Dict[str, str]]]:
 
 def open_tasks_by_project(vault: Path) -> Dict[str, int]:
     counts = {}  # type: Dict[str, int]
-    folder = vault / "02-GTD" / "tasks"
+    folder = vault / "00-GTD" / "Tasks"
+    if not folder.is_dir():  # хуучин layout (шилжилтийн хамгаалалт)
+        folder = vault / "02-GTD" / "tasks"
     if not folder.is_dir():
         return counts
     for t in folder.glob("*.md"):
@@ -330,6 +332,8 @@ def cmd_move(vault: Path, args: List[str]) -> None:
 
 def cmd_board(vault: Path, args: List[str]) -> None:
     folder = vault / BOARDS
+    if not folder.is_dir():
+        folder = vault / "02-GTD" / "boards"
     boards = [b for b in sorted(folder.glob("*.md")) if "kanban-plugin" in read_text(b)[:400]] \
         if folder.is_dir() else []
     pos = _positional(args)
@@ -359,7 +363,7 @@ def cmd_board(vault: Path, args: List[str]) -> None:
             col_key = re.sub(r"[^\w\s]", "", column, flags=re.UNICODE).strip().lower()
             want = next((v for k, v in COLUMN_STATUS.items() if k in col_key), None)
             due = dm.group(1) if dm else ""
-            lm = re.search(r"\[\[(02-GTD/tasks/[^\]|#]+)", item)
+            lm = re.search(r"\[\[((?:00-GTD/Tasks|02-GTD/tasks)/[^\]|#]+)", item)
             if lm:
                 t = vault / (lm.group(1) + ".md")
                 if not t.exists():

@@ -25,7 +25,7 @@ def free_port():
 
 def make_vault(tmp):
     v = tmp / "vault"
-    inbox = v / "02-GTD/inbox"
+    inbox = v / "00-GTD/Inbox"
     (inbox / "Empty").mkdir(parents=True)
     (v / "03-Projects" / "1-Active" / "Demo").mkdir(parents=True)
     (v / "_system" / "logs").mkdir(parents=True)
@@ -120,7 +120,7 @@ def test_apply_moves_never_deletes(srv, vault):
     assert list((vault / "99-Archive/inbox").rglob("orphan.png"))
     assert list((vault / "_trash").glob("inbox-*/Empty"))
     assert (vault / "03-Projects/1-Active/Demo/Resources/used.png").is_file()
-    assert (vault / "02-GTD/inbox/raw thought.md").is_file()
+    assert (vault / "00-GTD/Inbox/raw thought.md").is_file()
     assert (vault / "secret.md").is_file()
     logs = list((vault / "_system/logs").glob("*.md"))
     assert logs and "inbox-gallery" in logs[0].read_text(encoding="utf-8")
@@ -136,11 +136,11 @@ def test_apply_does_not_overwrite(srv, vault):
 
 
 def test_legacy_00_inbox_fallback():
-    """Шинэ 02-GTD/inbox байхгүй, хуучин 00-Inbox байвал түүнийг уншина (шилжилтийн хамгаалалт)."""
+    """Шинэ 00-GTD/Inbox байхгүй, хуучин 00-Inbox байвал түүнийг уншина (шилжилтийн хамгаалалт)."""
     tmp = Path(tempfile.mkdtemp(prefix="fm-gallery-legacy-"))
     try:
         vault = make_vault(tmp)
-        shutil.move(str(vault / "02-GTD/inbox"), str(vault / "00-Inbox"))
+        shutil.move(str(vault / "00-GTD/Inbox"), str(vault / "00-Inbox"))
         srv = Server(vault)
         try:
             d = json.loads(srv.get("/api/items")[1])
@@ -148,7 +148,7 @@ def test_legacy_00_inbox_fallback():
             r = srv.post("/api/apply", {"decisions": {"ref - demo.md": "resource"}})
             assert len(r["done"]) == 1, r
             assert (vault / "05-Resources/references/ref - demo.md").is_file()
-            assert not (vault / "02-GTD/inbox").exists()
+            assert not (vault / "00-GTD/Inbox").exists()
         finally:
             srv.stop()
     finally:

@@ -129,12 +129,12 @@ def test_rebalance_sums(c):
 
 def test_guard_blocks_outside_private(c):
     try:
-        fb.write(c.vault, c.vault / "02-GTD/inbox" / "x.md", "nope")
+        fb.write(c.vault, c.vault / "00-GTD/Inbox" / "x.md", "nope")
     except SystemExit as e:
         assert e.code == 5
     else:
         raise AssertionError("guard did not block")
-    assert not (c.vault / "02-GTD/inbox" / "x.md").exists()
+    assert not (c.vault / "00-GTD/Inbox" / "x.md").exists()
     for p in c.vault.rglob("*.md"):
         assert "_system" in p.parts or fb.private_root(c.vault) in p.resolve().parents, p
 

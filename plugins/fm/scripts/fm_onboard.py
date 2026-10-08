@@ -92,7 +92,7 @@ GOALS = "07-Goals"
 ROLES_DIR = "04-Areas/AI Team/ai-workers"
 REGISTRY = "_system/fm/registry.json"
 DECISIONS = "06-Atomic/decisions"
-DAILY = "02-GTD/daily"
+DAILY = "00-GTD/Daily"
 LOGS = "_system/logs"
 SOUL = "01-Soul/SOUL.md"
 STATES = {"active": ("03-Projects/1-Active", "active"),
@@ -1181,7 +1181,8 @@ class Onboard(object):
         self.append_lines("%s/%s.md" % (LOGS, today), ["- **%s** · area → %s" % (now, atom_link)])
         if self.a.get("daily", True) is False:
             return
-        daily_rel = "%s/%s.md" % (DAILY, today)
+        daily_dir = DAILY if self.exists(DAILY) or not self.exists("02-GTD/daily") else "02-GTD/daily"  # хуучин layout
+        daily_rel = "%s/%s.md" % (daily_dir, today)
         lines = ["- 🚀 Vault онбординг → %s" % atom_link]
         for n in self.projects:
             if self.project_state.get(n) == "active":
