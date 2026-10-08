@@ -79,6 +79,8 @@ confidence: medium       # stated | high | medium | speculation
 sources: ["[[...]]"]     # эх note, лавлагаа эсвэл өнөөдрийн лог
 role: <дүрийн slug>
 projects: ["[[03-Projects/...]]"]  # projects эсвэл areas - дор хаяж нэг PARA гэр
+topics: ["[[05-Resources/Topics/<Сэдэв>]]"]  # 1-2 сэдэв: хадгалсан пост → сэдэв → атом гүүр (байвал)
+up: "[[06-Atomic/knowledge/Atoms]]"  # харьяалал (шийдвэр бол 06-Atomic/decisions/Decisions)
 areas: []
 supersededby: []
 ai-first: true
