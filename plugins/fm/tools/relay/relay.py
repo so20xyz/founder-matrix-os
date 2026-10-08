@@ -514,7 +514,7 @@ def d_task(args, sid):
     f.write_text("---\n" + "\n".join([
         f"date: {today}", f"updated: {today}", "type: task", f"status: {status}", f"owner: \"{owner}\"",
         f"priority: {opt('--prio', '🟡')}", f"due: {opt('--due')}", f"project: \"[[{proj}]]\"" if proj else "project:",
-        "tags:", "  - task"]) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
+        "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
     reg = load(REG, {"sessions": {}})["sessions"]; cm = chmap()
     ch = next((cm[s] for s, v in reg.items() if (v.get("title") or "").strip() == owner.strip() and s in cm), None)
     msg = f"📌 TASK → **{owner}** · `{status}` · [[{tdir.relative_to(vault).as_posix()}/{safe}]]\n{title}" + (f"\n{opt('--body')}" if opt("--body") else "")

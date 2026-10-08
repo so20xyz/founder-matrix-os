@@ -281,7 +281,7 @@ def cmd_new(vault: Path, args: List[str]) -> None:
                 "Task: юу хийх, яагаад, хэн хийх, юу хүргэсэн.", "", "## Шаардлага", "", "## Хүргэсэн", ""]
     for key, val in (("type", "task"), ("status", status), ("owner", yaml_str(owner)), ("priority", priority),
                      ("due", due), ("project", yaml_str("[[%s]]" % project) if project else ""),
-                     ("context", context)):
+                     ("context", context), ("up", yaml_str("[[00-GTD/Tasks/Tasks]]"))):
         fm = fm_set(fm, key, val)
     if name != title:
         fm.append("aliases:\n  - %s" % yaml_str(title))

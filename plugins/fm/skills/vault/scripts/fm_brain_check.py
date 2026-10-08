@@ -36,6 +36,39 @@ ORGANS = (("00-GTD/Tasks/", "Tasks"), ("02-GTD/tasks/", "Tasks"), ("00-GTD/", "G
           ("06-Atomic/", "Atomic"), ("01-Soul/", "Soul"), ("07-Goals/", "Goals"), ("08-Studio/", "Studio"))
 
 
+ATTACH = {".pdf", ".docx", ".pptx", ".xlsx", ".key", ".pages"}  # documents (images/build assets live with their project)
+
+
+def hub_for(vault: Path, k: str, notes):
+    """Nearest folder hub above note k: <dir>/<dir name>.md, a project note, or an index note in an ancestor folder."""
+    d = k.rsplit("/", 1)[0]
+    while d:
+        name = d.rsplit("/", 1)[-1]
+        for cand in (f"{d}/{name}",):
+            if cand in notes and cand != k:
+                return cand
+        for c, (fm, _) in notes.items():
+            if c != k and c.rsplit("/", 1)[0] == d and re.search(r"^type:\s*(index|moc|project)", fm, re.M):
+                return c
+        d = d.rsplit("/", 1)[0] if "/" in d else ""
+    return None
+
+
+def fix_up(vault: Path, out, notes):
+    n = 0
+    for k in out["no-up"]:
+        h = hub_for(vault, k, notes)
+        if not h:
+            continue
+        p = vault / (k + ".md")
+        t = p.read_text(encoding="utf-8")
+        i = t.find("\n---", 4)
+        if not t.startswith("---\n") or i == -1:
+            continue
+        p.write_text(t[:i] + f'\nup: "[[{h}]]"' + t[i:], encoding="utf-8"); n += 1
+    return n
+
+
 def base_of(rel):
     """The «organ» a note belongs to (folder-level base), or None (system, root)."""
     for prefix, organ in ORGANS:
@@ -82,15 +115,34 @@ def scan(vault: Path):
         c = names.get(t.rsplit("/", 1)[-1], [])
         return c[0] if len(c) == 1 else None
 
-    out = {"no-up": [], "lonely-res": [], "rootless": [], "why-missing": [], "bridges": []}
+    out = {"no-up": [], "no-base": [], "orphan-file": [], "lonely-res": [], "rootless": [], "why-missing": [], "bridges": []}
+    # every note lives under a folder that has a base (organ); every attachment is linked from some note
+    base_dirs = {p.parent.relative_to(vault).as_posix() for p in vault.rglob("*.base")
+                 if not p.relative_to(vault).as_posix().startswith(SKIP)}
+
+    def has_base(k):
+        d = k.rsplit("/", 1)[0] if "/" in k else ""
+        while d:
+            if d in base_dirs:
+                return True
+            d = d.rsplit("/", 1)[0] if "/" in d else ""
+        return False
+    alltext = "\n".join(fm + body for fm, body in notes.values())
+    for p in vault.rglob("*"):
+        rel = p.relative_to(vault).as_posix()
+        if p.is_file() and p.suffix.lower() in ATTACH and not rel.startswith(SKIP + ("99-Archive/",)) \
+                and "/." not in "/" + rel and p.name not in alltext:
+            out["orphan-file"].append(rel)
     used = set()
     for k, (fm, body) in notes.items():
         targets = {r for r in (resolve(t) for t in LINK.findall(fm + body)) if r}
         if k.startswith(("00-GTD/Tasks/", "02-GTD/tasks/") + ATOM):
             used |= {t for t in targets if t.startswith(RES)}
         is_index = re.search(r"^type:\s*(index|moc)", fm, re.M)
-        if fm and not is_index and not re.search(r"^up:", fm, re.M) and k.split("/")[0] not in ("Home",):
+        if fm and not is_index and not re.search(r"^up:", fm, re.M) and k.split("/")[0] not in ("Home", "sortspec"):
             out["no-up"].append(k)
+        if fm and "/" in k and not is_index and not re.search(r"^type:\s*(area|soul|project)", fm, re.M) and not has_base(k):
+            out["no-base"].append(k)
         if k.startswith(ATOM) and not is_index:
             if not re.search(r"^(projects|from):\s*\S|^(projects|from):\s*\n\s+-", fm, re.M):
                 out["rootless"].append(k)
@@ -109,6 +161,7 @@ def scan(vault: Path):
                     out["why-missing"].append(f"{k} → {t}")
     out["lonely-res"] = sorted(k for k in notes if k.startswith(RES) and k not in used
                                and not re.search(r"^type:\s*(index|moc|topic)", notes[k][0], re.M))
+    out["_notes"] = notes
     return out
 
 
@@ -118,11 +171,15 @@ def main(argv):
         print(__doc__); return 0
     vault = Path(os.path.expanduser(argv[1]))
     out = scan(vault)
+    notes = out.pop("_notes")
+    if "--fix-up" in argv:
+        print(f"up тавигдав: {fix_up(vault, out, notes)}")
+        out = scan(vault); out.pop("_notes")
     if "--mark-bridges" in argv:
         print(f"bridge талбар бичигдэв: {mark_bridges(vault)}")
     if "--json" in argv:
         print(json.dumps({k: len(v) for k, v in out.items()} | {"items": out}, ensure_ascii=False, indent=1)); return 0
-    labels = {"no-up": "харьяалалгүй (up)", "lonely-res": "ашиглагдаагүй resource", "rootless": "эхгүй атом (projects/from)",
+    labels = {"no-up": "харьяалалгүй (up)", "no-base": "base-гүй хавтсанд буй note", "orphan-file": "холбоосгүй файл (pdf, зураг…)", "lonely-res": "ашиглагдаагүй resource", "rootless": "эхгүй атом (projects/from)",
               "why-missing": "«яагаад»-гүй холбоос", "bridges": "🌉 гүүр атом (≥3 base)"}
     for k, v in out.items():
         print(f"{labels[k]}: {len(v)}")
