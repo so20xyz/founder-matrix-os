@@ -24,6 +24,7 @@ TESTS = [
     "tests/test_onboard.py",
     "tests/test_doctor.py",
     "tests/test_tools.py",
+    "tests/test_migrate.py",
     "tools/relay/tests/test_relay_config.py",
 ]
 

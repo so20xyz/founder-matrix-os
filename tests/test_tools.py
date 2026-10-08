@@ -344,7 +344,8 @@ def test_no_stale_gtd_paths_in_repo():
                "tools/move-to-inbox.sh", "tools/screenshot-to-inbox.sh", "CHANGELOG.md",
                "plugins/fm/tools/relay/relay.py", "plugins/fm/skills/task/scripts/fm_task.py",
                "plugins/fm/skills/project/scripts/fm_project.py", "plugins/fm/skills/vault/scripts/fm_brain_check.py",
-               "plugins/fm/scripts/fm_onboard.py", "plugins/fm/skills/project/SKILL.md"}
+               "plugins/fm/scripts/fm_onboard.py", "plugins/fm/skills/project/SKILL.md",
+               "plugins/fm/scripts/fm_migrate.py", "plugins/fm/skills/setup/SKILL.md", "plugins/fm/skills/update/SKILL.md"}
     bad = []
     for p in REPO.rglob("*"):
         rel = p.relative_to(REPO).as_posix()
