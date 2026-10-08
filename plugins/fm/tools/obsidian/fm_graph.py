@@ -9,10 +9,19 @@ Vault: argument, else $FMOS_VAULT.
 import json, os, subprocess, sys, time
 from pathlib import Path
 
-PALETTE = [('path:"03-Projects" OR path:"00-GTD/Tasks"', 0x4F8EF7), ('path:"05-Resources/Atomic"', 0xB57EDC),
-           ('path:"04-Areas/Goals"', 0x2EC4B6), ('path:"04-Areas/Studio"', 0x8D6E63), ('path:"04-Areas"', 0x3FBF7F),
-           ('path:"05-Resources"', 0xF2C14E), ('path:"00-GTD"', 0xF2784B), ('path:"01-Soul"', 0xE85D9A),
-           ('path:"99-Archive"', 0x777777)]
+# One colour per agent's territory (itge.e 2026-10-09): first match wins, so specific paths come first.
+PALETTE = [('path:"03-Projects" OR path:"00-GTD/Tasks"', 0x4F8EF7),      # 💼 Project — blue
+           ('path:"00-GTD"', 0xF2784B),                                  # 📥 GTD — orange
+           ('path:"04-Areas/people"', 0xE85D9A),                         # 📥 GTD · people — pink
+           ('path:"04-Areas/Goals"', 0xFFB4A2),                          # 📥 GTD · goals — peach
+           ('path:"04-Areas/Studio"', 0xC08552),                         # 🎨 Creative — brown
+           ('path:"04-Areas/AI Team" OR path:"04-Areas/Business/INAI/tools"', 0x2EC4B6),  # 🏛️ Architect — teal
+           ('path:"04-Areas/Business/finances"', 0xE63946),              # 🔒 Finance — red
+           ('path:"04-Areas"', 0x3FBF7F),                                # areas — green
+           ('path:"05-Resources/Atomic"', 0xB57EDC),                     # 📚 Wiki · atoms — purple
+           ('path:"05-Resources"', 0xF2C14E),                            # 📚 Wiki — yellow
+           ('path:"01-Soul"', 0xFFFFFF),                                 # soul — white
+           ('path:"99-Archive"', 0x666666)]                              # archive — grey
 SEARCH = '-path:"04-Areas/Studio/Social saves" -path:_system -path:_trash -path:.backups'
 FORCES = {"centerStrength": 0.518713248970312, "repelStrength": 10, "linkStrength": 1, "linkDistance": 250,
           "nodeSizeMultiplier": 1, "lineSizeMultiplier": 1, "textFadeMultiplier": 0}
