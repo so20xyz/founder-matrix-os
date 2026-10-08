@@ -7,6 +7,8 @@ Reports the vault's unhealthy "synapses" (read-only, no writes):
   • rootless    — atom/decision with neither `projects:` nor `from:`
   • why-missing — project `related:` target with no line in «## 🔗 Холбоос — яагаад»
   • bridges     — atoms linking ≥3 different bases (the strongest ideas, for info)
+  • no-base     — note whose folder (or ancestor) no base filters on via file.inFolder("…")
+  • nested-base — .base not directly in a PARA top folder (00-Soul … 99-Archive)
 
   python fm_brain_check.py <vault> [--json] [--mark-bridges]   (--mark-bridges: гүүр атомд `bridge: N` бичнэ)
 Private finance (`finances/private/`, `private: true`), `_system/`, `_trash/`, `.backups/` are skipped.
@@ -25,6 +27,10 @@ ATOM = ("04-Resources/Atomic/knowledge/", "04-Resources/Atomic/decisions/",
         "05-Resources/Atomic/knowledge/", "05-Resources/Atomic/decisions/", "06-Atomic/knowledge/", "06-Atomic/decisions/")
 TASKS = ("01-GTD/Tasks/", "00-GTD/Tasks/", "02-GTD/tasks/")
 LINK = re.compile(r"\[\[([^\]|#]+)")
+# positive file.inFolder("…") filters only (a negated '!file.inFolder' does not cover a folder)
+IN_FOLDER = re.compile(r'(?<!!)file\.inFolder\(\s*"([^"]+)"\s*\)')
+# PARA top folders: 00-Soul, 01-GTD, 02-Projects, 03-Areas, 04-Resources, 99-Archive (+ older NN-Name)
+PARA_TOP = re.compile(r"^\d\d-[^/]+$")
 
 
 def split(text):
@@ -124,15 +130,24 @@ def scan(vault: Path):
         c = names.get(t.rsplit("/", 1)[-1], [])
         return c[0] if len(c) == 1 else None
 
-    out = {"no-up": [], "no-base": [], "orphan-file": [], "lonely-res": [], "rootless": [], "why-missing": [], "bridges": [], "no-owner": [], "bad-skill": []}
-    # every note lives under a folder that has a base (organ); every attachment is linked from some note
-    base_dirs = {p.parent.relative_to(vault).as_posix() for p in vault.rglob("*.base")
-                 if not p.relative_to(vault).as_posix().startswith(SKIP)}
+    out = {"no-up": [], "no-base": [], "orphan-file": [], "lonely-res": [], "rootless": [], "why-missing": [], "bridges": [], "no-owner": [], "bad-skill": [], "nested-base": []}
+    # every note lives under a folder that some base filters on (file.inFolder("<folder or ancestor>"));
+    # bases themselves live directly in a PARA top folder (rule 2026-10-09), never in a subfolder
+    covered = set()
+    for p in vault.rglob("*.base"):
+        rel = p.relative_to(vault).as_posix()
+        try:
+            covered |= {f.strip("/") for f in IN_FOLDER.findall(p.read_text(encoding="utf-8", errors="replace"))}
+        except OSError:
+            continue
+        if not rel.startswith(SKIP) and not PARA_TOP.match(rel.rsplit("/", 1)[0] if "/" in rel else ""):
+            out["nested-base"].append(rel)
+    out["nested-base"].sort()
 
     def has_base(k):
         d = k.rsplit("/", 1)[0] if "/" in k else ""
         while d:
-            if d in base_dirs:
+            if d in covered:
                 return True
             d = d.rsplit("/", 1)[0] if "/" in d else ""
         return False
@@ -211,8 +226,8 @@ def main(argv):
         print(f"bridge талбар бичигдэв: {mark_bridges(vault)}")
     if "--json" in argv:
         print(json.dumps({k: len(v) for k, v in out.items()} | {"items": out}, ensure_ascii=False, indent=1)); return 0
-    labels = {"no-owner": "эзэнгүй base (agent-гүй)", "bad-skill": "байхгүй skill (дүрийн жагсаалтад)", "no-up": "харьяалалгүй (up)", "no-base": "base-гүй хавтсанд буй note", "orphan-file": "холбоосгүй файл (pdf, зураг…)", "lonely-res": "ашиглагдаагүй resource", "rootless": "эхгүй атом (projects/from)",
-              "why-missing": "«яагаад»-гүй холбоос", "bridges": "🌉 гүүр атом (≥3 base)"}
+    labels = {"no-owner": "эзэнгүй base (agent-гүй)", "bad-skill": "байхгүй skill (дүрийн жагсаалтад)", "no-up": "харьяалалгүй (up)", "no-base": "base-ийн file.inFolder-д ороогүй note", "orphan-file": "холбоосгүй файл (pdf, зураг…)", "lonely-res": "ашиглагдаагүй resource", "rootless": "эхгүй атом (projects/from)",
+              "why-missing": "«яагаад»-гүй холбоос", "bridges": "🌉 гүүр атом (≥3 base)", "nested-base": "дэд хавтсан дахь base"}
     for k, v in out.items():
         print(f"{labels[k]}: {len(v)}")
         for x in v[:5]:

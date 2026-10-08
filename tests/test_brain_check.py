@@ -32,12 +32,21 @@ def main():
     ]
     subprocess.run([sys.executable, str(S), str(v), "--mark-bridges"], capture_output=True)
     checks.append(("--mark-bridges writes bridge: N", "bridge: 4" in (v / "04-Resources/Atomic/knowledge/Bridge.md").read_text(encoding="utf-8")))
-    w(v / "01-GTD/Tasks/Tasks.base", "filters: {}\n"); w(v / "03-Areas/Free/Free.base", "filters: {}\n")
-    w(v / "_system/fm/registry.json", json.dumps({"roles": {"area": {"active": True, "bases": ["01-GTD/Tasks/Tasks.base"],
+    w(v / "01-GTD/Tasks.base", "filters: {}\n"); w(v / "03-Areas/Free/Free.base", "filters: {}\n")
+    w(v / "_system/fm/registry.json", json.dumps({"roles": {"area": {"active": True, "bases": ["01-GTD/Tasks.base"],
                                                               "skills": ["fm:task", "fm:nope", "loose"]}}}))
     d2 = json.loads(subprocess.run([sys.executable, str(S), str(v), "--json"], capture_output=True, text=True, encoding="utf-8").stdout)["items"]
-    checks.append(("no-owner lists unowned base only", "03-Areas/Free/Free.base" in d2["no-owner"] and "01-GTD/Tasks/Tasks.base" not in d2["no-owner"]))
+    checks.append(("no-owner lists unowned base only", "03-Areas/Free/Free.base" in d2["no-owner"] and "01-GTD/Tasks.base" not in d2["no-owner"]))
     checks.append(("bad-skill flags missing fm skill + plugin-less name", any("fm:nope" in x for x in d2["bad-skill"]) and any("loose" in x for x in d2["bad-skill"]) and not any("fm:task" in x for x in d2["bad-skill"])))
+    checks.append(("nested-base flags subfolder base only", d2["nested-base"] == ["03-Areas/Free/Free.base"]))
+    # no-base: a base file in an ancestor dir is not enough - some base must filter file.inFolder(<folder or ancestor>)
+    w(v / "03-Areas/people/Ann.md", "---\ntype: person\nup: \"[[x]]\"\n---\nA\n")
+    w(v / "03-Areas/Business/companies/Co.md", "---\ntype: company\nup: \"[[x]]\"\n---\nC\n")
+    w(v / "03-Areas/People.base", "filters:\n  and:\n    - file.inFolder(\"03-Areas/people\")\n    - '!file.inFolder(\"03-Areas/Business\")'\n")
+    d3 = json.loads(subprocess.run([sys.executable, str(S), str(v), "--json"], capture_output=True, text=True, encoding="utf-8").stdout)["items"]
+    checks.append(("root base with inFolder covers subfolder note", "03-Areas/people/Ann" not in d3["no-base"]))
+    checks.append(("negated inFolder / bare ancestor base does not cover", "03-Areas/Business/companies/Co" in d3["no-base"]))
+    checks.append(("root PARA base not nested", "03-Areas/People.base" not in d3["nested-base"]))
     bad = [n for n, ok in checks if not ok]
     for n, ok in checks: print(("PASS  " if ok else "FAIL  ") + n)
     print(f"\n{len(checks) - len(bad)}/{len(checks)} passed"); sys.exit(1 if bad else 0)

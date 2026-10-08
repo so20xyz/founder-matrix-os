@@ -563,7 +563,14 @@ def test_templates_follow_conventions(c):
                  "Tasks.base"):
         assert base in home, base
         assert len(list(TEMPLATE.rglob(base))) == 1, base
-    assert not (TEMPLATE / "_system/bases").exists()  # folder-base rule
+    assert not (TEMPLATE / "_system/bases").exists()
+    # base rule 2026-10-09: every .base directly in a PARA top folder, never in a subfolder
+    para = {"00-Soul", "01-GTD", "02-Projects", "03-Areas", "04-Resources", "99-Archive"}
+    nested = [f.relative_to(TEMPLATE).as_posix() for f in TEMPLATE.rglob("*.base")
+              if f.parent.relative_to(TEMPLATE).as_posix() not in para]
+    assert not nested, nested
+    for m in re.findall(r"!\[\[([^\]|#]+\.base)", home):
+        assert (TEMPLATE / m).is_file(), m  # embeds use the full root path
 
 
 def test_bases_are_consistent(c):

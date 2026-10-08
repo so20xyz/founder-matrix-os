@@ -2,6 +2,9 @@ filters:
   and:
     - file.ext == "md"
     - type == "project"
+    - or:
+        - file.inFolder("02-Projects")
+        - file.inFolder("99-Archive/Projects")
     - '!file.inFolder("_system/templates")'
 formulas:
   status_icon: 'if(status == "active", "🔨", if(status == "planning", "📝", if(status == "on-hold", "⏸️", if(status == "completed", "✅", "🚫"))))'

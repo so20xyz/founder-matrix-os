@@ -12,7 +12,7 @@ argument-hint: "[status | paid <нэр> | new-bill | record | rebalance]"
 
 ```
 private/
-├── Сарын төлбөр.md         самбар — 03-Areas/Business/finances/private/Monthly Bills.base-ийн харагдацууд
+├── Сарын төлбөр.md         самбар — 03-Areas/Monthly Bills.base-ийн харагдацууд
 ├── <Төлбөрийн нэр>.md      type: bill — нэг тогтмол төлбөр = нэг нот (_system/templates/Bill.md)
 └── records/                type: finance-record, scope: personal — нэг гүйлгээ = нэг нот
 ```

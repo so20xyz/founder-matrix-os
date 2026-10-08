@@ -2,6 +2,7 @@ filters:
   and:
     - file.ext == "md"
     - type == "person"
+    - file.inFolder("03-Areas/people")
     - '!file.inFolder("_system/templates")'
     - '!file.inFolder("99-Archive")'
 formulas:

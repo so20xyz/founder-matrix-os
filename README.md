@@ -116,7 +116,7 @@ Setup таныг алхам алхмаар хөтөлнө:
 
 ### 6. Obsidian тохиргоо (нэг удаа, гараар)
 
-Settings → Core plugins → **Bases** ба **Templates** асаа (Templates хавтас = `_system/templates`). Kanban plugin хэрэггүй — самбар = `01-GTD/Tasks/Tasks.base`-ийн GTD view-ууд. fm `.obsidian/`-д хэзээ ч хүрэхгүй.
+Settings → Core plugins → **Bases** ба **Templates** асаа (Templates хавтас = `_system/templates`). Kanban plugin хэрэггүй — самбар = `01-GTD/Tasks.base`-ийн GTD view-ууд. fm `.obsidian/`-д хэзээ ч хүрэхгүй.
 
 ### 7. Эхний сешн
 

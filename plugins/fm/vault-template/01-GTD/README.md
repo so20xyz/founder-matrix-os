@@ -11,4 +11,4 @@ Getting Things Done: Урсгал: **Inbox → Task → Events** (+ Daily = өд
 
 - **Эзэн дүр:** [[02 Area]]
 - Task-ийн `status`: `inbox → next-action → waiting → completed / cancelled` (+ `someday`).
-- Бүх task: `01-GTD/Tasks/Tasks.base`.
+- Бүх task: `01-GTD/Tasks.base`.

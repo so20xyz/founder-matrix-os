@@ -34,7 +34,7 @@ Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт 
 - [[_system/STATUS]] — дүрүүдийн төлөв
 - [[Home]] — нүүр
 - `_system/fm/registry.json` — сешн ↔ дүрийн бүртгэл (машин уншина)
-- Bases: хавтас бүр өөрийн `<Нэр>.base`-тэй — `01-GTD/Tasks/Tasks.base` · `02-Projects/Projects.base` · `03-Areas/people/People.base` · `03-Areas/Business/companies/Companies.base` · `03-Areas/AI Team/ai-workers/Agents.base` · `04-Resources/references/References.base` · `04-Resources/library/Reading.base` · `04-Resources/Atomic/decisions/Decisions.base` · `04-Resources/Atomic/knowledge/Atoms.base` · 🔒 `03-Areas/Business/finances/private/Monthly Bills.base`, `Finance Records.base`
+- Bases: хавтас бүр өөрийн `<Нэр>.base`-тэй — `01-GTD/Tasks.base` · `02-Projects/Projects.base` · `03-Areas/People.base` · `03-Areas/Companies.base` · `03-Areas/Agents.base` · `04-Resources/References.base` · `04-Resources/Reading.base` · `04-Resources/Decisions.base` · `04-Resources/Atoms.base` · 🔒 `03-Areas/Monthly Bills.base`, `Finance Records.base`
 
 ## Идэвхтэй төслүүд
 
@@ -42,4 +42,4 @@ _(одоогоор байхгүй — `/fm:project`-оор нэм)_
 
 ## Шийдвэрүүд
 
-Бүрэн жагсаалт: `04-Resources/Atomic/decisions/Decisions.base`.
+Бүрэн жагсаалт: `04-Resources/Decisions.base`.

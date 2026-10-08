@@ -145,9 +145,10 @@ def test_template_fields_match(c):
         assert re.search(r"^%s:" % key, rec, re.M), key
     bill = (TEMPLATE / "_system" / "templates" / "Bill.md").read_text(encoding="utf-8")
     assert "```base" in bill and "this.file" in bill and "| Сар |" not in bill
-    base = TEMPLATE / "03-Areas" / "Business" / "finances" / "private"
+    base = TEMPLATE / "03-Areas"  # bases live directly in the PARA top folder (2026-10-09)
     assert (base / "Monthly Bills.base").is_file() and (base / "Finance Records.base").is_file()
-    assert (base / "_balance.md").is_file()
+    assert "03-Areas/Business/finances/private" in (base / "Monthly Bills.base").read_text(encoding="utf-8")
+    assert (base / "Business" / "finances" / "private" / "_balance.md").is_file()
 
 
 def main():

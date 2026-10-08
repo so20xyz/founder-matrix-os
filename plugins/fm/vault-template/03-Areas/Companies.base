@@ -2,6 +2,7 @@ filters:
   and:
     - file.ext == "md"
     - type == "company"
+    - file.inFolder("03-Areas/Business/companies")
     - '!file.inFolder("_system/templates")'
 formulas:
   status_icon: 'if(status == "active", "🟢", if(status == "paused", "⏸️", "⚫"))'

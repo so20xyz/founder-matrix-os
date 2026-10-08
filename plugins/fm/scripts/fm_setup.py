@@ -125,6 +125,23 @@ def iter_template(template, patterns):
     return sorted(dirs), sorted(files)
 
 
+def legacy_base(target, rel):
+    # type: (Path, str) -> Optional[Path]
+    """Bases live directly in a PARA top folder (rule 2026-10-09). For a template
+    base `<TOP>/<Name>.base`, return a same-named base already in a subfolder of
+    <TOP> in the target (legacy layout), so setup does not add a duplicate."""
+    parts = rel.split("/")
+    if len(parts) != 2 or not rel.lower().endswith(".base"):
+        return None
+    top = target / parts[0]
+    if not top.is_dir():
+        return None
+    for p in top.rglob(parts[1]):
+        if p.is_file() and p.parent != top:
+            return p
+    return None
+
+
 def substitute(rel, data, tokens):
     # type: (str, bytes, Dict[str, str]) -> bytes
     if rel.startswith(NO_SUBST_PREFIX) or Path(rel).suffix.lower() not in TEXT_SUFFIXES:
@@ -335,6 +352,9 @@ def setup(target, member, dry_run=False, merge_registry=False, template=TEMPLATE
             report["errors"].append("vault-аас гадуур зам: %s" % rel)
             continue
         if dst.exists() or dst.is_symlink():
+            report["skipped"].append(rel)
+            continue
+        if legacy_base(target, rel):  # old vault keeps its base in a subfolder - no duplicate at the root
             report["skipped"].append(rel)
             continue
         report["created"].append(rel)

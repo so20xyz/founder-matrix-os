@@ -1,6 +1,7 @@
 filters:
   and:
     - file.ext == "md"
+    - file.inFolder("04-Resources/references")
     - '!file.inFolder("_system/templates")'
     - or:
         - type == "reference"

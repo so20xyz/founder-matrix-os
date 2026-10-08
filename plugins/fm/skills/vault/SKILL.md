@@ -97,7 +97,7 @@ Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — са
 | `context` | `home` · `work` — **заавал** (үгүй бол Bases харагдацаас чимээгүй алга болно) |
 | `due` | `YYYY-MM-DD` эсвэл хоосон |
 
-Самбар = `01-GTD/Tasks/Tasks.base`-ийн GTD view-ууд; үнэн нь task файлын `status`. Kanban plugin хасагдсан (хуучин vault-ийн Kanban файлд `/fm:project` hygiene).
+Самбар = `01-GTD/Tasks.base`-ийн GTD view-ууд; үнэн нь task файлын `status`. Kanban plugin хасагдсан (хуучин vault-ийн Kanban файлд `/fm:project` hygiene).
 
 ## 5. Атом (`04-Resources/Atomic/`)
 
@@ -167,6 +167,6 @@ Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — са
 - Inbox цэгцлэх → `fm:inbox`; task → `fm:task`; төсөл → `fm:project`; хүн → `fm:people`; дүр ачаалах → `fm:role`
 - Сешний төлөв, өдрийн тэмдэглэл, долоо хоногийн тойм → `fm:update`
 
-**Албан ёсны skill (fm-д хуулаагүй, `/fm:setup` суулгана):** `.canvas` → `obsidian:json-canvas`; `.base` (Bases харагдац) → `obsidian:obsidian-bases`; Obsidian CLI → `obsidian:obsidian-cli`; вэб хуудсыг цэвэр markdown болгох → `obsidian:defuddle`. Жагсаалт: `04-Resources/references/Official skills.md`.
+**Албан ёсны skill (fm-д хуулаагүй, `/fm:setup` суулгана):** `.canvas` → `obsidian:json-canvas`; `.base` (Bases харагдац) → `obsidian:obsidian-bases` (шинэ base = PARA-ийн дээд хавтсанд шууд, жишээ `04-Resources/Atoms.base`, шүүлтүүр `file.inFolder("<бүтэн дэд зам>")`; дэд хавтсанд бүү үүсгэ); Obsidian CLI → `obsidian:obsidian-cli`; вэб хуудсыг цэвэр markdown болгох → `obsidian:defuddle`. Жагсаалт: `04-Resources/references/Official skills.md`.
 
 Суугаагүй skill байвал энэ skill-ийн дүрмээр гараар хий.

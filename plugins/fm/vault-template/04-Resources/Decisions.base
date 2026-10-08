@@ -2,6 +2,7 @@ filters:
   and:
     - file.ext == "md"
     - type == "session-decision"
+    - file.inFolder("04-Resources/Atomic/decisions")
     - '!file.inFolder("_system/templates")'
 properties:
   decision:

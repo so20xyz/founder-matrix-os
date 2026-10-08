@@ -283,7 +283,7 @@ Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй о
 
 Гишүүнд хэл:
 - Obsidian-оор vault-аа нээж **Home**-оос эхэл (`.obsidian/` тохиргоог гишүүн өөрөө удирдана: Settings → Core plugins → **Bases**, **Templates** асаа; Templates хавтас = `_system/templates`; Community plugins → **Kanban**).
-- **Folder-base дүрэм:** хавтас бүр өөрийн Bases харагдацтай — `<хавтас>/<Нэр>.base` (жишээ `01-GTD/Tasks/Tasks.base`, `03-Areas/people/People.base`); төв `_system/bases/` хавтас байхгүй.
+- **Base байршлын дүрэм (2026-10-09):** бүх `.base` файл PARA-ийн дээд хавтсанд шууд — `00-Soul/`, `01-GTD/`, `02-Projects/`, `03-Areas/`, `04-Resources/`, `99-Archive/` (жишээ `01-GTD/Tasks.base`, `03-Areas/People.base`); дэд хавтсанд хэзээ ч биш, төв `_system/bases/` байхгүй. Шүүлтүүр нь дэд хавтсыг бүтэн замаар заана (`file.inFolder("03-Areas/people")`); hub note дэд хавтсандаа үлдэж base-ийг бүтэн замаар embed хийнэ (`![[04-Resources/Atoms.base]]`). Хуучин vault-ийн дэд хавтсан дахь base-ийг `fm_brain_check` «дэд хавтсан дахь base» гэж мэдээлнэ.
 - Sidebar бэлэн (7-р алхам): энэ сешн **📥 GTD**; бусад сешнийг chip-ээр дээрээс доош нээ. Төсөл бүр **тусдаа нэг тогтмол сешн**, Finance тусдаа 🔒 сешн.
 - **Ганц команд: «update».** Ажлынхаа дараа «update» гэж бичихэд Agent атом, task, хүн, төсөл, inbox, STATUS-ыг өөрөө цэгцэлнэ. Өглөө «update daily», орой «update дүгнэлт», долоо хоногт «update weekly».
 - Дутуу үлдсэн алхмууд (алгассан програм, plugin, ярилцлагын хэсэг) → дараа `/fm:setup doctor`, `/fm:setup plugins`, эсвэл `/fm:setup`-ийг дахин; байгаа note хөндөгдөхгүй.

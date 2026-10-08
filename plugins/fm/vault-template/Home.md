@@ -18,27 +18,27 @@ aliases:
 
 | Ажил | Амьдрал | Мэдлэг |
 |---|---|---|
-| [[01-GTD/Tasks/Tasks.base\|📋 GTD самбар · ✅ Task-ууд]] | `01-GTD/Daily/` 📅 Өдрийн тэмдэглэл | [[04-Resources/Atomic/knowledge/Atoms.base\|🧩 Атомууд]] |
-| `01-GTD/Events/` 📆 Уулзалт, үйл явдал | [[03-Areas/people/People.base\|👥 Хүмүүс]] | [[04-Resources/Atomic/decisions/Decisions.base\|🔑 Шийдвэрүүд]] |
-| [[02-Projects/Projects.base\|🔨 Төслүүд]] | `03-Areas/Life/` 🏠 Хувийн хүрээ | [[04-Resources/references/References.base\|📚 Лавлагаа ба хэрэгсэл]] |
-| [[03-Areas/Business/companies/Companies.base\|🏢 Байгууллагууд]] | `03-Areas/Goals/` 🎯 Зорилго | `01-GTD/Inbox/` 📥 Хураалт |
-| [[03-Areas/AI Team/ai-workers/Agents.base\|🤖 Agent-ууд]] | [[03-Areas/Business/finances/private/Сарын төлбөр\|🔒 Сарын төлбөр]] | [[_system/index\|🗂 Каталог]] |
+| [[01-GTD/Tasks.base\|📋 GTD самбар · ✅ Task-ууд]] | `01-GTD/Daily/` 📅 Өдрийн тэмдэглэл | [[04-Resources/Atoms.base\|🧩 Атомууд]] |
+| `01-GTD/Events/` 📆 Уулзалт, үйл явдал | [[03-Areas/People.base\|👥 Хүмүүс]] | [[04-Resources/Decisions.base\|🔑 Шийдвэрүүд]] |
+| [[02-Projects/Projects.base\|🔨 Төслүүд]] | `03-Areas/Life/` 🏠 Хувийн хүрээ | [[04-Resources/References.base\|📚 Лавлагаа ба хэрэгсэл]] |
+| [[03-Areas/Companies.base\|🏢 Байгууллагууд]] | `03-Areas/Goals/` 🎯 Зорилго | `01-GTD/Inbox/` 📥 Хураалт |
+| [[03-Areas/Agents.base\|🤖 Agent-ууд]] | [[03-Areas/Business/finances/private/Сарын төлбөр\|🔒 Сарын төлбөр]] | [[_system/index\|🗂 Каталог]] |
 
 ## 🔨 Идэвхтэй төслүүд
 
-![[Projects.base#Идэвхтэй]]
+![[02-Projects/Projects.base#Идэвхтэй]]
 
 ## ✅ Дараагийн алхам
 
-![[Tasks.base#Next Action]]
+![[01-GTD/Tasks.base#Next Action]]
 
 ## 🏢 Байгууллагууд
 
-![[Companies.base#Байгууллагууд]]
+![[03-Areas/Companies.base#Байгууллагууд]]
 
 ## 👥 Холбогдох хүмүүс
 
-![[People.base#Холбогдох]]
+![[03-Areas/People.base#Холбогдох]]
 
 ## 🤖 Agent-ууд
 
@@ -54,7 +54,7 @@ aliases:
 | `creative` | [[06 Creative]] | Moodboard, Figma, пост, бичвэр |
 | `finance` | [[07 Finance]] 🔒 | Хувийн санхүү + бизнесийн тайлан |
 
-![[Agents.base#Ростер]]
+![[03-Areas/Agents.base#Ростер]]
 
 ## ⚙️ Систем
 

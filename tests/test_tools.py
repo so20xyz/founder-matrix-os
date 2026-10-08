@@ -98,6 +98,25 @@ def test_boot_and_role_rules_fit_session_context():
         shutil.rmtree(str(tmp), ignore_errors=True)
 
 
+def test_setup_skips_root_base_when_legacy_subfolder_base_exists():
+    """Bases go to the PARA root (2026-10-09); an old vault's subfolder base is kept, no root duplicate."""
+    tmp = Path(tempfile.mkdtemp(prefix="fm-base-"))
+    try:
+        vault = tmp / "vault"
+        legacy = vault / "03-Areas" / "people" / "People.base"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text("filters: {}\n", encoding="utf-8")
+        env = child_env(tmp)
+        env["FMOS_CONFIG"] = str(tmp / "no-config.json")
+        r = subprocess.run([sys.executable, str(PLUGIN / "scripts" / "fm_setup.py"), str(vault), "--member", "T"],
+                           env=env, capture_output=True, text=True, encoding="utf-8")
+        assert r.returncode == 0, r.stderr
+        assert not (vault / "03-Areas" / "People.base").exists()
+        assert (vault / "03-Areas" / "Companies.base").is_file() and (vault / "01-GTD" / "Tasks.base").is_file()
+    finally:
+        shutil.rmtree(str(tmp), ignore_errors=True)
+
+
 def test_tool_code_compiles():
     tmp = Path(tempfile.mkdtemp(prefix="fm-tools-pyc-"))
     try:

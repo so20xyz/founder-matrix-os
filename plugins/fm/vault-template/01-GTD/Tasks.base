@@ -2,6 +2,7 @@ filters:
   and:
     - file.ext == "md"
     - type == "task"
+    - file.inFolder("01-GTD/Tasks")
     - '!file.inFolder("_system/templates")'
     - '!file.inFolder("99-Archive")'
 formulas:
