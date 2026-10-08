@@ -87,7 +87,7 @@ function vResearch(){return `<h2>Сүүлийн судалгаа, тэмдэгл
 function vChat(){const h=(D.chat||[]).concat(pending?[{who:'bd',text:pending,t:'одоо'}]:[]);
   return `<div class="seg"><button data-newchat="1">+ Шинэ яриа</button></div><div class="chat">${h.map(m=>`<div class="msg ${m.who}">${esc(m.text)}<small>${esc(m.t)}</small></div>`).join('')||'<p class="empty">Доор бичээд Enter — Claude vault-аа уншиж хариулна, шаардвал тэмдэглэл засна.</p>'}${busy?'<div class="typing">Claude ажиллаж байна…</div>':''}</div>`}
 
-function setMode(m){mode=m;$('#mode').textContent=m==='claude'?'Claude':'Inbox';$('#capin').placeholder=m==='claude'?'Claude-д бичих…':'Санаа, таск → 00-Inbox'}
+function setMode(m){mode=m;$('#mode').textContent=m==='claude'?'Claude':'Inbox';$('#capin').placeholder=m==='claude'?'Claude-д бичих…':'Санаа, таск → 02-GTD/inbox'}
 function render(){if(!D)return;$('#main').innerHTML={today:vToday,tasks:vTasks,projects:vProjects,cal:vCal,social:vSocial,research:vResearch,chat:vChat}[view]();
   if(view==='chat')scrollTo(0,document.body.scrollHeight);
   const qi=$('#q');if(qi){qi.oninput=e=>{q=e.target.value.toLowerCase();const p=qi.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p)}}}
@@ -123,7 +123,7 @@ async function ask(text,fresh=false){if(fresh&&!confirm('Шинэ яриа эх�
   busy=false;pending=null;await load()}
 $('#cap').onsubmit=async e=>{e.preventDefault();const v=$('#capin').value.trim();if(!v||busy)return;$('#capin').value='';
   if(mode==='claude'){if(view!=='chat')document.querySelector('[data-v=chat]').click();await ask(v);return}
-  const r=await fetch('/api/capture',{method:'POST',body:JSON.stringify({text:v})});toast(r.ok?'→ 00-Inbox':'Алдаа')};
+  const r=await fetch('/api/capture',{method:'POST',body:JSON.stringify({text:v})});toast(r.ok?'→ 02-GTD/inbox':'Алдаа')};
 try{const th=localStorage.getItem('inai-theme');if(th)document.documentElement.dataset.theme=th}catch(e){}
 $('#theme').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='light'?'dark':'light';try{localStorage.setItem('inai-theme',r.dataset.theme)}catch(e){}};
 load();setInterval(()=>{if(document.visibilityState==='visible'&&!busy&&!editing&&!document.activeElement.matches('input,select'))load()},60000);

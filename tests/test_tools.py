@@ -295,6 +295,56 @@ def test_sidebar_titles_resolve_to_roles():
             assert r.returncode == 0 and json.loads(r.stdout).get("role") == x["role"], (x["title"], r.stdout, r.stderr)
 
 
+# ------------------------------------------------------------------ GTD layout (itge.e 2026-10-09)
+
+def test_gtd_layout_inbox_task_events():
+    """Inbox -> Task -> Events: vault-template-д 02-GTD/inbox, 02-GTD/events; хуучин хавтас алга."""
+    tpl = REPO / "plugins" / "fm" / "vault-template"
+    for d in ("02-GTD/inbox", "02-GTD/events", "02-GTD/tasks", "02-GTD/daily"):
+        assert (tpl / d).is_dir(), d
+    for d in ("00-Inbox", "02-GTD/meetings", "02-GTD/quests"):
+        assert not (tpl / d).exists(), d
+
+
+def test_no_stale_gtd_paths_in_repo():
+    stale = re.compile(r"00-Inbox|02-GTD/meetings|02-GTD/quests")
+    # шилжилтийн хамгаалалтын код, тест, CHANGELOG хуучин нэрийг санаатай дурдана
+    allowed = {"tools/inbox-gallery/server.py", "tools/sidepanel/server.py", "tools/save-to-inbox/popup.js",
+               "tools/move-to-inbox.sh", "tools/screenshot-to-inbox.sh", "CHANGELOG.md"}
+    bad = []
+    for p in REPO.rglob("*"):
+        rel = p.relative_to(REPO).as_posix()
+        if not p.is_file() or rel in allowed or rel.startswith(("tests/", ".git/", "tools/fm-office/"))                 or "node_modules" in rel or p.suffix.lower() not in (".md", ".py", ".js", ".json", ".sh", ".html", ".txt", ".svg", ".base"):
+            continue
+        if stale.search(p.read_text(encoding="utf-8", errors="ignore")):
+            bad.append(rel)
+    assert not bad, bad
+
+
+def test_sidepanel_gtd_dirs_fall_back_to_legacy():
+    import tempfile
+    sp = load_module("fm_sidepanel", REPO / "tools" / "sidepanel" / "server.py")
+    with tempfile.TemporaryDirectory() as t:
+        v = Path(t)
+        assert sp.inbox_dir(v) == v / "02-GTD/inbox"          # юу ч байхгүй -> шинэ зам
+        assert sp.events_dir(v) == v / "02-GTD/events"
+        (v / "00-Inbox").mkdir(); (v / "02-GTD/meetings").mkdir(parents=True)
+        assert sp.inbox_dir(v) == v / "00-Inbox"              # зөвхөн хуучин -> хуучин
+        assert sp.events_dir(v) == v / "02-GTD/meetings"
+        (v / "02-GTD/inbox").mkdir(); (v / "02-GTD/events").mkdir()
+        assert sp.inbox_dir(v) == v / "02-GTD/inbox"          # хоёулаа -> шинэ
+        assert sp.events_dir(v) == v / "02-GTD/events"
+
+
+def test_save_to_inbox_has_legacy_fallback():
+    js = (REPO / "tools" / "save-to-inbox" / "popup.js").read_text(encoding="utf-8")
+    assert 'INBOX_NEW = "02-GTD/inbox"' in js and 'INBOX_OLD = "00-Inbox"' in js
+    assert "await inboxDir(apiKey, endpoint)" in js
+    for sh in ("move-to-inbox.sh", "screenshot-to-inbox.sh"):
+        t = (REPO / "tools" / sh).read_text(encoding="utf-8")
+        assert '$VAULT/02-GTD/inbox' in t and '$VAULT/00-Inbox' in t, sh
+
+
 # ------------------------------------------------------------------ runner
 
 def main():

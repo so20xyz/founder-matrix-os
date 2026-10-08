@@ -1,4 +1,4 @@
-// Save to Inbox - Obsidian vault-iin 00-Inbox ruu hadgalna.
+// Save to Inbox - Obsidian vault-iin 02-GTD/inbox ruu hadgalna.
 // Ded 1 (heregtei): Obsidian "Local REST API" plugin asaasan bol localhost ruu HTTP
 //   bичдег => Obsidian NEEGDDEGGUI (fokus solihgui), urt niitlel ч buten orno.
 // Ded 2 (fallback): API key togiruulaagui bol obsidian://new URI (Obsidian urd garna).
@@ -35,6 +35,21 @@ async function getSelection(tabId) {
     return (res && res[0] && res[0].result) ? res[0].result : "";
   } catch (e) { return ""; }
 }
+// Inbox-ийн зам: шинэ 02-GTD/inbox; vault-д байхгүй ч хуучин 00-Inbox байвал түүнийг (шилжилтийн хамгаалалт).
+const INBOX_NEW = "02-GTD/inbox", INBOX_OLD = "00-Inbox";
+async function inboxDir(apiKey, endpoint) {
+  if (!apiKey) return INBOX_NEW;
+  const ls = async (d) => {
+    try {
+      const r = await fetch(`${endpoint}/vault/${encodeURI(d + "/")}`, { headers: { "Authorization": "Bearer " + apiKey } });
+      return r.ok;
+    } catch (e) { return null; }
+  };
+  const hasNew = await ls(INBOX_NEW);
+  if (hasNew === false && (await ls(INBOX_OLD)) === true) return INBOX_OLD;
+  return INBOX_NEW;
+}
+
 function getCfg() {
   return new Promise((res) => {
     try {
@@ -357,11 +372,12 @@ document.getElementById("save").addEventListener("click", async () => {
   const content = lines.join("\n");
 
   ok.textContent = "Хадгалж байна...";
+  const INBOX = await inboxDir(apiKey, endpoint);
 
   // --- Ded 1: Local REST API (fokus solihgui) ---
   if (apiKey) {
     try {
-      const r = await fetch(`${endpoint}/vault/${encodeURI("00-Inbox/" + base + ".md")}`, {
+      const r = await fetch(`${endpoint}/vault/${encodeURI(INBOX + "/" + base + ".md")}`, {
         method: "PUT",
         headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "text/markdown" },
         body: content
@@ -376,7 +392,7 @@ document.getElementById("save").addEventListener("click", async () => {
   // --- Ded 2: obsidian:// fallback (Obsidian urd garna) ---
   const VAULT = (await getCfg()).vault;
   if (!VAULT) { ok.textContent = "Options-д vault-ийн нэр (эсвэл ID) оруул."; btn.disabled = false; return; }
-  const uri = `obsidian://new?vault=${encodeURIComponent(VAULT)}&file=${encodeURIComponent("00-Inbox/" + base)}&content=${encodeURIComponent(content)}`;
+  const uri = `obsidian://new?vault=${encodeURIComponent(VAULT)}&file=${encodeURIComponent(INBOX + "/" + base)}&content=${encodeURIComponent(content)}`;
   window.location.href = uri;
   setTimeout(() => {
     ok.textContent = apiKey ? "Obsidian-аар хадгаллаа" : "Хадгаллаа. Фокус солихгүй болгохын тулд Options-д API key оруул.";

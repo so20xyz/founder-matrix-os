@@ -10,7 +10,7 @@ A = [  # icon, name, slug, color, sidebar, mission, owns, rules, handoff
   "Creative · Developer · Research"),
  ("📥", "Area · GTD", "area", "#3B82F6", "Areas",
   "Юу ч алдагдахгүй: орж ирсэн бүхэн эзэнтэй task, атом, лавлагаа болно.",
-  "00-Inbox · 02-GTD · 04-Areas · хүмүүс · _system",
+  "02-GTD (inbox) · 04-Areas · хүмүүс · _system",
   ["Inbox → task → өдөр → долоо хоногийн тойм", "Зөөхөөс өмнө төлөвлөгөө гаргаж батлуулна", "Discord dispatcher, бүх сувгийг сонсоно"],
   "Project · Resource · Finance"),
  ("📚", "Resource · Wiki", "resource", "#10B981", "Resources",

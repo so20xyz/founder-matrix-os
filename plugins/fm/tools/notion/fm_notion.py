@@ -244,7 +244,7 @@ def cmd_done(a):
 
 def cmd_pull(a):
     cfg = load_cfg(); name, db = db_of(cfg, a.db); s = db['schema']
-    out = pathlib.Path(a.out or f'00-Inbox/notion/{name}'); out.mkdir(parents=True, exist_ok=True)
+    out = pathlib.Path(a.out or f'02-GTD/inbox/notion/{name}'); out.mkdir(parents=True, exist_ok=True)
     pages = paged('POST', f'/data_sources/{db["id"]}/query', {'page_size': 100}); n = 0
     for pg in pages:
         t, d, st = row(pg, s)
@@ -260,7 +260,7 @@ def cmd_pull(a):
 PRIVATE_PREFIXES = ('04-Areas/Business/finances/private/', '01-Soul/', '04-Areas/Life/')
 SKIP_PARTS = {'.obsidian', '_trash', '.trash', '_system', '99-Archive', 'node_modules', '.git'}
 PRIVATE_TYPES = {'bill', 'income'}
-TYPE_ALIAS = {'task': 'task', 'project': 'project', 'meeting': 'meeting', 'reference': 'ref', 'person': 'note'}
+TYPE_ALIAS = {'task': 'task', 'project': 'project', 'meeting': 'meeting', 'event': 'meeting', 'reference': 'ref', 'person': 'note'}
 TASK_STATUS = {'inbox': ['Inbox'], 'next-action': ['Next Action', 'Next', 'To Do', 'To-do', 'Not started'],
                'waiting': ['Waiting on', 'Waiting'], 'someday': ['Someday / Maybe', 'Someday'],
                'completed': DONE_WORDS, 'cancelled': ['Cancelled', 'Canceled', 'Archived']}

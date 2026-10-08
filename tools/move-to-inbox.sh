@@ -1,5 +1,5 @@
 #!/bin/bash
-# Finder-d songoson file(uud)-iig vault-ийн 00-Inbox ruu zoono (Downloads-oos gol tolov).
+# Finder-d songoson file(uud)-iig vault-ийн 02-GTD/inbox ruu zoono (Downloads-oos gol tolov).
 # Songolt baihgui bol Downloads-iin hamgiin shine zuiliig zoono.
 # Holboh: Shortcuts.app -> "Run Shell Script" -> ene file -> keyboard shortcut onoo.
 # NOTE: set -e ashiglahgui (nohtsolt file uildluud).
@@ -11,7 +11,9 @@ if [ -z "$VAULT" ] || [ ! -d "$VAULT" ]; then
   echo "Vault олдсонгүй: ~/.fmos/config.json-д \"vault\" бич эсвэл FM_VAULT тавь" >&2
   exit 1
 fi
-INBOX="$VAULT/00-Inbox"
+INBOX="$VAULT/02-GTD/inbox"
+# shiljiltiin hamgaalalt: shine zam baihgui ch huuchin 00-Inbox baival tuuniig
+[ ! -d "$INBOX" ] && [ -d "$VAULT/00-Inbox" ] && INBOX="$VAULT/00-Inbox"
 DL="${DOWNLOADS_DIR:-${HOME}/Downloads}"
 mkdir -p "$INBOX"
 
@@ -53,8 +55,8 @@ else
 fi
 
 if [ "$moved" -gt 0 ]; then
-  msg="$moved файл 00-Inbox руу зөөв"
-  [ "$moved" -eq 1 ] && msg="$last -> 00-Inbox"
+  msg="$moved файл 02-GTD/inbox руу зөөв"
+  [ "$moved" -eq 1 ] && msg="$last -> 02-GTD/inbox"
   osascript -e "display notification \"$msg\" with title \"Move to Inbox\"" 2>/dev/null || true
 else
   osascript -e 'display notification "Файл сонгоогүй / олдсонгүй" with title "Move to Inbox"' 2>/dev/null || true

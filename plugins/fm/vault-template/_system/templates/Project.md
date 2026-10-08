@@ -76,7 +76,9 @@ views:
 ```base
 filters:
   and:
-    - type == "meeting"
+    - or:
+        - type == "meeting"
+        - type == "event"
     - list(project).contains(this)
 views:
   - type: table

@@ -66,7 +66,7 @@ class Vault(object):
         self.tmp = Path(tempfile.mkdtemp(prefix="fm-hooks-test-"))
         self.root = self.tmp / "Vault"
         self.outside = self.tmp / "elsewhere"
-        for d in ["00-Inbox", "02-GTD/tasks", "06-Atomic", "_system/fm", "_system/templates",
+        for d in ["02-GTD/inbox", "02-GTD/tasks", "06-Atomic", "_system/fm", "_system/templates",
                   "_trash", "99-Archive", ".obsidian", "04-Areas/AI Team/ai-workers",
                   "04-Areas/Business/finances/private"]:
             (self.root / d).mkdir(parents=True, exist_ok=True)
@@ -312,9 +312,9 @@ def test_lint_missing_date_warns(v):
 
 
 def test_lint_non_note_silent(v):
-    code, out, err = lint_write(v, "00-Inbox/PROMPT.md", "# Prompt\n\nfree text\n")
+    code, out, err = lint_write(v, "02-GTD/inbox/PROMPT.md", "# Prompt\n\nfree text\n")
     assert (code, out, err) == (0, "", ""), (code, out, err)
-    code, out, err = lint_write(v, "00-Inbox/kanban.md", "---\nkanban-plugin: board\n---\n\n## Todo\n")
+    code, out, err = lint_write(v, "02-GTD/inbox/kanban.md", "---\nkanban-plugin: board\n---\n\n## Todo\n")
     assert (code, out, err) == (0, "", ""), (code, out, err)
 
 

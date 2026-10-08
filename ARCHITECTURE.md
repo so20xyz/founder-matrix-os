@@ -14,7 +14,7 @@
                               │ бичнэ
                               ▼
             Гишүүний Obsidian vault (Google Drive-аар Mac ↔ PC)
-   00-Inbox · 01-Soul · 02-GTD · 03-Projects · 04-Areas · 05-Resources · 06-Atomic · 07-Goals
+   01-Soul · 02-GTD (inbox · tasks · events · daily) · 03-Projects · 04-Areas · 05-Resources · 06-Atomic · 07-Goals
    _system/BOOT.md (дүрэм) · STATUS.md (дүр бүрийн мөр) · logs/ (зөвхөн холбоос)
    _system/fm/registry.json (сешн ↔ дүр; project = дүрийн slug) · state/<дүр>.md (baton)
    04-Areas/AI Team/ai-workers/01–07 (Agent-уудын «сүнс»)

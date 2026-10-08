@@ -3,9 +3,9 @@
 
   python _system/tools/sidepanel/server.py        → http://127.0.0.1:8770
 
-Reads on every request: 02-GTD/tasks, 03-Projects/*/<name>.md, 02-GTD/meetings, 02-GTD/daily,
+Reads on every request: 02-GTD/tasks, 03-Projects/*/<name>.md, 02-GTD/events, 02-GTD/daily,
 research/reference notes, today's _system/logs. Writes only: task `status:` (mark done / change) and
-new captures in 00-Inbox/. Nothing else in the vault is touched.
+new captures in 02-GTD/inbox/. Nothing else in the vault is touched.
 """
 import json, re, sys, uuid, shutil, subprocess, datetime as dt
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -25,6 +25,22 @@ def _vault():
 
 VAULT = _vault()
 HERE = Path(__file__).parent
+
+
+def gtd_dir(new, old, vault=None):
+    """Шинэ зам байхгүй ч хуучин зам байвал хуучныг нь (00-Inbox, 02-GTD/meetings — шилжилтийн хамгаалалт)."""
+    vault = Path(vault) if vault else VAULT
+    if not (vault / new).is_dir() and (vault / old).is_dir():
+        return vault / old
+    return vault / new
+
+
+def inbox_dir(vault=None):
+    return gtd_dir("02-GTD/inbox", "00-Inbox", vault)
+
+
+def events_dir(vault=None):
+    return gtd_dir("02-GTD/events", "02-GTD/meetings", vault)
 PORT = 8770
 FM = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.S)
 
@@ -108,7 +124,7 @@ def projects(all_tasks):
 
 def meetings():
     out = []
-    for p in (VAULT / "02-GTD/meetings").glob("*.md"):
+    for p in events_dir().glob("*.md"):
         fm, body = frontmatter(p.read_text(encoding="utf-8", errors="ignore"))
         d = fm.get("date") or fm.get("meeting-date") or (re.match(r"\d{4}-\d{2}-\d{2}", p.stem) or [None])[0]
         out.append({"title": p.stem, "date": d if isinstance(d, str) else "", "status": fm.get("status", ""), "file": str(p.relative_to(VAULT)).replace("\\", "/")})
@@ -116,7 +132,7 @@ def meetings():
 
 
 def research(limit=14):
-    roots = ["05-Resources", "01-Soul/creative", "03-Projects", "06-Atomic", "00-Inbox"]
+    roots = ["05-Resources", "01-Soul/creative", "03-Projects", "06-Atomic", inbox_dir().relative_to(VAULT).as_posix()]
     cand = []
     for r in roots:
         for p in (VAULT / r).rglob("*.md"):
@@ -240,7 +256,9 @@ def ask(msg, new=False):
 def capture(txt):
     now = dt.datetime.now()
     title = re.sub(r'[\\/:*?"<>|\n]+', " ", txt.strip())[:60] or "capture"
-    p = VAULT / "00-Inbox" / f"{now:%Y-%m-%d %H%M} - {title}.md"
+    d = inbox_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    p = d / f"{now:%Y-%m-%d %H%M} - {title}.md"
     p.write_text(f"---\ndate: {now:%Y-%m-%d}\ntype: inbox\nsource: sidepanel\ntags:\n  - inbox\nai-first: true\n---\n\n# {title}\n\n## For future agent\n\nSide panel-аас {now:%Y-%m-%d %H:%M}-д хурдан бичсэн санаа. Боловсруулаагүй.\n\n{txt.strip()}\n", encoding="utf-8")
     return str(p.relative_to(VAULT)).replace("\\", "/")
 
