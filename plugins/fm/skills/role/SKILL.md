@@ -70,3 +70,11 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/role/scripts/fm_role.py" unbind "${user_co
 
 - `registry.json`-г гараар засах шаардлагатай бол эхлээд уншиж, зөвхөн энэ сешний мөрийг өөрчил. Бусад сешний мөрийг хөндөхгүй.
 - Хоёр машин зэрэг бичвэл Drive `(1)` давхардал үүсгэнэ — `registry (1).json` харагдвал гишүүнд мэдэгдэж, нэгтгэхийг санал болго.
+
+## 🧠 Context pack (дүр дуудах үед)
+
+Дүрд холбогдсоны дараа тухайн дүрийн нээлттэй task (`owner` = дүр, `status: next-action`) бүрт, эсвэл хэрэглэгч заасан task/төсөлд:
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/vault/scripts/fm_context.py" "<vault>" "<task|төсөл>" --write
+```
+→ `_system/context/<нэр>.md`: яагаад (төсөл, _BRAIN) · хэрхэн (Key Activity, SOP, дүр, skill) · эх сурвалж (resources, ном + «яагаад») · санах ой (атом, 🌉 гүүр эхэнд) · хөрш төслүүд. Ажиллахаасаа өмнө уншина; хэрэглэгч ч Obsidian-д уншина. Hindsight-ийн «recall + reflect»-ийн vault хувилбар (itge.e 2026-10-09).
