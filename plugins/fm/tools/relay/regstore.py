@@ -7,7 +7,8 @@ Rules enforced here:
         with regstore.edit(path, {"sessions": {}}) as reg:
             reg["sessions"][sid] = {...}
     The lock is an OS byte-range lock (msvcrt on Windows, fcntl on macOS/Linux): released by the OS if the holder
-    dies, so there is no stale-lock cleanup to get wrong.
+    dies, so there is no stale-lock cleanup to get wrong. The same mechanism is exported as file_lock(path) for the
+    other shared local files (relay.py: ~/.fmos/baton.lock for state/<project>.md, ~/.fmos/relay_state.lock).
   * Atomic writes: temp file in the same folder + os.replace, retried on Windows PermissionError (a reader or the
     Drive client holding the file open).
   * A rolling registry.json.bak (the previous content) before every write.
@@ -49,22 +50,22 @@ def lock_path():
     return Path.home() / ".fmos" / "registry.lock"
 
 
-_depth = 0  # re-entrant within one process (nested edits must not deadlock on our own lock)
-_fh = None
+_held = {}  # lock path → [depth, file handle]; re-entrant within one process (nested edits must not deadlock)
 
 
 @contextlib.contextmanager
-def registry_lock(timeout=LOCK_TIMEOUT):
-    """Cross-process exclusive lock on ~/.fmos/registry.lock."""
-    global _depth, _fh
-    if _depth:
-        _depth += 1
+def file_lock(path, timeout=LOCK_TIMEOUT, what="lock"):
+    """Cross-process exclusive lock on a local lock file (OS byte-range lock, released by the OS if the holder
+    dies). Re-entrant per path within one process. Used for registry.json, batons and the relay state file."""
+    key = str(Path(path))
+    if key in _held:
+        _held[key][0] += 1
         try:
             yield
         finally:
-            _depth -= 1
+            _held[key][0] -= 1
         return
-    p = lock_path()
+    p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     fh = open(str(p), "a+b")
     end = time.time() + timeout
@@ -80,14 +81,14 @@ def registry_lock(timeout=LOCK_TIMEOUT):
         except OSError:
             if time.time() > end:
                 fh.close()
-                raise TimeoutError("registry lock busy > %ss: %s" % (timeout, p))
+                raise TimeoutError("%s busy > %ss: %s" % (what, timeout, p))
             time.sleep(delay)
             delay = min(delay * 2, 0.1)
-    _depth, _fh = 1, fh
+    _held[key] = [1, fh]
     try:
         yield
     finally:
-        _depth, _fh = 0, None
+        _held.pop(key, None)
         try:
             if os.name == "nt":
                 fh.seek(0)
@@ -96,6 +97,11 @@ def registry_lock(timeout=LOCK_TIMEOUT):
                 fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
         finally:
             fh.close()
+
+
+def registry_lock(timeout=LOCK_TIMEOUT):
+    """Cross-process exclusive lock on ~/.fmos/registry.lock."""
+    return file_lock(lock_path(), timeout, what="registry lock")
 
 
 def read(path, default, attempts=5):

@@ -78,6 +78,17 @@ except Exception:  # pragma: no cover - lint is shipped next to this file
     def find_secrets(text):  # type: ignore
         return []
 
+# Shared registry lock / atomic write (plugins/fm/tools/relay/regstore.py): relay hooks + fm_role write the same file.
+sys.path.insert(0, str(SCRIPT_DIR.parent / "tools" / "relay"))
+try:
+    import regstore  # type: ignore  # noqa: E402
+except ImportError:  # script copied out of the plugin: keep working, unlocked (old behaviour)
+    regstore = None
+
+
+class _KeepRegistry(Exception):
+    """Abort a regstore.edit() without writing."""
+
 # ------------------------------------------------------------------ layout
 
 TEMPLATES = "_system/templates"
@@ -1107,7 +1118,27 @@ class Onboard(object):
     def _merge_registry(self, activate, new_entries, notes):
         # type: (List[str], Dict[str, Dict[str, object]], Dict[str, str]) -> None
         path = self.vault / REGISTRY
-        if path.is_file():
+        existed = path.is_file()
+        if regstore is not None and not self.dry:
+            # Live sessions' hooks write the same file: locked load→modify→save, atomic, rolling .bak
+            # (plugins/fm/tools/relay/regstore.py). A file that cannot be read is never overwritten.
+            try:
+                with regstore.edit(path, {"version": 1, "sessions": {}, "roles": {}}, indent=2) as reg:
+                    before = json.dumps(reg, ensure_ascii=False, sort_keys=True)
+                    self._apply_roles(reg, activate, new_entries, notes)
+                    body = json.dumps(reg, ensure_ascii=False, indent=2) + "\n"
+                    if json.dumps(reg, ensure_ascii=False, sort_keys=True) == before:
+                        return
+                    if find_secrets(body):
+                        self.report["errors"].append("%s: нууц мэдээлэл шиг утга — бичсэнгүй" % REGISTRY)
+                        raise _KeepRegistry()
+                    self.report["updated" if existed else "created"].append(REGISTRY)
+            except _KeepRegistry:
+                return
+            except regstore.RegistryReadError as exc:
+                self.report["errors"].append("registry.json уншигдсангүй (%s) — гараар засна уу" % exc)
+            return
+        if existed:
             try:
                 reg = json.loads(path.read_text(encoding="utf-8-sig"))
             except ValueError as exc:
@@ -1119,6 +1150,18 @@ class Onboard(object):
         else:
             reg = {"version": 1, "sessions": {}, "roles": {}}
         before = json.dumps(reg, ensure_ascii=False, sort_keys=True)
+        self._apply_roles(reg, activate, new_entries, notes)
+        after = json.dumps(reg, ensure_ascii=False, sort_keys=True)
+        if after == before:
+            return
+        body = json.dumps(reg, ensure_ascii=False, indent=2) + "\n"
+        if existed:
+            self.rewrite(REGISTRY, body, bucket="updated")
+        else:
+            self.write_new(REGISTRY, body)
+
+    def _apply_roles(self, reg, activate, new_entries, notes):
+        # type: (Dict[str, object], List[str], Dict[str, Dict[str, object]], Dict[str, str]) -> None
         reg.setdefault("sessions", {})
         roles = reg.setdefault("roles", {})
         for slug, entry in new_entries.items():
@@ -1138,14 +1181,6 @@ class Onboard(object):
             for slug, info in roles.items():
                 if isinstance(info, dict):
                     info["active"] = slug in chosen
-        after = json.dumps(reg, ensure_ascii=False, sort_keys=True)
-        if after == before:
-            return
-        body = json.dumps(reg, ensure_ascii=False, indent=2) + "\n"
-        if path.is_file():
-            self.rewrite(REGISTRY, body, bucket="updated")
-        else:
-            self.write_new(REGISTRY, body)
 
     # ----------------------------------------------- home, index, daily
 

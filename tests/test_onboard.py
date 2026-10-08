@@ -522,6 +522,31 @@ def test_lint_clean_after_onboarding(c):
     assert code == 0, (code, out, err)
 
 
+def test_registry_writes_go_through_regstore(c):
+    """2026-10-09: fm_onboard and fm_setup --merge-registry write registry.json via regstore.edit()
+    (shared ~/.fmos/registry.lock, atomic write, rolling registry.json.bak); a corrupt file is never overwritten."""
+    c.setup()
+    regp = c.vault / "_system/fm/registry.json"
+    bak = regp.with_name("registry.json.bak")
+    reg = json.loads(regp.read_text(encoding="utf-8"))
+    reg["sessions"]["live"] = {"role": "area", "device": "PC"}
+    dropped = reg["roles"].pop("research")
+    regp.write_text(json.dumps(reg, ensure_ascii=False), encoding="utf-8")
+    code, out, err = run(SETUP, c.vault, "--member", "TBD", "--merge-registry")
+    assert code == 0, (code, out, err)
+    reg = json.loads(regp.read_text(encoding="utf-8"))
+    assert reg["roles"]["research"] == dropped and reg["sessions"]["live"]["device"] == "PC", reg
+    assert bak.is_file() and "research" not in json.loads(bak.read_text(encoding="utf-8"))["roles"], "setup: no .bak"
+    bak.unlink()
+    code, out, err = c.onboard()
+    assert code == 0, (code, out, err)
+    assert bak.is_file(), "onboard: registry.json.bak missing (not written via regstore.edit)"
+    assert json.loads(regp.read_text(encoding="utf-8"))["sessions"]["live"]["device"] == "PC"
+    regp.write_text('{"sessions": {"keep"', encoding="utf-8")
+    code, out, err = c.onboard()
+    assert regp.read_text(encoding="utf-8") == '{"sessions": {"keep"', "onboard overwrote a corrupt registry"
+
+
 def test_setup_config_file(c):
     cfg = c.tmp / "cfg" / "config.json"
     env = {"FMOS_CONFIG": str(cfg)}

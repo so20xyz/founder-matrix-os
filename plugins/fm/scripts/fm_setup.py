@@ -42,6 +42,13 @@ from typing import Dict, List, Optional, Tuple
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = SCRIPT_DIR.parent / "vault-template"
+
+# Shared registry lock / atomic write (plugins/fm/tools/relay/regstore.py): relay hooks + fm_role write the same file.
+sys.path.insert(0, str(SCRIPT_DIR.parent / "tools" / "relay"))
+try:
+    import regstore  # type: ignore  # noqa: E402
+except ImportError:  # script copied out of the plugin: keep working, unlocked (old behaviour)
+    regstore = None
 IGNORE_FILE = ".templateignore"
 ROLES_DIR = "03-Areas/AI Team/ai-workers"
 REGISTRY_REL = "_system/fm/registry.json"
@@ -382,25 +389,35 @@ def setup(target, member, dry_run=False, merge_registry=False, template=TEMPLATE
         if not merge_registry:
             report["registry"] = "skipped (байгаа файл, --merge-registry-гүй)"
         else:
+            full = build_registry(template, roles)["roles"]
+            added = []  # type: List[str]
+
+            def merge(reg):
+                reg.setdefault("sessions", {})
+                have = reg.setdefault("roles", {})
+                added[:] = [s for s in sorted(full) if s not in have]
+                for s in added:
+                    have[s] = full[s]
+
             try:
-                reg = json.loads(reg_path.read_text(encoding="utf-8"))
-                if not isinstance(reg, dict):
-                    raise ValueError("JSON object биш")
+                if regstore is not None and not dry_run:
+                    # live sessions' hooks write this file too: shared lock, atomic, rolling .bak
+                    with regstore.edit(reg_path, {"sessions": {}}, indent=2) as reg:
+                        merge(reg)
+                else:
+                    reg = json.loads(reg_path.read_text(encoding="utf-8"))
+                    if not isinstance(reg, dict):
+                        raise ValueError("JSON object биш")
+                    merge(reg)
+                    if added and not dry_run:
+                        tmp = reg_path.with_name(reg_path.name + ".tmp")
+                        tmp.write_text(json.dumps(reg, ensure_ascii=False, indent=2) + "\n",
+                                       encoding="utf-8")
+                        os.replace(str(tmp), str(reg_path))
             except Exception as exc:
                 report["registry"] = "skipped (уншигдсангүй)"
                 report["errors"].append("registry.json: %s" % exc)
             else:
-                reg.setdefault("sessions", {})
-                have = reg.setdefault("roles", {})
-                full = build_registry(template, roles)["roles"]
-                added = [s for s in sorted(full) if s not in have]
-                for s in added:
-                    have[s] = full[s]
-                if added and not dry_run:
-                    tmp = reg_path.with_name(reg_path.name + ".tmp")
-                    tmp.write_text(json.dumps(reg, ensure_ascii=False, indent=2) + "\n",
-                                   encoding="utf-8")
-                    os.replace(str(tmp), str(reg_path))
                 report["registry"] = ("merged (+%d дүр: %s)" % (len(added), ", ".join(added))
                                       if added else "skipped (бүх дүр аль хэдийн байна)")
     else:

@@ -20,6 +20,12 @@ Discord relay нь таны Claude сешнүүдийг (Mac ↔ PC, утасн�
 - **Хувийн** сешн, төсөл (`"private": true`, `finance`, `tax`, `gold`) Discord, STATUS, baton руу **хэзээ ч** орохгүй.
 - Хуучин `_system/relay/` хавтас нь архив. Шинэ өгөгдөл тэнд бичихгүй.
 
+### Суваг хуваарилалт (2026-10-09)
+
+- **Claude Remote Control** (claude.ai/code, утас ба Mac дээрх Claude апп) = эзний **үндсэн** суваг: PC/Mac сешнд ажлыг шууд өгнө.
+- **Discord** = тайлан, багийн харилцаа, эзэн бус (багийн) хүсэлт.
+- Dispatcher Discord мессежид сешнийг сэрээсээр байна. Эзний мессежийг `discord.json`-ийн `owner_ids` (author.id) таньж event-д `"from_owner": true`, `"from": "<member>"` гэж тэмдэглэнэ; `watch`/`inbox` мөрөнд `(from_owner)`. Display name-ээр хэзээ ч танихгүй.
+
 ## Шаардлага
 
 - fm plugin (relay код нь plugin дотор: `${CLAUDE_PLUGIN_ROOT}/tools/relay/`). Hook-уудад **тогтвортой зам** хэрэгтэй тул худалдаж авсан repo-гоо clone хийж, түүний `tools/relay/relay.py` shim-ийг заахыг зөвлөнө:
@@ -85,7 +91,7 @@ Vault-д `_system/fm/discord.json` үүсгэ. Server-ийн ID-г Discord-оо�
 }
 ```
 
-Нэмэлт түлхүүрүүд (заавал биш): `inbox_role`, `dispatcher_title`, `default_owner`, `vault_hints`. Анхдагч утгуудыг `plugins/fm/tools/relay/fmconfig.py`-оос хар.
+Нэмэлт түлхүүрүүд (заавал биш): `owner_ids` (эзний Discord user ID-ууд, string жагсаалт — Developer Mode → өөр дээрээ баруун товч → **Copy User ID**), `inbox_role`, `dispatcher_title`, `default_owner`, `vault_hints`. Анхдагч утгуудыг `plugins/fm/tools/relay/fmconfig.py`-оос хар.
 
 ## 5. Сувгууд үүсгэх
 
@@ -118,6 +124,8 @@ Relay нь хэрэглэгчийн түвшний Claude Code hook-оор аж�
 | Команд | Юу хийнэ |
 |---|---|
 | `python3 <REPO>/tools/relay/relay.py send <суваг> "текст"` | Сувагт мессеж илгээх |
+| `python3 <REPO>/tools/relay/relay.py send <суваг> --file <зам>` | Олон мөрт тайланг файлаас илгээх (нэг мөр команд) |
+| `… relay.py send <суваг> -` | Мессежийг stdin-ээс унших |
 | `python3 <REPO>/tools/relay/relay.py next "алхам"` | Энэ сешний дараагийн алхмыг тогтоох (baton) |
 | `python3 <REPO>/tools/relay/relay.py status` | Сешнүүдийн төлөв |
 | `python3 <REPO>/tools/relay/relay.py who` | Бүртгэлтэй сешнүүд |
@@ -131,12 +139,15 @@ Relay нь хэрэглэгчийн түвшний Claude Code hook-оор аж�
 | Мессеж хоосон ирнэ | **Message Content Intent** асаагүй |
 | `403 Missing Permissions` | Bot-д `Manage Channels` эрх алга. URL Generator-оор дахин урь |
 | Data `relay/` руу бичигдээд байна | `~/.fmos/config.json` алга эсвэл `vault` буруу. `python3 <REPO>/tools/relay/fmconfig.py` шалга |
+| `relay send: «…» суваг Discord-д алга` | Сувгийн нэр буруу эсвэл `discord.json` `broadcast` нь байхгүй суваг заасан. Ойролцоо нэрийг мессеж санал болгоно |
 | Хувийн сешн Discord-д харагдаж байна | `_system/fm/registry.json`-д тэр сешнд `"private": true` тавь, дараа нь `sync-discord`. Ийм зүйл гарвал Issue нээ (privacy bug) |
 
 ## Dispatcher-ийг байнга ажиллуулах
 
 - **Mac:** LaunchAgent (`~/Library/LaunchAgents/com.fmos.dispatcher.plist`) — `node <REPO>/tools/relay/dispatcher/dispatcher.mjs`, `WorkingDirectory` = тэр хавтас (`npm install` хийсэн `node_modules`). Node 24 keg-only бол `PATH`-д `/opt/homebrew/opt/node@24/bin`.
 - **Windows:** Task Scheduler → «At log on» → `node.exe <REPO>\tools\relay\dispatcher\dispatcher.mjs`.
+- `relay.py dispatch` эхлэх бүрдээ `~/.fmos/logs/dispatcher.log` 5 MB-аас их бол эргүүлнэ (`.1`–`.3`). Өөр процесс файлыг нээлттэй барьж байвал (Windows) алгасаад дараагийн эхлэлд дахин оролдоно.
+- Түгжээ (бүгд локал, Drive биш): `~/.fmos/registry.lock`, `~/.fmos/baton.lock` (`state/<төсөл>.md`), `~/.fmos/relay_state.lock` (`~/.fmos_relay_state.json`).
 - `tools/relay/dispatcher/dispatcher.mjs` нь `plugins/fm/tools/relay/dispatcher/dispatcher.mjs`-ийн яг ижил хуулбар (тест шалгана) — засвараа plugin хуулбарт хийгээд хуулна.
 
 ## 🔒 Finance сувгууд (`#business`, `#personal`)

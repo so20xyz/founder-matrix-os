@@ -115,6 +115,8 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 
 ## 6. Discord — хаана юу ярих вэ
 
+**Хэн юугаар:** эзэн PC/Mac сешнүүдэд ажлыг **Claude Remote Control**-оор (claude.ai/code, утас ба Mac дээрх Claude апп) шууд өгнө — үндсэн суваг. **Discord** = тайлан, багийн чат, эзэн бус хүний хүсэлт. Dispatcher Discord мессежид сешнийг сэрээсээр байна; эзний мессежийг `discord.json`-ийн `owner_ids` (Discord user ID)-аар таньж event-д `from_owner: true` гэж тэмдэглэнэ. Олон мөрт тайлан: `relay.py send <суваг> --file <зам>`.
+
 | Ангилал (= sidebar бүлэг) | Суваг |
 |---|---|
 | Areas | `#gtd` (бүгдийг сонсоно), `#architect`, … |
