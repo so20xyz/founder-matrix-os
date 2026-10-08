@@ -28,6 +28,7 @@ ATOM = ("04-Resources/Atomic/knowledge/", "04-Resources/Atomic/decisions/",
 TASKS = ("01-GTD/Tasks/", "00-GTD/Tasks/", "02-GTD/tasks/")
 LINK = re.compile(r"\[\[([^\]|#]+)")
 # positive file.inFolder("…") filters only (a negated '!file.inFolder' does not cover a folder)
+TYPE_EQ = re.compile(r'(?<![!\w.])(?:note\.)?type\s*==\s*"([^"]+)"')
 IN_FOLDER = re.compile(r'(?<!!)file\.inFolder\(\s*"([^"]+)"\s*\)')
 # PARA top folders: 00-Soul, 01-GTD, 02-Projects, 03-Areas, 04-Resources, 99-Archive (+ older NN-Name)
 PARA_TOP = re.compile(r"^\d\d-[^/]+$")
@@ -134,10 +135,13 @@ def scan(vault: Path):
     # every note lives under a folder that some base filters on (file.inFolder("<folder or ancestor>"));
     # bases themselves live directly in a PARA top folder (rule 2026-10-09), never in a subfolder
     covered = set()
+    covered_types = set()  # a base filtering on note.type == "x" also covers notes of that type, wherever they live
     for p in vault.rglob("*.base"):
         rel = p.relative_to(vault).as_posix()
         try:
-            covered |= {f.strip("/") for f in IN_FOLDER.findall(p.read_text(encoding="utf-8", errors="replace"))}
+            txt = p.read_text(encoding="utf-8", errors="replace")
+            covered |= {f.strip("/") for f in IN_FOLDER.findall(txt)}
+            covered_types |= set(TYPE_EQ.findall(txt))
         except OSError:
             continue
         if not rel.startswith(SKIP) and not PARA_TOP.match(rel.rsplit("/", 1)[0] if "/" in rel else ""):
@@ -145,6 +149,9 @@ def scan(vault: Path):
     out["nested-base"].sort()
 
     def has_base(k):
+        t = re.search(r"^type:\s*\"?([\w-]+)", notes[k][0], re.M)
+        if t and t.group(1) in covered_types:
+            return True
         d = k.rsplit("/", 1)[0] if "/" in k else ""
         while d:
             if d in covered:
