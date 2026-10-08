@@ -26,6 +26,7 @@
 - **Vault = Google Drive:** Google Drive desktop `fm_doctor`-д **заавал** боллоо; `/fm:setup` 2-р алхам vault-ийг `My Drive/Second Brain`-д (Mirror files) үүсгэж Obsidian-оор нээлгэнэ; 2 дахь төхөөрөмж ижил хавтсыг нээнэ. Нэрийг дахин асуухгүй. **Код → локал:** repo-гийн clone локал дискэнд (Drive `.git`-ийг эвддэг).
 - Repo `Atlas322/founder-matrix-os` руу шилжив (баг).
 - Routine `scope`: `one-device` (vault руу бичдэг — daily, weekly, санхүү) зөвхөн гол машин дээр, `per-device` (Harvester) машин бүрт — 2 дахь компьютер дээр давхар бичилт үүсэхгүй.
+- **🔒 Finance Discord** (itge.e 2026-10-08): `#business`, `#personal` — screenshot ирэхэд санхүүгийн сешн сэрнэ (event агуулгагүй), `relay.py fetch` хавсралтыг private inbox руу татна; бот зөвхөн тоогүй «🙋 авлаа / ✅ бүртгэлээ».
 - Тест: routine загвар, sidebar загвар, нэрээр дуудах.
 
 ### Засварласан

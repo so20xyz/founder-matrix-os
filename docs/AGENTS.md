@@ -91,7 +91,7 @@ Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 
 - **Эзэмшинэ:** `04-Areas/Business/finances/private/` 🔒 (төлбөр, орлого, хувийн бичлэг), `finances/` (багийн тайлан).
 - **Дүрэм:** хөрөнгө оруулалтын зөвлөгөө өгөхгүй; төлбөр хийхгүй, банкинд нэвтрэхгүй. Данс, карт, PIN, нууц үгийг хэзээ ч бичихгүй. Санхүүгийн мэдээлэл vault-аас гарахгүй (Discord, лог, атом, STATUS-т ч). Бичихээс өмнө асууна.
 - **Routine:** сарын 1-нд төлбөрийн жагсаалт, 20-нд төлөгдөөгүй сануулга ([GUIDE](GUIDE.md#5-routine-ууд--өөрөө-ажилладаг)).
-- **Sidebar:** 🔒 Personal · 💼 Business (Finance) — Discord суваггүй.
+- **Sidebar:** 🔒 Personal · 💼 Business (Finance) — Discord-д `#business` / `#personal` (зөвхөн screenshot хүлээн авна; бот дүн бичихгүй).
 
 ---
 

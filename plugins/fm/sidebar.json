@@ -89,7 +89,7 @@
       "cwd": "",
       "required": false,
       "private": true,
-      "note": "Бизнесийн санхүү. Discord суваггүй."
+      "note": "Бизнесийн санхүү. Discord #business — зөвхөн screenshot хүлээн авна, бот дүн бичихгүй."
     },
     {
       "order": 10,
@@ -99,13 +99,13 @@
       "cwd": "",
       "required": false,
       "private": true,
-      "note": "Хувийн санхүү. Discord суваггүй; business ба personal тусдаа."
+      "note": "Хувийн санхүү. Discord #personal — зөвхөн screenshot хүлээн авна; business ба personal тусдаа."
     }
   ],
   "rules": [
     "4 бүлэг: Projects · Areas · Resources · Finance. Нэг удаагийн сешн бүлэггүй; дууссан сешнийг апп-ын Archive руу (устгахгүй).",
     "Нэг дүр = нэг тогтмол сешн; ижил дүрийн хоёр дахь сешн нээхгүй.",
-    "Finance: Business ба Personal хоёр тусдаа сешн, Discord суваггүй, агуулга vault-аас гарахгүй.",
+    "Finance: Business ба Personal хоёр тусдаа сешн; Discord #business/#personal зөвхөн screenshot хүлээн авна (бот: «🙋 авлаа / ✅ бүртгэлээ», тоогүй); агуулга vault-ийн private хавтсанд л.",
     "Icon: 📁 төсөл/portfolio · 📥 GTD · 🏛️ architect · 🎨 creative · 📖 номын сан · 📚 wiki · 🔍 судалгаа · 💼 бизнес · 🔒 хувийн."
   ],
   "routines": [

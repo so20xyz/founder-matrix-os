@@ -44,7 +44,7 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 | 1 | **Projects** | 📁 Portfolio (бүх төслийн төлөв) · 📁 `<Төсөл>` — Active төсөл бүрт нэг |
 | 2 | **Areas** | 🎨 Creative · 🏛️ Architect · 📥 GTD (setup-ийн сешн өөрөө) — бараг бүх ажлыг эдгээр 3 agent хийнэ |
 | 3 | **Resources** | 📚 Wiki · 📖 Library (номын сан: нэмэх, байршуулах, судлах) · 🔍 Research · `<сэдэв>` |
-| 4 | **Finance** 🔒 | 💼 Business · 🔒 Personal (тусдаа, Discord-гүй) |
+| 4 | **Finance** 🔒 | 💼 Business · 🔒 Personal (тусдаа; Discord-д зөвхөн screenshot хүлээн авах #business/#personal) |
 
 Нэг удаагийн сешн бүлэггүй; дууссан сешнийг апп-ын Archive руу (устгахгүй). Энэ бүтэц itge.e-ийн sidebar-тай ижил (2026-10-07); Season 2-ын 12 хичээл үүнийг алхам алхмаар барина.
 
@@ -120,7 +120,7 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 | Areas | `#gtd` (бүгдийг сонсоно), `#architect`, … |
 | Projects | төсөл бүрт нэг суваг (Mac + PC хос сешн хуваалцана) |
 | Resources · Research · Creative · Development | дүр бүрт нэг суваг |
-| Finance | **суваггүй** 🔒 |
+| Finance 🔒 | `#business`, `#personal` — зөвхөн screenshot/баримт илгээх. Бот зөвхөн «🙋 авлаа / ✅ бүртгэлээ» (тоогүй); хавсралтыг санхүүгийн сешн vault-ийн private inbox руу татна (`relay.py fetch`) |
 
 **Дүрэм:**
 1. Нэг хүсэлт = нэг **thread**. Хариулт тэр thread дотор.

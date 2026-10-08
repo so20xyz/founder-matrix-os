@@ -138,3 +138,13 @@ Relay нь хэрэглэгчийн түвшний Claude Code hook-оор аж�
 - **Mac:** LaunchAgent (`~/Library/LaunchAgents/com.fmos.dispatcher.plist`) — `node <REPO>/tools/relay/dispatcher/dispatcher.mjs`, `WorkingDirectory` = тэр хавтас (`npm install` хийсэн `node_modules`). Node 24 keg-only бол `PATH`-д `/opt/homebrew/opt/node@24/bin`.
 - **Windows:** Task Scheduler → «At log on» → `node.exe <REPO>\tools\relay\dispatcher\dispatcher.mjs`.
 - `tools/relay/dispatcher/dispatcher.mjs` нь `plugins/fm/tools/relay/dispatcher/dispatcher.mjs`-ийн яг ижил хуулбар (тест шалгана) — засвараа plugin хуулбарт хийгээд хуулна.
+
+## 🔒 Finance сувгууд (`#business`, `#personal`)
+
+itge.e 2026-10-08-нд шууд баталсан. Санхүүгийн screenshot, баримтыг утаснаас илгээх зориулалттай.
+
+- `sync-discord` нь хувийн санхүүгийн сешн (`role: finance`) байвал **08 Finance** ангилалд `#business` (гарчигт «Business»), `#personal` (бусад) үүсгэнэ.
+- Тэр сувагт **itge.e-ийн** мессеж ирэхэд dispatcher санхүүгийн сешнийг сэрээнэ. Event-д агуулга, хавсралтын холбоос **байхгүй** (GTD-д харагддаг тул).
+- Санхүүгийн сешн өөрөө уншина: `relay.py fetch personal --sid <sid>` → хавсралт `04-Areas/Business/finances/private/inbox/`-д татагдана.
+- Бот Discord-д зөвхөн `🙋 авлаа` / `✅ бүртгэлээ` (тоогүй, ≤80 тэмдэгт) бичнэ — `send` бусдыг татгалзана. Санхүүгийн сешн бусад суваг руу огт бичихгүй.
+- ⚠️ Discord-д илгээсэн зураг Discord-ийн серверт үлдэнэ — үүнийг мэдсээр сонгосон.

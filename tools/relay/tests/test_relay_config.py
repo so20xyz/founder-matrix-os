@@ -207,6 +207,26 @@ def main():
              "for mac: хий", "Шинэ task", "", "PC ✅ гэж бичсэн"]]))
     """, base)
     check(d == [True, True, True, True, True, False, False, False, False], "dispatch: status notices recognised, requests not", str(d))
+
+    # ── 5d. 🔒 Finance channels (itge.e 2026-10-08): mapping, number-free receipts only
+    d = child("""
+        import relay
+        fc = relay.fin_channel
+        print(json.dumps({
+          "map": [fc({"role": "finance", "private": True, "title": "💼 Business"}),
+                  fc({"role": "finance", "private": True, "title": "🔒 Personal"}),
+                  fc({"project": "finance-business", "private": True, "title": "x"}),
+                  fc({"role": "finance", "title": "💰 Finance"}),
+                  fc({"role": "area", "private": True, "title": "Phuket"}),
+                  fc({"role": "finance", "private": False, "project": "Acme"}), fc({"project": "Acme", "title": "Business"}), fc(None)],
+          "ack": [bool(relay.FIN_ACK.match(t)) for t in
+                  ["🙋 авлаа", "✅ бүртгэлээ", "✅ 500000₮ бүртгэлээ", "бүртгэлээ", "✅ " + "а" * 90]],
+          "cats": sorted(relay.sync_needed_cats({"01-a": ("projects", "a")}, ["01-a", "business", "personal"])),
+        }))
+    """, base)
+    check(d["map"] == ["business", "personal", "business", "personal", None, "personal", None, None], "finance: session → #business/#personal (role finance is always private), others none", str(d["map"]))
+    check(d["ack"] == [True, True, False, False, False], "finance: only short number-free 🙋/✅ receipts", str(d["ack"]))
+    check(d["cats"] == ["projects"], "finance: #business/#personal never parked in Archive", str(d["cats"]))
     task = vault / "02-GTD" / "tasks" / "Тест даалгавар.md"
     check(task.exists() and 'owner: "Тестер"' in task.read_text(encoding="utf-8"), "task: vault task, default owner = member")
 

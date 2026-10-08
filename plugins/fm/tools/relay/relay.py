@@ -359,6 +359,11 @@ def d_send(to, text, sid):
     reg = load(REG, {"sessions": {}}); me = reg["sessions"].get(sid, {"name": f"{DEVICE}-{sid[:6]}"})
     state = load(STATE, {}); ch = dchannels(state); save(STATE, state)
     name = BROADCAST if to in ("all", "@all", "org", "sys") else to.lstrip("@").lower()
+    if is_private(me) or name in FIN_CH:   # 🔒 finance: only a short number-free receipt, only into #business/#personal
+        if name not in FIN_CH or not FIN_ACK.match(text):
+            print("🔒 татгалзав: санхүүгийн сешн Discord-д зөвхөн #business/#personal-д «🙋 авлаа» / «✅ бүртгэлээ» (тоогүй) бичнэ")
+            return
+        sys.argv.append("--no-thread")    # no thread named after itge.e's (possibly money) message
     # itge.e 2026-10-06: clean chat — avatar+bot name already say PC/Mac, so no «🖥️ [name]» prefix in the body.
     # The sending agent goes in a small grey footer (Discord «-#» subtext); the reply threads to itge.e's
     # latest human message in the channel (or --reply <message_id>).
@@ -619,6 +624,25 @@ def _last_turn(tp):
 PRIVATE_PROJECTS = fmconfig.PRIVATE_PROJECTS
 is_private = fmconfig.is_private  # explicit "private": true, or a money project (finance/tax/gold)
 
+# itge.e 2026-10-08 (шууд баталсан): хувийн Discord-д Finance ангилал — #business, #personal. itge.e тэнд screenshot
+# илгээхэд санхүүгийн сешн сэрнэ. 🔒 Discord-д зөвхөн «🙋 авлаа / ✅ бүртгэлээ» (тоогүй); агуулга, хавсралт зөвхөн
+# санхүүгийн сешн рүү (`fetch`) — dispatcher-ийн event (GTD харна) агуулга, холбоосгүй.
+FIN_CH = ("business", "personal")
+FIN_ACK = re.compile(r"^\s*(?:🙋|✅)[^0-9]{0,80}$")
+FIN_INBOX = "04-Areas/Business/finances/private/inbox"
+
+
+def fin_channel(v):
+    """A private finance session → its channel ('business' | 'personal'); anything else → None."""
+    if not v or not is_private(v): return None
+    if v.get("role") != "finance" and not str(v.get("project") or "").startswith("finance"): return None
+    return "business" if "business" in (str(v.get("title") or "") + str(v.get("project") or "")).lower() else "personal"
+
+
+def finmap():
+    """session_id → finance channel, for private finance sessions only."""
+    return {sid: c for sid, v in load(REG, {"sessions": {}})["sessions"].items() if (c := fin_channel(v))}
+
 
 def d_baton(hook, push_every=300):
     """Stop hook: write state/<project>.md (ОДОО overwritten, ТҮҮХ appended); commit+push throttled."""
@@ -704,7 +728,7 @@ def chmap():
         names[k] = (emo + "-" if emo else "") + core
     return {sid: names[key(v)] for sid, v in regs}
 
-CATS = {"tasks": "01 Tasks", "projects": "02 Projects", "areas": "03 Areas", "resources": "04 Resources", "research": "05 Research", "creative": "06 Creative", "development": "07 Development", "system": "08 System", "archive": "09 Archive"}
+CATS = {"tasks": "01 Tasks", "projects": "02 Projects", "areas": "03 Areas", "resources": "04 Resources", "research": "05 Research", "creative": "06 Creative", "development": "07 Development", "finance": "08 Finance", "system": "08 System", "archive": "09 Archive"}  # System хаагдсан (SYSTEM_CH хоосон) → 08 нь Finance
 SYSTEM_CH = []  # #org, #status, #general, #relay, #status-data → Archive (itge.e 2026-10-07: System бүлэг хаагдсан)
 
 def sync_needed_cats(want, text):
@@ -713,6 +737,7 @@ def sync_needed_cats(want, text):
     need = {g if g in CATS else "archive" for g, _ in want.values()}
     for n in text:
         if n in want: continue
+        if n in FIN_CH: continue  # finance channels are handled by d_sync's finance block
         need.add("system" if n in SYSTEM_CH else "archive")
     return need
 
@@ -730,6 +755,8 @@ def d_sync():
         v = load(REG, {"sessions": {}})["sessions"][sid]
         want.setdefault(name, (v["group"], v.get("project")))
     need = sync_needed_cats(want, text)  # only categories that will actually hold a channel (no empty ones)
+    fin = sorted(set(finmap().values()))
+    if fin: need.add("finance")
     cats, i = {}, 0
     for k, name in CATS.items():
         c = byname.get(k)
@@ -762,8 +789,14 @@ def d_sync():
         else:
             dapi("POST", f"/guilds/{gid}/channels", {"name": slug, "type": 0, "parent_id": parent}); print("channel +", slug, "@", grp)
             time.sleep(0.6)
+    for n in fin:  # 🔒 Finance: fixed #business / #personal, never renamed or numbered
+        if n in text:
+            if text[n].get("parent_id") != cats["finance"]:
+                dapi("PATCH", f"/channels/{text[n]['id']}", {"parent_id": cats["finance"]}); print("move", n, "→ finance")
+        else:
+            dapi("POST", f"/guilds/{gid}/channels", {"name": n, "type": 0, "parent_id": cats["finance"]}); print("channel +", n, "@ finance")
     for n, c in text.items():
-        if n in want: continue
+        if n in want or n in fin: continue
         tgt = cats["system"] if n in SYSTEM_CH else cats["archive"]
         if c.get("parent_id") != tgt:
             dapi("PATCH", f"/channels/{c['id']}", {"parent_id": tgt}); print("move", n, "→", "System" if n in SYSTEM_CH else "Archive")
@@ -797,6 +830,8 @@ def d_dispatch(every=15):
         v = reg[sid]
         if v.get("device") == DEVICE and not is_private(v):
             local.setdefault(ch, []).append(v.get("title") or v["name"])
+    for sid, fc in finmap().items():
+        if reg[sid].get("device") == DEVICE: local.setdefault(fc, []).append(reg[sid].get("title") or reg[sid]["name"])
     st = load(STATE, {}); st.pop("_dch", None); ch = dchannels(st); save(STATE, st)
     watch = {n: ch[n] for n in local if n in ch}
     bot_wakes = {}; last = {}; seen_threads = {}
@@ -830,10 +865,44 @@ def d_dispatch(every=15):
                     hist = [t for t in bot_wakes.get(n, []) if time.time() - t < 600]
                     if len(hist) >= 3: continue
                     bot_wakes[n] = hist + [time.time()]
+                if parent.get(n, n) in FIN_CH:   # 🔒 only itge.e's own messages wake, and the event carries no content
+                    if a.get("bot"): continue
+                    na = len(m.get("attachments") or [])
+                    print(json.dumps({"wake": local[n], "channel": parent.get(n, n), "private": True,
+                                      "text": f"🔒 санхүүгийн шинэ мессеж ({na} хавсралт) — тэр сешн `relay.py fetch {parent.get(n, n)}`-ээр өөрөө уншина"},
+                                     ensure_ascii=False), flush=True)
+                    continue
                 if _channel_live(parent.get(n, n)): continue        # itge.e 2026-10-07: that session hears it itself
                 ev = {"wake": local[n], "channel": parent.get(n, n), "from": a.get("global_name") or a["username"], "text": txt[:1500]}
                 if n.startswith("t:"): ev["thread"] = n[2:]; seen_threads[n[2:]] = m["id"]
                 print(json.dumps(ev, ensure_ascii=False), flush=True)
+
+
+def d_fetch(chan, sid):
+    """🔒 Finance session only: read itge.e's new messages in #business/#personal, download attachments into the
+    vault's private inbox and print local paths + text (stdout stays in this private session)."""
+    me = load(REG, {"sessions": {}})["sessions"].get(sid)
+    if fin_channel(me) != chan:
+        print("🔒 татгалзав: зөвхөн энэ сувгийн санхүүгийн сешн уншина"); return
+    st = load(STATE, {}); ch = dchannels(st); save(STATE, st)
+    if chan not in ch: print(f"#{chan} суваг алга — `relay.py sync-discord`"); return
+    key = "_fin_" + chan; after = st.get(key, "0")
+    msgs = sorted(dapi("GET", f"/channels/{ch[chan]}/messages?after={after}&limit=50"), key=lambda m: int(m["id"]))
+    out = Path(fmconfig.VAULT) / FIN_INBOX if VAULT_MODE else Path.home() / ".fmos_fin_inbox"
+    out.mkdir(parents=True, exist_ok=True); n = 0
+    for m in msgs:
+        after = m["id"]
+        if m["author"].get("bot"): continue
+        ts = m["timestamp"][:16].replace("T", " ").replace(":", "")
+        print(f"— {m['timestamp'][:16]} · {m['content'] or '(текстгүй)'}")
+        for att in m.get("attachments") or []:
+            fn = _re.sub(r"[\\/:*?\"<>|#^\[\]]", "-", att.get("filename") or "file")
+            dst = out / f"{ts} - {fn}"
+            req = urllib.request.Request(att["url"], headers={"User-Agent": fmconfig.USER_AGENT_URL})
+            with urllib.request.urlopen(req, timeout=60) as r: dst.write_bytes(r.read())
+            print(f"  📎 {dst}"); n += 1
+    st = load(STATE, {}); st[key] = after; save(STATE, st)
+    print(f"{len([m for m in msgs if not m['author'].get('bot')])} мессеж · {n} хавсралт → {out}")
 
 
 def main():
@@ -876,6 +945,8 @@ def main():
         return d_baton(hook)
     if a[0] == "dispatch":
         return d_dispatch()
+    if a[0] == "fetch":
+        return d_fetch(a[1], sid)
     if a[0] == "task":
         return d_task(a[1:], sid)
     if a[0] == "hub":
