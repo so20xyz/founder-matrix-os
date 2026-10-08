@@ -14,6 +14,8 @@ import tempfile
 import textwrap
 from pathlib import Path
 
+sys.stdout.reconfigure(encoding="utf-8")   # Windows console (cp1252) cannot print «→» in the labels
+
 REPO_DIR = Path(__file__).resolve().parents[3]
 LEGACY_DIR = Path(__file__).resolve().parents[1]                       # tools/relay: shims (live hook paths)
 CANON_DIR = REPO_DIR / "plugins" / "fm" / "tools" / "relay"           # canonical code (fm plugin)
