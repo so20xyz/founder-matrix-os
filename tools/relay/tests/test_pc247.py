@@ -48,8 +48,8 @@ class Ctx:
         self.data = self.vault / "_system" / "fm"
         self.data.mkdir(parents=True)
         self.reg = self.data / "registry.json"
-        sessions = sessions or {"sid-a": {"name": "PC-acme", "group": "projects", "project": "acme",
-                                          "title": "acme Website", "device": "PC"}}
+        sessions = sessions or {"sid-a": {"name": "PC-Acme", "group": "projects", "project": "acme",
+                                          "title": "Acme Website", "device": "PC"}}
         self.reg.write_text(json.dumps({"sessions": sessions}, ensure_ascii=False), encoding="utf-8")
         (self.data / "discord.json").write_text(json.dumps(
             {"guild": {"id": "G"}, "member": "Soyol", "owner_ids": [OWNER], "broadcast": "03-sys-admin"}), encoding="utf-8")
@@ -82,7 +82,7 @@ def sent(out):
 
 def t_send_file_and_stdin():
     c = Ctx()
-    body = "✅ acme тайлан\n- мөр 1\n- мөр 2 \"quoted\"\n"
+    body = "✅ Acme тайлан\n- мөр 1\n- мөр 2 \"quoted\"\n"
     f = c.tmp / "report.md"; f.write_text(body, encoding="utf-8")
     rc, out, err = c.py(SEND % json.dumps(["send", "08-acme-website", "--file", str(f), "--no-thread"]))
     check(rc == 0 and sent(out) == ["08-acme-website", body], "send --file PATH: whole multi-line file is the message", (rc, out, err))
