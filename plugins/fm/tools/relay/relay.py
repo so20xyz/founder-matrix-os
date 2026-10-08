@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fmconfig  # noqa: E402  (vault vs legacy paths, device, member, configurable specifics)
+import regstore  # noqa: E402  (registry.json: one lock ~/.fmos/registry.lock, atomic write, .bak, never overwrite on read error)
 
 REPO = fmconfig.REPO
 RELAY = fmconfig.RELAY_DIR          # vault mode: <vault>/_system/fm · legacy: <repo>/relay
@@ -67,12 +68,23 @@ def safe_sync(paths, msg):
 
 
 def load(p, d):
+    """Read-only JSON load; any error → d. The registry goes through regstore.read (retries Windows sharing
+    violations). NEVER load→save the registry with this: use reg_edit() (locked, refuses to overwrite a bad file)."""
+    if Path(p) == Path(REG):
+        try: v = regstore.read(p, d)
+        except regstore.RegistryReadError: return d
+        _norm_reg(v)
+        return v
     try:
-        v = json.loads(Path(p).read_text(encoding="utf-8"))
+        return json.loads(Path(p).read_text(encoding="utf-8"))
     except Exception:
         return d
-    if isinstance(v, dict) and Path(p) == Path(REG): _norm_reg(v)
-    return v
+
+
+def reg_edit():
+    """Locked load→modify→save of registry.json (see regstore.edit). Raises regstore.RegistryReadError, writing
+    nothing, when the existing file cannot be read."""
+    return regstore.edit(REG, {"sessions": {}}, normalize=_norm_reg)
 
 
 def _norm_reg(reg):
@@ -90,8 +102,9 @@ def _norm_reg(reg):
 
 
 def save(p, v):
-    Path(p).parent.mkdir(parents=True, exist_ok=True)
-    Path(p).write_text(json.dumps(v, ensure_ascii=False, indent=1), encoding="utf-8")
+    """Atomic JSON write (temp + os.replace). Not for registry.json — that goes through reg_edit()."""
+    assert Path(p) != Path(REG), "registry.json: use reg_edit() (locked)"
+    regstore.write_atomic(p, v, indent=1, backup=False)
 
 
 def pull(state):
@@ -162,8 +175,7 @@ def _rekey(sid):
     If sid is unknown, find the desktop-app session file holding it (cliSessionId), take its title, and move the
     registry entry with the same title on this device to the new sid. Returns sid."""
     if not sid: return sid
-    reg = load(REG, {"sessions": {}}); S = reg["sessions"]
-    if sid in S: return sid
+    if sid in load(REG, {"sessions": {}})["sessions"]: return sid  # fast path, no lock
     app = fmconfig.claude_app_sessions_dir()
     title = None
     for f in app.glob("*/*/local_*.json"):
@@ -172,10 +184,12 @@ def _rekey(sid):
         if j.get("cliSessionId") == sid: title = (j.get("title") or "").strip(); break
     if not title: return sid
     norm = lambda t: (t or "").strip().lstrip("🔥📐⏸✅ ").strip().lower()
-    old = next((k for k, v in S.items() if v.get("device") == DEVICE and norm(v.get("title")) == norm(title)), None)
-    if not old: return sid
-    S[sid] = S.pop(old); S[sid]["prev_sid"] = old
-    save(REG, reg)
+    with reg_edit() as reg:  # re-read under the lock: another session may have changed it meanwhile
+        S = reg["sessions"]
+        if sid in S: return sid
+        old = next((k for k, v in S.items() if v.get("device") == DEVICE and norm(v.get("title")) == norm(title)), None)
+        if not old: return sid
+        S[sid] = S.pop(old); S[sid]["prev_sid"] = old
     try: git("add", str(REG)); git("commit", "-qm", f"relay: rekey {title} ({DEVICE})"); git("push", "-q")
     except Exception: pass
     return sid
@@ -191,14 +205,16 @@ def cmd_register(name, group, sid, project=None):
     group = group.lower().lstrip("@")
     assert group in GROUPS, f"group ∈ {GROUPS}"
     git("pull", "-q", "--rebase", "--autostash")
-    reg = load(REG, {"sessions": {}})
-    keep = {k: v for k, v in reg["sessions"].get(sid, {}).items() if k in ("project", "title", "private", "role")}
-    reg["sessions"][sid] = {**keep, "name": name, "group": group, "device": DEVICE,
-                            "host": socket.gethostname(), "since": datetime.date.today().isoformat()}
-    if project: reg["sessions"][sid]["project"] = project
-    if "--private" in sys.argv: reg["sessions"][sid]["private"] = True
-    if "--title" in sys.argv: reg["sessions"][sid]["title"] = sys.argv[sys.argv.index("--title") + 1]
-    save(REG, reg)
+    try:
+        with reg_edit() as reg:
+            keep = {k: v for k, v in reg["sessions"].get(sid, {}).items() if k in ("project", "title", "private", "role")}
+            reg["sessions"][sid] = {**keep, "name": name, "group": group, "device": DEVICE,
+                                    "host": socket.gethostname(), "since": datetime.date.today().isoformat()}
+            if project: reg["sessions"][sid]["project"] = project
+            if "--private" in sys.argv: reg["sessions"][sid]["private"] = True
+            if "--title" in sys.argv: reg["sessions"][sid]["title"] = sys.argv[sys.argv.index("--title") + 1]
+    except regstore.RegistryReadError as e:
+        sys.exit(f"registry.json уншигдсангүй — бүртгэл хийсэнгүй, файлыг хөндөөгүй ({e}). {REG.name}.bak-аас сэргээ.")
     (RELAY / "s").mkdir(parents=True, exist_ok=True)
     git("add", str(REG))
     git("commit", "-qm", f"relay: register {name} @{group} ({DEVICE})")
@@ -275,15 +291,21 @@ def _auto_pair(hook):
     """The member opens a new session and types only an existing title (e.g. the inbox role, discord.json "inbox_role") →
     register this session as that title's pair on this device, and tell Claude to rename/regroup itself."""
     sid = hook.get("session_id", ""); prompt = (hook.get("prompt") or "").strip()
-    reg = load(REG, {"sessions": {}}); S = reg["sessions"]
-    if not prompt or sid in S or hook.get("hook_event_name") != "UserPromptSubmit": return None
+    if not prompt or hook.get("hook_event_name") != "UserPromptSubmit": return None
     m = _re.search(r"pair:\s*(.+)", prompt)
     want = (m.group(1).splitlines()[0] if m else prompt).strip().lower()
-    src = next((v for v in S.values() if (v.get("title") or "").strip().lower() == want and not v.get("private")), None)
-    if not src: return None
-    S[sid] = {k: src[k] for k in ("group", "project", "title", "role", "private") if k in src}
-    S[sid].update(name=f"{src.get('title')} ({DEVICE})", device=DEVICE, host=socket.gethostname(), since=datetime.date.today().isoformat())
-    save(REG, reg); git("add", str(REG)); git("commit", "-qm", f"relay: auto-pair {src.get('title')} ({DEVICE})"); git("push", "-q")
+    find = lambda S: next((v for v in S.values() if (v.get("title") or "").strip().lower() == want and not v.get("private")), None)
+    S0 = load(REG, {"sessions": {}})["sessions"]
+    if sid in S0 or not find(S0): return None  # fast path, no lock (every prompt passes here)
+    try:
+        with reg_edit() as reg:
+            S = reg["sessions"]; src = find(S)
+            if sid in S or not src: return None
+            S[sid] = {k: src[k] for k in ("group", "project", "title", "role", "private") if k in src}
+            S[sid].update(name=f"{src.get('title')} ({DEVICE})", device=DEVICE, host=socket.gethostname(), since=datetime.date.today().isoformat())
+    except regstore.RegistryReadError:
+        return None  # already logged to stderr; never write over an unreadable registry
+    git("add", str(REG)); git("commit", "-qm", f"relay: auto-pair {src.get('title')} ({DEVICE})"); git("push", "-q")
     grp = {"tasks": "Tasks", "projects": "Projects", "areas": "Areas", "resources": "Resources", "research": "Research", "development": "Development"}.get(src["group"], src["group"])
     sf = STATE_DIR / f"{src.get('project')}.md"
     baton = sf.read_text(encoding="utf-8").split("## ТҮҮХ")[0].strip() if src.get("project") and sf.exists() else "(baton алга)"
@@ -945,7 +967,9 @@ def main():
         except Exception: return
         try: _rekey(hook.get("session_id", ""))
         except Exception: pass
-        return d_baton(hook)
+        try: return d_baton(hook)
+        except Exception as e:  # Stop hook: never break the session
+            regstore.log(f"baton: {e}"); return
     if a[0] == "dispatch":
         return d_dispatch()
     if a[0] == "fetch":

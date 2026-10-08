@@ -25,9 +25,17 @@ import os
 import platform
 import re
 import sys
+import contextlib
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional
+
+# Shared registry lock / atomic write (plugins/fm/tools/relay/regstore.py): the relay hooks write the same file.
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools" / "relay"))
+try:
+    import regstore  # noqa: E402
+except ImportError:  # script copied out of the plugin: keep working, unlocked (old behaviour)
+    regstore = None
 
 ROLES_DIR = Path("04-Areas") / "AI Team" / "ai-workers"
 REGISTRY = Path("_system") / "fm" / "registry.json"
@@ -150,9 +158,13 @@ def load_registry(vault: Path) -> Dict[str, object]:
     if not path.exists():
         return {"sessions": {}, "roles": {}}
     try:
-        data = json.loads(path.read_text(encoding="utf-8-sig"))
-    except (OSError, ValueError) as e:
-        _die("registry.json уншиж чадсангүй (%s). Гараар засаад дахин оролд — дарж бичихгүй." % e)
+        if regstore is not None:  # retries Windows sharing violations / a writer mid-replace
+            data = regstore.read(path, {"sessions": {}, "roles": {}})
+        else:
+            data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except Exception as e:  # RegistryReadError / OSError / ValueError
+        _die("registry.json уншиж чадсангүй (%s). Гараар засаад (эсвэл registry.json.bak-аас сэргээгээд) "
+             "дахин оролд — дарж бичихгүй." % e)
     if not isinstance(data, dict):
         _die("registry.json буруу бүтэцтэй (object биш).")
     data.setdefault("sessions", {})
@@ -160,8 +172,15 @@ def load_registry(vault: Path) -> Dict[str, object]:
     return data
 
 
+def registry_lock():
+    """Cross-process lock (~/.fmos/registry.lock) shared with relay.py; hold it around load -> modify -> save."""
+    return regstore.registry_lock() if regstore is not None else contextlib.nullcontext()
+
+
 def save_registry(vault: Path, data: Dict[str, object]) -> Path:
     path = vault / REGISTRY
+    if regstore is not None:  # atomic + retry on Windows PermissionError + rolling registry.json.bak
+        return regstore.write_atomic(path, data, indent=2)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix=".registry.", suffix=".tmp", dir=str(path.parent))
     with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
@@ -239,6 +258,20 @@ def cmd_bind(vault: Path, args: List[str]) -> None:
         _die("Session id олдсонгүй. Хэрэглэгчээс асууж --sid <id>-ээр дахин ажиллуул.", 3)
     device = detect_device(_opt(args, "--device"))
     title = _opt(args, "--title") or "%s · %s" % (role["name"], device)
+    with registry_lock():
+        reg, entry, path = _bind_locked(vault, role, sid, device, title)
+    sessions = reg["sessions"]
+    others = [s for s, v in sessions.items() if s != sid and isinstance(v, dict)
+              and v.get("role") == role["slug"] and v.get("device") == device]
+    _out(json.dumps({
+        "ok": True, "sid": sid, "role": role["slug"], "name": role["name"], "device": device,
+        "title": title, "private": bool(entry.get("private")), "note": role["note"],
+        "registry": path.as_posix(), "same_role_same_device": others,
+    }, ensure_ascii=False, indent=2))
+
+
+def _bind_locked(vault: Path, role: Dict[str, object], sid: str, device: str, title: str):
+    """load -> modify -> save; the caller holds registry_lock()."""
     reg = load_registry(vault)
     sessions = reg["sessions"]
     prev = sessions.get(sid) if isinstance(sessions.get(sid), dict) else {}
@@ -258,28 +291,23 @@ def cmd_bind(vault: Path, args: List[str]) -> None:
     if role["group"]:
         reg["roles"][role["slug"]]["group"] = role["group"]
     path = save_registry(vault, reg)
-    others = [s for s, v in sessions.items() if s != sid and isinstance(v, dict)
-              and v.get("role") == role["slug"] and v.get("device") == device]
-    _out(json.dumps({
-        "ok": True, "sid": sid, "role": role["slug"], "name": role["name"], "device": device,
-        "title": title, "private": bool(entry.get("private")), "note": role["note"],
-        "registry": path.as_posix(), "same_role_same_device": others,
-    }, ensure_ascii=False, indent=2))
+    return reg, entry, path
 
 
 def cmd_unbind(vault: Path, args: List[str]) -> None:
     sid = detect_sid(_opt(args, "--sid"))
     if not sid:
         _die("Session id олдсонгүй. --sid <id> өг.", 3)
-    reg = load_registry(vault)
-    entry = reg["sessions"].get(sid)
-    if not isinstance(entry, dict) or "role" not in entry:
-        _out("Энэ сешн дүргүй байна — өөрчлөх зүйлгүй.")
-        return
-    slug = entry.pop("role", None)
-    if entry.get("project") == slug:  # set by bind; legacy relay projects are kept
-        entry.pop("project", None)
-    save_registry(vault, reg)
+    with registry_lock():
+        reg = load_registry(vault)
+        entry = reg["sessions"].get(sid)
+        if not isinstance(entry, dict) or "role" not in entry:
+            _out("Энэ сешн дүргүй байна — өөрчлөх зүйлгүй.")
+            return
+        slug = entry.pop("role", None)
+        if entry.get("project") == slug:  # set by bind; legacy relay projects are kept
+            entry.pop("project", None)
+        save_registry(vault, reg)
     _out("Дүрээс салгав: %s" % sid)
 
 
