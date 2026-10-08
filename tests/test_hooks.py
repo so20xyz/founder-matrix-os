@@ -66,7 +66,7 @@ class Vault(object):
         self.tmp = Path(tempfile.mkdtemp(prefix="fm-hooks-test-"))
         self.root = self.tmp / "Vault"
         self.outside = self.tmp / "elsewhere"
-        for d in ["00-GTD/Inbox", "00-GTD/Tasks", "06-Atomic", "_system/fm", "_system/templates",
+        for d in ["00-GTD/Inbox", "00-GTD/Tasks", "05-Resources/Atomic", "_system/fm", "_system/templates",
                   "_trash", "99-Archive", ".obsidian", "04-Areas/AI Team/ai-workers",
                   "04-Areas/Business/finances/private"]:
             (self.root / d).mkdir(parents=True, exist_ok=True)
@@ -249,7 +249,7 @@ def test_ctx_vault_from_fmos_config(v):
 def test_ctx_project_dir_inside_vault(v):
     v.write("_system/BOOT.md", "pd-boot\n")
     payload = {"session_id": "x", "hook_event_name": "SessionStart"}
-    code, out, _ = run(CTX, payload, {"FM_VAULT": str(v.root), "CLAUDE_PROJECT_DIR": str(v.root / "06-Atomic")})
+    code, out, _ = run(CTX, payload, {"FM_VAULT": str(v.root), "CLAUDE_PROJECT_DIR": str(v.root / "05-Resources/Atomic")})
     assert "pd-boot" in context_of(out)
 
 
@@ -289,14 +289,14 @@ def test_ctx_empty_stdin(v):
 # ----------------------------------------------------------------- lint tests
 
 def test_lint_clean_note_silent(v):
-    code, out, err = lint_write(v, "06-Atomic/Цэвэр атом.md", note(good_fm()))
+    code, out, err = lint_write(v, "05-Resources/Atomic/Цэвэр атом.md", note(good_fm()))
     assert code == 0 and out == "" and err == "", (code, out, err)
 
 
 def test_lint_missing_ai_first_warns_once(v):
     fm = good_fm()
     del fm["ai-first"]
-    code, out, err = lint_write(v, "06-Atomic/a.md", note(fm))
+    code, out, err = lint_write(v, "05-Resources/Atomic/a.md", note(fm))
     assert code == 0, (code, err)
     obj = json.loads(out)  # exactly one JSON object
     assert "ai-first: true" in obj["systemMessage"], obj
@@ -307,7 +307,7 @@ def test_lint_missing_ai_first_warns_once(v):
 def test_lint_missing_date_warns(v):
     fm = good_fm()
     del fm["date"]
-    code, out, _ = lint_write(v, "06-Atomic/b.md", note(fm))
+    code, out, _ = lint_write(v, "05-Resources/Atomic/b.md", note(fm))
     assert code == 0 and "`date:` алга" in json.loads(out)["systemMessage"], out
 
 
@@ -326,24 +326,24 @@ def test_lint_skip_dirs_silent(v):
 
 
 def test_lint_dash_filename_warns(v):
-    code, out, _ = lint_write(v, "06-Atomic/Санаа — тест.md", note(good_fm()))
+    code, out, _ = lint_write(v, "05-Resources/Atomic/Санаа — тест.md", note(good_fm()))
     assert code == 0 and "em/en dash" in json.loads(out)["systemMessage"], out
-    code, out, _ = lint_write(v, "06-Atomic/Санаа – тест.md", note(good_fm()))
+    code, out, _ = lint_write(v, "05-Resources/Atomic/Санаа – тест.md", note(good_fm()))
     assert code == 0 and "em/en dash" in json.loads(out)["systemMessage"], out
 
 
 def test_lint_date_checks(v):
-    code, out, _ = lint_write(v, "06-Atomic/f.md", note(good_fm(date=TOMORROW.isoformat())))
+    code, out, _ = lint_write(v, "05-Resources/Atomic/f.md", note(good_fm(date=TOMORROW.isoformat())))
     assert "ирээдүйн огноо" in json.loads(out)["systemMessage"], out
-    code, out, _ = lint_write(v, "06-Atomic/u.md", note(good_fm(updated=YESTERDAY.isoformat())))
+    code, out, _ = lint_write(v, "05-Resources/Atomic/u.md", note(good_fm(updated=YESTERDAY.isoformat())))
     assert "`updated: %s`" % YESTERDAY.isoformat() in json.loads(out)["systemMessage"], out
-    code, out, _ = lint_write(v, "06-Atomic/y.md", note(good_fm(date=YESTERDAY.isoformat())))
+    code, out, _ = lint_write(v, "05-Resources/Atomic/y.md", note(good_fm(date=YESTERDAY.isoformat())))
     assert "өчигдрийн огноо" in json.loads(out)["systemMessage"], out
 
 
 def test_lint_old_note_body_edit_no_date_warning(v):
     old = note(good_fm(date="2026-01-15", updated="2026-01-20"))
-    p = v.write("06-Atomic/old.md", old + "\nшинэ мөр\n")
+    p = v.write("05-Resources/Atomic/old.md", old + "\nшинэ мөр\n")
     code, out, err = run(LINT, edit_payload(p, "шинэ мөр"), {"FM_VAULT": str(v.root)})
     assert (code, out, err) == (0, "", ""), (code, out, err)
     code, out, _ = run(LINT, edit_payload(p, "updated: 2026-01-20"), {"FM_VAULT": str(v.root)})
@@ -372,12 +372,12 @@ def test_lint_secret_blocks_each_kind(v):
 def test_lint_placeholders_not_blocked(v):
     text = note(good_fm(), "OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
                            "token: ghp_" + "x" * 36 + "\nNotion: ntn_<your-token-here>\n")
-    code, out, err = lint_write(v, "06-Atomic/placeholder.md", text)
+    code, out, err = lint_write(v, "05-Resources/Atomic/placeholder.md", text)
     assert code == 0 and err == "", (code, out, err)
 
 
 def test_lint_secret_in_edit_and_multiedit(v):
-    p = v.write("06-Atomic/e.md", note(good_fm(), "x"))
+    p = v.write("05-Resources/Atomic/e.md", note(good_fm(), "x"))
     code, _, err = run(LINT, edit_payload(p, "key " + fake("gh" + "p_", 40)), {"FM_VAULT": str(v.root)})
     assert code == 2 and "GitHub token" in err, (code, err)
     payload = {"tool_name": "MultiEdit", "cwd": str(v.root),
@@ -403,7 +403,7 @@ def test_lint_private_finance_outside_blocks(v):
     code, _, err = lint_write(v, "00-GTD/Tasks/Төлбөр.md", fin)
     assert code == 2 and "finances/private" in err, (code, err)
     priv = note(good_fm(private="true"))
-    code, _, err = lint_write(v, "06-Atomic/хувийн.md", priv)
+    code, _, err = lint_write(v, "05-Resources/Atomic/хувийн.md", priv)
     assert code == 2 and "finances/private" in err, (code, err)
 
 
@@ -437,12 +437,12 @@ def test_lint_outside_vault_and_non_md_silent(v):
     text = "t " + fake("gh" + "p_", 40)
     p.write_text(text, encoding="utf-8")
     assert run(LINT, write_payload(p, text), {"FM_VAULT": str(v.root)}) == (0, "", "")
-    p2 = v.write("06-Atomic/data.json", text)
+    p2 = v.write("05-Resources/Atomic/data.json", text)
     assert run(LINT, write_payload(p2, text), {"FM_VAULT": str(v.root)}) == (0, "", "")
 
 
 def test_lint_no_vault_configured_silent(v):
-    p = v.write("06-Atomic/a.md", note({"type": "x"}))
+    p = v.write("05-Resources/Atomic/a.md", note({"type": "x"}))
     assert run(LINT, write_payload(p, note({"type": "x"}))) == (0, "", "")
 
 
@@ -456,29 +456,29 @@ def test_lint_relative_path_resolved_from_cwd(v):
     fm = good_fm()
     del fm["ai-first"]
     text = note(fm)
-    v.write("06-Atomic/rel.md", text)
-    payload = write_payload("06-Atomic/rel.md", text, cwd=v.root)
+    v.write("05-Resources/Atomic/rel.md", text)
+    payload = write_payload("05-Resources/Atomic/rel.md", text, cwd=v.root)
     code, out, _ = run(LINT, payload, {"FM_VAULT": str(v.root)})
     assert code == 0 and "ai-first" in json.loads(out)["systemMessage"], out
 
 
 def test_lint_cli(v):
-    good = v.write("06-Atomic/good.md", note(good_fm()))
+    good = v.write("05-Resources/Atomic/good.md", note(good_fm()))
     fm = good_fm()
     del fm["ai-first"]
-    warn = v.write("06-Atomic/warn.md", note(fm))
+    warn = v.write("05-Resources/Atomic/warn.md", note(fm))
     code, out, _ = run(LINT, args=[str(good)], raw=b"", env_extra={"FM_VAULT": str(v.root)})
     assert code == 0 and "цэвэр" in out, (code, out)
     code, out, _ = run(LINT, args=[str(warn)], raw=b"", env_extra={"FM_VAULT": str(v.root)})
-    assert code == 1 and "ai-first" in out and "06-Atomic/warn.md" in out, (code, out)
-    leak = v.write("06-Atomic/leak.md", note(good_fm(), "k " + fake("gh" + "p_", 40)))
+    assert code == 1 and "ai-first" in out and "05-Resources/Atomic/warn.md" in out, (code, out)
+    leak = v.write("05-Resources/Atomic/leak.md", note(good_fm(), "k " + fake("gh" + "p_", 40)))
     code, out, _ = run(LINT, args=[str(leak), "--vault", str(v.root)], raw=b"")
     assert code == 2 and "GitHub token" in out, (code, out)
     # folder mode, vault auto-detected via .obsidian/
-    code, out, _ = run(LINT, args=[str(v.root / "06-Atomic")], raw=b"")
+    code, out, _ = run(LINT, args=[str(v.root / "05-Resources/Atomic")], raw=b"")
     assert code == 2 and "3 файл" in out, (code, out)
     # CLI does not nag about old `updated:` dates
-    old = v.write("06-Atomic/old2.md", note(good_fm(date="2026-01-01", updated="2026-01-02")))
+    old = v.write("05-Resources/Atomic/old2.md", note(good_fm(date="2026-01-01", updated="2026-01-02")))
     code, out, _ = run(LINT, args=[str(old)], raw=b"", env_extra={"FM_VAULT": str(v.root)})
     assert code == 0, (code, out)
 

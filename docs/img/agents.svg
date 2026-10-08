@@ -42,7 +42,7 @@
 <text x="56" y="672" font-size="14" font-weight="500" fill="#10B981">/fm:role resource</text>
 <text x="56" y="706" font-size="16" fill="#F2F3F7">Нэг баримт = нэг атом: PARA гэртэй, эх сурвалжтай, итгэлцэлтэй.</text>
 <text x="56" y="742" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>
-<text x="56" y="764" font-size="14" fill="#C9CDD8">05-Resources/ (references · glossary · sources) · 06-Atomic/</text>
+<text x="56" y="764" font-size="14" fill="#C9CDD8">05-Resources/ (references · glossary · sources) · 05-Resources/Atomic/</text>
 <text x="56" y="800" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ДҮРЭМ</text>
 <circle cx="61" cy="819" r="3" fill="#10B981"/><text x="74" y="824" font-size="14" fill="#C9CDD8">Линк → /fm:save &lt;url&gt; → лавлагаа + атом</text>
 <circle cx="61" cy="845" r="3" fill="#10B981"/><text x="74" y="850" font-size="14" fill="#C9CDD8">Бичихээс өмнө хайна, давхардуулахгүй</text>

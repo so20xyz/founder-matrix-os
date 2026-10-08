@@ -25,7 +25,7 @@ SEEN = Path.home() / ".fmos_team_seen.json"
 TEAM_TOKEN = Path.home() / ".fmos_team_token"
 if TEAM_TOKEN.is_file():
     relay.DTOKEN_F = TEAM_TOKEN
-BLOCK = [r"\[\[", r"_system", r"04-Areas", r"03-Projects", r"06-Atomic", r"finances?/private", r"private:\s*true",
+BLOCK = [r"\[\[", r"_system", r"04-Areas", r"03-Projects", r"05-Resources/Atomic", r"06-Atomic", r"finances?/private", r"private:\s*true",
          r"\bvault\b", r"[A-Za-z]:[\\/]", r"/Users/", r"~/", r"санхүү", r"🔒"]
 
 

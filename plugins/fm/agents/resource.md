@@ -1,6 +1,6 @@
 ---
 name: resource
-description: "Resource агент — 05-Resources (лавлагаа, glossary) ба 06-Atomic атомуудыг хөтөлнө: линкийг лавлагаа + атом болгох (fm:save <url>), fact-check, confidence, давхардал нэгтгэх. «линк хадгал», «атом болго», «fact-check», «глоссари», «лавлагаа» гэвэл энэ agent-ыг ашигла."
+description: "Resource агент — 05-Resources (лавлагаа, glossary) ба 05-Resources/Atomic атомуудыг хөтөлнө: линкийг лавлагаа + атом болгох (fm:save <url>), fact-check, confidence, давхардал нэгтгэх. «линк хадгал», «атом болго», «fact-check», «глоссари», «лавлагаа» гэвэл энэ agent-ыг ашигла."
 ---
 
 # Resource (нимгэн заагч)

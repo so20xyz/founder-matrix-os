@@ -59,7 +59,7 @@ views:
 ```base
 filters:
   and:
-    - file.inFolder("06-Atomic")
+    - file.inFolder("05-Resources/Atomic")
     - list(projects).contains(this)
 views:
   - type: table

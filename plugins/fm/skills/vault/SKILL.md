@@ -47,9 +47,9 @@ Vault-аас гадуур (`~/.claude/`, бусад repo, хуучин нөөц 
 | Дүр (Agent) | `agent-role` | `04-Areas/AI Team/ai-workers/` | `NN Нэр.md` |
 | **Санхүүгийн бичлэг (хувийн)** | `finance-record` | `04-Areas/Business/finances/private/` | §7-г үз |
 | Лавлагаа, эх сурвалж, судалгаа, нэр томьёо | `reference`, `source`, `research`, `glossary` | `05-Resources/` дэд хавтсууд | — |
-| Шийдвэрийн атом | `session-decision` | `06-Atomic/decisions/` | `YYYY-MM-DD - <ascii-slug>.md` |
-| Мэдлэгийн атом | `atomic` | `06-Atomic/knowledge/` | `YYYY-MM-DD - <ascii-slug>.md` |
-| Зорилго | `goal` | `07-Goals/` | — |
+| Шийдвэрийн атом | `session-decision` | `05-Resources/Atomic/decisions/` | `YYYY-MM-DD - <ascii-slug>.md` |
+| Мэдлэгийн атом | `atomic` | `05-Resources/Atomic/knowledge/` | `YYYY-MM-DD - <ascii-slug>.md` |
+| Зорилго | `goal` | `04-Areas/Goals/` | — |
 | Архив | хэвээр + `supersededby:` | `99-Archive/` | — |
 | Систем | — | `_system/` (`BOOT.md`, `templates/`, `logs/`, `fm/`) | — |
 
@@ -99,7 +99,7 @@ Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — са
 
 Самбар = `00-GTD/Tasks/Tasks.base`-ийн GTD view-ууд; үнэн нь task файлын `status`. Kanban plugin хасагдсан (хуучин vault-ийн Kanban файлд `/fm:project` hygiene).
 
-## 5. Атом (`06-Atomic/`)
+## 5. Атом (`05-Resources/Atomic/`)
 
 - **Лог** (`_system/logs/YYYY-MM-DD.md`) «юу болсон»-ыг, **атом** «яагаад, одоо ч хүчинтэй юу»-г хадгална.
 - `decisions/` — шийдвэр (`type: session-decision`), `knowledge/` — баримт, сургамж, ойлголт (`type: atomic`).
@@ -156,7 +156,7 @@ Task-ийг **санаатайгаар, эзэнтэй** үүсгэнэ — са
 | Шинэ нот | холбогдох төсөл/хүн/index-д wikilink |
 | Шинэ төсөл | өдрийн тэмдэглэл + `_BRAIN.md` |
 | Task дууссан | төслийн нот + өдрийн тэмдэглэл |
-| Шийдвэр гарсан | `06-Atomic/decisions/` атом + төслийн `## Гол шийдвэр` + өдрийн тэмдэглэл |
+| Шийдвэр гарсан | `05-Resources/Atomic/decisions/` атом + төслийн `## Гол шийдвэр` + өдрийн тэмдэглэл |
 | Хүнтэй харилцсан | өдрийн тэмдэглэл + `04-Areas/people/<Нэр>` |
 
 Логийн мөрийг хэзээ ч засварлахгүй — түүх шударга байна.

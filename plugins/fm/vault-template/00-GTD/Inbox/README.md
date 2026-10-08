@@ -5,5 +5,5 @@
 - **Эзэн дүр:** [[02 Area]]
 - **Цэгцлэх:** `/fm:inbox` — эхлээд төлөвлөгөө гаргана, та батласны дараа л зөөнө.
 - **Хэлбэр:** загвар `_system/templates/Capture.md` (`type: capture`).
-- Линк → `05-Resources/references/` + атом ([[03 Resource]] хийнэ). Ажил → `00-GTD/Tasks/`. Санаа/шийдвэр → `06-Atomic/`.
+- Линк → `05-Resources/references/` + атом ([[03 Resource]] хийнэ). Ажил → `00-GTD/Tasks/`. Санаа/шийдвэр → `05-Resources/Atomic/`.
 - Боловсруулсан зүйл энд үлдэхгүй. Inbox хоосон байх нь хэвийн төлөв.

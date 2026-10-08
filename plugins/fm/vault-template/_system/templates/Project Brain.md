@@ -29,8 +29,8 @@ project:
 | Юу | Хаана |
 |---|---|
 | Task | `00-GTD/Tasks/` + `project:` |
-| Шийдвэр | `06-Atomic/decisions/` + `projects:` |
-| Сургамж, баримт | `06-Atomic/knowledge/` + `projects:` |
+| Шийдвэр | `05-Resources/Atomic/decisions/` + `projects:` |
+| Сургамж, баримт | `05-Resources/Atomic/knowledge/` + `projects:` |
 | Судалгаа, баримт бичиг | энэ хавтас (`<дугаар> <Үүрэг> - <Нэр>.md`) |
 | Лог | `_system/logs/YYYY-MM-DD.md` (зөвхөн холбоос) |
 

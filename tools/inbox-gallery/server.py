@@ -71,7 +71,7 @@ def vault_text():
 def destinations():
     d = [{"id": "keep", "label": "Үлдээх"},
          {"id": "resource", "label": "📚 Resource · 05-Resources/references"},
-         {"id": "atomic", "label": "⚛️ Атом · 06-Atomic/knowledge"},
+         {"id": "atomic", "label": "⚛️ Атом · 05-Resources/Atomic/knowledge"},
          {"id": "task", "label": "✅ Task үүсгэх (файл үлдэнэ)"},
          {"id": "archive", "label": "🗄 Archive · 99-Archive/inbox"},
          {"id": "trash", "label": "🗑 Trash · _trash (сэргээж болно)"}]
@@ -181,7 +181,7 @@ def apply(decisions):
                 done.append(f"✅ task ← {name}")
                 continue
             target = {"resource": VAULT / "05-Resources/references",
-                      "atomic": VAULT / "06-Atomic/knowledge",
+                      "atomic": (VAULT / "05-Resources/Atomic/knowledge") if (VAULT / "05-Resources/Atomic").exists() or not (VAULT / "06-Atomic").exists() else VAULT / "06-Atomic/knowledge",
                       "archive": VAULT / "99-Archive/inbox" / today,
                       "trash": VAULT / "_trash" / f"inbox-{today}"}.get(dest)
             if dest.startswith("project:"):

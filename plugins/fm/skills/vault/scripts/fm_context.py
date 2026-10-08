@@ -136,7 +136,7 @@ def pack(v: Vault, start: str):
     # 4. memory — atoms/decisions pointing at the project (bridges first)
     mem = []
     for p in projects:
-        atoms = [a for a in v.backrefs(p, "projects") if a.startswith("06-Atomic/")]
+        atoms = [a for a in v.backrefs(p, "projects") if a.startswith(("05-Resources/Atomic/", "06-Atomic/"))]
         atoms.sort(key=lambda a: (-int(scalar(v.notes[a][0], "bridge") or 0), a), reverse=False)
         for a in atoms[:15]:
             b = scalar(v.notes[a][0], "bridge")

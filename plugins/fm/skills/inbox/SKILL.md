@@ -70,8 +70,8 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Дүрэм: `<V>/_system/BO
 |---|---|---|
 | Task | `00-GTD/Tasks/<Тодорхой гарчиг>.md` | Загвар `_system/templates/Task.md` (эсвэл `/fm:task`). `type: task`, `status: inbox`, `owner`, `context: work\|home`, `priority: high\|medium\|low`, `project`, `ai-first: true` |
 | Линк / URL | Resource клип | Доорх «Линк» хэсгийг үз |
-| Санаа / ойлголт | `06-Atomic/knowledge/YYYY-MM-DD - <ascii-slug>.md` | Загвар `Atomic.md`. `type: atomic`, `confidence`, `projects:`/`areas:` PARA гэртэй |
-| Шийдвэр | `06-Atomic/decisions/YYYY-MM-DD - <ascii-slug>.md` | Загвар `Session Decision.md` |
+| Санаа / ойлголт | `05-Resources/Atomic/knowledge/YYYY-MM-DD - <ascii-slug>.md` | Загвар `Atomic.md`. `type: atomic`, `confidence`, `projects:`/`areas:` PARA гэртэй |
+| Шийдвэр | `05-Resources/Atomic/decisions/YYYY-MM-DD - <ascii-slug>.md` | Загвар `Session Decision.md` |
 | Уулзалт | `00-GTD/Events/<YYYY-MM-DD Хэнтэй - сэдэв>.md` | Загвар `Meeting.md`, `type: meeting`. Task биш. Уулзалтаас гарсан ажлыг тусад нь task болго |
 | Чат (дэлгэцийн зураг) | `03-Projects/<Төсөл>/chats/<YYYY-MM-DD Хүн - сэдэв>.png` | Төсөл `TBD` бол `_system/attachments/chats/` |
 | Док (PDF, deck) | `03-Projects/<Төсөл>/docs/` | Төсөл `TBD` бол `_system/attachments/docs/` |

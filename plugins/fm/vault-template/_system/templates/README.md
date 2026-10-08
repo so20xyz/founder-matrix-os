@@ -11,8 +11,8 @@ Settings → Core plugins → Templates → «Template folder location» = `_sys
 | Meeting | `meeting` | `00-GTD/Events/` |
 | Project | `project` | `03-Projects/<төлөв>/<Нэр>/` |
 | Project Brain | `project-brain` | `03-Projects/<төлөв>/<Нэр>/_BRAIN.md` |
-| Session Decision | `session-decision` | `06-Atomic/decisions/` |
-| Atomic | `atomic` | `06-Atomic/knowledge/` |
+| Session Decision | `session-decision` | `05-Resources/Atomic/decisions/` |
+| Atomic | `atomic` | `05-Resources/Atomic/knowledge/` |
 | Person | `person` | `04-Areas/people/` |
 | SOP | `sop` | `04-Areas/...` |
 | Capture | `capture` | `00-GTD/Inbox/` |
@@ -22,6 +22,6 @@ Settings → Core plugins → Templates → «Template folder location» = `_sys
 | Area | `area` | `04-Areas/Life/<Нэр>/<Нэр>.md` |
 | Tool | `tool` | `04-Areas/Business/tools/` |
 | Reference | `reference` | `05-Resources/references/` |
-| Goal | `goal` | `07-Goals/<он> Goals.md` |
+| Goal | `goal` | `04-Areas/Goals/<он> Goals.md` |
 | Agent Role | `agent-role` | `04-Areas/AI Team/ai-workers/<NN Нэр>.md` |
 | Income 🔒 | `income` | `04-Areas/Business/finances/private/income/` |

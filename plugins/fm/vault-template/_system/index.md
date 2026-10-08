@@ -23,8 +23,8 @@ Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт 
 | `04-Areas/` | `Business/` (companies · finances · tools) · `people/` · `AI Team/` · `Life/` | [[02 Area]] |
 | `04-Areas/Business/finances/private/` | 🔒 Хувийн санхүү | [[07 Finance]] |
 | `05-Resources/` | `references/` · `glossary/` · `sources/` · `library/` | [[03 Resource]] |
-| `06-Atomic/` | `decisions/` · `knowledge/` | [[03 Resource]] |
-| `07-Goals/` | Зорилго | [[02 Area]] |
+| `05-Resources/Atomic/` | `decisions/` · `knowledge/` | [[03 Resource]] |
+| `04-Areas/Goals/` | Зорилго | [[02 Area]] |
 | `99-Archive/` | Архив | [[02 Area]] |
 | `_system/` | BOOT · STATUS · templates · bases · logs · fm | [[02 Area]] |
 
@@ -34,7 +34,7 @@ Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт 
 - [[_system/STATUS]] — дүрүүдийн төлөв
 - [[Home]] — нүүр
 - `_system/fm/registry.json` — сешн ↔ дүрийн бүртгэл (машин уншина)
-- Bases: хавтас бүр өөрийн `<Нэр>.base`-тэй — `00-GTD/Tasks/Tasks.base` · `03-Projects/Projects.base` · `04-Areas/people/People.base` · `04-Areas/Business/companies/Companies.base` · `04-Areas/AI Team/ai-workers/Agents.base` · `05-Resources/references/References.base` · `05-Resources/library/Reading.base` · `06-Atomic/decisions/Decisions.base` · `06-Atomic/knowledge/Atoms.base` · 🔒 `04-Areas/Business/finances/private/Monthly Bills.base`, `Finance Records.base`
+- Bases: хавтас бүр өөрийн `<Нэр>.base`-тэй — `00-GTD/Tasks/Tasks.base` · `03-Projects/Projects.base` · `04-Areas/people/People.base` · `04-Areas/Business/companies/Companies.base` · `04-Areas/AI Team/ai-workers/Agents.base` · `05-Resources/references/References.base` · `05-Resources/library/Reading.base` · `05-Resources/Atomic/decisions/Decisions.base` · `05-Resources/Atomic/knowledge/Atoms.base` · 🔒 `04-Areas/Business/finances/private/Monthly Bills.base`, `Finance Records.base`
 
 ## Идэвхтэй төслүүд
 
@@ -42,4 +42,4 @@ _(одоогоор байхгүй — `/fm:project`-оор нэм)_
 
 ## Шийдвэрүүд
 
-Бүрэн жагсаалт: `06-Atomic/decisions/Decisions.base`.
+Бүрэн жагсаалт: `05-Resources/Atomic/decisions/Decisions.base`.

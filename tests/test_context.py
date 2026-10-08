@@ -18,8 +18,8 @@ def main():
     w(v, "05-Resources/library/Book.md", "---\ntype: reading\n---\nbook\n")
     w(v, "05-Resources/references/Ref.md", "---\ntype: reference\n---\nr\n")
     w(v, "04-Areas/Business/activities/Design.md", "---\ntype: area\nsop:\nsop_owner: \"GTD\"\n---\nd\n")
-    w(v, "06-Atomic/decisions/D1.md", "---\ntype: session-decision\nprojects:\n  - \"[[03-Projects/1-Active/Alpha/Alpha]]\"\nbridge: 4\n---\nx\n")
-    w(v, "06-Atomic/knowledge/K1.md", "---\ntype: atomic\nprojects:\n  - \"[[03-Projects/1-Active/Alpha/Alpha]]\"\n---\ny\n")
+    w(v, "05-Resources/Atomic/decisions/D1.md", "---\ntype: session-decision\nprojects:\n  - \"[[03-Projects/1-Active/Alpha/Alpha]]\"\nbridge: 4\n---\nx\n")
+    w(v, "05-Resources/Atomic/knowledge/K1.md", "---\ntype: atomic\nprojects:\n  - \"[[03-Projects/1-Active/Alpha/Alpha]]\"\n---\ny\n")
     w(v, "04-Areas/Business/finances/private/Secret.md", "---\ntype: bill\nprojects:\n  - \"[[03-Projects/1-Active/Alpha/Alpha]]\"\n---\nSECRET\n")
     w(v, "00-GTD/Tasks/Do it.md", "---\ntype: task\nstatus: next-action\nowner: me\nproject: \"[[03-Projects/1-Active/Alpha/Alpha]]\"\nactivity: \"[[04-Areas/Business/activities/Design]]\"\nresources:\n  - \"[[05-Resources/references/Ref]]\"\n---\nt\n")
     out = subprocess.run([sys.executable, str(S), str(v), "Do it"], capture_output=True, text=True, encoding="utf-8").stdout

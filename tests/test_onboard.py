@@ -208,10 +208,10 @@ def test_onboard_creates_life_structure(c):
         PRIVATE + "/Спотифай гэр бүл.md", PRIVATE + "/income/Студийн цалин.md",
         "05-Resources/references/Obsidian Help.md", "05-Resources/references/Deep Work.md",
         "04-Areas/Business/tools/Figma.md",
-        "07-Goals/2026 Goals.md",
+        "04-Areas/Goals/2026 Goals.md",
         "04-Areas/AI Team/ai-workers/10 Нарны сайт.md",
         "04-Areas/AI Team/ai-workers/11 Марафон бэлтгэл.md",
-        "06-Atomic/decisions/%s - fm-onboarding.md" % TODAY,
+        "05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY,
         "00-GTD/Daily/%s.md" % TODAY,
         "_system/logs/%s.md" % TODAY,
     ]
@@ -231,9 +231,9 @@ def test_frontmatter_conventions(c):
         PRIVATE + "/income/Студийн цалин.md": "income",
         "05-Resources/references/Obsidian Help.md": "reference",
         "04-Areas/Business/tools/Figma.md": "tool",
-        "07-Goals/2026 Goals.md": "goal",
+        "04-Areas/Goals/2026 Goals.md": "goal",
         "04-Areas/AI Team/ai-workers/10 Нарны сайт.md": "agent-role",
-        "06-Atomic/decisions/%s - fm-onboarding.md" % TODAY: "session-decision",
+        "05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY: "session-decision",
         "00-GTD/Daily/%s.md" % TODAY: "daily",
     }
     for rel, typ in want_type.items():
@@ -271,7 +271,7 @@ def test_links_both_ways(c):
     assert p["area"] == "[[%s|Нарны Студи]]" % company, p["area"]
     assert p["company"] == "[[%s|Нарны Студи]]" % company
     assert "[[%s|Батболд]]" % person in p["people"], p["people"]
-    assert p["goals"] == ["[[07-Goals/2026 Goals|2026 Goals]]"], p["goals"]
+    assert p["goals"] == ["[[04-Areas/Goals/2026 Goals|2026 Goals]]"], p["goals"]
     per = c.fm(person + ".md")
     assert "[[%s|Нарны Студи]]" % company in per["companies"], per
     assert "[[%s|Нарны вэбсайт]]" % proj in per["projects"], per
@@ -288,11 +288,11 @@ def test_links_both_ways(c):
     assert brain["project"] == "[[%s|Нарны вэбсайт]]" % proj
     tool = c.fm("04-Areas/Business/tools/Figma.md")
     assert tool["serves"] == ["[[%s|Нарны вэбсайт]]" % proj], tool
-    goals = c.fm("07-Goals/2026 Goals.md")
+    goals = c.fm("04-Areas/Goals/2026 Goals.md")
     assert len(goals["projects"]) == 2 and goals["year"] == "2026", goals
     # every wikilink target written by the onboarding exists
-    for rel in [proj + ".md", person + ".md", company + ".md", "07-Goals/2026 Goals.md",
-                "06-Atomic/decisions/%s - fm-onboarding.md" % TODAY, "00-GTD/Daily/%s.md" % TODAY]:
+    for rel in [proj + ".md", person + ".md", company + ".md", "04-Areas/Goals/2026 Goals.md",
+                "05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY, "00-GTD/Daily/%s.md" % TODAY]:
         for target in re.findall(r"\[\[([^\]|#]+)", c.read(rel)):
             if "/" in target:
                 assert (c.vault / (target + ".md")).is_file() or (c.vault / target).is_file(), \
@@ -332,14 +332,14 @@ def test_finance_private_only(c):
 
 def test_atom_and_log_have_no_amounts(c):
     onboarded(c)
-    atom = c.read("06-Atomic/decisions/%s - fm-onboarding.md" % TODAY)
+    atom = c.read("05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY)
     log = c.read("_system/logs/%s.md" % TODAY)
     for s in PRIVATE_STRINGS:
         assert s not in atom and s not in log, s
     assert "Хувийн санхүү" in atom
-    f = c.fm("06-Atomic/decisions/%s - fm-onboarding.md" % TODAY)
+    f = c.fm("05-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY)
     assert f["changetype"] == "structure" and f["projects"] and f["areas"], f
-    assert re.match(r"^- \*\*\d\d:\d\d\*\* · area → \[\[06-Atomic/decisions/", log.strip()), log
+    assert re.match(r"^- \*\*\d\d:\d\d\*\* · area → \[\[05-Resources/Atomic/decisions/", log.strip()), log
     assert len(log.strip().splitlines()) == 1
     daily = c.read("00-GTD/Daily/%s.md" % TODAY)
     assert "Vault онбординг" in daily and "Нарны вэбсайт" in daily
@@ -516,8 +516,8 @@ def test_secrets_never_written(c):
 
 def test_lint_clean_after_onboarding(c):
     onboarded(c)
-    targets = [c.vault / d for d in ("03-Projects", "04-Areas", "05-Resources", "06-Atomic",
-                                     "07-Goals", "00-GTD/Daily", "01-Soul")]
+    targets = [c.vault / d for d in ("03-Projects", "04-Areas", "05-Resources", "05-Resources/Atomic",
+                                     "04-Areas/Goals", "00-GTD/Daily", "01-Soul")]
     code, out, err = run(LINT, *targets, "--vault", c.vault)
     assert code == 0, (code, out, err)
 

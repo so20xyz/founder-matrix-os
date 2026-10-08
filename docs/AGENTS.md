@@ -59,7 +59,7 @@ Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 
 ## 📚 Resource · Wiki — `/fm:role resource`
 
 - **Зорилго:** нэг баримт = нэг атом — PARA гэртэй, эх сурвалжтай, итгэлцэлтэй (`confidence`), давхардалгүй.
-- **Эзэмшинэ:** `05-Resources/` (references, glossary, sources, library), `06-Atomic/` (decisions, knowledge).
+- **Эзэмшинэ:** `05-Resources/` (references, glossary, sources, library), `05-Resources/Atomic/` (decisions, knowledge).
 - **Дүрэм:** линк → `/fm:save <url>` → лавлагаа + атом. Бичихээс өмнө хоёр түлхүүр үгээр хайна. Шийдвэрийн атом өөрчлөгдөхгүй (`status`, `supersededby` л). Гадны баримтад URL + `as of` огноо.
 - **Sidebar:** 📚 Wiki (Resources).
 

@@ -15,7 +15,7 @@ A = [  # icon, name, slug, color, sidebar, mission, owns, rules, handoff
   "Project · Resource · Finance"),
  ("📚", "Resource · Wiki", "resource", "#10B981", "Resources",
   "Нэг баримт = нэг атом: PARA гэртэй, эх сурвалжтай, итгэлцэлтэй.",
-  "05-Resources/ (references · glossary · sources) · 06-Atomic/",
+  "05-Resources/ (references · glossary · sources) · 05-Resources/Atomic/",
   ["Линк → /fm:save <url> → лавлагаа + атом", "Бичихээс өмнө хайна, давхардуулахгүй", "Гадны баримтад URL + as of огноо"],
   "Research (гүн шалгалт)"),
  ("🔍", "Research", "research", "#06B6D4", "Resources",

@@ -143,7 +143,7 @@ def meetings():
 
 
 def research(limit=14):
-    roots = ["05-Resources", "01-Soul/creative", "03-Projects", "06-Atomic", inbox_dir().relative_to(VAULT).as_posix()]
+    roots = ["05-Resources", "01-Soul/creative", "03-Projects", "05-Resources/Atomic" if (VAULT / "05-Resources/Atomic").exists() or not (VAULT / "06-Atomic").exists() else "06-Atomic", inbox_dir().relative_to(VAULT).as_posix()]
     cand = []
     for r in roots:
         for p in (VAULT / r).rglob("*.md"):
@@ -187,7 +187,9 @@ def set_status(rel, status):
 
 
 PROPS = {"status", "priority", "due", "project", "owner", "publish_date"}
-SOCIAL = "08-Studio/Social Posts"
+SOCIAL = "04-Areas/Studio/Social Posts"
+if not (VAULT / SOCIAL).exists() and (VAULT / "08-Studio/Social Posts").exists():  # pre-2026-10-09 layout
+    SOCIAL = "08-Studio/Social Posts"
 
 
 def social():

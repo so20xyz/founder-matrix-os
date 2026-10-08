@@ -18,10 +18,10 @@ aliases:
 
 | Ажил | Амьдрал | Мэдлэг |
 |---|---|---|
-| [[00-GTD/Tasks/Tasks.base\|📋 GTD самбар · ✅ Task-ууд]] | `00-GTD/Daily/` 📅 Өдрийн тэмдэглэл | [[06-Atomic/knowledge/Atoms.base\|🧩 Атомууд]] |
-| `00-GTD/Events/` 📆 Уулзалт, үйл явдал | [[04-Areas/people/People.base\|👥 Хүмүүс]] | [[06-Atomic/decisions/Decisions.base\|🔑 Шийдвэрүүд]] |
+| [[00-GTD/Tasks/Tasks.base\|📋 GTD самбар · ✅ Task-ууд]] | `00-GTD/Daily/` 📅 Өдрийн тэмдэглэл | [[05-Resources/Atomic/knowledge/Atoms.base\|🧩 Атомууд]] |
+| `00-GTD/Events/` 📆 Уулзалт, үйл явдал | [[04-Areas/people/People.base\|👥 Хүмүүс]] | [[05-Resources/Atomic/decisions/Decisions.base\|🔑 Шийдвэрүүд]] |
 | [[03-Projects/Projects.base\|🔨 Төслүүд]] | `04-Areas/Life/` 🏠 Хувийн хүрээ | [[05-Resources/references/References.base\|📚 Лавлагаа ба хэрэгсэл]] |
-| [[04-Areas/Business/companies/Companies.base\|🏢 Байгууллагууд]] | `07-Goals/` 🎯 Зорилго | `00-GTD/Inbox/` 📥 Хураалт |
+| [[04-Areas/Business/companies/Companies.base\|🏢 Байгууллагууд]] | `04-Areas/Goals/` 🎯 Зорилго | `00-GTD/Inbox/` 📥 Хураалт |
 | [[04-Areas/AI Team/ai-workers/Agents.base\|🤖 Agent-ууд]] | [[04-Areas/Business/finances/private/Сарын төлбөр\|🔒 Сарын төлбөр]] | [[_system/index\|🗂 Каталог]] |
 
 ## 🔨 Идэвхтэй төслүүд

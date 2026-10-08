@@ -15,8 +15,10 @@ import json, os, re, sys
 from pathlib import Path
 
 SKIP = ("_trash/", ".backups/", ".obsidian/", "_system/", "04-Areas/Business/finances/private/")
-RES = ("05-Resources/references/", "05-Resources/sources/", "08-Studio/Social saves/zettel/")
-ATOM = ("06-Atomic/knowledge/", "06-Atomic/decisions/")
+# New layout (2026-10-09) first; old top-level folders kept as fallback for un-migrated vaults.
+RES = ("05-Resources/references/", "05-Resources/sources/", "04-Areas/Studio/Social saves/zettel/",
+       "08-Studio/Social saves/zettel/")
+ATOM = ("05-Resources/Atomic/knowledge/", "05-Resources/Atomic/decisions/", "06-Atomic/knowledge/", "06-Atomic/decisions/")
 LINK = re.compile(r"\[\[([^\]|#]+)")
 
 
@@ -27,8 +29,10 @@ def split(text):
     return (text[4:i], text[i + 4:]) if i != -1 else ("", text)
 
 
+# Order matters: nested organs (Atomic, Goals, Studio) before their parent folders.
 ORGANS = (("00-GTD/Tasks/", "Tasks"), ("02-GTD/tasks/", "Tasks"), ("00-GTD/", "GTD"), ("02-GTD/", "GTD"), ("03-Projects/", "Projects"), ("99-Archive/Projects/", "Projects"),
-          ("04-Areas/", "Areas"), ("05-Resources/library/", "Library"), ("05-Resources/", "Resources"),
+          ("04-Areas/Goals/", "Goals"), ("04-Areas/Studio/", "Studio"), ("04-Areas/", "Areas"),
+          ("05-Resources/Atomic/", "Atomic"), ("05-Resources/library/", "Library"), ("05-Resources/", "Resources"),
           ("06-Atomic/", "Atomic"), ("01-Soul/", "Soul"), ("07-Goals/", "Goals"), ("08-Studio/", "Studio"))
 
 

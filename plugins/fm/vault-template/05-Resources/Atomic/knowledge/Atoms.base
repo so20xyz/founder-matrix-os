@@ -1,7 +1,7 @@
 filters:
   and:
     - file.ext == "md"
-    - file.inFolder("06-Atomic")
+    - file.inFolder("05-Resources/Atomic")
     - '!file.inFolder("_system/templates")'
 formulas:
   kind: 'if(type == "session-decision", "🔑 шийдвэр", if(type == "atomic", "🧩 мэдлэг", "❔ " + type))'

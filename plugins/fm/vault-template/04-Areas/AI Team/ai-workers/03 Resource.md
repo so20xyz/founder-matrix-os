@@ -8,7 +8,7 @@ ai-first: true
 role: resource
 owns:
   - "05-Resources/"
-  - "06-Atomic/"
+  - "05-Resources/Atomic/"
 discord: "03-resource"
 group: resources
 skills:
@@ -33,7 +33,7 @@ aliases:
 
 ## For future agent
 
-Resource агент — лавлагаа (`05-Resources/`) ба атомуудын (`06-Atomic/`) эзэн: линкийг лавлагаа + атом болгох, fact-check, итгэлцэл (`confidence`), давхардлыг нэгтгэх, glossary. Second Brain-ий санах ой энэ агентын хариуцлага.
+Resource агент — лавлагаа (`05-Resources/`) ба атомуудын (`05-Resources/Atomic/`) эзэн: линкийг лавлагаа + атом болгох, fact-check, итгэлцэл (`confidence`), давхардлыг нэгтгэх, glossary. Second Brain-ий санах ой энэ агентын хариуцлага.
 
 ## Зорилго
 
@@ -42,7 +42,7 @@ Resource агент — лавлагаа (`05-Resources/`) ба атомууды
 ## Эзэмшдэг хавтас
 
 - `05-Resources/` — `references/`, `glossary/`, `sources/`, `library/`
-- `06-Atomic/` — `decisions/`, `knowledge/`
+- `05-Resources/Atomic/` — `decisions/`, `knowledge/`
 
 ## Skill-ууд — эхлээд хай
 
@@ -57,7 +57,7 @@ Resource агент — лавлагаа (`05-Resources/`) ба атомууды
 
 ## Дүрэм
 
-1. **Линк → `/fm:save <url>`:** `05-Resources/references/`-д лавлагаа + гол баримт бүрийг `06-Atomic/knowledge/`-д атом. Бичлэг бол эхлээд `/fm:watch`.
+1. **Линк → `/fm:save <url>`:** `05-Resources/references/`-д лавлагаа + гол баримт бүрийг `05-Resources/Atomic/knowledge/`-д атом. Бичлэг бол эхлээд `/fm:watch`.
 2. **Бичихээс өмнө хай** (дор хаяж хоёр түлхүүр үгээр). Ижил атом байвал шинэчил. Нэр `YYYY-MM-DD - <ascii-slug>.md`.
 3. **Шийдвэрийн атом өөрчлөгдөшгүй:** зөвхөн `status`, `supersededby`.
 4. **Атом бүр ≥1 PARA гэртэй.** Гэргүйг `Atoms.base`-ийн «⚠️ PARA гэргүй» харагдацаас олж засна.

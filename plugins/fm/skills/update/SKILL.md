@@ -95,9 +95,9 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 
 ## (E) daily дүгнэлт - өдрийн дүгнэлт атом (зөвхөн хүсэлтээр)
 
-1. Эх сурвалж: өнөөдрийн лог, өнөөдөр үүссэн атомууд (`06-Atomic/**/<огноо> - *`), STATUS-ийн өөрийн мөр, энэ ярианы гол утга.
+1. Эх сурвалж: өнөөдрийн лог, өнөөдөр үүссэн атомууд (`05-Resources/Atomic/**/<огноо> - *`), STATUS-ийн өөрийн мөр, энэ ярианы гол утга.
 2. Өдрийн хамгийн чухал **1 утсыг** сонго (ойлголт, шийдвэр эсвэл ахиц).
-3. Атом `06-Atomic/knowledge/YYYY-MM-DD - odriin-dugnelt-<slug>.md`: `type: atomic`, `kind: daily-conclusion`, `tags: [atomic, daily-conclusion]`, `confidence: stated` (хэрэглэгчийн үг) эсвэл `medium`, `sources: ["[[_system/logs/YYYY-MM-DD]]", "[[00-GTD/Daily/YYYY-MM-DD]]"]`, `role`, `areas: ["[[04-Areas/AI Team/ai-workers/<дүрийн note>]]"]`, `ai-first: true`. Бие: `# <гол утга - нэг өгүүлбэр>` → `## For future agent` → `## Дүгнэлт` (2-4 өгүүлбэр, **хэрэглэгчийн өөрийн үгээр**) → `## Өдрийн тоо` (N атом, N task дууссан, N шинэ - бодит эх сурвалжаас) → `**Холбоос:**`. Өнөөдөр аль хэдийн байвал баяжуул.
+3. Атом `05-Resources/Atomic/knowledge/YYYY-MM-DD - odriin-dugnelt-<slug>.md`: `type: atomic`, `kind: daily-conclusion`, `tags: [atomic, daily-conclusion]`, `confidence: stated` (хэрэглэгчийн үг) эсвэл `medium`, `sources: ["[[_system/logs/YYYY-MM-DD]]", "[[00-GTD/Daily/YYYY-MM-DD]]"]`, `role`, `areas: ["[[04-Areas/AI Team/ai-workers/<дүрийн note>]]"]`, `ai-first: true`. Бие: `# <гол утга - нэг өгүүлбэр>` → `## For future agent` → `## Дүгнэлт` (2-4 өгүүлбэр, **хэрэглэгчийн өөрийн үгээр**) → `## Өдрийн тоо` (N атом, N task дууссан, N шинэ - бодит эх сурвалжаас) → `**Холбоос:**`. Өнөөдөр аль хэдийн байвал баяжуул.
 4. Өдрийн note-ийн `## 🌙 Оройн дүгнэлт`-д (хуучин `## 🌙 Evening Review`) `[[атом]]` холбоос. Лог: `- **HH:MM** · <дүр> → дүгнэлт: [[...]]`. Хэрэглэгчид харуулаад «засах уу?».
 
 ## (W) weekly - долоо хоногийн тойм
@@ -112,7 +112,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 6а. **🧠 Тархины шалгалт:** `python3 "${CLAUDE_PLUGIN_ROOT}/skills/vault/scripts/fm_brain_check.py" <V> --mark-bridges` → харьяалалгүй, ашиглагдаагүй resource, эхгүй атом, «яагаад»-гүй холбоосын тоо + жишээ 3; гүүр атомуудыг тайланд нэрлэ. Засварыг зөвшөөрлөөр.
 6б. **📘 SOP loop:** `04-Areas/Business/activities/` дахь Activity бүрээр `00-GTD/Tasks/`-ийн `activity:` = тэр, `status: completed` task-ийг тоол. 3+ ба Activity note-ийн `sop:` хоосон бол `relay.py task "SOP бичих: <Activity>" --owner "<sop_owner>"` санал болго (зөвшөөрлөөр). SOP бичигдмэгц Activity-ийн `sop:`-д холбоно.
 6. **Нэр томьёо, дутуу мэдээлэл:** логт тайлагдаагүй товчлол, `TBD` үлдсэн зүйлсийг 1-3 асуултаар тодруул (нэг удаад нэг асуулт).
-7. **Тойм атом** `06-Atomic/knowledge/YYYY-MM-DD - doloo-honogiin-toim-<YYYY-Www>.md` (`kind: weekly-review`, `confidence: medium`, `areas: [дүрийн note]`): `## Энэ долоо хоногт` (3-5 гол зүйл, холбоостой) · `## Хуучирсан` (тоо + холбоос) · `## Дараагийн долоо хоногийн гол 3`. Лог: `- **HH:MM** · <дүр> → weekly: [[...]]`.
+7. **Тойм атом** `05-Resources/Atomic/knowledge/YYYY-MM-DD - doloo-honogiin-toim-<YYYY-Www>.md` (`kind: weekly-review`, `confidence: medium`, `areas: [дүрийн note]`): `## Энэ долоо хоногт` (3-5 гол зүйл, холбоостой) · `## Хуучирсан` (тоо + холбоос) · `## Дараагийн долоо хоногийн гол 3`. Лог: `- **HH:MM** · <дүр> → weekly: [[...]]`.
 8. Хэрэглэгч баталсан засваруудыг л хий (task-ийн `status`/`due`, төслийн төлөв нь `/fm:project`-ээр).
 
 ## 🔒 Хувийн дүр (Finance)
@@ -120,7 +120,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 - **(A) STATUS-д огт бүү бич.** Төлвийг дүрийн хувийн хавтасны `_state.md`-д (`04-Areas/Business/finances/private/_state.md`, `type: state`, `private: true`, `ai-first: true`) бич.
 - **Лог** - `_system/logs/`-д огт бичихгүй.
 - **(B) Task-ууд** жагсааж болно - гарчиг л, дүн, данс, байгууллагын нэргүй.
-- **(E), (W) атом** `06-Atomic` руу **бичихгүй**; хүсвэл `_state.md`-д огноотой нэг догол мөр.
+- **(E), (W) атом** `05-Resources/Atomic` руу **бичихгүй**; хүсвэл `_state.md`-д огноотой нэг догол мөр.
 
 ## Тайлан (daily / weekly горим)
 

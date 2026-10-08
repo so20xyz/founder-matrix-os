@@ -88,10 +88,12 @@ PEOPLE = "04-Areas/people"
 PRIVATE = "04-Areas/Business/finances/private"
 INCOME = PRIVATE + "/income"
 REFERENCES = "05-Resources/references"
-GOALS = "07-Goals"
+GOALS = "04-Areas/Goals"
 ROLES_DIR = "04-Areas/AI Team/ai-workers"
 REGISTRY = "_system/fm/registry.json"
-DECISIONS = "06-Atomic/decisions"
+DECISIONS = "05-Resources/Atomic/decisions"
+# Pre-2026-10-09 layout: used only when the vault still has the old folder and not the new one.
+LEGACY = {GOALS: "07-Goals", DECISIONS: "06-Atomic/decisions"}
 DAILY = "00-GTD/Daily"
 LOGS = "_system/logs"
 SOUL = "01-Soul/SOUL.md"
@@ -344,10 +346,18 @@ class Onboard(object):
         self.project_state = {}  # name -> state
         self.project_goal = {}   # name -> one-line goal
         self.year = int(self._year())
-        self.goals_rel = "%s/%d Goals" % (GOALS, self.year)
+        self.goals_rel = "%s/%d Goals" % (self.folder(GOALS), self.year)
         self.role_notes = []  # rel paths of role notes written/seen
 
     # ------------------------------------------------------------ basics
+
+    def folder(self, rel):
+        # type: (str) -> str
+        """New-layout folder, or its legacy name if only that exists in this vault."""
+        old = LEGACY.get(rel)
+        if old and not (self.vault / rel).exists() and (self.vault / old).exists():
+            return old
+        return rel
 
     def _year(self):
         g = self.a.get("goals") if isinstance(self.a.get("goals"), dict) else {}
@@ -1107,7 +1117,7 @@ class Onboard(object):
         if not changed:
             return
         today = self.today.isoformat()
-        atom_rel = "%s/%s - fm-onboarding.md" % (DECISIONS, today)
+        atom_rel = "%s/%s - fm-onboarding.md" % (self.folder(DECISIONS), today)
         n_companies = len([c for c in self._items("companies") if c.get("_name")])
         n_areas = len([a for a in self._items("life_areas") if a.get("_name")])
         n_people = len([p for p in self._items("people") if p.get("_name")])

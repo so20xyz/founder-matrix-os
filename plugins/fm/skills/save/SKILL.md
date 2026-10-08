@@ -38,9 +38,9 @@ argument-hint: "[--checkpoint] [<url>] [онцлох сэдэв]"
 
 | Ангилал | Хаашаа | Шалгуур | checkpoint |
 |---|---|---|---|
-| Шийдвэр | `06-Atomic/decisions/` (`type: session-decision`) | Сонголт хийгдэж чиглэл тогтсон | ✅ |
-| Ойлголт / баримт / сургамж | `06-Atomic/knowledge/` (`type: atomic`) | Дахин хэрэглэгдэх, контекстгүй уншигдах нэг санаа | ✅ |
-| Нээлттэй асуулт | `06-Atomic/knowledge/` (`kind: question`) | Хариулт хараахан алга. Хожим хариулт гарвал шинэ атом + `answeredby:` | ✅ |
+| Шийдвэр | `05-Resources/Atomic/decisions/` (`type: session-decision`) | Сонголт хийгдэж чиглэл тогтсон | ✅ |
+| Ойлголт / баримт / сургамж | `05-Resources/Atomic/knowledge/` (`type: atomic`) | Дахин хэрэглэгдэх, контекстгүй уншигдах нэг санаа | ✅ |
+| Нээлттэй асуулт | `05-Resources/Atomic/knowledge/` (`kind: question`) | Хариулт хараахан алга. Хожим хариулт гарвал шинэ атом + `answeredby:` | ✅ |
 | Task | `00-GTD/Tasks/` (`/fm:task`-ийн журам) | Хэн нэгэн «дараагийн алхам» гэж шийдсэн | ✅ |
 | Төслийн ахиц | Төслийн note / `_BRAIN.md` | `03-Projects/`-ийн төсөлд хамаарна | - |
 | Хүн | `04-Areas/people/` (`/fm:people`-ийн журам) | Нэр, үүрэг, харилцаа дурдагдсан | - |
@@ -81,7 +81,7 @@ role: <дүрийн slug>
 projects: ["[[03-Projects/...]]"]  # projects эсвэл areas - дор хаяж нэг PARA гэр
 topics: ["[[05-Resources/Topics/<Сэдэв>]]"]  # 1-2 сэдэв: хадгалсан пост → сэдэв → атом гүүр (байвал)
 from: ["[[05-Resources/references/...]]"]  # ямар resource-оос гарсан (байвал) — ажлын цикл
-up: "[[06-Atomic/knowledge/Atoms]]"  # харьяалал (шийдвэр бол 06-Atomic/decisions/Decisions)
+up: "[[05-Resources/Atomic/knowledge/Atoms]]"  # харьяалал (шийдвэр бол 05-Resources/Atomic/decisions/Decisions)
 areas: []
 supersededby: []
 ai-first: true
@@ -115,7 +115,7 @@ Read → Edit ашигла. Байгаа note-ийг хэзээ ч Write-аар 
 `_system/logs/<огноо>.md`-д Read → Edit-ээр, зөвхөн төгсгөлд нь нэг мөр. Файл байхгүй бол үүсгэ. Мөрөнд зөвхөн холбоос:
 
 ```
-- **HH:MM** · <дүр> → [[06-Atomic/decisions/YYYY-MM-DD - slug]] · [[00-GTD/Tasks/Гарчиг]]
+- **HH:MM** · <дүр> → [[05-Resources/Atomic/decisions/YYYY-MM-DD - slug]] · [[00-GTD/Tasks/Гарчиг]]
 - **HH:MM** · <дүр> → checkpoint: [[атом1]] · [[task]]
 - **HH:MM** · <дүр> → clip: [[05-Resources/references/...]] · [[атом1]]
 ```
@@ -145,7 +145,7 @@ Read → Edit ашигла. Байгаа note-ийг хэзээ ч Write-аар 
 **Finance дүрийн сешн** (`PRIVATE сешн`):
 - Бичихийн өмнө хэрэглэгчээс асуу.
 - Сар бүр давтагддаг төлбөр → `type: bill` (загвар `_system/templates/Bill.md`); байгаа bill-ийн `last_paid`, `amount`-ийг шинэчил. Нэг удаагийн гүйлгээ → `Finance Record` (`sensitivity: private`).
-- `06-Atomic/` руу санхүүгийн атом **бүү** бич. Өдрийн note-д дүн бүү бич.
+- `05-Resources/Atomic/` руу санхүүгийн атом **бүү** бич. Өдрийн note-д дүн бүү бич.
 - Лог мөрөнд зөвхөн `- **HH:MM** · 🔒 → save` (холбоос, агуулгагүй).
 - Данс, картын дугаар, нууц үг, PIN, OTP-г **хэзээ ч** бичихгүй. `account-ref:` талбарт «Х банк ••12» маягийн танигч л.
 

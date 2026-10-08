@@ -51,7 +51,7 @@ root.appendChild(hero);
 const flow = box('flow', 'HORIZONTAL', 16); flow.counterAxisAlignItems = 'CENTER';
 const step = (t, s, a) => { const b = box(t, 'VERTICAL', 4, 20, C.card, 14); b.strokes = [hex(a)]; b.strokeWeight = 1.5; b.appendChild(txt(t, 18, F.b)); b.appendChild(txt(s, 13, F.r, C.mute)); return b; };
 const arrow = () => txt('→', 28, F.b, C.mute);
-[['Та', '«update» · /fm:<skill>', C.text], ['Agent (сешн + дүр)', 'hook: BOOT.md + дүрийн дүрэм', C.area], ['Skill', 'save · task · inbox · project …', C.developer], ['Obsidian vault', '00-GTD/Inbox … 07-Goals · _system', C.resource], ['Bridge / хэрэгсэл', 'Figma · Framer · Notion · Discord', C.creative]]
+[['Та', '«update» · /fm:<skill>', C.text], ['Agent (сешн + дүр)', 'hook: BOOT.md + дүрийн дүрэм', C.area], ['Skill', 'save · task · inbox · project …', C.developer], ['Obsidian vault', '00-GTD/Inbox … 04-Areas/Goals · _system', C.resource], ['Bridge / хэрэгсэл', 'Figma · Framer · Notion · Discord', C.creative]]
   .forEach((s, i) => { if (i) flow.appendChild(arrow()); flow.appendChild(step(...s)); });
 root.appendChild(flow);
 

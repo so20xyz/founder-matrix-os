@@ -43,7 +43,7 @@ energy:
 ```base
 filters:
   and:
-    - file.inFolder("06-Atomic")
+    - file.inFolder("05-Resources/Atomic")
     - date == this.date
 views:
   - type: table

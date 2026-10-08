@@ -10,7 +10,7 @@ owns:
   - "00-GTD/"
   - "04-Areas/"
   - "01-Soul/"
-  - "07-Goals/"
+  - "04-Areas/Goals/"
   - "99-Archive/"
   - "_system/"
   - "Home.md"
@@ -56,7 +56,7 @@ Area агент — өдөр тутмын урсгал (inbox → task → өд�
 
 - `00-GTD/Inbox/`, `00-GTD/` (`Inbox/`, `Daily/`, `Tasks/`, `Events/`)
 - `04-Areas/` (`people/`, `Business/`, `Life/`, `AI Team/`) — 🔒 `Business/finances/private/`-ээс бусад
-- `01-Soul/`, `07-Goals/`, `99-Archive/`, `_system/`, `Home.md`
+- `01-Soul/`, `04-Areas/Goals/`, `99-Archive/`, `_system/`, `Home.md`
 
 ## Skill-ууд — эхлээд хай
 

@@ -81,7 +81,7 @@ function vSocial(){const S=D.social||[];socStart=socStart||(()=>{const d=new Dat
   <div class="cal mon">${['Да','Мя','Лх','Пү','Ба','Бя','Ня'].map(x=>`<div class="dh">${x}</div>`).join('')}${cells}</div>
   <h2>Товлоогүй <small>${tray.length} · өдөр рүү чир</small></h2>${tray.map(p=>socCard(p,1)).join('')||'<p class="empty">—</p>'}
   <h2>Бүх пост <small>${S.length}</small></h2>${S.slice().sort((a,b)=>(b.publish_date||'9').localeCompare(a.publish_date||'9')).map(p=>socCard(p)).join('')}
-  <p class="meta">Сан: 08-Studio/Social Posts · эзэн: 07 Social Admin</p>`}
+  <p class="meta">Сан: 04-Areas/Studio/Social Posts · эзэн: 07 Social Admin</p>`}
 
 function vResearch(){return `<h2>Сүүлийн судалгаа, тэмдэглэл</h2>`+D.research.map(r=>`<div class="card res"><div class="n">${esc(r.title)}</div><div class="meta"><span class="pill">${esc(r.type)}</span><span>${esc(r.when)}</span></div>${r.summary?`<p>${esc(r.summary)}</p>`:''}</div>`).join('')}
 function vChat(){const h=(D.chat||[]).concat(pending?[{who:'bd',text:pending,t:'одоо'}]:[]);

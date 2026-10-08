@@ -29,7 +29,7 @@
         "00-GTD/",
         "04-Areas/",
         "01-Soul/",
-        "07-Goals/",
+        "04-Areas/Goals/",
         "99-Archive/",
         "_system/",
         "Home.md"
@@ -56,7 +56,7 @@
       "group": "resources",
       "folders": [
         "05-Resources/",
-        "06-Atomic/"
+        "05-Resources/Atomic/"
       ],
       "skills": [
         "fm:save",
