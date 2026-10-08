@@ -4,7 +4,7 @@
 
 - `ai-workers/` — дүрийн note-ууд (`type: agent-role`). Сешнийг дүрд холбох: `/fm:role <slug>`.
 - `skills/` — skill-ийн каталог.
-- Бүх дүр: `_system/bases/Agents.base`.
+- Бүх дүр: `04-Areas/AI Team/ai-workers/Agents.base`.
 
 | Дугаар | Agent | Юу хийдэг | Sidebar бүлэг |
 |---|---|---|---|

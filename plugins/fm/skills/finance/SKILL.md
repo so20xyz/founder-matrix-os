@@ -1,7 +1,7 @@
 ---
 name: finance
 description: 🔒 Хувийн санхүүгийн модуль — сарын тогтмол төлбөр (Сарын төлбөр tracker), Finance Record бичлэг, сарын эцсийн хугацааны тойм, энэ сард юу төлөгдөөгүйг тооцно. Зөвхөн Finance дүрийн сешнд. «санхүү», «төлбөр», «сарын төлбөр», «юу төлөөгүй вэ», «төлбөр төлсөн», «билл», «зээлийн төлбөр», «санхүүгийн бичлэг», «зардал бүртгэ», «энэ сарын үлдэгдэл» гэвэл энэ skill-ийг ашигла.
-argument-hint: "[status | paid <нэр> | new-bill | record]"
+argument-hint: "[status | paid <нэр> | new-bill | record | rebalance]"
 ---
 
 # /fm:finance — 🔒 хувийн санхүү
@@ -12,7 +12,7 @@ argument-hint: "[status | paid <нэр> | new-bill | record]"
 
 ```
 private/
-├── Сарын төлбөр.md         самбар — _system/bases/Monthly Bills.base-ийн харагдацууд
+├── Сарын төлбөр.md         самбар — 04-Areas/Business/finances/private/Monthly Bills.base-ийн харагдацууд
 ├── <Төлбөрийн нэр>.md      type: bill — нэг тогтмол төлбөр = нэг нот (_system/templates/Bill.md)
 └── records/                type: finance-record, scope: personal — нэг гүйлгээ = нэг нот
 ```
@@ -39,7 +39,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/finance/scripts/fm_bills.py" status "${use
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/finance/scripts/fm_bills.py" status "${user_config.vault_path}" --month 2026-11
 ```
 
-`status: active` төлбөр бүрийн `last_paid` (YYYY-MM-DD) энэ сард биш, `## Төлөлтийн түүх`-д ч энэ сарын мөр алга бол **төлөгдөөгүй**. `paused`/`closed`-ийг тооцохгүй. `due_day` сарын урттай тааруулна (31 → 30/28). Гаралт: ⬜ төлөгдөөгүй (🔴 хоцорсон / 🟡 ≤5 хоног), ✅ төлсөн, ⟳ автомат төлөлт, валют тус бүрийн нийт. Obsidian дотор ижил зургийг [[Сарын төлбөр]] самбар харуулна.
+`status: active` төлбөр бүрийн `last_paid` (YYYY-MM-DD) энэ сард биш, `records/`-д ч энэ сарын `state: actual` бичлэг алга (хуучин `## Төлөлтийн түүх` мөрийг ч уншина) бол **төлөгдөөгүй**. `paused`/`closed`-ийг тооцохгүй. `due_day` сарын урттай тааруулна (31 → 30/28). Гаралт: ⬜ төлөгдөөгүй (🔴 хоцорсон / 🟡 ≤5 хоног), ✅ төлсөн, ⟳ автомат төлөлт, валют тус бүрийн нийт. Obsidian дотор ижил зургийг [[Сарын төлбөр]] самбар харуулна.
 
 Гишүүнд товч хүснэгтээр харуул, хоцорсныг эхэнд.
 
@@ -52,7 +52,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/finance/scripts/fm_bills.py" paid "${user_
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/finance/scripts/fm_bills.py" record "${user_config.vault_path}" "<төлбөр> <сар>" --kind payment --amount <тоо> --bill "<төлбөр>"
 ```
 
-`paid` нь `last_paid`-ийг тавьж, `## Төлөлтийн түүх` хүснэгтэд мөр нэмнэ. Гишүүн «төлсөн» гэж **өөрөө баталсны** дараа л ажиллуул. Дүн өөр байсан бол `--amount`-д бодит дүнг өг, нотын `amount`-ыг өөрчлөх эсэхийг асуу. Баримт (зураг/PDF) байвал `records/` дотор хадгалж `doc:` талбарт холбо.
+`paid` нь `last_paid`-ийг тавина; тухайн сарын энэ bill-ийн `state: forecast` бичлэг байвал түүнийг `actual` болгож `txn-date`/`net`-ийг шинэчилнэ, үгүй бол шинэ actual бичлэг үүсгэнэ, дараа нь `rebalance`. Bill note-ийн «Төлөлтийн түүх» нь `records/`-аас Bases embed-ээр гарна (`file.hasLink(this.file)`) — гараар бичихгүй, нэг эх сурвалж = `records/`. Гишүүн «төлсөн» гэж **өөрөө баталсны** дараа л ажиллуул. Дүн өөр байсан бол `--amount`-д бодит дүнг өг, нотын `amount`-ыг өөрчлөх эсэхийг асуу. Баримт (зураг/PDF) байвал `records/` дотор хадгалж `doc:` талбарт холбо.
 
 ## 3. Сарын эхний тойм (сар бүрийн 1–3-нд)
 
@@ -76,6 +76,16 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/finance/scripts/fm_bills.py" record "${use
 ```
 
 `kind`: `invoice` · `payment` · `expense` · `subscription` · `salary`. `_system/templates/Finance Record.md` загвараар `records/` дотор үүснэ; бүх бичлэг `scope: personal`, `private: true`. Багийн/төслийн санхүү (`scope: team`) энэ skill-ийн хүрээнд биш — `04-Areas/Business/finances/`-д Project дүртэй хамт. `date` = үүсгэсэн огноо, `txn-date` = гүйлгээний огноо — хольж болохгүй. `uid`-ийг хэзээ ч өөрчлөхгүй.
+
+Талбарууд (багийн app-тэй ижил нэр; ялгаа зөвхөн `scope` ба хавтас): `net` (орлого +, зарлага −), `flow` (in|out — `salary`/`invoice` анхдагч in), `month` ("YYYY-MM"), `state` (`--state actual|saved|forecast`), `variable` (`--variable`), `bill`, `balance_after`. Загварын `{{date…}}`, `{{title}}`, `<% %>` тэмдэгт хэзээ ч үлдэхгүй.
+
+### Үлдэгдэл (rebalance)
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/finance/scripts/fm_bills.py" rebalance "${user_config.vault_path}" [--opening N] [--since YYYY-MM-DD] [--forecast]
+```
+
+Эхлэх үлдэгдэл = private root-ийн `_balance.md` (`opening_balance`, `opening_date`) эсвэл аргумент. `records/`-ийг `txn-date`-ээр эрэмбэлж `actual`/`saved` бүрт `balance_after` бичнэ; `--forecast` бол forecast-ийг сүүлийн бодит үлдэгдлээс тусад нь төсөөлнө. `record`/`paid`-ийн дараа автоматаар ажиллана. Харагдац: `Finance Records.base`.
 
 ## Харилцаа
 

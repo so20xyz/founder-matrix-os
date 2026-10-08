@@ -18,11 +18,11 @@ aliases:
 
 | Ажил | Амьдрал | Мэдлэг |
 |---|---|---|
-| [[02-GTD/boards/Work\|📋 Ажлын самбар]] | [[02-GTD/boards/Personal\|📋 Хувийн самбар]] | [[_system/bases/Atoms.base\|🧩 Атомууд]] |
-| [[_system/bases/Tasks.base\|✅ Task-ууд]] | [[_system/bases/People.base\|👥 Хүмүүс]] | [[_system/bases/Decisions.base\|🔑 Шийдвэрүүд]] |
-| [[_system/bases/Projects.base\|🔨 Төслүүд]] | `04-Areas/Life/` 🏠 Хувийн хүрээ | [[_system/bases/References.base\|📚 Лавлагаа ба хэрэгсэл]] |
-| [[_system/bases/Companies.base\|🏢 Байгууллагууд]] | `07-Goals/` 🎯 Зорилго | `00-Inbox/` 📥 Хураалт |
-| [[_system/bases/Agents.base\|🤖 Agent-ууд]] | [[04-Areas/Business/finances/private/Сарын төлбөр\|🔒 Сарын төлбөр]] | [[_system/index\|🗂 Каталог]] |
+| [[02-GTD/boards/Work\|📋 Ажлын самбар]] | [[02-GTD/boards/Personal\|📋 Хувийн самбар]] | [[06-Atomic/knowledge/Atoms.base\|🧩 Атомууд]] |
+| [[02-GTD/tasks/Tasks.base\|✅ Task-ууд]] | [[04-Areas/people/People.base\|👥 Хүмүүс]] | [[06-Atomic/decisions/Decisions.base\|🔑 Шийдвэрүүд]] |
+| [[03-Projects/Projects.base\|🔨 Төслүүд]] | `04-Areas/Life/` 🏠 Хувийн хүрээ | [[05-Resources/references/References.base\|📚 Лавлагаа ба хэрэгсэл]] |
+| [[04-Areas/Business/companies/Companies.base\|🏢 Байгууллагууд]] | `07-Goals/` 🎯 Зорилго | `00-Inbox/` 📥 Хураалт |
+| [[04-Areas/AI Team/ai-workers/Agents.base\|🤖 Agent-ууд]] | [[04-Areas/Business/finances/private/Сарын төлбөр\|🔒 Сарын төлбөр]] | [[_system/index\|🗂 Каталог]] |
 
 ## 🔨 Идэвхтэй төслүүд
 

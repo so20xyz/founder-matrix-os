@@ -1,0 +1,56 @@
+filters:
+  and:
+    - file.ext == "md"
+    - type == "finance-record"
+    - file.inFolder("04-Areas/Business/finances/private")
+properties:
+  txn-date:
+    displayName: Огноо
+  net:
+    displayName: Цэвэр
+  flow:
+    displayName: Урсгал
+  month:
+    displayName: Сар
+  state:
+    displayName: Төлөв
+  bill:
+    displayName: Төлбөр
+  balance_after:
+    displayName: Үлдэгдэл
+views:
+  - type: table
+    name: Бодит
+    filters:
+      and:
+        - state == "actual"
+    order:
+      - txn-date
+      - file.basename
+      - net
+      - balance_after
+      - bill
+    summaries:
+      net: Sum
+  - type: table
+    name: Сараар
+    groupBy:
+      property: month
+      direction: DESC
+    order:
+      - txn-date
+      - file.basename
+      - net
+      - state
+    summaries:
+      net: Sum
+  - type: table
+    name: Төлөвлөсөн
+    filters:
+      and:
+        - state == "forecast"
+    order:
+      - txn-date
+      - file.basename
+      - net
+      - bill

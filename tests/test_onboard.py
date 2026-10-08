@@ -562,11 +562,12 @@ def test_templates_follow_conventions(c):
     for base in ("People.base", "Companies.base", "Projects.base", "References.base", "Agents.base",
                  "Tasks.base"):
         assert base in home, base
-        assert (TEMPLATE / "_system/bases" / base).is_file(), base
+        assert len(list(TEMPLATE.rglob(base))) == 1, base
+    assert not (TEMPLATE / "_system/bases").exists()  # folder-base rule
 
 
 def test_bases_are_consistent(c):
-    for f in sorted((TEMPLATE / "_system/bases").glob("*.base")):
+    for f in sorted(TEMPLATE.rglob("*.base")):
         raw = f.read_text(encoding="utf-8")
         assert "\t" not in raw, f.name
         defined = set(re.findall(r"^  ([A-Za-z_][A-Za-z0-9_]*):\s*'", raw, re.MULTILINE))

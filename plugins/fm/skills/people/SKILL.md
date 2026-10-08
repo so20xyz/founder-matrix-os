@@ -9,7 +9,7 @@ argument-hint: "[<Нэр>] [new | touch | hot | follow-up]"
 Хүн бүр нэг note: `04-Areas/people/<Бүтэн нэр>.md` (`type: person`). Энэ бол vault-ийн CRM - HubSpot г.м. гадны CRM skill энд бичихгүй.
 
 - Vault: `${user_config.vault_path}` (доор `<V>`). Дүрэм: `<V>/_system/BOOT.md`.
-- Загвар: `<V>/_system/templates/Person.md`. Харагдац: `<V>/_system/bases/People.base` (Бүгд · Hot · Холбогдох · Баг).
+- Загвар: `<V>/_system/templates/Person.md`. Харагдац: `<V>/04-Areas/people/People.base` (Бүгд · Hot · Холбогдох · Баг).
 - Эзэн дүр: **Area**. Бусад дүр (Project, Creative…) өөрийн ажлын явцад хүний note-д харилцааны мөр нэмж болно.
 
 ## Frontmatter

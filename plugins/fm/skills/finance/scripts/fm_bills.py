@@ -13,10 +13,20 @@ A bill is PAID for a month when last_paid falls in that month.
 Usage:
     fm_bills.py status   <vault> [--month YYYY-MM]                 unpaid / paid this month, by due day
     fm_bills.py paid     <vault> "<bill>" [--date YYYY-MM-DD] [--amount N]
-                         set last_paid + append a row to "## Төлөлтийн түүх"
+                         set last_paid; this month's forecast record for the bill -> actual,
+                         otherwise a new actual record; then rebalance
     fm_bills.py new-bill <vault> "<name>" --amount N --due-day D [--category C] [--currency MNT] [--autopay]
     fm_bills.py record   <vault> "<label>" --kind payment|expense|invoice|subscription|salary --amount N
-                         [--currency MNT] [--date YYYY-MM-DD] [--bill "<bill>"]
+                         [--currency MNT] [--date YYYY-MM-DD] [--bill "<bill>"] [--flow in|out]
+                         [--state actual|saved|forecast] [--variable]           then rebalance
+    fm_bills.py rebalance <vault> [--opening N] [--since YYYY-MM-DD] [--forecast]
+                         running balance -> balance_after on every actual/saved record (sorted by
+                         txn-date) from _balance.md (opening_balance, opening_date) or the arguments;
+                         --forecast also projects forecast records after the last actual balance
+
+Record fields (same names as the team app; only scope + folder differ):
+    kind amount net(+in/-out) flow(in|out) currency txn-date month("YYYY-MM")
+    state(actual|saved|forecast) variable bill("[[Bill]]") balance_after status scope private
 
 Never executes payments, never touches bank sites or credentials. Python 3.9+, stdlib only.
 """
@@ -32,8 +42,10 @@ PRIVATE = Path("04-Areas") / "Business" / "finances" / "private"
 TEMPLATES = Path("_system") / "templates"
 RECORDS = "records"
 KINDS = ["invoice", "payment", "expense", "subscription", "salary"]
+IN_KINDS = ("invoice", "salary")
+STATES = ["actual", "saved", "forecast"]
+BALANCE = "_balance.md"
 CATEGORIES = ["housing", "utilities", "telecom", "loan", "insurance", "subscription", "education", "other"]
-HISTORY = "## Төлөлтийн түүх"
 FORBIDDEN_NAME = r'[\\/:*?"<>|#^\[\]]'
 
 
@@ -61,7 +73,8 @@ def _opt(args: List[str], key: str, default: str = "") -> str:
 
 
 def _positional(args: List[str]) -> List[str]:
-    with_value = {"--month", "--date", "--amount", "--due-day", "--category", "--currency", "--kind", "--bill"}
+    with_value = {"--month", "--date", "--amount", "--due-day", "--category", "--currency", "--kind", "--bill",
+                  "--flow", "--state", "--opening", "--since"}
     out, skip = [], False
     for a in args:
         if skip:
@@ -163,12 +176,25 @@ def from_template(vault: Path, name: str, title: str) -> Tuple[List[str], List[s
     tpl = vault / TEMPLATES / (name + ".md")
     if not tpl.exists():
         return [], []
-    text = tpl.read_text(encoding="utf-8-sig")
-    today = datetime.date.today().isoformat()
-    text = re.sub(r"\{\{date(:[^}]*)?\}\}", today, text)
-    text = re.sub(r"\{\{fm:date\}\}", today, text)
-    text = text.replace("{{title}}", title)
-    return split_note(text)
+    return split_note(fill_placeholders(tpl.read_text(encoding="utf-8-sig"), title))
+
+
+def fill_placeholders(text: str, title: str, when: "datetime.date" = None) -> str:
+    """Resolve Obsidian/Templater placeholders; nothing like {{..}} or <% %> may survive."""
+    when = when or datetime.date.today()
+
+    def fmt(m) -> str:
+        pattern = (m.group(1) or ":YYYY-MM-DD")[1:].strip() or "YYYY-MM-DD"
+        for a, b in (("YYYY", "%Y"), ("MM", "%m"), ("DD", "%d")):
+            pattern = pattern.replace(a, b)
+        return when.strftime(pattern)
+
+    text = re.sub(r"\{\{\s*date(:[^}]*)?\s*\}\}", fmt, text)
+    text = re.sub(r"\{\{\s*fm:date\s*\}\}", when.isoformat(), text)
+    text = re.sub(r"\{\{\s*title\s*\}\}", lambda m: title, text)
+    text = re.sub(r"<%.*?%>", "", text, flags=re.S)
+    text = re.sub(r"\{\{[^{}]*\}\}", "", text)
+    return text
 
 
 def load_bills(vault: Path):
@@ -205,6 +231,7 @@ def cmd_status(vault: Path, args: List[str]) -> None:
     today = datetime.date.today()
     unpaid, paid, skipped = [], [], []
     totals = {}  # type: Dict[str, float]
+    records = load_records(vault)
     for p, fm, body, d in load_bills(vault):
         status = d.get("status", "active") or "active"
         if status in ("closed", "paused"):
@@ -219,7 +246,9 @@ def cmd_status(vault: Path, args: List[str]) -> None:
         due = datetime.date(year, mon, day)
         auto = " ⟳" if d.get("autopay", "").lower() == "true" else ""
         row = (day, p.stem + auto, amt, cur, due)
-        in_history = any(re.match(r"^\|\s*%s\s*\|" % re.escape(month), l) for l in body)
+        in_history = any(re.match(r"^\|\s*%s\s*\|" % re.escape(month), l) for l in body) or any(
+            _bill_name(rd.get("bill", "")) == p.stem.lower() and rd.get("state") == "actual"
+            and (rd.get("month") or rd.get("txn-date", ""))[:7] == month for _, _, _, rd in records)
         if (d.get("last_paid") or "")[:7] == month or in_history:
             paid.append(row)
         else:
@@ -238,6 +267,43 @@ def cmd_status(vault: Path, args: List[str]) -> None:
         _out("Тооцоогүй: " + ", ".join(skipped))
 
 
+def _bill_name(value: str) -> str:
+    m = re.search(r"\[\[([^\]|#]+)", value or "")
+    return (m.group(1) if m else (value or "")).split("/")[-1].replace(".md", "").strip().lower()
+
+
+def load_records(vault: Path):
+    out = []
+    folder = private_root(vault) / RECORDS
+    if folder.is_dir():
+        for p in sorted(folder.glob("*.md")):
+            fm, body = split_note(p.read_text(encoding="utf-8-sig"))
+            d = fm_dict(fm)
+            if d.get("type") == "finance-record":
+                out.append((p, fm, body, d))
+    return out
+
+
+def signed(s: str) -> float:
+    s = (s or "").strip()
+    return -to_number(s[1:]) if s.startswith("-") else to_number(s)
+
+
+def _num(n: float) -> str:
+    return ("%d" % n) if n == int(n) else ("%.2f" % n)
+
+
+def _signed(amount: str, flow: str) -> str:
+    n = to_number(amount)
+    return _num(-n if flow == "out" else n)
+
+
+def _apply_record(fm: List[str], fields: Dict[str, str]) -> List[str]:
+    for key, val in fields.items():
+        fm = fm_set(fm, key, val)
+    return fm
+
+
 def cmd_paid(vault: Path, args: List[str]) -> None:
     pos = _positional(args)
     if not pos:
@@ -248,24 +314,28 @@ def cmd_paid(vault: Path, args: List[str]) -> None:
     if amount:
         check_amount(amount)
     else:
-        amount = d.get("amount", "")
+        amount = d.get("amount", "") or "0"
     fm = fm_set(fm, "last_paid", date)
     fm = fm_set(fm, "updated", datetime.date.today().isoformat())
-    row = "| %s | %s %s | %s |" % (date[:7], amount, d.get("currency") or "MNT", date)
-    idx = next((i for i, l in enumerate(body) if l.strip() == HISTORY), None)
-    if idx is None:
-        while body and body[-1].strip() == "":
-            body = body[:-1]
-        body += ["", HISTORY, "", "| Сар | Дүн | Төлсөн огноо |", "|---|---|---|", row, ""]
-    else:
-        j = idx + 1
-        while j < len(body) and not body[j].startswith("## "):
-            j += 1
-        while j > idx + 1 and body[j - 1].strip() == "":
-            j -= 1
-        body = body[:j] + [row] + body[j:]
     write(vault, p, join_note(fm, body))
-    _out("✅ %s → %s төлсөн (last_paid: %s)" % (p.stem, date[:7], date))
+    month = date[:7]
+    fields = {"kind": "payment", "amount": amount, "net": _signed(amount, "out"), "flow": "out",
+              "currency": d.get("currency") or "MNT", "txn-date": date, "month": '"%s"' % month,
+              "state": "actual", "status": "paid", "variable": d.get("variable") or "false"}
+    hit = None
+    for rp, rfm, rbody, rd in load_records(vault):
+        if _bill_name(rd.get("bill", "")) == p.stem.lower() and rd.get("state") == "forecast" \
+                and (rd.get("month") or rd.get("txn-date", ""))[:7] == month:
+            hit = (rp, rfm, rbody)
+            break
+    if hit:
+        write(vault, hit[0], join_note(_apply_record(hit[1], fields), hit[2]))
+        _out("✅ %s → %s төлсөн (forecast → actual: %s)" % (p.stem, month, hit[0].name))
+    else:
+        fields["bill"] = '"[[%s]]"' % p.stem
+        rec = _new_record(vault, p.stem, date, fields)
+        _out("✅ %s → %s төлсөн (шинэ бичлэг: %s)" % (p.stem, month, rec.name))
+    rebalance(vault, quiet=True)
 
 
 def cmd_new_bill(vault: Path, args: List[str]) -> None:
@@ -292,7 +362,7 @@ def cmd_new_bill(vault: Path, args: List[str]) -> None:
               "autopay: false", "pay-via:", "account-ref:", "last_paid:", "status: active"]
         body = ["", "# %s" % name, "", "## For future agent", "",
                 "🔒 Сар бүр давтагддаг нэг төлбөр. Агуулга нь vault-аас гарахгүй. Данс/картын дугаар бичихгүй.",
-                "", "## Тэмдэглэл", "", HISTORY, "", "| Сар | Дүн | Төлсөн огноо |", "|---|---|---|", ""]
+                "", "## Тэмдэглэл", "", "## Төлөлтийн түүх", "", "`records/`-аас (Finance Records.base) — гараар бүү бич.", ""]
     for key, val in (("type", "bill"), ("private", "true"), ("name", '"%s"' % name.replace('"', "'")),
                      ("category", category), ("amount", amount), ("currency", _opt(args, "--currency", "MNT")),
                      ("due_day", str(int(due_day))), ("autopay", "true" if "--autopay" in args else "false"),
@@ -302,21 +372,14 @@ def cmd_new_bill(vault: Path, args: List[str]) -> None:
     _out("🔒 шинэ төлбөр → %s" % path.name)
 
 
-def cmd_record(vault: Path, args: List[str]) -> None:
-    pos = _positional(args)
-    kind, amount = _opt(args, "--kind"), _opt(args, "--amount")
-    if not pos or kind not in KINDS or not amount:
-        _die("Хэрэглээ: fm_bills.py record <vault> \"<label>\" --kind %s --amount N" % "|".join(KINDS))
-    check_amount(amount)
-    date = check_date(_opt(args, "--date") or datetime.date.today().isoformat())
-    label = pos[0].strip()
-    bill = _opt(args, "--bill")
-    if bill:
-        bill = find_bill(vault, bill)[0].stem
+def _new_record(vault: Path, label: str, date: str, fields: Dict[str, str]) -> Path:
     fname = "%s - %s" % (date, re.sub(FORBIDDEN_NAME, "-", label).strip())
-    path = private_root(vault) / RECORDS / (fname[:50].rstrip(" -") + ".md")
-    if path.exists():
-        _die("Ийм бичлэг байна: %s" % path.name, 2)
+    base = fname[:50].rstrip(" -")
+    path = private_root(vault) / RECORDS / (base + ".md")
+    n = 2
+    while path.exists():
+        path = private_root(vault) / RECORDS / ("%s %d.md" % (base, n))
+        n += 1
     fm, body = from_template(vault, "Finance Record", label)
     if not fm:
         fm = ["date: %s" % datetime.date.today().isoformat(), "type: finance-record", "tags:",
@@ -324,14 +387,98 @@ def cmd_record(vault: Path, args: List[str]) -> None:
         body = ["", "# %s" % label, "", "## For future agent", "",
                 "🔒 Нэг санхүүгийн бичлэг = нэг файл. `date` = үүсгэсэн, `txn-date` = гүйлгээний огноо.", "",
                 "## Тэмдэглэл", ""]
-    for key, val in (("type", "finance-record"), ("kind", kind), ("amount", amount),
-                     ("currency", _opt(args, "--currency", "MNT")), ("txn-date", date),
-                     ("status", "paid" if kind in ("payment", "expense", "salary") else "draft"),
-                     ("scope", "personal"), ("private", "true"), ("sensitivity", "private"),
-                     ("bill", '"[[%s]]"' % bill if bill else "")):
-        fm = fm_set(fm, key, val)
-    write(vault, path, join_note(fm, body))
+    full = {"type": "finance-record", "scope": "personal", "private": "true", "sensitivity": "private",
+            "bill": "", "balance_after": ""}
+    full.update(fields)
+    write(vault, path, join_note(_apply_record(fm, full), body))
+    return path
+
+
+def cmd_record(vault: Path, args: List[str]) -> None:
+    pos = _positional(args)
+    kind, amount = _opt(args, "--kind"), _opt(args, "--amount")
+    if not pos or kind not in KINDS or not amount:
+        _die("Хэрэглээ: fm_bills.py record <vault> \"<label>\" --kind %s --amount N" % "|".join(KINDS))
+    check_amount(amount)
+    date = check_date(_opt(args, "--date") or datetime.date.today().isoformat())
+    flow = _opt(args, "--flow") or ("in" if kind in IN_KINDS else "out")
+    if flow not in ("in", "out"):
+        _die("--flow: in | out")
+    state = _opt(args, "--state", "actual")
+    if state not in STATES:
+        _die("--state: %s" % " | ".join(STATES))
+    label = pos[0].strip()
+    bill = _opt(args, "--bill")
+    if bill:
+        bill = find_bill(vault, bill)[0].stem
+    if state == "forecast":
+        status = "draft"
+    else:
+        status = "paid" if kind in ("payment", "expense", "salary", "subscription") else "draft"
+    path = _new_record(vault, label, date, {
+        "kind": kind, "amount": amount, "net": _signed(amount, flow), "flow": flow,
+        "currency": _opt(args, "--currency", "MNT"), "txn-date": date, "month": '"%s"' % date[:7],
+        "state": state, "variable": "true" if "--variable" in args else "false", "status": status,
+        "bill": '"[[%s]]"' % bill if bill else ""})
     _out("🔒 бичлэг → %s/%s" % (RECORDS, path.name))
+    rebalance(vault, quiet=True)
+
+
+def _opening(vault: Path, args: List[str]) -> Tuple[float, str]:
+    opening, since = _opt(args, "--opening"), _opt(args, "--since")
+    bal = private_root(vault) / BALANCE
+    if bal.exists():
+        d = fm_dict(split_note(bal.read_text(encoding="utf-8-sig"))[0])
+        opening = opening or d.get("opening_balance", "")
+        since = since or d.get("opening_date", "")
+    if opening and not re.match(r"^-?\d+(\.\d+)?$", opening.replace(",", "")):
+        _die("opening_balance цэвэр тоо байх ёстой: %s" % opening)
+    if since and not re.match(r"^\d{4}-\d{2}-\d{2}$", since):
+        since = ""
+    return signed(opening), since
+
+
+def rebalance(vault: Path, args: List[str] = None, quiet: bool = False) -> float:
+    """balance_after = opening + running sum of net over actual/saved records sorted by txn-date."""
+    args = args or []
+    opening, since = _opening(vault, args)
+    forecast = "--forecast" in args
+    recs = sorted(load_records(vault), key=lambda r: (r[3].get("txn-date", ""), r[0].name))
+    running, count = opening, 0
+    new_vals = {}  # type: Dict[Path, str]
+    pending = []
+    for p, fm, body, d in recs:
+        state = d.get("state") or "actual"
+        in_range = not since or d.get("txn-date", "") >= since
+        if state == "forecast":
+            pending.append((p, d))
+            new_vals[p] = ""
+        elif in_range:
+            running += signed(d.get("net", ""))
+            new_vals[p] = _num(running)
+            count += 1
+        else:
+            new_vals[p] = ""
+    projected = running
+    if forecast:
+        for p, d in pending:
+            if not since or d.get("txn-date", "") >= since:
+                projected += signed(d.get("net", ""))
+                new_vals[p] = _num(projected)
+    for p, fm, body, d in recs:
+        if d.get("balance_after", "") != new_vals[p]:
+            write(vault, p, join_note(fm_set(fm, "balance_after", new_vals[p]), body))
+    if not quiet:
+        _out("🔒 rebalance — эхлэх %s, бичлэг %d, үлдэгдэл %s" % (_num(opening), count, _num(running)))
+        if forecast:
+            _out("   forecast-тай төсөөлөл: %s" % _num(projected))
+    return running
+
+
+def cmd_rebalance(vault: Path, args: List[str]) -> None:
+    if not private_root(vault).is_dir():
+        _die("Хувийн санхүүгийн хавтас алга: %s. /fm:setup ажиллуул." % private_root(vault), 2)
+    rebalance(vault, args)
 
 
 def main(argv: List[str]) -> None:
@@ -346,7 +493,8 @@ def main(argv: List[str]) -> None:
     cmd, vault = argv[1], Path(os.path.expanduser(argv[2]))
     if not vault.is_dir():
         _die("Vault олдсонгүй: %s" % vault)
-    handlers = {"status": cmd_status, "paid": cmd_paid, "new-bill": cmd_new_bill, "record": cmd_record}
+    handlers = {"status": cmd_status, "paid": cmd_paid, "new-bill": cmd_new_bill, "record": cmd_record,
+                "rebalance": cmd_rebalance}
     if cmd not in handlers:
         _die("Үл мэдэх команд: %s (%s)" % (cmd, "|".join(handlers)))
     handlers[cmd](vault, argv[3:])

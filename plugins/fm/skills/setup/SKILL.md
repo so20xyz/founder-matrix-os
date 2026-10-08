@@ -283,6 +283,7 @@ Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй о
 
 Гишүүнд хэл:
 - Obsidian-оор vault-аа нээж **Home**-оос эхэл (`.obsidian/` тохиргоог гишүүн өөрөө удирдана: Settings → Core plugins → **Bases**, **Templates** асаа; Templates хавтас = `_system/templates`; Community plugins → **Kanban**).
+- **Folder-base дүрэм:** хавтас бүр өөрийн Bases харагдацтай — `<хавтас>/<Нэр>.base` (жишээ `02-GTD/tasks/Tasks.base`, `04-Areas/people/People.base`); төв `_system/bases/` хавтас байхгүй.
 - Sidebar бэлэн (7-р алхам): энэ сешн **📥 GTD**; бусад сешнийг chip-ээр дээрээс доош нээ. Төсөл бүр **тусдаа нэг тогтмол сешн**, Finance тусдаа 🔒 сешн.
 - **Ганц команд: «update».** Ажлынхаа дараа «update» гэж бичихэд Agent атом, task, хүн, төсөл, inbox, STATUS-ыг өөрөө цэгцэлнэ. Өглөө «update daily», орой «update дүгнэлт», долоо хоногт «update weekly».
 - Дутуу үлдсэн алхмууд (алгассан програм, plugin, ярилцлагын хэсэг) → дараа `/fm:setup doctor`, `/fm:setup plugins`, эсвэл `/fm:setup`-ийг дахин; байгаа note хөндөгдөхгүй.

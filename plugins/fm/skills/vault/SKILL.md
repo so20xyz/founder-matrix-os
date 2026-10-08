@@ -51,7 +51,7 @@ Vault-аас гадуур (`~/.claude/`, бусад repo, хуучин нөөц 
 | Мэдлэгийн атом | `atomic` | `06-Atomic/knowledge/` | `YYYY-MM-DD - <ascii-slug>.md` |
 | Зорилго | `goal` | `07-Goals/` | — |
 | Архив | хэвээр + `supersededby:` | `99-Archive/` | — |
-| Систем | — | `_system/` (`BOOT.md`, `templates/`, `bases/`, `logs/`, `fm/`) | — |
+| Систем | — | `_system/` (`BOOT.md`, `templates/`, `logs/`, `fm/`) | — |
 
 - Дэд хавтас байхгүй бол `BOOT.md`-ийн folder map-ыг шалга. Шинэ top-level хавтсыг **таамаглаж бүү үүсгэ** — эзэмшигчээс асуу.
 - **Tool ≠ Project:** удаан хэрэглэгдэх хэрэгсэл `04-Areas/Business/tools/`-д, дуусах хугацаатай ажил `03-Projects/`-д.

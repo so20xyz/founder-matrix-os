@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- **Folder-base (itge.e 2026-10-08):** `_system/bases/` хасагдав — хавтас бүр өөрийн `<Нэр>.base`-тэй (`02-GTD/tasks/Tasks.base`, `03-Projects/Projects.base`, `04-Areas/people/People.base`, `06-Atomic/knowledge/Atoms.base`, 🔒 `finances/private/Monthly Bills.base` г.м.; шинэ `05-Resources/library/Reading.base`). Home, index, README, skill-үүдийн зам шинэчлэгдэв.
+- **🔒 Хувийн санхүүгийн схем:** Finance Record-д `net`, `flow`, `month`, `state` (actual|saved|forecast), `variable`, `bill`, `balance_after` (багийн app-тэй ижил нэр). `fm_bills.py paid` forecast-ийг actual болгоно, шинэ `rebalance` команд (`_balance.md` эхлэх үлдэгдэл) — `record`/`paid`-ийн дараа автоматаар. Bill note-ийн «Төлөлтийн түүх» = `records/`-аас Bases embed; `Finance Records.base`. Засвар: загварын `{{date:…}}`/`{{title}}`/`<% %>` тэмдэгт үлддэг байсан. Тест `tests/test_finance.py`.
 - **Sidebar = itge.e-ийн бүтэц (2026-10-07):** `Projects · Areas · Resources · Finance` 4 бүлэг. Areas = 🎨 Creative · 🏛️ Architect · 📥 GTD (Content Writer → Creative-д нэгдсэн); Resources-д 📖 Library (номын сан); Projects = 📁 Portfolio + төсөл бүр; Finance = 💼 Business · 🔒 Personal тусдаа. Tasks/Creative/Archive бүлэг хасагдав.
 
 ## [0.3.1] — 2026-10-06 · Гарын авлага, цэвэрлэгээ

@@ -11,4 +11,4 @@ Getting Things Done: хураах → тодруулах → зохион бай
 
 - **Эзэн дүр:** [[02 Area]]
 - Task-ийн `status`: `inbox → next-action → waiting → completed / cancelled` (+ `someday`).
-- Бүх task: `_system/bases/Tasks.base`.
+- Бүх task: `02-GTD/tasks/Tasks.base`.

@@ -6,8 +6,15 @@ tags:
 ai-first: true
 kind: expense
 amount: 0
+net: 0
+flow: out
 currency: MNT
 txn-date: {{date:YYYY-MM-DD}}
+month: "{{date:YYYY-MM}}"
+state: actual
+variable: false
+bill:
+balance_after:
 due:
 status: draft
 scope: personal
@@ -26,6 +33,10 @@ recurs:
 
 - `date` = үүсгэсэн огноо, `txn-date` = гүйлгээний огноо — хольж болохгүй.
 - `amount` цэвэр тоо, `currency` тусад нь («1 сая» гэх мэт текст биш).
+- `net` = тэмдэгтэй дүн (орлого +, зарлага −); `flow`: in | out; `month` = "YYYY-MM" (txn-date-ийн сар).
+- `state`: actual (болсон) | saved (хадгаламж руу) | forecast (төлөвлөсөн — `paid` үед actual болно); `variable`: дүн сар бүр өөрчлөгддөг эсэх.
+- `bill` = `"[[Төлбөрийн нэр]]"`; `balance_after`-ийг гараар бүү бич — `fm_bills.py rebalance` бичнэ.
+- Багийн app-тэй ижил талбарууд; ялгаа зөвхөн `scope: personal|team` ба хавтас.
 - `status`: draft | sent | paid | overdue | cancelled.
 - ⛔ Данс, картын дугаар, нууц үг бичихгүй.
 
