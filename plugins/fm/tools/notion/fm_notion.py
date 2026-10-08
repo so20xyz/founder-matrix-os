@@ -257,7 +257,7 @@ def cmd_pull(a):
 
 
 # ── vault → Notion (only notes marked `notion: <alias>`; private notes never leave the vault)
-PRIVATE_PREFIXES = ('04-Areas/Business/finances/private/', '01-Soul/', '04-Areas/Life/')
+PRIVATE_PREFIXES = ('04-Areas/Business/finances/private/', '01-Soul/', '04-Areas/Life/', '04-Areas/Personal/')
 SKIP_PARTS = {'.obsidian', '_trash', '.trash', '_system', '99-Archive', 'node_modules', '.git'}
 PRIVATE_TYPES = {'bill', 'income'}
 TYPE_ALIAS = {'task': 'task', 'project': 'project', 'meeting': 'meeting', 'event': 'meeting', 'reference': 'ref', 'person': 'note'}

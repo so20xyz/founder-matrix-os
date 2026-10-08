@@ -84,6 +84,9 @@ TEMPLATES = "_system/templates"
 COMPANIES = "04-Areas/Business/companies"
 TOOLS = "04-Areas/Business/tools"
 LIFE = "04-Areas/Life"
+# Reorganised vaults (itge.e 2026-10-09): Business/<company>/{companies,tools}, Personal/Life — used when present.
+LAYOUT_ALT = {"COMPANIES": "04-Areas/Business/INAI/companies", "TOOLS": "04-Areas/Business/INAI/tools",
+              "LIFE": "04-Areas/Personal/Life"}
 PEOPLE = "04-Areas/people"
 PRIVATE = "04-Areas/Business/finances/private"
 INCOME = PRIVATE + "/income"
@@ -333,6 +336,8 @@ class Onboard(object):
     def __init__(self, vault, answers, dry_run=False, today=None):
         # type: (Path, Dict[str, object], bool, Optional[datetime.date]) -> None
         self.vault = vault
+        for k, alt in LAYOUT_ALT.items():
+            setattr(self, k, alt if (vault / alt).is_dir() else globals()[k])
         self.a = answers
         self.dry = dry_run
         self.today = today or datetime.date.today()
@@ -478,10 +483,10 @@ class Onboard(object):
             return self.companies[name], "company"
         if name in self.areas:
             return self.areas[name], "area"
-        rel = "%s/%s" % (COMPANIES, name)
+        rel = "%s/%s" % (self.COMPANIES, name)
         if self.exists(rel + ".md"):
             return rel, "company"
-        rel = "%s/%s/%s" % (LIFE, name, name)
+        rel = "%s/%s/%s" % (self.LIFE, name, name)
         if self.exists(rel + ".md"):
             return rel, "area"
         return None, ""
@@ -517,12 +522,12 @@ class Onboard(object):
             name = clean_name(c.get("name"), "Байгууллага", self.warnings)
             if name:
                 c["_name"] = name
-                self.companies[name] = "%s/%s" % (COMPANIES, name)
+                self.companies[name] = "%s/%s" % (self.COMPANIES, name)
         for ar in self._items("life_areas"):
             name = clean_name(ar.get("name"), "Хүрээ", self.warnings)
             if name:
                 ar["_name"] = name
-                self.areas[name] = "%s/%s/%s" % (LIFE, name, name)
+                self.areas[name] = "%s/%s/%s" % (self.LIFE, name, name)
         for p in self._items("projects"):
             name = clean_name(p.get("name"), "Төсөл", self.warnings)
             if not name:
@@ -910,7 +915,7 @@ class Onboard(object):
                 note.set("areas", areas)
                 if text(r.get("why")):
                     note.set_section("Юунд ашигладаг", [text(r.get("why"))])
-                self.write_new("%s/%s.md" % (TOOLS, name), note.render())
+                self.write_new("%s/%s.md" % (self.TOOLS, name), note.render())
             else:
                 note = self.template("Reference", name)
                 note.set("url", url)
