@@ -154,13 +154,18 @@ async function captureToInbox($: EngineInterface, value: string) {
   const text = value.trim()
   const { value: vault = '' } = await $.state.get(VAULT)
   if (!text || !vault) return
-  const now = new Date(await $.clock.now())
+  const now = localNow(await $.clock.now())
   const day = now.toISOString().slice(0, 10)
   const stamp = now.toISOString().slice(11, 16).replace(':', '')
   const safe = text.replace(/[\\/:*?"<>|#^[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60)
   const file = `${vault}/01-GTD/Inbox/${day} ${stamp} - ${safe}.md`
   await $.fs.write(file, `---\ndate: ${day}\ntype: capture\ntags: [capture]\nstatus: inbox\nsource: tsaglabar\nai-first: true\nup: "[[01-GTD/Inbox/Inbox]]"\n---\n\n# ${safe}\n\n${text}\n`)
   $.ui.toast('📥 Inbox-д барьлаа')
+}
+
+/** «Now» shifted to the machine's local time, so toISOString() reads local date/time (Mongolia = UTC+8). */
+function localNow(ms: number): Date {
+  return new Date(ms - new Date(ms).getTimezoneOffset() * 60000)
 }
 
 const OPEN_ORDER = ['inbox', 'next-action', 'waiting']
@@ -174,7 +179,7 @@ async function setStatus($: EngineInterface, t: VaultTask, status: string) {
   const body = await $.fs.read(t.file).catch(() => '')
   const cur = typeof body === 'string' ? body : ''
   if (!cur.startsWith('---')) return
-  const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+  const day = localNow(await $.clock.now()).toISOString().slice(0, 10)
   let out = cur.replace(/^status:.*$/m, `status: ${status}`)
   out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}\nupdated: ${day}`)
   await $.fs.write(t.file, out)
@@ -188,7 +193,7 @@ async function setStatus($: EngineInterface, t: VaultTask, status: string) {
 async function addComment($: EngineInterface, t: VaultTask, value: string, member: string) {
   const text = value.trim()
   if (!text || !t.file) return
-  const at = new Date(await $.clock.now()).toISOString().slice(0, 16).replace('T', ' ')
+  const at = localNow(await $.clock.now()).toISOString().slice(0, 16).replace('T', ' ')
   const body = await $.fs.read(t.file).catch(() => '')
   const cur = typeof body === 'string' ? body : ''
   const head = cur.includes('## 💬 Сэтгэгдэл') ? '' : '\n\n## 💬 Сэтгэгдэл\n'
@@ -251,7 +256,7 @@ export const register: Register = (on, options) => {
       cache.set(f.name, { mtime: f.mtimeMs, task: parsed ? { ...parsed, file: `${dir}/${f.name}` } : null })
     }
     for (const k of [...cache.keys()]) if (!seen.has(k)) cache.delete(k)
-    const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
+    const today = localNow(await $.clock.now()).toISOString().slice(0, 10)
     const mine = [...cache.values()].map(c => c.task)
       .filter((t): t is VaultTask => !!t && matchesSession(t, names, project))
     await $.state.set(TASKS, rank(mine, today))
@@ -270,7 +275,7 @@ export const register: Register = (on, options) => {
     const { value: week = 0 } = await $.state.get(CAL_WEEK)
     const { value: goals = [] } = await $.state.get(GOALS)
     const { Box, Button, Input, Text } = $.ui.resolve(e)
-    const now = new Date(await $.clock.now())
+    const now = localNow(await $.clock.now())
     const iso = (d: Date) => d.toISOString().slice(0, 10)
     const today = iso(now)
     const { value: picked = '' } = await $.state.get(CAL_DAY)
@@ -396,7 +401,7 @@ export const register: Register = (on, options) => {
     const { value: collapsed = false } = await $.state.get(COLLAPSED)
     const { value: commenting = '' } = await $.state.get(COMMENTING)
     const { value: confirming = '' } = await $.state.get(CONFIRMING)
-    const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
+    const today = localNow(await $.clock.now()).toISOString().slice(0, 10)
     const isDone = (t: VaultTask) => t.status === 'completed' || t.status === 'done'
     const tone: Record<string, string> = { 'next-action': 'cyan', waiting: 'yellow', inbox: 'gray' }
     const label: Record<string, string> = { 'next-action': 'хийх', waiting: 'хүлээж буй', inbox: 'inbox', completed: 'өнөөдөр дууссан', done: 'өнөөдөр дууссан' }
@@ -432,7 +437,7 @@ export const register: Register = (on, options) => {
                           const body = await $.fs.read(t.file as string).catch(() => '')
                           const cur = typeof body === 'string' ? body : ''
                           if (!cur.startsWith('---')) return
-                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+                          const day = localNow(await $.clock.now()).toISOString().slice(0, 10)
                           let out = cur.replace(/^status:.*$/m, 'status: next-action')
                           out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
 updated: ${day}`)
@@ -457,7 +462,7 @@ updated: ${day}`)
                           const body = await $.fs.read(t.file as string).catch(() => '')
                           const cur = typeof body === 'string' ? body : ''
                           if (!cur.startsWith('---')) return
-                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+                          const day = localNow(await $.clock.now()).toISOString().slice(0, 10)
                           let out = cur.replace(/^status:.*$/m, `status: ${nextStatus}`)
                           out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
 updated: ${day}`)
@@ -483,7 +488,7 @@ updated: ${day}`)
                           const body = await $.fs.read(t.file as string).catch(() => '')
                           const cur = typeof body === 'string' ? body : ''
                           if (!cur.startsWith('---')) return
-                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+                          const day = localNow(await $.clock.now()).toISOString().slice(0, 10)
                           let out = cur.replace(/^status:.*$/m, 'status: completed')
                           out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
 updated: ${day}`)
@@ -534,7 +539,7 @@ updated: ${day}`)
                       const text = value.trim()
                       if (!text || !t.file) return
                       void (async () => {
-                        const at = new Date(await $.clock.now()).toISOString().slice(0, 16).replace('T', ' ')
+                        const at = localNow(await $.clock.now()).toISOString().slice(0, 16).replace('T', ' ')
                         const body = await $.fs.read(t.file as string).catch(() => '')
                         const cur = typeof body === 'string' ? body : ''
                         const head = cur.includes('## 💬 Сэтгэгдэл') ? '' : '\n\n## 💬 Сэтгэгдэл\n'
@@ -565,7 +570,7 @@ updated: ${day}`)
     const { value: health = '' } = await $.state.get(HEALTH)
     const { value: target = 'gtd' } = await $.state.get(TARGET)
     const { Box, Button, Input, Text } = $.ui.resolve(e)
-    const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
+    const today = localNow(await $.clock.now()).toISOString().slice(0, 10)
     const isDone = (t: VaultTask) => t.status === 'completed' || t.status === 'done'
     const tone: Record<string, string> = { 'next-action': '#7AA2F7', waiting: '#E0AF68', inbox: '#737AA2', completed: '#9ECE6A', done: '#9ECE6A' }
     const label: Record<string, string> = { 'next-action': 'хийх', waiting: 'хүлээж буй', inbox: 'inbox', completed: 'дууссан', done: 'дууссан' }
