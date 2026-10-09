@@ -12,10 +12,91 @@ const HIDDEN = { plugin: 'fm', key: 'isHidden' } as const
 const COLLAPSED = { plugin: 'fm', key: 'collapsed' } as const
 const COMMENTING = { plugin: 'fm', key: 'commenting' } as const
 const PANE = 'fm-tasks'
+const VAULT = { plugin: 'fm', key: 'vault' } as const
+const FEED = { plugin: 'fm', key: 'feed' } as const
+const WATCHING = { plugin: 'fm', key: 'watching' } as const
+const GOALS = { plugin: 'fm', key: 'goals' } as const
+const HEALTH = { plugin: 'fm', key: 'health' } as const
+const TARGET = { plugin: 'fm', key: 'target' } as const
+const TARGETS = ['gtd', 'wiki', 'creative', 'architect', 'development']
 const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 
 // file name -> last seen mtime and parsed task (re-read only files that changed)
 const cache = new Map<string, { mtime: number; task: VaultTask | null }>()
+
+/** argv prefix for the relay CLI shipped with this plugin (python on Windows, python3 elsewhere). */
+async function relayArgv($: EngineInterface): Promise<string[]> {
+  const win = (await $.env.get('OS')) === 'Windows_NT'
+  return [win ? 'python' : 'python3', `${$.plugin.root}/tools/relay/relay.py`]
+}
+
+/** Toggle a Discord watcher for this session: `relay.py watch --sid <sid>`, lines stream into the pane feed. */
+async function toggleWatch($: EngineInterface) {
+  const { value: on = false } = await $.state.get(WATCHING)
+  await $.state.set(WATCHING, !on)
+  if (on) { $.ui.toast('Discord watcher унтарлаа'); return }
+  const sid = await $.session.id()
+  const argv = await relayArgv($)
+  $.ui.toast('Discord watcher асаалаа')
+  void (async () => {
+    const stream = $.process.spawn({ argv: [...argv, 'watch', '--sid', sid] })
+    for await (const chunk of stream) {
+      const { value: still = false } = await $.state.get(WATCHING)
+      if (!still) break
+      if (!('text' in chunk)) continue
+      const lines = String(chunk.text).split(/\r?\n/).map(x => x.trim()).filter(Boolean)
+      if (!lines.length) continue
+      const { value: feed = [] } = await $.state.get(FEED)
+      await $.state.set(FEED, [...feed, ...lines].slice(-30))
+      $.ui.toast(`💬 ${lines[lines.length - 1].slice(0, 80)}`)
+    }
+    await $.state.set(WATCHING, false)
+  })()
+}
+
+/** Send a message to another agent's Discord channel through the relay. */
+async function sendToAgent($: EngineInterface, target: string, value: string) {
+  const text = value.trim()
+  if (!text) return
+  const sid = await $.session.id()
+  const argv = await relayArgv($)
+  const r = await $.process.run([...argv, 'send', target, text, '--sid', sid], { timeoutMs: 60000 }).catch(() => null)
+  $.ui.toast(r && r.exitCode === 0 ? `✉️ #${target} руу илгээгдлээ` : `⚠ илгээж чадсангүй (#${target})`)
+}
+
+/** Goals (type: goal, status: active) with progress, for the pane. */
+async function loadGoals($: EngineInterface) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  if (!vault) return
+  let dir = `${vault}/03-Areas/Goals`
+  if (!(await $.fs.exists(dir))) dir = `${vault}/04-Areas/Goals`
+  const entries = await $.fs.list(dir).catch(() => [])
+  const goals: string[] = []
+  for (const f of entries) {
+    if (f.kind !== 'file' || !f.name.endsWith('.md')) continue
+    const body = await $.fs.read(`${dir}/${f.name}`).catch(() => '')
+    const t = typeof body === 'string' ? body : ''
+    if (!/^type:\s*goal/m.test(t) || /^status:\s*(done|completed|dropped)/m.test(t)) continue
+    const prog = (t.match(/^progress:\s*(\d+)/m) || [])[1] ?? '0'
+    goals.push(`${prog}|${f.name.replace(/\.md$/, '')}`)
+  }
+  await $.state.set(GOALS, goals.sort((a, b) => Number(b.split('|')[0]) - Number(a.split('|')[0])))
+}
+
+/** Run the vault brain check and keep its one-line summary. */
+async function runBrainCheck($: EngineInterface) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  if (!vault) return
+  const win = (await $.env.get('OS')) === 'Windows_NT'
+  const r = await $.process.run([win ? 'python' : 'python3', `${$.plugin.root}/skills/vault/scripts/fm_brain_check.py`, vault, '--json'], { timeoutMs: 120000 }).catch(() => null)
+  try {
+    const d = JSON.parse(r?.stdout ?? '{}')
+    const bad = ['no-up', 'no-base', 'orphan-file', 'rootless', 'no-owner', 'bad-skill', 'nested-base'].filter(k => d[k] > 0)
+    await $.state.set(HEALTH, bad.length ? `⚠ ${bad.map(k => `${k} ${d[k]}`).join(' · ')}` : '✓ бүх холбоос цэвэр')
+  } catch {
+    await $.state.set(HEALTH, '⚠ brain check ажилласангүй')
+  }
+}
 
 const OPEN_ORDER = ['inbox', 'next-action', 'waiting']
 function nextOpenStatus(status: string): string {
@@ -72,6 +153,7 @@ export const register: Register = (on, options) => {
     }
     const vault = String(raw).replace(/\\/g, '/').replace(/\/$/, '')
     if (!vault) return next(e)
+    await $.state.set(VAULT, vault)
     const sid = await $.session.id()
     const regText = await $.fs.read(`${vault}/_system/fm/registry.json`).catch(() => '')
     let names: string[] = []
@@ -111,6 +193,7 @@ export const register: Register = (on, options) => {
   })
 
   on('command.run', { command: 'tasks-pane' }, async ($) => {
+    await loadGoals($)
     await $.ui.open({ id: PANE, title: '📌 Vault task' })
     return { text: 'Task самбар хажууд нээгдлээ' }
   })
@@ -292,6 +375,11 @@ updated: ${day}`)
     const { value: list = [] } = await $.state.get(TASKS)
     const { value: commenting = '' } = await $.state.get(COMMENTING)
     const { value: confirming = '' } = await $.state.get(CONFIRMING)
+    const { value: feed = [] } = await $.state.get(FEED)
+    const { value: watching = false } = await $.state.get(WATCHING)
+    const { value: goals = [] } = await $.state.get(GOALS)
+    const { value: health = '' } = await $.state.get(HEALTH)
+    const { value: target = 'gtd' } = await $.state.get(TARGET)
     const { Box, Button, Input, Text } = $.ui.resolve(e)
     const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
     const isDone = (t: VaultTask) => t.status === 'completed' || t.status === 'done'
@@ -348,6 +436,44 @@ updated: ${day}`)
           {counts.map(c => <Text key={`leg-${c.k}`} dimColor><Text color={tone[c.k]}>■</Text> {label[c.k]} {c.n}</Text>)}
           <Text dimColor><Text color={tone.completed}>■</Text> өнөөдөр {done.length}</Text>
         </Box>
+        <Box marginTop={1}><Text dimColor>ҮЙЛДЭЛ</Text></Box>
+        <Box flexDirection="row" gap={2} flexWrap="wrap">
+          <Button key="sk-update" label="⟳ update" plain onPress={() => void $.prompt.submit({ text: 'fm:update skill-ийг ажиллуул', asUser: true })} />
+          <Button key="sk-save" label="⚑ checkpoint" plain onPress={() => void $.prompt.submit({ text: 'fm:save --checkpoint ажиллуул', asUser: true })} />
+          <Button key="sk-inbox" label="📥 inbox" plain onPress={() => void $.prompt.submit({ text: 'fm:inbox skill-ээр inbox-ийг ангил', asUser: true })} />
+          <Button key="sk-health" label="🧠 brain check" plain onPress={() => void runBrainCheck($)} />
+          <Button key="sk-goals" label="🎯 зорилго ⟳" plain onPress={() => void loadGoals($)} />
+          <Button key="sk-watch" label={watching ? '📡 Discord ●' : '📡 Discord ○'} plain onPress={() => void toggleWatch($)} />
+        </Box>
+        {health ? <Text color={health.startsWith('✓') ? '#9ECE6A' : '#E0AF68'}>{health}</Text> : null}
+        <Box marginTop={1}><Text dimColor>МЕССЕЖ</Text></Box>
+        <Box flexDirection="row" gap={1}>
+          <Button key="msg-target" label={`#${target} ⇄`} plain onPress={() => void $.state.set(TARGET, TARGETS[(TARGETS.indexOf(target) + 1) % TARGETS.length])} />
+          <Input key="msg-input" placeholder="Agent руу мессеж бичээд Enter" submitLabel="илгээх" onSubmit={value => void sendToAgent($, target, value)} />
+        </Box>
+        {watching || feed.length ? (
+          <Box flexDirection="column" marginTop={1}>
+            <Text dimColor>DISCORD{watching ? ' · live' : ''}</Text>
+            {feed.slice(-6).map((line, n) => <Text key={`feed-${n}`} wrap="truncate-end" dimColor>{line}</Text>)}
+          </Box>
+        ) : null}
+        {goals.length ? (
+          <Box flexDirection="column" marginTop={1}>
+            <Text dimColor>ЗОРИЛГО · {goals.length}</Text>
+            {goals.slice(0, 6).map(g => {
+              const [pct, name] = g.split('|')
+              const filled = Math.round((Number(pct) / 100) * 20)
+              return (
+                <Box key={`goal-${name}`} flexDirection="row" gap={1}>
+                  <Text color="#9ECE6A">{'█'.repeat(filled)}</Text>
+                  <Text color="#3B4261">{'█'.repeat(20 - filled)}</Text>
+                  <Text dimColor>{pct}%</Text>
+                  <Text wrap="truncate-end">{name}</Text>
+                </Box>
+              )
+            })}
+          </Box>
+        ) : null}
         <Box marginTop={1}><Text dimColor>НЭЭЛТТЭЙ · {open.length}</Text></Box>
         {open.length === 0 ? <Text dimColor>Нээлттэй task алга.</Text> : open.map(row)}
         {done.length ? <Box marginTop={1}><Text dimColor>ӨНӨӨДӨР ДУУССАН · {done.length}</Text></Box> : null}
