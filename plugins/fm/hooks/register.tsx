@@ -12,6 +12,7 @@ const HIDDEN = { plugin: 'fm', key: 'isHidden' } as const
 const COLLAPSED = { plugin: 'fm', key: 'collapsed' } as const
 const COMMENTING = { plugin: 'fm', key: 'commenting' } as const
 const PANE = 'fm-tasks'
+const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 
 // file name -> last seen mtime and parsed task (re-read only files that changed)
 const cache = new Map<string, { mtime: number; task: VaultTask | null }>()
@@ -93,6 +94,7 @@ export const register: Register = (on, options) => {
     const { Box, Button, Input, Text } = $.ui.resolve(e)
     const { value: collapsed = false } = await $.state.get(COLLAPSED)
     const { value: commenting = '' } = await $.state.get(COMMENTING)
+    const { value: confirming = '' } = await $.state.get(CONFIRMING)
     const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
     const isDone = (t: VaultTask) => t.status === 'completed' || t.status === 'done'
     const tone: Record<string, string> = { 'next-action': 'cyan', waiting: 'yellow', inbox: 'gray' }
@@ -122,14 +124,32 @@ export const register: Register = (on, options) => {
               </Box>
               <Box flexDirection="row" justifyContent="space-between" paddingLeft={2} gap={1}>
                 <Box flexDirection="row" gap={1} flexShrink={1}>
-                  {isDone(t) ? <Text dimColor>{label[t.status] ?? t.status}</Text> : (
+                  {isDone(t) ? (
+                    <Button key={`reopen-${t.title}`} label="↺ буцааж нээх" plain onPress={() => {
+                        if (!t.file) return
+                        void (async () => {
+                          const body = await $.fs.read(t.file as string).catch(() => '')
+                          const cur = typeof body === 'string' ? body : ''
+                          if (!cur.startsWith('---')) return
+                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+                          let out = cur.replace(/^status:.*$/m, 'status: next-action')
+                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
+updated: ${day}`)
+                          await $.fs.write(t.file as string, out)
+                          const { value: now = [] } = await $.state.get(TASKS)
+                          await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: 'next-action', updated: day } : x)))
+                          await $.state.set(CONFIRMING, '')
+                          $.ui.toast('Task дахин нээгдлээ')
+                        })()
+                      }} />
+                  ) : (
                     <Button
                       key={`status-${t.title}`}
                       label={`⇄ ${label[t.status] ?? t.status}`}
                       plain
                       onPress={() => {
-                        // GTD cycle: inbox → next-action → waiting → completed (written straight to the task note)
-                        const order = ['inbox', 'next-action', 'waiting', 'completed']
+                        // GTD cycle: inbox → next-action → waiting (completing has its own confirmed ✓ button)
+                        const order = ['inbox', 'next-action', 'waiting']
                         const nextStatus = order[(order.indexOf(t.status) + 1) % order.length]
                         if (!t.file) return
                         void (async () => {
@@ -138,7 +158,8 @@ export const register: Register = (on, options) => {
                           if (!cur.startsWith('---')) return
                           const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
                           let out = cur.replace(/^status:.*$/m, `status: ${nextStatus}`)
-                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out
+                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
+updated: ${day}`)
                           await $.fs.write(t.file as string, out)
                           const { value: now = [] } = await $.state.get(TASKS)
                           await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: nextStatus, updated: day } : x)))
@@ -151,6 +172,28 @@ export const register: Register = (on, options) => {
                 </Box>
                 {isDone(t) ? null : (
                   <Box flexDirection="row" gap={2} flexShrink={0}>
+                    <Button
+                      key={`done-${t.title}`}
+                      label={confirming === t.title ? '✓ батлах?' : '✓'}
+                      plain
+                      onPress={confirming === t.title ? () => {
+                        if (!t.file) return
+                        void (async () => {
+                          const body = await $.fs.read(t.file as string).catch(() => '')
+                          const cur = typeof body === 'string' ? body : ''
+                          if (!cur.startsWith('---')) return
+                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+                          let out = cur.replace(/^status:.*$/m, 'status: completed')
+                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
+updated: ${day}`)
+                          await $.fs.write(t.file as string, out)
+                          const { value: now = [] } = await $.state.get(TASKS)
+                          await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: 'completed', updated: day } : x)))
+                          await $.state.set(CONFIRMING, '')
+                          $.ui.toast('Task дууссан ✓')
+                        })()
+                      } : () => void $.state.set(CONFIRMING, t.title)}
+                    />
                     <Button
                       key={`note-${t.title}`}
                       label="💬"
@@ -218,6 +261,7 @@ export const register: Register = (on, options) => {
     const { Box, Button, Input, Text } = $.ui.resolve(e)
     const collapsed = false
     const { value: commenting = '' } = await $.state.get(COMMENTING)
+    const { value: confirming = '' } = await $.state.get(CONFIRMING)
     const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
     const isDone = (t: VaultTask) => t.status === 'completed' || t.status === 'done'
     const tone: Record<string, string> = { 'next-action': 'cyan', waiting: 'yellow', inbox: 'gray' }
@@ -247,14 +291,32 @@ export const register: Register = (on, options) => {
               </Box>
               <Box flexDirection="row" justifyContent="space-between" paddingLeft={2} gap={1}>
                 <Box flexDirection="row" gap={1} flexShrink={1}>
-                  {isDone(t) ? <Text dimColor>{label[t.status] ?? t.status}</Text> : (
+                  {isDone(t) ? (
+                    <Button key={`reopen-${t.title}`} label="↺ буцааж нээх" plain onPress={() => {
+                        if (!t.file) return
+                        void (async () => {
+                          const body = await $.fs.read(t.file as string).catch(() => '')
+                          const cur = typeof body === 'string' ? body : ''
+                          if (!cur.startsWith('---')) return
+                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+                          let out = cur.replace(/^status:.*$/m, 'status: next-action')
+                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
+updated: ${day}`)
+                          await $.fs.write(t.file as string, out)
+                          const { value: now = [] } = await $.state.get(TASKS)
+                          await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: 'next-action', updated: day } : x)))
+                          await $.state.set(CONFIRMING, '')
+                          $.ui.toast('Task дахин нээгдлээ')
+                        })()
+                      }} />
+                  ) : (
                     <Button
                       key={`status-${t.title}`}
                       label={`⇄ ${label[t.status] ?? t.status}`}
                       plain
                       onPress={() => {
-                        // GTD cycle: inbox → next-action → waiting → completed (written straight to the task note)
-                        const order = ['inbox', 'next-action', 'waiting', 'completed']
+                        // GTD cycle: inbox → next-action → waiting (completing has its own confirmed ✓ button)
+                        const order = ['inbox', 'next-action', 'waiting']
                         const nextStatus = order[(order.indexOf(t.status) + 1) % order.length]
                         if (!t.file) return
                         void (async () => {
@@ -263,7 +325,8 @@ export const register: Register = (on, options) => {
                           if (!cur.startsWith('---')) return
                           const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
                           let out = cur.replace(/^status:.*$/m, `status: ${nextStatus}`)
-                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out
+                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
+updated: ${day}`)
                           await $.fs.write(t.file as string, out)
                           const { value: now = [] } = await $.state.get(TASKS)
                           await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: nextStatus, updated: day } : x)))
@@ -276,6 +339,28 @@ export const register: Register = (on, options) => {
                 </Box>
                 {isDone(t) ? null : (
                   <Box flexDirection="row" gap={2} flexShrink={0}>
+                    <Button
+                      key={`done-${t.title}`}
+                      label={confirming === t.title ? '✓ батлах?' : '✓'}
+                      plain
+                      onPress={confirming === t.title ? () => {
+                        if (!t.file) return
+                        void (async () => {
+                          const body = await $.fs.read(t.file as string).catch(() => '')
+                          const cur = typeof body === 'string' ? body : ''
+                          if (!cur.startsWith('---')) return
+                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+                          let out = cur.replace(/^status:.*$/m, 'status: completed')
+                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
+updated: ${day}`)
+                          await $.fs.write(t.file as string, out)
+                          const { value: now = [] } = await $.state.get(TASKS)
+                          await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: 'completed', updated: day } : x)))
+                          await $.state.set(CONFIRMING, '')
+                          $.ui.toast('Task дууссан ✓')
+                        })()
+                      } : () => void $.state.set(CONFIRMING, t.title)}
+                    />
                     <Button
                       key={`note-${t.title}`}
                       label="💬"
