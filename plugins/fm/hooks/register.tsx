@@ -184,10 +184,43 @@ async function openInObsidian($: EngineInterface, file: string) {
 }
 
 /** Open the Цаглабар pane (from anywhere: command, 📅 button). */
-async function openTsaglabar($: EngineInterface) {
+async function openTsaglabar($: EngineInterface, configured = '') {
+  await resolveContext($, configured)
   await loadCalendar($)
   await loadGoals($)
   await $.ui.open({ id: TSAG, title: '📅 Цаглабар' })
+}
+
+/** Vault path (plugin option → FMOS_VAULT → ~/.fmos/config.json) and this session's role names/project, kept in state. */
+async function resolveContext($: EngineInterface, configured: string): Promise<{ vault: string; names: string[]; project: string } | null> {
+  let raw = configured || (await $.env.get('FMOS_VAULT')) || ''
+  if (!raw) {
+    const home = (await $.env.get('USERPROFILE')) || (await $.env.get('HOME')) || ''
+    const cfg = home ? await $.fs.read(`${home}/.fmos/config.json`).catch(() => '') : ''
+    try { raw = JSON.parse(typeof cfg === 'string' && cfg ? cfg : '{}').vault ?? '' } catch { raw = '' }
+  }
+  const vault = String(raw).replace(/\\/g, '/').replace(/\/$/, '')
+  if (!vault) return null
+  await $.state.set(VAULT, vault)
+  const sid = await $.session.id()
+  const regText = await $.fs.read(`${vault}/_system/fm/registry.json`).catch(() => '')
+  let names: string[] = []
+  let project = ''
+  try {
+    const reg = JSON.parse(typeof regText === 'string' ? regText : '{}')
+    const s = reg.sessions?.[sid]
+    if (s) {
+      const role = reg.roles?.[s.role] ?? {}
+      // a project session names its project folder (sessions[sid].folder); a project-specific role may too
+      const where = typeof s.folder === 'string' ? s.folder : typeof role.project === 'string' ? role.project : ''
+      project = where.replace(/\/$/, '').split('/').pop() ?? ''
+      names = [s.title, role.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
+    }
+  } catch {
+    names = []
+  }
+  await $.state.set(NAMES, names)
+  return { vault, names, project }
 }
 
 const OPEN_ORDER = ['inbox', 'next-action', 'waiting']
@@ -237,34 +270,9 @@ export const register: Register = (on, options) => {
 
   // every turn end re-reads the Tasks folder (changed files only)
   on('turn.complete', async ($, e, next) => {
-    // vault: plugin option, else env FMOS_VAULT, else ~/.fmos/config.json "vault" (setup writes it)
-    let raw = configured || (await $.env.get('FMOS_VAULT')) || ''
-    if (!raw) {
-      const home = (await $.env.get('USERPROFILE')) || (await $.env.get('HOME')) || ''
-      const cfg = home ? await $.fs.read(`${home}/.fmos/config.json`).catch(() => '') : ''
-      try { raw = JSON.parse(typeof cfg === 'string' && cfg ? cfg : '{}').vault ?? '' } catch { raw = '' }
-    }
-    const vault = String(raw).replace(/\\/g, '/').replace(/\/$/, '')
-    if (!vault) return next(e)
-    await $.state.set(VAULT, vault)
-    const sid = await $.session.id()
-    const regText = await $.fs.read(`${vault}/_system/fm/registry.json`).catch(() => '')
-    let names: string[] = []
-    let project = ''
-    try {
-      const reg = JSON.parse(typeof regText === 'string' ? regText : '{}')
-      const s = reg.sessions?.[sid]
-      if (s) {
-        const role = reg.roles?.[s.role] ?? {}
-        // a project session names its project folder (sessions[sid].folder); a project-specific role may too
-        const where = typeof s.folder === 'string' ? s.folder : typeof role.project === 'string' ? role.project : ''
-        project = where.replace(/\/$/, '').split('/').pop() ?? ''
-        names = [s.title, role.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
-      }
-    } catch {
-      names = []
-    }
-    await $.state.set(NAMES, names)
+    const ctx = await resolveContext($, configured)
+    if (!ctx) return next(e)
+    const { vault, names, project } = ctx
     let dir = `${vault}/01-GTD/Tasks`
     if (!(await $.fs.exists(dir))) dir = `${vault}/00-GTD/Tasks`
     const entries = await $.fs.list(dir).catch(() => [])
@@ -287,7 +295,7 @@ export const register: Register = (on, options) => {
   })
 
   on('command.run', { command: 'tsaglabar' }, async ($) => {
-    await openTsaglabar($)
+    await openTsaglabar($, configured)
     return { text: 'Цаглабар нээгдлээ' }
   })
 
@@ -425,6 +433,7 @@ export const register: Register = (on, options) => {
   })
 
   on('command.run', { command: 'tasks-pane' }, async ($) => {
+    await resolveContext($, configured)
     await loadGoals($)
     await $.ui.open({ id: PANE, title: '📌 Vault task' })
     return { text: 'Task самбар хажууд нээгдлээ' }
@@ -460,7 +469,7 @@ export const register: Register = (on, options) => {
             <Text bold>📌 Миний task <Text dimColor>· {open.length} нээлттэй{oneProject ? ` · ${project}` : ''}</Text></Text>
           </Box>
           <Box flexDirection="row" gap={2}>
-            <Button key="to-cal" label="📅" plain onPress={() => void openTsaglabar($)} />
+            <Button key="to-cal" label="📅" plain onPress={() => void openTsaglabar($, configured)} />
             <Text dimColor>/tasks</Text>
           </Box>
         </Box>
@@ -664,7 +673,7 @@ updated: ${day}`)
       <Box flexDirection="column" paddingX={1}>
         <Box flexDirection="row" justifyContent="space-between">
           <Text dimColor>VAULT TASKS{oneProject ? ` · ${project}` : ''}</Text>
-          <Button key="pane-cal" label="📅 Цаглабар" plain onPress={() => void openTsaglabar($)} />
+          <Button key="pane-cal" label="📅 Цаглабар" plain onPress={() => void openTsaglabar($, configured)} />
         </Box>
         <Box flexDirection="row" marginTop={1}>
           {counts.map(c => <Text key={`bar-${c.k}`} color={tone[c.k]}>{seg(c.n)}</Text>)}
