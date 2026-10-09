@@ -2,16 +2,19 @@ import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { CalItem, InboxItem, RoleInfo, ToolStatus, VaultTask } from '../types'
 import type { ClaimVerdict } from './parse'
-import { applyStatus, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planWindow, projectOf, rank, roleLabel, roleOf, sanitizeDesc, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
+import { applyStatus, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planWindow, privateKeys, privateNote, privateOwner, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
 
 // Task band (itge.e 2026-10-09): above the prompt, the open vault tasks this session's role owns.
 // Area agents match `owner`/`responsible` against their role's names, device-agnostic ("📚 Wiki" is every Wiki session, PC or Mac);
 // a project session matches `project:`. The session's role comes from <vault>/_system/fm/registry.json (sessions[<sid>] → roles[<role>]).
 // Dispatch (decision 2026-10-09 task-dispatch-discord-bus-in-progress): the 📡 watcher's «[task-offer] <path>» lines are claimed
 // with `relay.py claim` once the session is idle; a WIN runs the task (in-progress → completed + «## Үр дүн»), a LOSE just reloads.
-// A manual start (▶, ⇄ / editor → in-progress) claims the same way unless this device already holds the task; a 🔒 task or
-// private session starts locally (the relay answers LOSE private without touching the bus). A requeue (inbox / next-action /
-// waiting / someday / cancelled) clears claimed/started/completed and, when the note had a claim, runs `relay.py release`.
+// A manual start (▶, ⇄ / editor → in-progress) claims the same way unless this device already holds the task. A requeue (inbox /
+// next-action / waiting / someday / cancelled) clears claimed/started/completed and, when the note had a claim, runs `relay.py release`.
+// 🔒 private tasks (decision «Шинэчлэл», same day): listed only in a private session (registry private: true, e.g. 🔒 Finance on
+// PC or Mac) — Цаглабар tabs, the band, Тойм's Finance row; a non-private session never sees them. A private session's start
+// claims through the relay too (the relay posts only an opaque «p:<hash>» id), so PC and Mac never both run one; when Discord is
+// unreachable (LOSE error) it starts locally with a toast. Titles of 🔒 tasks are drawn without money amounts.
 
 const TASKS = { plugin: 'fm', key: 'tasks' } as const
 const HIDDEN = { plugin: 'fm', key: 'isHidden' } as const
@@ -36,6 +39,9 @@ const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 const BUSY = { plugin: 'fm', key: 'busy' } as const
 const OFFERS = { plugin: 'fm', key: 'offers' } as const
 const DEVICES = { plugin: 'fm', key: 'devices' } as const
+// 🔒 this session is private (registry), and the private roles' / sessions' owner keys (privateKeys) a task owner is checked against
+const PRIV = { plugin: 'fm', key: 'privSession' } as const
+const SECRET = { plugin: 'fm', key: 'secretKeys' } as const
 
 // Цаглабар v2 (Figma «pane design v2», 2026-10-09): one palette, one accent. The accent marks only ▷ running, done dots /
 // lit segments, the active day's ━, the selected border, active editor chips and ◇ goals; done/ring/run are lib.js greys.
@@ -250,7 +256,7 @@ async function startWatch($: EngineInterface, configured: string) {
         const path = parseOffer(line)
         if (!path) { shown.push(line); continue }
         offered = true
-        shown.push(`📌 task санал · ${path.split('/').pop()?.replace(/\.md$/, '') ?? path}`)
+        shown.push(`📌 task санал · ${await toastName($, path.split('/').pop()?.replace(/\.md$/, '') ?? path)}`)
         await queueOffer($, path)
       }
       const { value: feed = [] } = await $.state.get(FEED)
@@ -317,6 +323,15 @@ async function claimTask($: EngineInterface, path: string): Promise<ClaimVerdict
   return parseClaim(r?.stdout ?? '')
 }
 
+/**
+ * A task name for a toast or the watcher feed: money amounts out (shortTitle masked, «🔒» when nothing is left) for a 🔒 task,
+ * and for every name in a 🔒 private session (an offer / claim path cannot be classified before its note is read).
+ */
+async function toastName($: EngineInterface, name: string, priv = false): Promise<string> {
+  const { value: privSess = false } = await $.state.get(PRIV)
+  return priv || privSess ? shortTitle(name, '', true) : name
+}
+
 /** A lost claim as a toast: the device that has the task, or why it cannot be claimed (closed / missing / private are no device). */
 function loseText(verdict: ClaimVerdict, name: string): string {
   if (verdict.reason === 'closed') return `✓ Task аль хэдийн хаагдсан: ${name}`
@@ -329,10 +344,12 @@ function loseText(verdict: ClaimVerdict, name: string): string {
 /**
  * A manual start (▶, ⇄ / editor → in-progress) claims through the relay first unless this device already holds the task:
  * 'won' = the relay wrote status/started/claimed; 'mine' = this device's to start (the caller writes status, started and
- * claimed: <device> itself) — already held here, or a 🔒 task / private session (LOSE private: never on the bus, a local start,
- * never blocked); null = another device has it, or it cannot be claimed (toast shown, nothing runs).
+ * claimed: <device> itself) — already held here, LOSE private (nothing on the bus, a local start, never blocked), or, in a 🔒
+ * private session, LOSE error (Discord unreachable: a local start with a toast); null = another device has it, or it cannot be
+ * claimed (toast shown, nothing runs). A private session's claim of a 🔒 task goes on the bus only as the relay's opaque id.
  */
-async function claimForStart($: EngineInterface, file: string, name: string): Promise<'won' | 'mine' | null> {
+async function claimForStart($: EngineInterface, file: string, title: string, priv = false): Promise<'won' | 'mine' | null> {
+  const name = await toastName($, title, priv)
   const device = await deviceOf($)
   const body = await $.fs.read(file).catch(() => '')
   if (sameDevice(timesOf(typeof body === 'string' ? body : '').claimed, device)) return 'mine'
@@ -340,6 +357,11 @@ async function claimForStart($: EngineInterface, file: string, name: string): Pr
   const verdict = await claimTask($, vaultRel(await vaultOf($), file))
   if (verdict.win) return 'won'
   if (verdict.reason === 'private' || sameDevice(verdict.device, device)) return 'mine'
+  const { value: privSess = false } = await $.state.get(PRIV)
+  if (privSess && verdict.device === 'error') {
+    $.ui.toast(`⚠ Discord холбогдсонгүй — локал эхлүүллээ: ${name}`)
+    return 'mine'
+  }
   $.ui.toast(loseText(verdict, name))
   return null
 }
@@ -348,12 +370,13 @@ async function claimForStart($: EngineInterface, file: string, name: string): Pr
  * Requeue of a task whose note had a claim: `relay.py release "<path>" --sid <sid>` withdraws every claim for it on
  * #sys-dispatch (a 🔒 task: nothing posted) and clears claimed:/started: in the note, so this or another device can claim it again.
  */
-async function releaseClaim($: EngineInterface, file: string, name: string) {
+async function releaseClaim($: EngineInterface, file: string, title: string, priv = false) {
+  const name = await toastName($, title, priv)
   const sid = await $.session.id()
   const argv = await relayArgv($)
   const r = await $.process.run([...argv, 'release', vaultRel(await vaultOf($), file), '--sid', sid], { timeoutMs: 60000, env: await relayEnv($) }).catch(() => null)
   const res = parseRelease(r?.stdout ?? '')
-  if (res === 'private') $.ui.toast(`🔒 Хувийн сешн — Discord дээрх claim-ийг чөлөөлөөгүй: ${name}`)
+  if (res === 'private') $.ui.toast(`🔒 Хувийн сешн — энгийн task-ийн claim-ийг чөлөөлөхгүй (энгийн сешнээс чөлөөл): ${name}`)
   else if (res !== 'released') $.ui.toast(`⚠ claim чөлөөлөгдсөнгүй (${res === 'missing' ? 'note олдсонгүй' : 'сүлжээ'}): ${name}`)
 }
 
@@ -388,7 +411,7 @@ async function drainOffers($: EngineInterface, configured: string) {
       const offer = offerQueue.shift()
       if (!offer) return
       await mirrorOffers($)
-      const name = offer.path.split('/').pop()?.replace(/\.md$/, '') ?? offer.path
+      const name = await toastName($, offer.path.split('/').pop()?.replace(/\.md$/, '') ?? offer.path)
       const verdict = await claimTask($, offer.path)
       const vaultNow = await vaultOf($)
       forgetCal(vaultNow && !offer.path.startsWith(`${vaultNow}/`) ? `${vaultNow}/${offer.path}` : offer.path)
@@ -423,7 +446,7 @@ async function drainOffers($: EngineInterface, configured: string) {
 async function reloadTasks($: EngineInterface, configured: string) {
   const ctx = await resolveContext($, configured)
   if (!ctx) return
-  const { vault, names, project, devices } = ctx
+  const { vault, names, project, devices, priv, secret } = ctx
   let dir = `${vault}/01-GTD/Tasks`
   if (!(await $.fs.exists(dir))) dir = `${vault}/00-GTD/Tasks`
   const entries = await $.fs.list(dir).catch(() => [])
@@ -439,8 +462,12 @@ async function reloadTasks($: EngineInterface, configured: string) {
   }
   for (const k of [...cache.keys()]) if (!seen.has(k)) cache.delete(k)
   const today = localNow(await $.clock.now()).toISOString().slice(0, 10)
+  // 🔒 a private task (by its note or a private owner) only in a private session, which lists every private task (only private
+  // sessions are offered them); a non-private session never sees one, whoever owns it
   const mine = [...cache.values()].map(c => c.task)
-    .filter((t): t is VaultTask => !!t && matchesSession(t, names, project, devices))
+    .filter((t): t is VaultTask => !!t)
+    .map(t => (!t.private && privateOwner(t.owners ?? [t.owner], secret, devices) ? { ...t, private: true } : t))
+    .filter(t => (t.private ? priv : matchesSession(t, names, project, devices)))
   await $.state.set(TASKS, rank(mine, today))
 }
 
@@ -491,10 +518,17 @@ async function runBrainCheck($: EngineInterface) {
   }
 }
 
-/** Цаглабар data: every open team task (not private) + every event, as dated/undated items (unchanged notes from calCache). */
+/**
+ * Цаглабар data: every open team task + every event, as dated/undated items (unchanged notes from calCache). 🔒 private ones
+ * (private: true, a private owner, a finances/ or «🔒» path) only in a private session; elsewhere they are left out.
+ */
 async function loadCalendar($: EngineInterface) {
   const { value: vault = '' } = await $.state.get(VAULT)
   if (!vault) return
+  const { value: privSess = false } = await $.state.get(PRIV)
+  // not set yet (resolveContext still reading the registry): fail closed like an unreadable registry
+  const { value: secret = [SECRET_UNKNOWN] } = await $.state.get(SECRET)
+  const { value: devs = [] } = await $.state.get(DEVICES)
   const items: CalItem[] = []
   const seen = new Set<string>()
   for (const [dir, kind] of [[`${vault}/01-GTD/Tasks`, 'task'], [`${vault}/01-GTD/Events`, 'event']] as const) {
@@ -510,13 +544,16 @@ async function loadCalendar($: EngineInterface) {
         continue
       }
       const body = await $.fs.read(path).catch(() => '')
-      const item = calItemOf(typeof body === 'string' ? body : '', dir, f.name, kind)
+      const item = calItemOf(typeof body === 'string' ? body : '', dir, f.name, kind, vaultRel(vault, dir))
       calCache.set(path, { mtime: f.mtimeMs, item })
       if (item) items.push(item)
     }
   }
   for (const k of [...calCache.keys()]) if (!seen.has(k)) calCache.delete(k)
-  await $.state.set({ plugin: 'fm', key: 'cal' }, items)
+  // a private owner is checked here, not in the cache (the registry's private roles may change while a note does not)
+  const shown = items.map(x => (!x.private && privateOwner(x.owners?.length ? x.owners : [x.owner], secret, devs) ? { ...x, private: true } : x))
+    .filter(x => privSess || !x.private)
+  await $.state.set({ plugin: 'fm', key: 'cal' }, shown)
   await loadResearchHub($, vault)
 }
 
@@ -526,12 +563,16 @@ function forgetCal(file: string) {
   frontCache.delete(file)
 }
 
-/** One task / event note → its Цаглабар item; null for a private, index, closed or unknown-status note. */
-function calItemOf(t: string, dir: string, name: string, kind: 'task' | 'event'): CalItem | null {
+/**
+ * One task / event note → its Цаглабар item (`private` when the note itself is 🔒: private: true, «🔒» in an owner, a finances/
+ * or «🔒» path; `rel` = the folder vault-relative); null for an index, closed or unknown-status note.
+ */
+function calItemOf(t: string, dir: string, name: string, kind: 'task' | 'event', rel = ''): CalItem | null {
   const field = (fm: string, k: string) => (fm.match(new RegExp(`^${k}:[ \\t]*"?([^"\\r\\n]*)"?`, 'm'))?.[1] ?? '').trim()
   if (!t.startsWith('---')) return null
   const fm = t.slice(0, Math.max(0, t.indexOf('\n---', 3)))
-  if (/^private:\s*true/m.test(fm) || /^type:\s*index/m.test(fm)) return null
+  if (/^type:\s*index/m.test(fm)) return null
+  const secret = privateNote(rel ? `${rel}/${name}` : name, fm) || ownersOf(fm).some(o => o.includes('🔒'))
   const raw = field(fm, 'status')
   // a task's legacy `done` is completed (normStatus); events keep their own status words
   const status = kind === 'task' ? normStatus(raw) : raw
@@ -547,7 +588,7 @@ function calItemOf(t: string, dir: string, name: string, kind: 'task' | 'event')
   const research = ((ri >= 0 && segs[ri + 1] ? segs[ri + 1] : segs.length > 1 ? segs[segs.length - 2] : segs[0]) ?? '').trim()
   // live activity: started / claimed while in-progress, completed (else updated) once done
   const times = kind === 'task' ? { started: field(fm, 'started'), completed: field(fm, 'completed'), claimed: field(fm, 'claimed'), updated: field(fm, 'updated') } : {}
-  return { kind, title: name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), owners: ownersOf(fm), project, activity, priority: field(fm, 'priority'), research, file: `${dir}/${name}`, ...times }
+  return { kind, title: name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), owners: ownersOf(fm), project, activity, priority: field(fm, 'priority'), research, file: `${dir}/${name}`, ...times, ...(secret ? { private: true } : {}) }
 }
 
 /** Research session (folder under 04-Resources/Research/<topic>): find its hub note, keep file + status (frontmatter only). */
@@ -632,12 +673,12 @@ async function closeResearch($: EngineInterface) {
  */
 async function setProp($: EngineInterface, item: CalItem, key: 'due' | 'status' | 'priority', value: string) {
   if (key === 'status' && value === 'in-progress') {
-    const how = await claimForStart($, item.file, item.title)
+    const how = await claimForStart($, item.file, item.title, item.private)
     if (!how) return
     if (how === 'won') {
       await mirrorNote($, item.file)
       await markPlan($, item.file)
-      $.ui.toast(`▶ Task авлаа: ${item.title}`)
+      $.ui.toast(`▶ Task авлаа: ${await toastName($, item.title, item.private)}`)
       return
     }
   }
@@ -664,7 +705,7 @@ async function setProp($: EngineInterface, item: CalItem, key: 'due' | 'status' 
   $.ui.toast(key === 'due' ? (value ? `📅 ${value}` : '📅 огноо арилгалаа') : `${key} → ${value || '—'}`)
   if (key === 'status' && value === 'in-progress') await markPlan($, item.file)
   if (key === 'status' && isRequeue(value)) await unmarkPlan($, item.file)
-  if (key === 'status' && isRequeue(value) && timesOf(cur).claimed) await releaseClaim($, item.file, item.title)
+  if (key === 'status' && isRequeue(value) && timesOf(cur).claimed) await releaseClaim($, item.file, item.title, item.private)
 }
 
 /** ISO week number of a YYYY-MM-DD day. */
@@ -733,7 +774,7 @@ async function openTsaglabar($: EngineInterface, configured = '') {
  * names / project scope, kept in state; `devices` = this device + every registry session's device, the words a role key drops
  * (as the relay's `_reg_devices` + DEVICE). `configured` = the plugin option `vault_path`, the vault when given.
  */
-async function resolveContext($: EngineInterface, configured: string): Promise<{ vault: string; names: string[]; project: string; devices: string[] } | null> {
+async function resolveContext($: EngineInterface, configured: string): Promise<{ vault: string; names: string[]; project: string; devices: string[]; priv: boolean; secret: string[] } | null> {
   const vault = await vaultOf($, configured)
   if (!vault) return null
   await $.state.set(VAULT, vault)
@@ -743,10 +784,15 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
   let project = ''
   let folder = ''
   let roleSlug = ''
+  let priv = false
+  let secret: string[] = []
+  let regOk = false
   const roles: RoleInfo[] = []
   const devices = [await deviceOf($)]
   try {
-    const reg = JSON.parse(typeof regText === 'string' ? regText : '{}')
+    // an empty / half-synced (Drive mirror) / invalid registry throws here: the catch keeps the last good 🔒 keys (fail closed)
+    const reg = JSON.parse(typeof regText === 'string' ? regText.trim() : '')
+    if (!reg || typeof reg !== 'object' || Array.isArray(reg)) throw new Error('registry')
     for (const v of Object.values(reg.sessions ?? {}) as { device?: unknown }[]) {
       const d = typeof v?.device === 'string' ? v.device.trim() : ''
       if (d && !devices.includes(d)) devices.push(d)
@@ -762,7 +808,11 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
       if (folder.toLowerCase().startsWith(`${vault.toLowerCase()}/`)) folder = folder.slice(vault.length + 1)
       project = projectOf(where)
       names = [s.title, role?.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
+      // 🔒 relay fmconfig.is_private (+ the role's own private flag): this session lists and claims private tasks
+      priv = isPrivateSession(s, role)
     }
+    secret = privateKeys(reg, devices)
+    regOk = true
     if (typeof s?.role === 'string') roleSlug = s.role
     // the registry's live roles (not inactive, not merged): V3's ◍ picker and footer, V6's rows. Label = agent minus emoji / «Agent»
     const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
@@ -776,14 +826,22 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
     }
   } catch {
     names = []
+    priv = false
   }
+  if (!regOk) {
+    // never an empty list over a good one: the last good 🔒 keys, or (none read yet) every owned task private until it loads
+    const { value: last } = await $.state.get(SECRET)
+    secret = last ?? [SECRET_UNKNOWN]
+  }
+  await $.state.set(PRIV, priv)
+  await $.state.set(SECRET, secret)
   await $.state.set({ plugin: 'fm', key: 'role' }, roleSlug)
   await $.state.set({ plugin: 'fm', key: 'roles' }, roles)
   await $.state.set(NAMES, names)
   await $.state.set(PROJ, project)
   await $.state.set({ plugin: 'fm', key: 'projDir' }, folder)
   await $.state.set(DEVICES, devices)
-  return { vault, names, project, devices }
+  return { vault, names, project, devices, priv, secret }
 }
 
 /**
@@ -795,13 +853,13 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
 async function setStatus($: EngineInterface, t: VaultTask, status: string): Promise<boolean> {
   if (!t.file) return false
   if (status === 'in-progress') {
-    const how = await claimForStart($, t.file, t.title)
+    const how = await claimForStart($, t.file, t.title, t.private)
     if (!how) return false
     if (how === 'won') {
       await mirrorNote($, t.file)
       await markPlan($, t.file)
       await $.state.set(CONFIRMING, '')
-      $.ui.toast(`▶ Task авлаа: ${t.title}`)
+      $.ui.toast(`▶ Task авлаа: ${await toastName($, t.title, t.private)}`)
       return true
     }
   }
@@ -820,7 +878,7 @@ async function setStatus($: EngineInterface, t: VaultTask, status: string): Prom
   $.ui.toast(status === 'completed' ? 'Task дууссан ✓' : `Төлөв → ${status}`)
   if (status === 'in-progress') await markPlan($, t.file)
   if (isRequeue(status)) await unmarkPlan($, t.file)
-  if (isRequeue(status) && timesOf(cur).claimed) await releaseClaim($, t.file, t.title)
+  if (isRequeue(status) && timesOf(cur).claimed) await releaseClaim($, t.file, t.title, t.private)
   return true
 }
 
@@ -1688,7 +1746,10 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'Pane', requestId: TSAG }, async ($, e) => {
-    const { value: all = [], version: calVersion } = await $.state.get({ plugin: 'fm', key: 'cal' })
+    const { value: calRaw = [], version: calVersion } = await $.state.get({ plugin: 'fm', key: 'cal' })
+    // 🔒 private items reach CAL only in a private session; their titles are drawn without money amounts (data keeps the name)
+    const all = calRaw.map(x => (x.private ? { ...x, title: shortTitle(x.title, '', true) } : x))
+    const { value: privSess = false } = await $.state.get(PRIV)
     const { value: week = 0 } = await $.state.get(CAL_WEEK)
     const { value: goals = [] } = await $.state.get(GOALS)
     const { value: scope = 'mine' } = await $.state.get(CAL_SCOPE)
@@ -2225,10 +2286,11 @@ export const register: Register = (on, options) => {
           }) : <Text color={C.muted}>—</Text>}
         </Box>
       ) : null
-      // «Агентууд»: one fixed row per role, its state read from the team's tasks (owners → roleOf); Finance is always closed
+      // «Агентууд»: one fixed row per role, its state read from the team's tasks (owners → roleOf); Finance is closed («хаалттай»)
+      // in every non-private session, a private session reads it like any other row
       const prio = (x: CalItem) => (x.priority === '🔴' ? 0 : x.priority === '🟡' ? 1 : x.priority === '🟢' ? 2 : 3)
       const stateOf = (slug: string) => {
-        if (slug === 'finance') return { st: 'хаалттай', stColor: C.done, task: '—', time: '—', run: false }
+        if (slug === 'finance' && !privSess) return { st: 'хаалттай', stColor: C.done, task: '—', time: '—', run: false }
         const its = all.filter(x => x.kind === 'task' && firstRole(x) === slug)
         const running = its.filter(isRun).sort((a, b) => (b.started || '').localeCompare(a.started || ''))[0]
         if (running) {
@@ -2260,7 +2322,7 @@ export const register: Register = (on, options) => {
           {REVIEW_ROLES.map(slug => {
             const r = stateOf(slug)
             const name = AGENT_NAME[slug] ?? slug
-            const closed = slug === 'finance'
+            const closed = slug === 'finance' && !privSess
             const press = () => void agentToBoard($)
             const nameW = wide ? 16 - 2 : cols - 2 - 2 - 2 - 12 - timeW - 5 - goW
             return (
@@ -2904,7 +2966,7 @@ export const register: Register = (on, options) => {
             <Box key={t.title} flexDirection="column" marginTop={1}>
               <Box flexDirection="row" gap={1}>
                 <Text color={isDone(t) ? 'green' : late ? 'red' : tone[t.status] ?? 'gray'}>{isDone(t) ? '✓' : t.status === 'in-progress' ? '▶' : '●'}</Text>
-                <Text wrap="truncate-end" dimColor={isDone(t)} strikethrough={isDone(t)}>{shortTitle(t.title, t.project)}</Text>
+                <Text wrap="truncate-end" dimColor={isDone(t)} strikethrough={isDone(t)}>{shortTitle(t.title, t.project, t.private)}</Text>
               </Box>
               <Box flexDirection="row" justifyContent="space-between" paddingLeft={2} gap={1}>
                 <Box flexDirection="row" gap={1} flexShrink={1}>
@@ -2969,7 +3031,7 @@ export const register: Register = (on, options) => {
       return (
         <Box key={t.title} flexDirection="column" marginTop={1} borderStyle="round" borderColor={late ? '#F7768E' : t.status === 'in-progress' ? IN_PROGRESS : '#3B4261'} paddingX={1}>
           <Box flexDirection="row" justifyContent="space-between" gap={1}>
-            <Box flexGrow={1} flexShrink={1}><Text wrap="truncate-end" bold={!isDone(t)} dimColor={isDone(t)} strikethrough={isDone(t)}>{fit(shortTitle(t.title, t.project), Math.max(8, width - 5 - (when ? cellWidth(when) + 1 : 0)))}</Text></Box>
+            <Box flexGrow={1} flexShrink={1}><Text wrap="truncate-end" bold={!isDone(t)} dimColor={isDone(t)} strikethrough={isDone(t)}>{fit(shortTitle(t.title, t.project, t.private), Math.max(8, width - 5 - (when ? cellWidth(when) + 1 : 0)))}</Text></Box>
             {when ? <Box flexShrink={0}><Text color={late ? '#F7768E' : '#737AA2'}>{when}</Text></Box> : null}
           </Box>
           <Box flexDirection="row" justifyContent="space-between" gap={1} flexWrap="wrap">

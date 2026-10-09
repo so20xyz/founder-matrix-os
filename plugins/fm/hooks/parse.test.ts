@@ -330,3 +330,45 @@ test('classifyCapture: the 5 design samples → Task / Note / Агент / Task 
   expect(c('14:30 залгах').due).toBe('2026-10-09 14:30')
   expect(c('https://example.com/x').route).toBe('note')
 })
+
+import { isPrivateSession, isPrivateTask, privateKeys, privateNote, privateOwner, SECRET_UNKNOWN } from './parse'
+
+test('🔒 private sessions and tasks read like the relay (is_private / _private_owner / _private_task)', () => {
+  // a session: its own flag, a money project / role (finance), or its role's private flag
+  expect(isPrivateSession({ role: 'finance', title: '🔒 Finance · Mac' })).toBe(true)
+  expect(isPrivateSession({ role: 'area', private: true })).toBe(true)
+  expect(isPrivateSession({ role: 'bookkeeping' }, { private: true })).toBe(true)
+  expect(isPrivateSession({ role: 'creative', title: '🎨 Creative · PC' }, { agent: '🎨 Creative Agent' })).toBe(false)
+  expect(isPrivateSession(undefined)).toBe(false)
+  const reg = {
+    sessions: { a: { role: 'finance', title: '🔒 Finance · PC', device: 'PC' }, b: { role: 'creative', title: '🎨 Creative · Mac' }, c: { role: 'books', title: 'Ledger Mac' } },
+    roles: { finance: { agent: '🔒 Finance Agent', private: true }, creative: { agent: '🎨 Creative Agent' }, books: { agent: 'Books', private: true } },
+  }
+  expect(privateKeys(reg, ['PC', 'Mac']).sort()).toEqual(['books', 'finance', 'ledger'])
+  const secret = privateKeys(reg, ['PC', 'Mac'])
+  // owners: «🔒» anywhere, or a private role's / session's key, any device
+  expect(privateOwner(['🔒 Finance'], [])).toBe(true)
+  expect(privateOwner(['Finance (Mac)'], secret, ['PC', 'Mac'])).toBe(true)
+  expect(privateOwner(['📚 Wiki', '"Books"'], secret)).toBe(true)
+  expect(privateOwner(['🎨 Creative'], secret)).toBe(false)
+  // registry unreadable, nothing read before (SECRET_UNKNOWN): every named owner is private (fail closed); no owner is not
+  expect(privateOwner(['🎨 Creative'], [SECRET_UNKNOWN])).toBe(true)
+  expect(privateOwner(['', 'PC'], [SECRET_UNKNOWN], ['PC'])).toBe(false)
+  expect(privateOwner([], [SECRET_UNKNOWN])).toBe(false)
+  // the note: private: true (quoted too), a finances/ or «🔒» path; never a lookalike folder
+  expect(privateNote('01-GTD/Tasks/A.md', 'type: task\nprivate: "true"')).toBe(true)
+  expect(privateNote('03-Areas/Business/Finances/private/Татвар.md', 'type: task')).toBe(true)
+  expect(privateNote('01-GTD/Tasks/🔒 Татвар.md', 'type: task')).toBe(true)
+  expect(privateNote('01-GTD/Tasks/financesheet.md', 'type: task\nprivate: false')).toBe(false)
+  expect(isPrivateTask('01-GTD/Tasks/B.md', 'type: task\nowner: "Ledger · PC"', secret, ['PC'])).toBe(true)
+  expect(isPrivateTask('01-GTD/Tasks/B.md', 'type: task\nowner: "🎨 Creative"\nresponsible: "itge.e"', secret)).toBe(false)
+})
+
+test('parseTask marks a 🔒 note private; shortTitle masked drops money', () => {
+  expect(parseTask('Т.md', note('type: task\nstatus: next-action\nowner: "📥 GTD"\nprivate: true'))?.private).toBe(true)
+  expect(parseTask('Т.md', note('type: task\nstatus: next-action\nowner: "🔒 Finance"'))?.private).toBe(true)
+  expect(parseTask('Т.md', note('type: task\nstatus: next-action\nowner: "📥 GTD"'))).not.toHaveProperty('private')
+  expect(shortTitle('Зээлийн төлбөр 1,500,000₮ төлөх', '', true)).toBe('Зээлийн төлбөр төлөх')
+  expect(shortTitle('$1,200', '', true)).toBe('🔒')
+  expect(shortTitle('Зээлийн төлбөр 1,500,000₮ төлөх')).toBe('Зээлийн төлбөр 1,500,000₮ төлөх')
+})

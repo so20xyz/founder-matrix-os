@@ -18,6 +18,7 @@ Commands:
   relay.py research-status           read-only: each 04-Resources/Research hub's status + linked task counts, «✅ хаах санал»
   relay.py watch --sid SID           continuous: new Discord lines + «[task-offer] <task path>» (inbox task of this role)
   relay.py claim "<task path>" --sid SID   #sys-dispatch, first claim wins → prints WIN | LOSE <device>; WIN → in-progress
+                                     (🔒 task: only from a private session, bus carries the opaque id «p:<hex>»)
   relay.py release "<task path>" --sid SID   requeue: {"op":"release"} on #sys-dispatch (earlier claims stop counting),
                                      clears claimed:/started: in the note, status in-progress → inbox
                                      → prints RELEASED | RELEASE missing | private | error
@@ -26,12 +27,14 @@ Commands:
 
 Task dispatch (decision 2026-10-09): a task belongs to a ROLE, not a device — owner «📚 Wiki» is offered to every Wiki
 session on PC and Mac; the idle one claims it on the hidden #sys-dispatch channel (machine JSON only).
+🔒 private tasks (decision update 2026-10-09) dispatch the same way but only between private sessions, and nothing about
+them leaves the vault except an opaque id: «p:» + 16 hex of sha256(NFC(vault-relative path).casefold()).
 
 Data location (see fmconfig.py): ~/.fmos/config.json {"vault": ...} or env FM_VAULT → vault mode, all data in
 <vault>/_system/fm/ (registry.json, channels.json, discord.json, state/<project>.md) and NO git. Without a config the
 legacy layout <repo>/relay + <repo>/state with git commit/push is used unchanged.
 """
-import json, os, sys, subprocess, time, datetime, socket, re, unicodedata
+import json, os, sys, subprocess, time, datetime, socket, re, unicodedata, hashlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -562,10 +565,12 @@ def d_watch(sid, every=20):
         else: last[n] = "0"
     team = _team_sources(me)  # itge.e 2026-10-07: team-server channels mapped to my project (read-only)
     # decision 2026-10-09: inbox tasks owned by my ROLE (any device) → «[task-offer] <path>», each once per process;
-    # a generic key («project») only for tasks whose project: is this session's project scope
-    offers = {"vault": fmconfig.vault_dir(), "keys": _session_role_keys(me, reg) if me and not is_private(me) else set(),
+    # a generic key («project») only for tasks whose project: is this session's project scope. 🔒 private session →
+    # only 🔒 tasks of its role (printed here, never sent anywhere); any other session → never a 🔒 task
+    offers = {"vault": fmconfig.vault_dir(), "keys": _session_role_keys(me, reg) if me else set(),
               "devs": _reg_devices(reg), "seen": set(), "cache": {},
-              "scope": _session_scope(me, reg), "generic": _generic_role_keys(reg)}
+              "scope": _session_scope(me, reg), "generic": _generic_role_keys(reg),
+              "private": bool(me) and is_private(me), "reg": reg}
     _watch_offers(offers)
     while True:
         time.sleep(every)
@@ -608,7 +613,8 @@ def _watch_offers(o):
     """Print «[task-offer] <vault-relative path>» for each new offer (see _task_offers). Never raises: a vault read
     error must not stop the Discord watch."""
     try:
-        for rel in _task_offers(o["vault"], o["keys"], o["devs"], o["seen"], o["cache"], o.get("scope", ""), o.get("generic")):
+        for rel in _task_offers(o["vault"], o["keys"], o["devs"], o["seen"], o["cache"], o.get("scope", ""), o.get("generic"),
+                                o.get("private", False), o.get("reg")):
             print(f"[task-offer] {rel}", flush=True)
     except Exception as e:
         print(f"[watch error] tasks: {e}", flush=True)
@@ -831,6 +837,40 @@ def _private_task(rel, m):
     return str(m.get("private")).strip().lower() == "true" or "🔒" in own or "🔒" in p or "/finances/" in "/" + p
 
 
+def _private_dirs(reg):
+    """Vault-relative folders whose notes are 🔒 (posix, case-folded, trailing /): the finances/private tree and the
+    folders of every registry role with "private": true (roles.finance.folders)."""
+    out = {"03-areas/business/finances/private/", "04-areas/business/finances/private/"}
+    roles = (reg or {}).get("roles") if isinstance((reg or {}).get("roles"), dict) else {}
+    for r in roles.values():
+        if not (isinstance(r, dict) and r.get("private")): continue
+        fs = r.get("folders") if isinstance(r.get("folders"), list) else [r.get("folder")]
+        for f in fs:
+            s = _nfc(f).replace("\\", "/").strip().strip("/").casefold()
+            if s: out.add(s + "/")
+    return out
+
+
+def _secret_task(rel, m, reg):
+    """🔒 task = _private_task (private: true, «🔒» owner/path, finances/) or a private owner/responsible (_private_owner:
+    a role with "private": true, a private session's title) or a note under a private folder (_private_dirs)."""
+    if _private_task(rel, m) or _private_owner(_task_owners(m), reg or {}): return True
+    p = _nfc(rel).replace("\\", "/").lstrip("/").casefold()
+    return any(p.startswith(d) for d in _private_dirs(reg))
+
+
+def _opaque_id(rel):
+    """The only thing a 🔒 task shows on #sys-dispatch: «p:» + first 16 hex of sha256(NFC(vault-relative path, /
+    separators).casefold()). PC and Mac compute the same id from the same note; nothing in it can be read back."""
+    p = _nfc(str(rel).replace("\\", "/")).casefold()
+    return "p:" + hashlib.sha256(p.encode("utf-8")).hexdigest()[:16]
+
+
+def _shown(rel, secret):
+    """How a task is named on stderr: its path, or for a 🔒 task only its opaque id (stderr may end up in a log)."""
+    return _opaque_id(rel) if secret else rel
+
+
 def _norm_rel(s):
     return _nfc(s).replace("\\", "/").strip().casefold()
 
@@ -890,22 +930,47 @@ def _fm_set(p, updates):
     return True
 
 
-def _task_offers(vault, keys, devs, seen, cache, scope="", generic=None):
+def _private_task_files(vault, reg, tdir):
+    """Notes under the private folders (_private_dirs) outside the tasks folder: a 🔒 task may live there."""
+    out = []
+    for d in sorted(_private_dirs(reg)):
+        base = vault
+        for seg in d.strip("/").split("/"):  # the folder as it is on disk (case / Unicode form may differ)
+            try:  # the on-disk name (a case-insensitive disk would accept the folded one and print it folded)
+                kids = [c for c in base.iterdir() if c.is_dir() and _norm_rel(c.name) == seg]
+            except OSError: kids = []
+            nxt = kids[0] if kids else None
+            if nxt is None: break
+            base = nxt
+        else:
+            try:
+                if base.resolve() != tdir.resolve(): out += [f for f in base.rglob("*.md") if tdir not in f.parents]
+            except OSError: pass
+    return out
+
+
+def _task_offers(vault, keys, devs, seen, cache, scope="", generic=None, private=False, reg=None):
     """New offers for one watch: vault-relative paths of tasks with status inbox, an owner/responsible whose key ∈ keys
     (device-agnostic; a generic key such as «project» only when the task's project: = scope, see _owner_hit), no
-    claimed:, not 🔒. seen = paths this process has offered and that are still offerable: a note that stops being
+    claimed:. private=False (an ordinary session): never a 🔒 task (_secret_task); private=True (a 🔒 private session):
+    only 🔒 tasks, also those under the private folders (explicit type: task there). The path is printed locally only.
+    seen = paths this process has offered and that are still offerable: a note that stops being
     offerable (claimed, in-progress, closed…) leaves seen, so a requeue (status inbox, no claimed:) is offered again by
     a running watch; cache = {path: (mtime_ns, frontmatter)} so the 20 s loop re-reads only notes that changed."""
     vault = Path(vault); tdir = _tasks_dir(vault); out = []
-    if not keys or not tdir.is_dir(): return out
-    for f in sorted(tdir.rglob("*.md")):
+    if not keys: return out
+    files = [(f, False) for f in (sorted(tdir.rglob("*.md")) if tdir.is_dir() else [])]
+    if private: files += [(f, True) for f in sorted(set(_private_task_files(vault, reg, tdir)))]
+    for f, strict in files:
         try: mt = f.stat().st_mtime_ns
         except OSError: continue
         hit = cache.get(f)
         if not hit or hit[0] != mt: hit = cache[f] = (mt, _fm(f))
         m = hit[1]; rel = _nfc(f.relative_to(vault).as_posix())
-        ok = (str(m.get("type") or "task").strip().lower() == "task" and str(m.get("status") or "").strip().lower() == "inbox"
-              and not str(m.get("claimed") or "").strip() and not _private_task(rel, m) and _owner_hit(m, keys, devs, scope, generic))
+        kind = str(m.get("type") or ("" if strict else "task")).strip().lower()
+        ok = (kind == "task" and str(m.get("status") or "").strip().lower() == "inbox"
+              and not str(m.get("claimed") or "").strip() and _secret_task(rel, m, reg) == bool(private)
+              and _owner_hit(m, keys, devs, scope, generic))
         if not ok: seen.discard(rel); continue
         if rel in seen: continue
         seen.add(rel); out.append(rel)
@@ -1033,7 +1098,10 @@ def d_claim(ref, sid):
                      (unquoted; also when the first live claim is this same device AND sid, e.g. a retry)
       LOSE <device>  an earlier live claim on #sys-dispatch (Discord order), or the note's claimed: of another device
       LOSE error     network / Discord error, or this claim was released meanwhile (details on stderr) — try later
-      LOSE missing | LOSE closed | LOSE private   no such note · completed/done/cancelled · 🔒 (nothing posted)"""
+      LOSE missing | LOSE closed | LOSE private   no such note · completed/done/cancelled · 🔒 task claimed by an
+                     ordinary session, or an ordinary task claimed by a 🔒 private session (nothing posted)
+    🔒 task from a 🔒 private session (decision update 2026-10-09): the same race, but the bus message is only
+    {"op":"claim","task":"p:<hex>","device","sid","ts"} (_opaque_id) — no path, title, owner, project or status."""
     try: res = _claim(ref, sid)
     except Exception as e:
         sys.stderr.write(f"relay claim: {e!r}\n"); res = "LOSE error"
@@ -1041,25 +1109,28 @@ def d_claim(ref, sid):
 
 
 def _claim(ref, sid):
-    vault = fmconfig.vault_dir(); f = _task_file(vault, _task_rel(ref, vault))
-    if not f: sys.stderr.write(f"relay claim: «{_task_rel(ref, vault)}» олдсонгүй\n"); return "LOSE missing"
+    vault = fmconfig.vault_dir(); want = _task_rel(ref, vault); f = _task_file(vault, want)
+    if not f:
+        sys.stderr.write(f"relay claim: «{_shown(want, _private_task(want, {}))}» олдсонгүй\n"); return "LOSE missing"
     rel = _nfc(f.relative_to(vault).as_posix())          # the name as it is on disk: both devices post the same path
     R = load(REG, {"sessions": {}}); me = R["sessions"].get(sid); m = _fm(f)
     if str(m.get("status") or "").strip().lower() in CLOSED_STATUSES: return "LOSE closed"
-    if is_private(me) or _private_task(rel, m) or _private_owner(_task_owners(m), R): return "LOSE private"
+    secret = _secret_task(rel, m, R)
+    if secret != is_private(me): return "LOSE private"   # 🔒 task ↔ 🔒 session only; never the bus for a mismatch
     held = str(m.get("claimed") or "").strip()
     if held and _nfc(held).casefold() != _nfc(DEVICE).casefold(): return f"LOSE {held}"
     # claimed: this DEVICE (a retry, a manual start, another session here) → the bus read decides: same device + sid → WIN
+    key = _opaque_id(rel) if secret else rel              # 🔒: the bus never sees the path
     t0 = time.time(); me_c = (DEVICE, str(sid or ""))
-    cid, msg = _dispatch_post({"op": "claim", "task": rel, "device": DEVICE, "sid": sid, "ts": round(t0, 3)})
+    cid, msg = _dispatch_post({"op": "claim", "task": key, "device": DEVICE, "sid": sid, "ts": round(t0, 3)})
     mine = str(msg["id"])
     time.sleep(CLAIM_WAIT)
-    try: claims = _read_claims(cid, rel, _snowflake_at(t0 - CLAIM_WINDOW), mine, {mine: me_c})
+    try: claims = _read_claims(cid, key, _snowflake_at(t0 - CLAIM_WINDOW), mine, {mine: me_c})
     except Exception:
-        _release(rel, mine, sid); raise
+        _release(key, mine, sid); raise
     first = min(claims, key=int, default=None)
     if first is None:  # my claim was withdrawn by a requeue (relay.py release) posted meanwhile
-        sys.stderr.write(f"relay claim: «{rel}» — энэ claim-ийг дундуур нь release хийсэн (requeue), дараа дахин оролд\n")
+        sys.stderr.write(f"relay claim: «{_shown(rel, secret)}» — энэ claim-ийг дундуур нь release хийсэн (requeue), дараа дахин оролд\n")
         return "LOSE error"
     same = bool(me_c[1]) and claims[first] == me_c   # the first live claim is my own earlier one (same device AND sid)
     if first != mine and not same: return f"LOSE {claims[first][0]}"
@@ -1074,9 +1145,9 @@ def d_release(ref, sid):
     removes claimed: and started: from the note's frontmatter; status in-progress → inbox (+ completed: removed), any
     other status stays (the caller already set it: next-action / waiting / someday / cancelled / inbox).
     Prints exactly one line, exit code 0 either way:
-      RELEASED         posted (🔒 task: nothing posted — its claims never reach Discord) and the note cleared
+      RELEASED         posted (🔒 task: only {"op":"release","task":"p:<hex>",…} — the opaque id) and the note cleared
       RELEASE missing  no such note
-      RELEASE private  a 🔒 private session never posts to Discord: nothing done (release from a non-private session)
+      RELEASE private  an ordinary task from a 🔒 private session: nothing done (release it from a non-private session)
       RELEASE error    Discord failed (details on stderr) — the note is left as it was, so the claim stays consistent"""
     try: res = _release_task(ref, sid)
     except Exception as e:
@@ -1085,18 +1156,20 @@ def d_release(ref, sid):
 
 
 def _release_task(ref, sid):
-    vault = fmconfig.vault_dir(); f = _task_file(vault, _task_rel(ref, vault))
-    if not f: sys.stderr.write(f"relay release: «{_task_rel(ref, vault)}» олдсонгүй\n"); return "RELEASE missing"
+    vault = fmconfig.vault_dir(); want = _task_rel(ref, vault); f = _task_file(vault, want)
+    if not f:
+        sys.stderr.write(f"relay release: «{_shown(want, _private_task(want, {}))}» олдсонгүй\n"); return "RELEASE missing"
     rel = _nfc(f.relative_to(vault).as_posix())
     R = load(REG, {"sessions": {}}); me = R["sessions"].get(sid); m = _fm(f)
-    secret = _private_task(rel, m) or _private_owner(_task_owners(m), R)
-    if not secret:
-        if is_private(me): return "RELEASE private"
-        _dispatch_post({"op": "release", "task": rel, "device": DEVICE, "sid": sid, "ts": round(time.time(), 3)})
+    secret = _secret_task(rel, m, R)
+    if not secret and is_private(me): return "RELEASE private"
+    # 🔒 task: an opaque release, so its opaque claims stop counting exactly like a path claim's do
+    _dispatch_post({"op": "release", "task": _opaque_id(rel) if secret else rel, "device": DEVICE, "sid": sid,
+                    "ts": round(time.time(), 3)})
     upd = {"claimed": None, "started": None}
     if str(m.get("status") or "").strip().lower() == "in-progress": upd.update(status="inbox", completed=None)
     if not _fm_set(f, upd):
-        sys.stderr.write(f"relay release: «{rel}» frontmatter алга — тэмдэглэлийг хөндсөнгүй\n")
+        sys.stderr.write(f"relay release: «{_shown(rel, secret)}» frontmatter алга — тэмдэглэлийг хөндсөнгүй\n")
     return "RELEASED"
 
 
@@ -1107,7 +1180,9 @@ def d_task(args, sid):
     decision 2026-10-09: the owner is a ROLE (any device). The new note is announced as {"op":"offer"} on the hidden
     #sys-dispatch channel (not the owner's human channel); the role's idle session claims it (`relay.py claim`, watch
     offers status: inbox tasks — the default status, so an agent task dispatches itself; --status next-action etc.
-    keeps it out of dispatch). --ping: also the old «📌 TASK» message in the owner's channel. 🔒 owner/task: neither.
+    keeps it out of dispatch). --ping: also the old «📌 TASK» message in the owner's channel.
+    🔒 owner (decision update 2026-10-09): the note gets private: true and the offer is only
+    {"op":"offer","task":"p:<hex>","device","sid","ts"} (_opaque_id — no title/owner/status); never a --ping.
     --research (decision 2026-10-09): сэдэв («Мөөгний зах зээл»), hub-ийн нэр («1 хувь») эсвэл vault зам → research: "[[04-Resources/Research/<сэдэв>/<hub>]]"."""
     def opt(k, d=""):
         return args[args.index(k) + 1] if k in args else d
@@ -1116,6 +1191,8 @@ def d_task(args, sid):
     safe = _re.sub(r'[\\/:*?"<>|]', "-", title)[:80]
     tdir = _tasks_dir(vault)
     f = tdir / f"{safe}.md"; f.parent.mkdir(parents=True, exist_ok=True)
+    R = load(REG, {"sessions": {}}); rel = _nfc(f.relative_to(vault).as_posix())
+    secret = _secret_task(rel, {"owner": owner}, R)
     today = datetime.date.today().isoformat()
     proj = opt("--project"); res = opt("--research")
     if res:
@@ -1124,18 +1201,19 @@ def d_task(args, sid):
     f.write_text("---\n" + "\n".join([
         f"date: {today}", f"updated: {today}", "type: task", f"status: {status}", f"owner: \"{owner}\"",
         f"priority: {opt('--prio', '🟡')}", f"due: {opt('--due')}", f"project: \"[[{proj}]]\"" if proj else "project:",
-        *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []), "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
-    R = load(REG, {"sessions": {}}); rel = f.relative_to(vault).as_posix()
-    secret = _private_owner(owner, R) or _private_task(rel, {"owner": owner})
-    if secret: offer = "🔒 алгасав"
-    else:
-        try:
+        *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []), *(["private: true"] if secret else []),
+        "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
+    try:
+        if secret:  # 🔒: the opaque id only — the private sessions' watch finds the note in the vault itself
+            _dispatch_post({"op": "offer", "task": _opaque_id(rel), "device": DEVICE, "sid": sid, "ts": round(time.time(), 3)})
+            offer = f"#{DISPATCH_CH} (🔒 opaque id)"
+        else:
             _dispatch_post({"op": "offer", "task": rel, "owner": owner, "status": status, "device": DEVICE, "sid": sid,
                             "ts": round(time.time(), 3)})
             offer = f"#{DISPATCH_CH}"
-        except Exception as e:
-            offer = "илгээгдсэнгүй"
-            sys.stderr.write(f"relay task: #{DISPATCH_CH} offer илгээгдсэнгүй ({e!r}) — тэмдэглэл бичигдсэн, watch санал болгоно\n")
+    except Exception as e:
+        offer = "илгээгдсэнгүй"
+        sys.stderr.write(f"relay task: #{DISPATCH_CH} offer илгээгдсэнгүй ({e!r}) — тэмдэглэл бичигдсэн, watch санал болгоно\n")
     ping = ""
     if "--ping" in args and not secret:  # old behaviour (before 2026-10-09): 📌 TASK in the owner's human channel
         reg = R["sessions"]; cm = chmap()

@@ -1,6 +1,7 @@
-export type CalItem = { kind: 'task' | 'event'; title: string; date: string; time: string; status: string; owner: string; owners?: string[]; project: string; activity?: string; priority?: string; research?: string; file: string; started?: string; completed?: string; claimed?: string; updated?: string }
+/** `private` = a 🔒 task / event (private: true, a private owner, a finances/ path): listed only in a private session. */
+export type CalItem = { kind: 'task' | 'event'; title: string; date: string; time: string; status: string; owner: string; owners?: string[]; project: string; activity?: string; priority?: string; research?: string; file: string; started?: string; completed?: string; claimed?: string; updated?: string; private?: boolean }
 
-export type VaultTask = { title: string; status: string; due: string; owner: string; owners?: string[]; project?: string; updated?: string; file?: string; started?: string; completed?: string; claimed?: string }
+export type VaultTask = { title: string; status: string; due: string; owner: string; owners?: string[]; project?: string; updated?: string; file?: string; started?: string; completed?: string; claimed?: string; private?: boolean }
 
 export type RoleInfo = { slug: string; label: string; agent: string; skills: string[]; note: string; channel: string; private: boolean }
 
@@ -18,6 +19,6 @@ export type BgTask = { id: string; type: string; status: string; description: st
 
 declare module 'claude-code' {
   interface PluginState {
-    'fm': { tasks: VaultTask[]; isHidden: boolean; collapsed: boolean; commenting: string; confirming: string; vault: string; feed: string[]; watching: boolean; goals: string[]; health: string; target: string; cal: CalItem[]; calDay: string; calWeek: number; calScope: string; calSel: string; names: string[]; proj: string; projDir: string; researchHub: { file: string; status: string; open?: number }; busy: { since: number; turn: boolean }; offers: string[]; devices: string[]; tsagTab: string; phaseOpen: Record<string, boolean>; tick: number; kanbanCol: string; newTaskCol: string; role: string; roles: RoleInfo[]; toolsRole: string; toolOpen: string; toolStatus: Record<string, ToolStatus>; projPick: string; projMeta: ProjMeta; projMenu: boolean; inbox: InboxItem[]; inboxBusy: Record<string, string>; reviewAt: string; planSteps: PlanStep[]; bgTasks: BgTask[]; planFile: { file: string; at: number }; projList: string[]; toolUsed: Record<string, number> }
+    'fm': { tasks: VaultTask[]; isHidden: boolean; collapsed: boolean; commenting: string; confirming: string; vault: string; feed: string[]; watching: boolean; goals: string[]; health: string; target: string; cal: CalItem[]; calDay: string; calWeek: number; calScope: string; calSel: string; names: string[]; proj: string; projDir: string; researchHub: { file: string; status: string; open?: number }; busy: { since: number; turn: boolean }; offers: string[]; devices: string[]; tsagTab: string; phaseOpen: Record<string, boolean>; tick: number; kanbanCol: string; newTaskCol: string; role: string; roles: RoleInfo[]; toolsRole: string; toolOpen: string; toolStatus: Record<string, ToolStatus>; projPick: string; projMeta: ProjMeta; projMenu: boolean; inbox: InboxItem[]; inboxBusy: Record<string, string>; reviewAt: string; planSteps: PlanStep[]; bgTasks: BgTask[]; planFile: { file: string; at: number }; projList: string[]; toolUsed: Record<string, number>; privSession: boolean; secretKeys: string[] }
   }
 }

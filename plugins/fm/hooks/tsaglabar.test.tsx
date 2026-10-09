@@ -30,7 +30,7 @@ const dirOf = (p: string) => p.slice(0, p.lastIndexOf('/'))
 // the engine hands paths on in the platform's spelling (V:ault\… on Windows)
 const norm = (p: string) => p.replace(/\\/g, '/')
 
-function vault(on: On, withRegistry = false, registry = REGISTRY) {
+function vault(on: On, withRegistry = false, registry: string | (() => string) = REGISTRY) {
   const clock = mock.clock(on, { now: NOW })
   // $.store (across sessions): the review time, toolLastUsed
   mock.store(on)
@@ -49,7 +49,7 @@ function vault(on: On, withRegistry = false, registry = REGISTRY) {
   on('classic.Stop', async () => answer({}))
   on('fs.exists', async ($, e) => answer(norm(e.path) in FILES || Object.keys(FILES).some(f => dirOf(f) === norm(e.path))))
   // a missing note reads as '' (the plugin treats a failed read the same way)
-  on('fs.read', async ($, e) => answer(WRITES[norm(e.path)] ?? FILES[norm(e.path)] ?? (norm(e.path).endsWith('registry.json') && withRegistry ? registry : '')))
+  on('fs.read', async ($, e) => answer(WRITES[norm(e.path)] ?? FILES[norm(e.path)] ?? (!norm(e.path).endsWith('registry.json') ? '' : !withRegistry ? '{}' : typeof registry === 'function' ? registry() : registry)))
   on('fs.list', async ($, e) => answer(Object.keys(FILES).filter(f => dirOf(f) === norm(e.path))
     .map(f => ({ name: f.slice(f.lastIndexOf('/') + 1), kind: 'file' as const, size: 1, mtimeMs: 1, isLink: false }))))
   return clock
@@ -532,4 +532,213 @@ test('V5 Inbox: web clips are open (Clip, → Note), a mangled H1 shows the body
   expect(WRITES[CLIP] ?? '').toContain('routed_to: "fm:save"')
   await ui.unmount()
   for (const f of [CLIP, OLD]) { delete FILES[f]; delete WRITES[f] }
+})
+
+// 🔒 private tasks (decision 2026-10-09 «Шинэчлэл»): only a private session (registry private: true, 🔒 Finance on PC or Mac)
+// lists them; its manual start claims through the relay (opaque on the bus, mocked here), a LOSE error starts locally
+const LOAN = `${V}/01-GTD/Tasks/Зээлийн төлбөр 1,500,000₮.md`
+const TAX = `${V}/01-GTD/Tasks/Татвар тайлан.md`
+const PRIVATE_FILES: Record<string, string> = {
+  [LOAN]: task('next-action', '🔒 Finance', `${DAY} 12:00`),
+  [TAX]: task('next-action', '🎨 Creative', `${DAY} 13:00`, 'private: true\n'),
+}
+const FIN_REG = JSON.stringify({
+  sessions: { 'sid-test': { role: 'finance', title: '🔒 Finance · PC', device: 'PC' } },
+  roles: { finance: { agent: '🔒 Finance Agent', private: true }, creative: { agent: '🎨 Creative Agent' } },
+})
+const withPrivate = () => {
+  Object.assign(FILES, PRIVATE_FILES)
+  for (const f of Object.keys(PRIVATE_FILES)) delete WRITES[f]
+  return () => { for (const f of Object.keys(PRIVATE_FILES)) { delete FILES[f]; delete WRITES[f] } }
+}
+const turnEnd = (turnId: string) => ({ answer: '', durationMs: 1, isAborted: false, turnId, reason: 'end_turn' }) as never
+
+test('🔒 a non-private session never lists a private task (Цаглабар, band, Тойм keeps Finance «хаалттай»)', async ($, on) => {
+  const done = withPrivate()
+  try {
+    vault(on, true)
+    await openTeam($)
+    await $.turn.complete(turnEnd('t1'))
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    expect(await ui.find({ text: /Зээлийн/ })).toBeUndefined()
+    expect(await ui.find({ text: /Татвар/ })).toBeUndefined()
+    await ui.press({ key: 'tab-kanban' })
+    expect(await ui.find({ text: /Татвар|Зээлийн/ })).toBeUndefined()
+    await ui.press({ key: 'tab-review' })
+    expect(await ui.find({ type: 'Text', text: 'хаалттай' })).toBeDefined()
+    await ui.unmount()
+    // the band's own list: the Creative-owned private: true task is not this (non-private) session's
+    const side = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tasks', props: pane(60) })
+    expect(await side.find({ key: 'run-Татвар тайлан' })).toBeUndefined()
+    expect(await side.find({ key: 'run-acme carousel #3 — зураг' })).toBeDefined()
+    await side.unmount()
+  } finally {
+    done()
+  }
+})
+
+test('🔒 a private session lists private tasks (money never drawn) and reads Тойм Finance like any row', async ($, on) => {
+  const done = withPrivate()
+  try {
+    vault(on, true, FIN_REG)
+    await openTeam($)
+    await $.turn.complete(turnEnd('t1'))
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    expect(await ui.find({ text: /Зээлийн төлбөр/ })).toBeDefined()
+    expect(await ui.find({ text: /Татвар тайлан/ })).toBeDefined()
+    expect(await ui.find({ text: /1,500,000|₮/ })).toBeUndefined()
+    await ui.press({ key: 'tab-review' })
+    expect(await ui.find({ type: 'Text', text: 'хаалттай' })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: 'дараалал 1' })).toBeDefined()
+    expect(await ui.find({ text: /1,500,000|₮/ })).toBeUndefined()
+    await ui.unmount()
+    const side = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tasks', props: pane(60) })
+    expect(await side.find({ key: 'run-Татвар тайлан' })).toBeDefined()
+    expect(await side.find({ key: 'run-Зээлийн төлбөр 1,500,000₮' })).toBeDefined()
+    expect(await side.find({ text: /1,500,000|₮/ })).toBeUndefined()
+    await side.unmount()
+  } finally {
+    done()
+  }
+})
+
+test('🔒 a private session starts through `relay.py claim`: WIN leaves the note to the relay, LOSE error starts locally + toast', async ($, on) => {
+  const done = withPrivate()
+  try {
+    vault(on, true, FIN_REG)
+    const answer = <T,>(value: T) => ({ value }) as never
+    const toasts: string[] = []
+    const claims: string[][] = []
+    let verdict = 'WIN'
+    on('ui.toast', async ($, e) => { toasts.push(e.text); return answer(undefined) })
+    // the relay (never real Discord): a claim answers the scripted verdict; '' = no verdict line (Discord unreachable)
+    on('process.run', async ($, e) => {
+      if (e.argv.includes('claim')) claims.push([...e.argv])
+      return answer({ stdout: e.argv.includes('claim') ? verdict : '', stderr: '', exitCode: 0 })
+    })
+    await openTeam($)
+    await $.turn.complete(turnEnd('t1'))
+    const side = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tasks', props: pane(60) })
+    await side.press({ key: 'run-Татвар тайлан' })
+    expect(claims.length).toBe(1)
+    expect(claims[0]?.slice(-4)).toEqual(['claim', '01-GTD/Tasks/Татвар тайлан.md', '--sid', 'sid-test'])
+    // WIN: the relay wrote the note (here: mocked, nothing written by the plugin)
+    expect(WRITES[TAX]).toBeUndefined()
+    expect(toasts.some(t => t.startsWith('▶ Task авлаа'))).toBe(true)
+    // LOSE error: no verdict → a local start (status / started / claimed: PC) and a toast
+    verdict = ''
+    await side.press({ key: 'run-Зээлийн төлбөр 1,500,000₮' })
+    expect(claims.length).toBe(2)
+    expect(WRITES[LOAN] ?? '').toContain('status: in-progress')
+    expect(WRITES[LOAN] ?? '').toContain('claimed: PC')
+    expect(toasts.some(t => t.startsWith('⚠ Discord холбогдсонгүй — локал эхлүүллээ'))).toBe(true)
+    // 🔒 money never reaches a toast (claim check, fallback, WIN)
+    expect(toasts.filter(t => /1,500,000|₮/.test(t))).toEqual([])
+    await side.unmount()
+  } finally {
+    done()
+  }
+})
+
+test('🔒 a private session’s watcher feed, offer toasts and release toasts never show a money amount', async ($, on) => {
+  const done = withPrivate()
+  try {
+    // the loan is already claimed (in-progress on Mac): the offer's WIN mirrors it, ⇄ requeues it
+    FILES[LOAN] = task('in-progress', '🔒 Finance', `${DAY} 12:00`, `started: ${DAY} 09:00\nclaimed: Mac\n`)
+    vault(on, true, FIN_REG)
+    const answer = <T,>(value: T) => ({ value }) as never
+    const toasts: string[] = []
+    const releases: string[] = []
+    on('ui.toast', async ($, e) => { toasts.push(e.text); return answer(undefined) })
+    // the relay (never real Discord): the watcher prints one local offer line; a claim wins; a release answers «RELEASE private»
+    on('process.spawn', async function* () {
+      yield { stream: 'stdout' as const, text: '[task-offer] 01-GTD/Tasks/Зээлийн төлбөр 1,500,000₮.md\n' }
+      return { value: { code: 0, signal: null } } as never
+    })
+    on('process.run', async ($, e) => {
+      if (e.argv.includes('release')) releases.push(e.argv.join(' '))
+      return answer({ stdout: e.argv.includes('claim') ? 'WIN' : e.argv.includes('release') ? 'RELEASE private' : '', stderr: '', exitCode: 0 })
+    })
+    await openTeam($)
+    await $.turn.complete(turnEnd('t1'))
+    const side = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tasks', props: pane(60) })
+    await side.press({ key: 'sk-watch' })
+    for (let i = 0; i < 50 && !toasts.some(t => t.startsWith('▶ Task авлаа')); i++) await new Promise(r => setTimeout(r, 5))
+    // the pane draws the feed (FEED): the offer line, its name masked
+    expect(await side.find({ text: /📌 task санал · Зээлийн төлбөр/ })).toBeDefined()
+    expect(await side.find({ text: /1,500,000|₮/ })).toBeUndefined()
+    expect(toasts.some(t => t.startsWith('▶ Task авлаа: Зээлийн төлбөр'))).toBe(true)
+    // ⇄ requeue of the claimed task (in-progress → waiting): the relay answers «RELEASE private» (a private session does not
+    // release an ordinary task's claim) — the toast says so, name masked
+    await side.press({ key: 'status-Зээлийн төлбөр 1,500,000₮' })
+    for (let i = 0; i < 50 && !releases.length; i++) await new Promise(r => setTimeout(r, 5))
+    for (let i = 0; i < 50 && !toasts.some(t => t.startsWith('🔒 Хувийн сешн')); i++) await new Promise(r => setTimeout(r, 5))
+    expect(releases.length).toBe(1)
+    expect(toasts.some(t => t.startsWith('🔒 Хувийн сешн — энгийн task-ийн claim-ийг чөлөөлөхгүй (энгийн сешнээс чөлөөл): Зээлийн төлбөр'))).toBe(true)
+    expect(await side.find({ text: /1,500,000|₮/ })).toBeUndefined()
+    expect(toasts.filter(t => /1,500,000|₮/.test(t))).toEqual([])
+    await side.unmount()
+  } finally {
+    done()
+  }
+})
+
+// a task private only by its owner (a private role «💼 Business», no «🔒», no private: true)
+const BIZ = `${V}/01-GTD/Tasks/Банкны гэрээ.md`
+const BIZ_REG = JSON.stringify({
+  sessions: { 'sid-test': { role: 'creative', title: '🎨 Creative · PC', device: 'PC' } },
+  roles: { creative: { agent: '🎨 Creative Agent' }, business: { agent: '💼 Business Agent', private: true } },
+})
+
+test('🔒 an unreadable registry fails closed: the last good private owners stay, none read yet hides owned tasks', async ($, on) => {
+  FILES[BIZ] = task('next-action', '💼 Business', `${DAY} 15:00`)
+  try {
+    let reg = BIZ_REG
+    vault(on, true, () => reg)
+    await openTeam($)
+    await $.turn.complete(turnEnd('t1'))
+    let ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    expect(await ui.find({ text: /Банкны гэрээ/ })).toBeUndefined()
+    expect(await ui.find({ text: /acme carousel/ })).toBeDefined()
+    await ui.unmount()
+    // a half-synced (Drive) registry: the last good keys are kept, never an empty list
+    reg = '{"sessions": {"sid-te'
+    await $.turn.complete(turnEnd('t2'))
+    ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    expect(await ui.find({ text: /Банкны гэрээ/ })).toBeUndefined()
+    // only the owner-private task: the others stay (the last good keys, not «every owner»)
+    expect(await ui.find({ text: /acme carousel/ })).toBeDefined()
+    await ui.unmount()
+  } finally {
+    delete FILES[BIZ]
+  }
+})
+
+test('🔒 an empty registry with nothing read before hides every owned task in Цаглабар', async ($, on) => {
+  FILES[BIZ] = task('next-action', '💼 Business', `${DAY} 15:00`)
+  try {
+    vault(on, true, () => '')
+    await openTeam($)
+    await $.turn.complete(turnEnd('t1'))
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    expect(await ui.find({ text: /Банкны гэрээ/ })).toBeUndefined()
+    expect(await ui.find({ text: /acme carousel/ })).toBeUndefined()
+    await ui.unmount()
+  } finally {
+    delete FILES[BIZ]
+  }
+})
+
+test('a non-private session keeps a LOSE error blocking (no local start)', async ($, on) => {
+  vault(on, true)
+  const answer = <T,>(value: T) => ({ value }) as never
+  const FILE = `${V}/01-GTD/Tasks/acme carousel #3 — зураг.md`
+  delete WRITES[FILE]
+  on('process.run', async () => answer({ stdout: '', stderr: '', exitCode: 1 }))
+  await openTeam($)
+  await $.turn.complete(turnEnd('t1'))
+  const side = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tasks', props: pane(60) })
+  await side.press({ key: 'run-acme carousel #3 — зураг' })
+  expect(WRITES[FILE]).toBeUndefined()
+  await side.unmount()
 })

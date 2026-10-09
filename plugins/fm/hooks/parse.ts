@@ -130,9 +130,11 @@ export function parseTask(name: string, text: string): VaultTask | null {
   const claimed = status === 'in-progress' ? field('claimed') : ''
   const completed = done ? field('completed') : ''
   const owners = ownersOf(fm)
+  // 🔒 by the note itself (private: true / «🔒» in the name or an owner); a private role's owner is privateOwner, at filter time
+  const secret = privateNote(name, fm) || owners.some(o => o.includes('🔒'))
   return { title: name.replace(/\.md$/, ''), status, due: field('due'), owner: owners.join(' '), ...(owners.length ? { owners } : {}),
     ...(project ? { project } : {}), ...(done ? { updated: field('updated') } : {}),
-    ...(started ? { started } : {}), ...(claimed ? { claimed } : {}), ...(completed ? { completed } : {}) }
+    ...(started ? { started } : {}), ...(claimed ? { claimed } : {}), ...(completed ? { completed } : {}), ...(secret ? { private: true } : {}) }
 }
 
 /** The day a done task was finished: its `completed:` date, else its `updated:` date. */
@@ -244,8 +246,12 @@ export function matchesSession(t: VaultTask, names: string[], project: string, d
   return ownerMatches(t.owners ?? [t.owner], t.project ?? '', names, project, devices)
 }
 
-/** Title without a leading «<project> - » (the band shows the project once, on the meta line). */
-export function shortTitle(title: string, project?: string): string {
+/**
+ * Title without a leading «<project> - » (the band shows the project once, on the meta line); `masked` (a 🔒 task, shown only
+ * in a private session) also drops money amounts, «🔒» when nothing is left.
+ */
+export function shortTitle(title: string, project?: string, masked = false): string {
+  if (masked) return sanitizeDesc(shortTitle(title, project)) || '🔒'
   if (!project) return title
   const p = project.toLowerCase()
   const t = title.toLowerCase()
@@ -299,6 +305,76 @@ export function parseRelease(stdout: string): 'released' | 'missing' | 'private'
   if (/^RELEASED\b/.test(line)) return 'released'
   const why = line.replace(/^RELEASE\s*/, '').trim()
   return why === 'missing' || why === 'private' ? why : 'error'
+}
+
+// ── 🔒 private tasks (decision 2026-10-09 «Шинэчлэл»): read like relay.py fmconfig.is_private / _private_owner / _private_task.
+// A private task dispatches like any other, but only private sessions list it, and only an opaque id leaves the vault (relay).
+
+/** fmconfig.PRIVATE_PROJECTS: a registry session on one of these projects / roles is private. */
+export const PRIVATE_PROJECTS = ['finance']
+
+const recOf = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {})
+const strOf = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+
+/**
+ * A registry session entry is private (fmconfig.is_private): "private" set, or a money project / role (PRIVATE_PROJECTS);
+ * also when its registry role (`role`) is "private": true (🔒 Finance on PC or Mac).
+ */
+export function isPrivateSession(session: unknown, role?: unknown): boolean {
+  if (!session || typeof session !== 'object') return false
+  const s = recOf(session)
+  return !!s.private || PRIVATE_PROJECTS.includes(strOf(s.project)) || PRIVATE_PROJECTS.includes(strOf(s.role)) || !!recOf(role).private
+}
+
+/**
+ * relay `_private_owner`'s keys: every "private": true role's slug and agent label, every private session's title, as roleKey
+ * (device-agnostic); '' dropped.
+ */
+export function privateKeys(reg: unknown, devices: string[] = []): string[] {
+  const r = recOf(reg)
+  const roles = recOf(r.roles)
+  const out = new Set<string>()
+  for (const [slug, raw] of Object.entries(roles)) {
+    const role = recOf(raw)
+    if (role.private) { out.add(roleKey(slug, devices)); out.add(roleKey(strOf(role.agent), devices)) }
+  }
+  for (const raw of Object.values(recOf(r.sessions))) {
+    const s = recOf(raw)
+    if (strOf(s.title) && isPrivateSession(s, roles[strOf(s.role)])) out.add(roleKey(strOf(s.title), devices))
+  }
+  out.delete('')
+  return [...out]
+}
+
+/**
+ * The `secret` list when the registry could not be read and no earlier read is known: every owned task counts as private
+ * (fail closed) until the registry loads. A role key is words only, so it never equals this.
+ */
+export const SECRET_UNKNOWN = '*'
+
+/**
+ * relay `_private_owner`: an owner / responsible with «🔒», or whose role key is one of `secret` (privateKeys); with
+ * SECRET_UNKNOWN in `secret`, any named owner.
+ */
+export function privateOwner(owners: string[], secret: string[], devices: string[] = []): boolean {
+  if (owners.some(o => (o ?? '').includes('🔒'))) return true
+  const keys = new Set(secret)
+  if (keys.has(SECRET_UNKNOWN)) return owners.some(o => !!roleKey(o ?? '', devices))
+  return owners.some(o => { const k = roleKey(o ?? '', devices); return !!k && keys.has(k) })
+}
+
+/**
+ * relay `_private_task` by the note alone: frontmatter private: true, «🔒» in the path, or a path under finances/
+ * (03-Areas/Business/finances/private/…). `path` vault-relative (or a bare file name), any separators and case.
+ */
+export function privateNote(path: string, fm: string): boolean {
+  const p = (path ?? '').normalize('NFC').replace(/\\/g, '/').toLowerCase()
+  return fmGet(fm, 'private').toLowerCase() === 'true' || p.includes('🔒') || `/${p}`.includes('/finances/')
+}
+
+/** A 🔒 task as the relay reads it: privateNote, or a private owner / responsible (privateOwner). */
+export function isPrivateTask(path: string, fm: string, secret: string[], devices: string[] = []): boolean {
+  return privateNote(path, fm) || privateOwner(ownersOf(fm), secret, devices)
 }
 
 // ── Цаглабар v2 (pane tabs): pure helpers, no `$` ──
