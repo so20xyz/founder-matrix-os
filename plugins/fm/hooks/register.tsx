@@ -2,7 +2,7 @@ import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { CalItem, InboxItem, RoleInfo, ToolStatus, VaultTask } from '../types'
 import type { ClaimVerdict } from './parse'
-import { applyStatus, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planWindow, privateKeys, privateNote, privateOwner, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
+import { agentsReport, applyStatus, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planWindow, privateKeys, privateNote, privateOwner, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
 
 // Task band (itge.e 2026-10-09): above the prompt, the open vault tasks this session's role owns.
 // Area agents match `owner`/`responsible` against their role's names, device-agnostic ("📚 Wiki" is every Wiki session, PC or Mac);
@@ -1655,6 +1655,7 @@ export const register: Register = (on, options) => {
     await $.command.register({ name: 'tasks', description: 'Энэ дүрийн vault task-ын самбарыг харуулах/нуух' })
     await $.command.register({ name: 'tsaglabar', description: 'Цаглабар — долоо хоног, өдрийн timeline, огноогүй тавиур (хажуугийн самбар)' })
     await $.command.register({ name: 'tasks-pane', description: 'Vault task-уудыг хажуугийн самбарт нээх (хэмжээг чирж өөрчилнө)' })
+    await $.command.register({ name: 'fm-agents', description: 'Vault agent бүр одоо ямар task дээр ажиллаж байгаа (дүр · төхөөрөмж · эхэлсэн цаг · алхам)' })
     const started = await next(e)
     // a (re)load starts idle with an empty offer queue (module memory); a reload killed the old watcher child, so a watcher
     // that was on is resumed (its relay re-offers what is still open)
@@ -2919,6 +2920,28 @@ export const register: Register = (on, options) => {
     await loadGoals($)
     await $.ui.open({ id: PANE, title: '📌 Vault task' })
     return { text: 'Task самбар хажууд нээгдлээ' }
+  })
+
+  on('command.run', { command: 'fm-agents' }, async ($) => {
+    const ctx = await resolveContext($, configured)
+    if (!ctx) return { text: 'Vault олдсонгүй' }
+    const regText = await $.fs.read(`${ctx.vault}/_system/fm/registry.json`).catch(() => '')
+    let reg: unknown = {}
+    try { reg = JSON.parse(typeof regText === 'string' && regText ? regText : '{}') } catch { reg = {} }
+    const dir = `${ctx.vault}/01-GTD/Tasks`
+    const notes: Array<[string, string, string]> = []
+    for (const f of await $.fs.list(dir).catch(() => [])) {
+      if (f.kind !== 'file' || !f.name.endsWith('.md')) continue
+      const body = await $.fs.read(`${dir}/${f.name}`).catch(() => '')
+      const text = typeof body === 'string' ? body : ''
+      if (!text.startsWith('---')) continue
+      const end = text.indexOf('\n---', 3)
+      if (end < 0) continue
+      const fm = text.slice(0, end)
+      if (privateNote(`01-GTD/Tasks/${f.name}`, fm)) continue
+      notes.push([f.name, fm, text.slice(end)])
+    }
+    return { text: agentsReport(reg, notes, ctx.devices, localNow(await $.clock.now()).getTime()) }
   })
 
   on('command.run', { command: 'tasks' }, async ($, e) => {

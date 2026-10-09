@@ -562,3 +562,39 @@ export function classifyCapture(c: { title: string; body: string; src?: string; 
   }
   return { kind, route: 'task', masked: false }
 }
+
+/**
+ * `/fm-agents` (itge.e 2026-10-09): one text block — every vault agent role with what it is working on now. Role rows come
+ * from registry roles that have an agent label (merged / inactive skipped); a role owns a task when one of the task's owners
+ * has the same roleKey (device-agnostic). 🔒 private roles show only «хаалттай». `notes` = [name, frontmatter, body].
+ */
+export function agentsReport(reg: unknown, notes: Array<[string, string, string]>, devices: string[], nowMs: number): string {
+  const roles = recOf(recOf(reg).roles)
+  const rows: string[] = []
+  for (const [slug, raw] of Object.entries(roles)) {
+    const role = recOf(raw)
+    const agent = strOf(role.agent)
+    if (!agent || role.merged_into || role.active === false) continue
+    const key = roleKey(agent, devices)
+    if (!key) continue
+    if (role.private) { rows.push(`⚪ ${agent} — 🔒 хаалттай`); continue }
+    const mine = notes.filter(([, fm]) => ownersOf(fm).some(o => roleKey(o, devices) === key))
+    const st = (fm: string) => normStatus(fmGet(fm, 'status'))
+    const live = mine.filter(([, fm]) => st(fm) === 'in-progress')
+    const waiting = mine.filter(([, fm]) => st(fm) === 'inbox' || st(fm) === 'next-action').length
+    rows.push(`${live.length ? '🟢' : '⚪'} ${agent}${waiting ? ` · дараалалд ${waiting}` : ''}`)
+    for (const [name, fm, body] of live.slice(0, 3)) {
+      const started = fmGet(fm, 'started')
+      const at = started.slice(11, 16)
+      const ms = started ? Date.parse(started.replace(' ', 'T') + ':00Z') : NaN
+      const span = Number.isFinite(ms) ? ` (${fmtSpan(Math.max(0, nowMs - ms))})` : ''
+      const block = body.split('<!-- fm:plan -->')[1]?.split('<!-- /fm:plan -->')[0] ?? ''
+      const steps = block.split(/\r?\n/).filter(l => /^- \[[ x]\] /.test(l))
+      const done = steps.filter(l => l.startsWith('- [x]')).length
+      const nextStep = steps.find(l => l.startsWith('- [ ]'))?.slice(6) ?? ''
+      const step = steps.length ? ` · ${done}/${steps.length}${nextStep ? ` → ${nextStep}` : ''}` : ''
+      rows.push(`   ▶ ${name.replace(/\.md$/, '')} · ${fmGet(fm, 'claimed') || '—'}${at ? ` · ${at}` : ''}${span}${step}`)
+    }
+  }
+  return rows.length ? rows.join('\n') : 'Agent дүр олдсонгүй (registry уншигдсангүй).'
+}

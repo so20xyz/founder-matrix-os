@@ -372,3 +372,18 @@ test('parseTask marks a 🔒 note private; shortTitle masked drops money', () =>
   expect(shortTitle('$1,200', '', true)).toBe('🔒')
   expect(shortTitle('Зээлийн төлбөр 1,500,000₮ төлөх')).toBe('Зээлийн төлбөр 1,500,000₮ төлөх')
 })
+
+import { agentsReport } from './parse'
+test('/fm-agents: live task per role, device-agnostic, private role closed', () => {
+  const reg = { roles: { resource: { agent: '📚 Wiki Agent' }, developer: { agent: '🏛️ Architect' }, finance: { agent: '🔒 Finance', private: true }, research: { agent: 'Research', merged_into: 'resource' } } }
+  const fm = (o: string, s: string, extra = '') => `---\ntype: task\nstatus: ${s}\nowner: "${o}"\n${extra}`
+  const out = agentsReport(reg, [
+    ['A.md', fm('📚 Wiki · PC', 'in-progress', 'started: 2026-10-09 10:00\nclaimed: Mac'), '\n---\n## Явц\n<!-- fm:plan -->\n- [x] нэг\n- [ ] хоёр\n<!-- /fm:plan -->\n'],
+    ['B.md', fm('📚 Wiki', 'inbox'), ''],
+  ], ['PC', 'Mac'], Date.parse('2026-10-09T10:30:00Z'))
+  expect(out).toContain('🟢 📚 Wiki Agent · дараалалд 1')
+  expect(out).toContain('▶ A · Mac · 10:00 (30m) · 1/2 → хоёр')
+  expect(out).toContain('⚪ 🏛️ Architect')
+  expect(out).toContain('🔒 Finance — 🔒 хаалттай')
+  expect(out).not.toContain('Research')
+})
