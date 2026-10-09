@@ -1,4 +1,4 @@
-export type CalItem = { kind: 'task' | 'event'; title: string; date: string; time: string; status: string; owner: string; project: string; file: string }
+export type CalItem = { kind: 'task' | 'event'; title: string; date: string; time: string; status: string; owner: string; project: string; activity?: string; priority?: string; file: string }
 
 export type VaultTask = { title: string; status: string; due: string; owner: string; project?: string; updated?: string; file?: string }
 

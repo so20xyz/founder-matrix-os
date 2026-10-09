@@ -126,7 +126,8 @@ async function loadCalendar($: EngineInterface) {
       const when = kind === 'task' ? field(fm, 'due') : (field(fm, 'scheduled') || field(fm, 'date'))
       const [date = '', time = ''] = when.split(/[ T]/)
       const project = field(fm, 'project').replace(/^\[\[|\]\]$/g, '').split('|')[0].split('/').pop() ?? ''
-      items.push({ kind, title: f.name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), project, file: `${dir}/${f.name}` })
+      const activity = field(fm, 'activity').replace(/^\[\[|\]\]$/g, '').split('|')[0].split('/').pop() ?? ''
+      items.push({ kind, title: f.name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), project, activity, priority: field(fm, 'priority'), file: `${dir}/${f.name}` })
     }
   }
   await $.state.set(CAL, items)
@@ -349,6 +350,35 @@ export const register: Register = (on, options) => {
         </Box>
       </Box>
     ) : null
+    const chip = (key: string, text: string, color: string) => (
+      <Text key={key} color="#0a0c11" backgroundColor={color}>{` ${text} `}</Text>
+    )
+    const statusColor: Record<string, string> = { 'next-action': '#6b8aff', waiting: '#f5b544', inbox: '#8790a3' }
+    const card = (x: CalItem, late: boolean) => (
+      <Box key={`card-${x.file}`} flexDirection="column" marginTop={1} paddingX={1} borderStyle="round" borderColor={late ? tone.late : tone.line}>
+        <Box flexDirection="row" justifyContent="space-between" gap={1}>
+          <Box flexDirection="row" gap={1} flexShrink={1}>
+            <Text color={late ? tone.late : '#737AA2'}>{late ? '⚠' : '○'}</Text>
+            <Button key={`ct-${x.file}`} label={x.title} plain onPress={() => void $.state.set(CAL_SEL, sel === x.file ? '' : x.file)} />
+          </Box>
+          <Text color={late ? tone.late : tone.muted}>{x.date ? x.date.slice(5) : 'огноогүй'}</Text>
+        </Box>
+        <Box flexDirection="row" gap={1} flexWrap="wrap">
+          {chip(`cs-${x.file}`, x.status || '—', statusColor[x.status] ?? '#8790a3')}
+          {x.activity ? chip(`ca-${x.file}`, x.activity, '#2dd4bf') : null}
+          {x.project ? chip(`cp-${x.file}`, x.project, '#a78bfa') : null}
+          {x.owner ? <Text key={`co-${x.file}`} dimColor>👤 {x.owner.replace(/^"|"$/g, '')}</Text> : null}
+          {x.priority ? <Text key={`cr-${x.file}`}>{x.priority}</Text> : null}
+        </Box>
+        <Box flexDirection="row" gap={2}>
+          <Button key={`c0-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} />
+          <Button key={`c1-${x.file}`} label="→ маргааш" plain onPress={() => void setDue($, x, tomorrow)} />
+          {day !== today ? <Button key={`c2-${x.file}`} label={`→ ${day.slice(5)}`} plain onPress={() => void setDue($, x, day)} /> : null}
+          <Button key={`c3-${x.file}`} label="↗" plain onPress={() => void openInObsidian($, x.file)} />
+        </Box>
+        {detail(x)}
+      </Box>
+    )
     return (
       <Box flexDirection="column" paddingX={1}>
         <Box flexDirection="row" justifyContent="space-between">
@@ -394,23 +424,9 @@ export const register: Register = (on, options) => {
           </Box>
         ))}
         {overdue.length ? <Box marginTop={1}><Text color={tone.late}>ХУГАЦАА ХЭТЭРСЭН · {overdue.length}</Text></Box> : null}
-        {overdue.slice(0, 6).map(x => (
-          <Box key={`late-${x.file}`} flexDirection="row" justifyContent="space-between" gap={1}>
-            <Box flexDirection="row" gap={1} flexShrink={1}><Text color={tone.late}>⚠ {x.date.slice(5)}</Text><Button key={`lt-${x.file}`} label={x.title} plain onPress={() => void openInObsidian($, x.file)} /></Box>
-            <Button key={`late-today-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} />
-          </Box>
-        ))}
+        {overdue.slice(0, 6).map(x => card(x, true))}
         <Box marginTop={1}><Text dimColor>ОГНООГҮЙ ТАВИУР · {cal.filter(x => x.kind === 'task' && !x.date).length}{scope === 'mine' ? ' · миний' : ' · баг'}</Text></Box>
-        {shelf.map(x => (
-          <Box key={`shelf-${x.file}`} flexDirection="row" justifyContent="space-between" gap={1}>
-            <Box flexDirection="row" gap={1} flexShrink={1}><Text color="#737AA2">○</Text><Button key={`sh-o-${x.file}`} label={x.title} plain onPress={() => void openInObsidian($, x.file)} />{scope === 'team' && x.owner ? <Text dimColor>· {x.owner}</Text> : null}</Box>
-            <Box flexDirection="row" gap={2} flexShrink={0}>
-              <Button key={`sh-today-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} />
-              <Button key={`sh-tmr-${x.file}`} label="→ маргааш" plain onPress={() => void setDue($, x, tomorrow)} />
-              <Button key={`sh-day-${x.file}`} label={`→ ${day.slice(5)}`} plain onPress={() => void setDue($, x, day)} />
-            </Box>
-          </Box>
-        ))}
+        {shelf.map(x => card(x, false))}
         {goals.length ? <Box marginTop={1}><Text dimColor>MILESTONE · ЗОРИЛГО</Text></Box> : null}
         {goals.slice(0, 5).map(g => {
           const [pct, name] = g.split('|')
