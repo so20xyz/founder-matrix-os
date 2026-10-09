@@ -8,7 +8,9 @@
           {
             "type": "command",
             "command": "python3",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/fm_context.py"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/fm_context.py"
+            ],
             "timeout": 10
           }
         ]
@@ -21,11 +23,16 @@
           {
             "type": "command",
             "command": "python3",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/fm_lint.py"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/fm_lint.py"
+            ],
             "timeout": 10
           }
         ]
       }
     ]
-  }
+  },
+  "modules": [
+    "./register.tsx"
+  ]
 }

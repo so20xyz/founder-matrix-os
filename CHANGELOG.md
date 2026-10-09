@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- **Task самбар (mod, itge.e 2026-10-09):** prompt-ын дээр тухайн сешний дүрийн нээлттэй vault task (area agent = owner/responsible, төслийн сешн = `project:`), ▶ Хийх · ↪ Шилжүүлэх товч, `/tasks` нуух. `hooks/register.tsx` (registry-ээс сешний дүр).
+
 - **Нэмсэн — `relay.py send <суваг> --file <зам>` ба `send <суваг> -` (stdin) (P1-2, 2026-10-09):** олон мөрт тайланг нэг мөр командаар илгээнэ; хуучин `send <суваг> "текст"` хэвээр. Байхгүй суваг руу (жишээ нь `broadcast`-ын заасан суваг алга) traceback-гүй нэг мөр алдаа + ойролцоо нэрс, exit 1.
 - **Нэмсэн — эзнийг таних (P1-2):** `discord.json`-д `"owner_ids": ["<Discord user ID>"]`. Dispatch event-д `"from_owner": true`, `"from": "<гишүүн>"`; `watch`/`inbox` мөрөнд `(from_owner)`. Зөвхөн author.id-аар, display name-ээр хэзээ ч биш.
 - **Засварласан — baton race (P2-3):** `state/<төсөл>.md`-ийн read-modify-write `~/.fmos/baton.lock` дотор, atomic бичилт (`d_baton`, `d_next`); `d_baton` hook-оос хэзээ ч exception гаргахгүй. `regstore.file_lock(path)` = registry-ийн түгжээний ерөнхий хэлбэр.
