@@ -19,7 +19,6 @@ const GOALS = { plugin: 'fm', key: 'goals' } as const
 const HEALTH = { plugin: 'fm', key: 'health' } as const
 const TARGET = { plugin: 'fm', key: 'target' } as const
 const TSAG = 'fm-tsaglabar'
-const CAL = { plugin: 'fm', key: 'cal' } as const
 const CAL_DAY = { plugin: 'fm', key: 'calDay' } as const
 const CAL_WEEK = { plugin: 'fm', key: 'calWeek' } as const
 const CAL_SCOPE = { plugin: 'fm', key: 'calScope' } as const
@@ -132,7 +131,7 @@ async function loadCalendar($: EngineInterface) {
       items.push({ kind, title: f.name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), project, activity, priority: field(fm, 'priority'), file: `${dir}/${f.name}` })
     }
   }
-  await $.state.set(CAL, items)
+  await $.state.set({ plugin: 'fm', key: 'cal' }, items)
 }
 
 /** Schedule an undated / overdue task: write its `due`. */
@@ -142,8 +141,8 @@ async function setDue($: EngineInterface, item: CalItem, day: string) {
   if (!cur.startsWith('---')) return
   const out = /^due:.*$/m.test(cur) ? cur.replace(/^due:.*$/m, `due: ${day}`) : cur.replace(/^status:.*$/m, m => `${m}\ndue: ${day}`)
   await $.fs.write(item.file, out)
-  const { value: cal = [] } = await $.state.get(CAL)
-  await $.state.set(CAL, cal.map(x => (x.file === item.file ? { ...x, date: day } : x)))
+  const { value: cal = [] } = await $.state.get({ plugin: 'fm', key: 'cal' })
+  await $.state.set({ plugin: 'fm', key: 'cal' }, cal.map(x => (x.file === item.file ? { ...x, date: day } : x)))
   $.ui.toast(`📅 ${day} руу товлолоо`)
 }
 
@@ -159,9 +158,9 @@ async function setProp($: EngineInterface, item: CalItem, key: 'due' | 'status' 
   const day = localNow(await $.clock.now()).toISOString().slice(0, 10)
   out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}\nupdated: ${day}`)
   await $.fs.write(item.file, out)
-  const { value: cal = [] } = await $.state.get(CAL)
+  const { value: cal = [] } = await $.state.get({ plugin: 'fm', key: 'cal' })
   const patch = (x: CalItem): CalItem => (key === 'due' ? { ...x, date: value } : key === 'status' ? { ...x, status: value } : { ...x, priority: value })
-  await $.state.set(CAL, cal.map(x => (x.file === item.file ? patch(x) : x)))
+  await $.state.set({ plugin: 'fm', key: 'cal' }, cal.map(x => (x.file === item.file ? patch(x) : x)))
   $.ui.toast(key === 'due' ? (value ? `📅 ${value}` : '📅 огноо арилгалаа') : `${key} → ${value || '—'}`)
 }
 
@@ -322,7 +321,7 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'Pane', requestId: TSAG }, async ($, e) => {
-    let { value: cal = [] } = await $.state.get(CAL)
+    let { value: cal = [] } = await $.state.get({ plugin: 'fm', key: 'cal' })
     const { value: week = 0 } = await $.state.get(CAL_WEEK)
     const { value: goals = [] } = await $.state.get(GOALS)
     const { value: scope = 'mine' } = await $.state.get(CAL_SCOPE)
