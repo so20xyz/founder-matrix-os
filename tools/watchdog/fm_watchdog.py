@@ -14,7 +14,7 @@ STATE = HOME / ".fmos" / "watchdog.json"
 LOG = HOME / ".fmos" / "logs" / "watchdog.log"
 RELAY = r"C:\Users\PC\founder-matrix-os\tools\relay\relay.py"
 MIN_FREE_GB = 15
-CHANNEL = "01-area"  # discord.json broadcast "03-sys-admin" does not exist yet
+CHANNEL = "sys"  # → discord.json "broadcast" (01-area since 2026-10-09)
 NO_WINDOW = 0x08000000  # CREATE_NO_WINDOW
 
 
