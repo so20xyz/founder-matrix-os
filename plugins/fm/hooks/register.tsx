@@ -373,7 +373,7 @@ export const register: Register = (on, options) => {
     )
     const weekAhead = Array.from({ length: 7 }, (_, n) => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + n); return iso(d) })
     const wdName = (d: string) => ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'][new Date(d).getUTCDay()]
-    const pick = (key: string, label: string, on: boolean, color: string, press: () => void) => on
+    const pick = (key: string, label: string, active: boolean, color: string, press: () => void) => active
       ? <Text key={key} color="#0a0c11" backgroundColor={color}>{` ${label} `}</Text>
       : <Button key={key} label={label} plain onPress={press} />
     const detail = (x: CalItem) => sel === x.file ? (
