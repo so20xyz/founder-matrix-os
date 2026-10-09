@@ -30,7 +30,6 @@ const TARGET = { plugin: 'fm', key: 'target' } as const
 const TSAG = 'fm-tsaglabar'
 const CAL_DAY = { plugin: 'fm', key: 'calDay' } as const
 const CAL_WEEK = { plugin: 'fm', key: 'calWeek' } as const
-const CAL_SCOPE = { plugin: 'fm', key: 'calScope' } as const
 const CAL_SEL = { plugin: 'fm', key: 'calSel' } as const
 const NAMES = { plugin: 'fm', key: 'names' } as const
 const PROJ = { plugin: 'fm', key: 'proj' } as const
@@ -44,7 +43,7 @@ const PRIV = { plugin: 'fm', key: 'privSession' } as const
 const SECRET = { plugin: 'fm', key: 'secretKeys' } as const
 
 // Цаглабар v2 (Figma «pane design v2», 2026-10-09): one palette, one accent. The accent marks only ▷ running, done dots /
-// lit segments, the active day's ━, the selected border, active editor chips and ◇ goals; done/ring/run are lib.js greys.
+// lit segments, the active tab / day / segment indicator, the selected border, active editor chips and ◇ goals; done/ring/run are lib.js greys.
 const C = {
   bg: '#1A1A19', surface: '#262625', raised: '#313130',
   text: '#F2F1EC', muted: '#9A9893', border: '#3A3A38', accent: '#2C66AD',
@@ -59,7 +58,7 @@ const G = {
   creative: '◍', architect: '▥', gtd: '⊔', wiki: '◫', project: '▭', person: '⚇', unknown: '◌', finance: '🔒',
   back: '‹', fwd: '›', today: '▦', reload: '↻', filter: '▽', plus: '+', more: '⋯', note: '≡', link: '↗', palette: '◍',
   open: '⌄', closed: '›', run: '▷', done: '✓', diamond: '◇', alert: '⚠', step: '○', gear: '⚙',
-  dot: '▪', dotOff: '▫', segOn: '▰', segOff: '▱', tabRule: '━', rule: '─',
+  dot: '▪', dotOff: '▫', segOn: '▰', segOff: '▱', rule: '─',
   pen: '✎', sparkle: '✧', frame: '#', image: '⊡', grid: '⊞',
   chat: '✉', clip: '↗', idea: '✦', meet: '▦', memo: '▤',
 }
@@ -832,11 +831,20 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
     // never an empty list over a good one: the last good 🔒 keys, or (none read yet) every owned task private until it loads
     const { value: last } = await $.state.get(SECRET)
     secret = last ?? [SECRET_UNKNOWN]
+    // nor this session's scope: a half-synced registry must not turn an agent session into the personal (itge.e / bd) scope
+    const { value: lastNames = [] } = await $.state.get(NAMES)
+    const { value: lastProj = '' } = await $.state.get(PROJ)
+    const { value: lastRole = '' } = await $.state.get({ plugin: 'fm', key: 'role' })
+    const { value: lastDir = '' } = await $.state.get({ plugin: 'fm', key: 'projDir' })
+    names = lastNames
+    project = lastProj
+    roleSlug = lastRole
+    folder = lastDir
   }
   await $.state.set(PRIV, priv)
   await $.state.set(SECRET, secret)
   await $.state.set({ plugin: 'fm', key: 'role' }, roleSlug)
-  await $.state.set({ plugin: 'fm', key: 'roles' }, roles)
+  if (regOk) await $.state.set({ plugin: 'fm', key: 'roles' }, roles)
   await $.state.set(NAMES, names)
   await $.state.set(PROJ, project)
   await $.state.set({ plugin: 'fm', key: 'projDir' }, folder)
@@ -991,10 +999,30 @@ async function reloadCal($: EngineInterface) {
   $.ui.toast(G.reload)
 }
 
-/** ▽: the shared scope filter, mine ↔ team (V1 follows V2). */
+/**
+ * Цаглабар scope (itge.e 2026-10-09), one for every tab: '' = this session's own (agent → its role's tasks, any device;
+ * project → `project:`; research → `research:`; GTD / personal → itge.e's own), `role:<slug>` = a registry role's tasks,
+ * `proj:<name>` = a project's, `all` = «👥 Бүгд». Kept in the session's state, so another session starts on its own default.
+ * ▽ (Kanban) toggles own ↔ Бүгд.
+ */
 async function cycleScope($: EngineInterface) {
-  const { value: scope = 'mine' } = await $.state.get(CAL_SCOPE)
-  await $.state.set(CAL_SCOPE, scope === 'mine' ? 'team' : 'mine')
+  const { value: pick = '' } = await $.state.get({ plugin: 'fm', key: 'scopePick' })
+  await $.state.set({ plugin: 'fm', key: 'scopePick' }, pick === 'all' ? '' : 'all')
+}
+
+/** The scope picker's ▾: open / close the choices (the active projects are read when it opens). */
+async function toggleScopeMenu($: EngineInterface) {
+  const { value: open = false } = await $.state.get({ plugin: 'fm', key: 'scopeMenu' })
+  if (!open) await loadProjects($)
+  await $.state.set({ plugin: 'fm', key: 'scopeMenu' }, !open)
+}
+
+/** A scope choice: remember it, close the picker, drop the selection (it may be out of the new scope). */
+async function pickScope($: EngineInterface, pick: string) {
+  await $.state.set({ plugin: 'fm', key: 'scopePick' }, pick)
+  await $.state.set({ plugin: 'fm', key: 'scopeMenu' }, false)
+  await $.state.set(CAL_SEL, '')
+  if (pick.startsWith('proj:')) await loadProject($)
 }
 
 /** The status a Kanban column stands for (a move or a «+» in it writes this); '' for no column. */
@@ -1137,9 +1165,12 @@ async function loadProject($: EngineInterface) {
   const { value: vault = '' } = await $.state.get(VAULT)
   if (!vault) return
   const { value: proj = '' } = await $.state.get(PROJ)
-  const { value: pick = '' } = await $.state.get({ plugin: 'fm', key: 'projPick' })
+  const { value: projPick = '' } = await $.state.get({ plugin: 'fm', key: 'projPick' })
+  const { value: scopePick = '' } = await $.state.get({ plugin: 'fm', key: 'scopePick' })
   const { value: folder = '' } = await $.state.get({ plugin: 'fm', key: 'projDir' })
   const { value: hub = { file: '', status: '' } } = await $.state.get({ plugin: 'fm', key: 'researchHub' })
+  // a project scope (the pane's picker) is the shown project, as the Төсөл tab draws it
+  const pick = (scopePick.startsWith('proj:') ? scopePick.slice(5) : '') || projPick
   const name = pick || proj
   if (!name) {
     await loadProjects($)
@@ -1184,6 +1215,9 @@ async function loadProject($: EngineInterface) {
 async function pickProject($: EngineInterface, name: string) {
   const { value: proj = '' } = await $.state.get(PROJ)
   await $.state.set({ plugin: 'fm', key: 'projPick' }, name === proj ? '' : name)
+  // under a project scope the switch moves the scope along (the scope's project is the one the tab shows)
+  const { value: scopePick = '' } = await $.state.get({ plugin: 'fm', key: 'scopePick' })
+  if (scopePick.startsWith('proj:')) await $.state.set({ plugin: 'fm', key: 'scopePick' }, name === proj ? '' : `proj:${name}`)
   await $.state.set({ plugin: 'fm', key: 'projMenu' }, false)
   const { value: open = {} } = await $.state.get({ plugin: 'fm', key: 'phaseOpen' })
   await $.state.set({ plugin: 'fm', key: 'phaseOpen' }, { ...open, 'project:switch': false })
@@ -1557,7 +1591,7 @@ function runSlash($: EngineInterface, command: string, args: string, done?: () =
 
 /** An agent row (V6): the team's board (the Kanban owner filter is a later step). */
 async function agentToBoard($: EngineInterface) {
-  await $.state.set(CAL_SCOPE, 'team')
+  await $.state.set({ plugin: 'fm', key: 'scopePick' }, 'all')
   await selectTab($, 'kanban')
 }
 
@@ -1753,7 +1787,8 @@ export const register: Register = (on, options) => {
     const { value: privSess = false } = await $.state.get(PRIV)
     const { value: week = 0 } = await $.state.get(CAL_WEEK)
     const { value: goals = [] } = await $.state.get(GOALS)
-    const { value: scope = 'mine' } = await $.state.get(CAL_SCOPE)
+    const { value: scopePick = '' } = await $.state.get({ plugin: 'fm', key: 'scopePick' })
+    const { value: scopeMenu = false } = await $.state.get({ plugin: 'fm', key: 'scopeMenu' })
     const { value: sel = '' } = await $.state.get(CAL_SEL)
     const { value: roleNames = [] } = await $.state.get(NAMES)
     const { value: proj = '' } = await $.state.get(PROJ)
@@ -1824,7 +1859,30 @@ export const register: Register = (on, options) => {
     const isMine = (x: CalItem) => projKey
       ? x.project.toLowerCase() === projKey || ofResearch(x) || (x.kind === 'event' && !x.project && x.title.toLowerCase().includes(projKey))
       : personal ? x.kind === 'event' || ownersOfItem(x).some(o => meRe.test(o)) : ownerMatches(ownersOfItem(x), x.project, roleNames, proj, devs)
-    const scoped = scope === 'team' ? all : all.filter(isMine)
+    // the pane's scope (cycleScope's doc): '' = isMine, `role:<slug>` = a registry role's tasks (an owner whose role is it, any
+    // device), `proj:<name>` = one project's items, `all` = everything loaded (🔒 items reach CAL only in a private session)
+    const scopeRole = scopePick.startsWith('role:') ? scopePick.slice(5) : ''
+    const scopeProj = scopePick.startsWith('proj:') ? scopePick.slice(5) : ''
+    const scopeAll = scopePick === 'all'
+    const ofRole = (x: CalItem, slug: string) => {
+      const r = roles.find(o => o.slug === slug)
+      return ownersOfItem(x).some(o => roleOf(o, devs, [member]) === slug)
+        || (!!r && ownerMatches(ownersOfItem(x), x.project, [r.agent, r.label].filter(Boolean), '', devs))
+    }
+    const inScope = (x: CalItem) => (scopeAll ? true
+      : scopeProj ? x.project.toLowerCase() === scopeProj.toLowerCase()
+      : scopeRole ? ofRole(x, scopeRole)
+      : isMine(x))
+    const scoped = all.filter(inScope)
+    // the picker's labels: the session default (its role's agent name, its project / topic, or itge.e), a role, a project
+    const sessInfo = roles.find(r => r.slug === sessRole)
+    const agentName = (r: RoleInfo) => r.agent.replace(/\s+Agent$/i, '').trim() || r.label
+    const defaultLabel = projKey ? `${G.project} ${proj}` : personal ? `${G.person} itge.e`
+      : sessInfo ? agentName(sessInfo) : roleLabel(roleNames[0] ?? '', devs) || `${G.person} itge.e`
+    const scopeLabel = scopeAll ? '👥 Бүгд'
+      : scopeProj ? `${G.project} ${scopeProj}`
+      : scopeRole ? (() => { const r = roles.find(o => o.slug === scopeRole); return r ? agentName(r) : scopeRole })()
+      : defaultLabel
     const done = scoped.filter(x => x.kind === 'task' && x.status === 'completed')
     const cal = scoped.filter(x => !done.includes(x))
     const tomorrow = (() => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + 1); return iso(d) })()
@@ -1843,7 +1901,7 @@ export const register: Register = (on, options) => {
     const propRow = (key: string, label: string, kids: (JSX.Element | null)[]) => (
       <Box key={key} flexDirection="row" gap={1}>
         <Box flexShrink={0} width={6}><Text color={C.muted}>{label}</Text></Box>
-        <Box flexDirection="row" flexWrap="wrap" columnGap={1} flexGrow={1} flexShrink={1}>{kids}</Box>
+        <Box flexDirection="row" flexWrap="wrap" columnGap={1} flexGrow={1} flexShrink={1} minWidth={0}>{kids}</Box>
       </Box>
     )
     const detail = (x: CalItem) => sel === x.file ? (
@@ -1896,48 +1954,81 @@ export const register: Register = (on, options) => {
       return (
         <Box key={`ph-${id}`} flexDirection="column" backgroundColor={isOpen ? C.raised : undefined} paddingX={1} marginTop={o.mt ? 1 : 0}>
           <Box flexDirection="row" gap={1}>
-            <Box flexGrow={1} flexShrink={1}><Text color={o.dim ? C.muted : C.text} wrap="truncate-end">{title}</Text></Box>
-            {o.hint ? <Box flexShrink={1}><Text color={C.muted} wrap="truncate-end">{o.hint}</Text></Box> : null}
+            <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={o.dim ? C.muted : C.text} wrap="truncate-end">{title}</Text></Box>
+            {o.hint ? <Box flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">{o.hint}</Text></Box> : null}
             {o.count ? <Box flexShrink={0}><Text color={C.muted}>{o.count}</Text></Box> : null}
-            <Button key={`phb-${id}`} plain dimColor label={isOpen ? G.open : G.closed} onPress={() => void togglePhase($, id, o.dflt)} />
+            <Box flexShrink={0}><Button key={`phb-${id}`} plain dimColor label={isOpen ? G.open : G.closed} onPress={() => void togglePhase($, id, o.dflt)} /></Box>
           </Box>
           {isOpen && o.dots ? dotLine(o.dots) : null}
         </Box>
       )
     }
-    const goW = titlePress === 'title' ? 0 : 3
+    // ── table layout (flex autolayout, no measured widths): a row is a Box row; the title cell grows and shrinks (minWidth 0,
+    // clipped, its Text cut at the edge) and every other column is a fixed-width cell (`col`) that never shrinks, its text
+    // right-aligned with `end`. A width is cells on the terminal and the engine's cell unit on desktop / vscode, so the columns
+    // line up row under row whatever the font and however native the Buttons. Only the terminal's title is measured: there it
+    // is a plain Button, which cannot cut its own label, so the label is fit() to `w`, the room the fixed columns leave
+    const col = (w: number, kid: JSX.Element | null, end = false, key?: string) => (
+      <Box key={key} width={w} flexShrink={0} overflow="hidden" justifyContent={end ? 'flex-end' : 'flex-start'}>{kid}</Box>
+    )
     const titleCell = (key: string, text: string, color: string, dim: boolean, press: () => void, w: number) => titlePress === 'title'
       ? <Button key={key} plain dimColor={dim} label={fit(text, Math.max(6, w))} onPress={press} />
       : <Text color={color} wrap="truncate-end">{text}</Text>
+    // desktop / vscode: the trailing › of a row (a native Button) in a fixed 3-cell column; goPad keeps a header's columns over it
     const goCell = (key: string, press: () => void) => titlePress === 'title'
       ? null
-      : <Box key={`${key}-gw`} width={2} flexShrink={0}><Button key={`${key}-go`} plain dimColor label={G.fwd} onPress={press} /></Box>
-    const goPad = titlePress === 'title' ? null : <Box width={2} flexShrink={0} />
-    // TabBar (§1.5): labels for every tab when wide, only the active one below that; row 2 underlines the active tab
-    const tabRuns: { s: string; c: string }[] = [{ s: G.rule, c: C.border }]
-    TABS.forEach((t, n) => {
-      const isActive = t.id === tab
-      const w = 1 + (wide || isActive ? 1 + cellWidth(t.label) : 0)
-      tabRuns.push({ s: (isActive ? G.tabRule : G.rule).repeat(w), c: isActive ? C.text : C.border })
-      if (n < TABS.length - 1) tabRuns.push({ s: G.rule.repeat(2), c: C.border })
-    })
-    const usedW = tabRuns.reduce((a, r) => a + r.s.length, 0)
-    if (usedW < bodyCols) tabRuns.push({ s: G.rule.repeat(bodyCols - usedW), c: C.border })
-    const tabBar = (
-      <Box key="tabbar" flexDirection="column" backgroundColor={FILL ? C.bg : undefined}>
-        <Box flexDirection="row" columnGap={2} paddingX={1}>
-          {TABS.map(t => (t.id === tab
-            ? <Text key={`tabt-${t.id}`} color={C.text} bold>{`${t.glyph} ${t.label}`}</Text>
-            : <Button key={`tab-${t.id}`} plain dimColor label={wide ? `${t.glyph} ${t.label}` : t.glyph} onPress={() => void selectTab($, t.id)} />))}
-        </Box>
-        <Text wrap="truncate-end">{tabRuns.map((r, n) => <Text key={`tabr-${n}`} color={r.c}>{r.s}</Text>)}</Text>
+      : <Box key={`${key}-gw`} width={3} flexShrink={0} justifyContent="flex-end"><Button key={`${key}-go`} plain dimColor label={G.fwd} onPress={press} /></Box>
+    const goPad = titlePress === 'title' ? null : <Box width={3} flexShrink={0} />
+    // a row with trailing inline actions (date chips, route squares): the main part keeps at least ROW_MIN cells, and when the
+    // actions would not fit beside that they drop to the next line, right-aligned, wrapping among themselves — never past the edge
+    const ROW_MIN = 16
+    const actionRow = (key: string, main: (JSX.Element | null)[], actions: (JSX.Element | null)[], hover = true) => (
+      <Box key={key} flexDirection="row" flexWrap="wrap" justifyContent="flex-end" columnGap={1} hover={hover ? { backgroundColor: C.raised } : undefined}>
+        <Box flexDirection="row" alignItems="center" gap={1} flexGrow={1} flexShrink={1} width={0} minWidth={ROW_MIN}>{main}</Box>
+        <Box flexDirection="row" alignItems="center" flexWrap="wrap" justifyContent="flex-end" gap={1} flexShrink={1} minWidth={0}>{actions}</Box>
       </Box>
     )
+    // a tab-like choice (tab bar, day strip, Kanban segments): a column of its label and a 1-row indicator stretched to the
+    // label's width, the accent only under the active one — so the line always sits under its own label, on any surface
+    const tabCell = (key: string, isActive: boolean, kid: JSX.Element) => (
+      <Box key={key} flexDirection="column" alignItems="stretch" flexShrink={0}>
+        {kid}
+        <Box key={`${key}-i`} height={1} backgroundColor={isActive ? C.accent : undefined} />
+      </Box>
+    )
+    // a full-width hairline: a long ─ run clipped by its own 1-row box (no width is measured)
+    const hairline = (key: string) => (
+      <Box key={key} height={1} overflow="hidden"><Text color={C.border}>{G.rule.repeat(400)}</Text></Box>
+    )
+    // TabBar (§1.5): labels for every tab when wide, only the active one below that; the active tab's indicator underlines it
+    const tabBar = (
+      <Box key="tabbar" flexDirection="row" columnGap={2} paddingX={1} backgroundColor={FILL ? C.bg : undefined}>
+        {TABS.map(t => tabCell(`tabw-${t.id}`, t.id === tab, t.id === tab
+          ? <Text key={`tabt-${t.id}`} color={C.text} bold>{`${t.glyph} ${t.label}`}</Text>
+          : <Button key={`tab-${t.id}`} plain dimColor label={wide ? `${t.glyph} ${t.label}` : t.glyph} onPress={() => void selectTab($, t.id)} />))}
+        <Box flexGrow={1} />
+        <Box flexShrink={0}><Button key="scope" plain dimColor={!scopePick && !scopeMenu} label={`${scopeLabel} ▾`} onPress={() => void toggleScopeMenu($)} /></Box>
+      </Box>
+    )
+    // the scope picker (▾): this session's own, every live registry role (🔒 roles only in a private session; the session's own
+    // role is the default already), every active project, «👥 Бүгд»; the active one is the accent chip
+    const ownRole = !projKey && !personal ? sessRole : ''
+    const scopeChoices = [
+      { id: '', label: `${defaultLabel} · энэ сешн` },
+      ...roles.filter(r => (privSess || !r.private) && r.slug !== ownRole).map(r => ({ id: `role:${r.slug}`, label: agentName(r) })),
+      ...projList.map(p => p.split('|')[0] ?? '').filter(Boolean).map(n => ({ id: `proj:${n}`, label: `${G.project} ${n}` })),
+      { id: 'all', label: '👥 Бүгд' },
+    ]
+    const scopeBar = scopeMenu ? (
+      <Box key="scope-menu" flexDirection="row" flexWrap="wrap" columnGap={1} paddingX={1} backgroundColor={FILL ? C.bg : undefined}>
+        {scopeChoices.map(c => pick(`scope-${c.id || 'own'}`, c.label, c.id === scopePick, () => void pickScope($, c.id)))}
+      </Box>
+    ) : null
     // Header (§1.6): title + square buttons, bold meta head then «  ·  »-joined rest, a muted description line
     const header = (title: string, buttons: JSX.Element[], metaHead: string, metaRest: string[], desc: string) => (
       <Box key="hdr" flexDirection="column" marginBottom={1} marginTop={1}>
         <Box flexDirection="row" justifyContent="space-between" gap={1}>
-          <Box flexShrink={1}><Text bold color={C.text} wrap="truncate-end">{title}</Text></Box>
+          <Box flexShrink={1} minWidth={0} overflow="hidden"><Text bold color={C.text} wrap="truncate-end">{title}</Text></Box>
           <Box flexDirection="row" gap={1} flexShrink={0}>{buttons}</Box>
         </Box>
         <Text wrap="truncate-end"><Text bold color={C.text}>{metaHead}</Text><Text color={C.muted}>{metaRest.length ? `  ${metaRest.join('  ·  ')}` : ''}</Text></Text>
@@ -1987,27 +2078,24 @@ export const register: Register = (on, options) => {
       ], `${wide ? wdFull : wdName(day)} ${mmdd(day)}`,
       [`W${isoWeek(day)}`, working ? `${working} agent` : '', wide && !loading ? `${dn}/${rows.length} дууссан` : ''].filter(Boolean),
       'Өнөөдрийн хуваарь, огноогүй тавиур, зорилгын ахиц')
-      // day strip: ‹ 7 days › — label «Да 05³» (count in superscript), the selected day bold with a blue ━ under it. No gap:
-      // the flexGrow columns space themselves. The weekday drops («05³») when the strip would not fit the real width: every
-      // label + 1 cell of air (so neighbours never touch) + the ‹ › buttons; a native Button (desktop / vscode) draws wider
-      // than its label, so each one is budgeted 2 cells more there
-      const dayLbl = (d: string, n: number, withWd: boolean) => `${withWd ? `${names[n]} ` : ''}${d.slice(8)}${sup(rowsOn(d).length)}`
-      const btnPad = titlePress === 'title' ? 0 : 2
-      const stripNeed = days.reduce((a, d, n) => a + cellWidth(dayLbl(d, n, true)) + 1 + (d === day ? 0 : btnPad), 0) + 2 + 2 * btnPad
-      const tight = stripNeed > cols
+      // day strip: ‹ 7 days › — label «Да 05³» (count in superscript), the selected day bold with the accent indicator under
+      // it. The 7 day cells share the width equally (flexGrow from a zero basis), each label centred in its cell; ‹ › sit
+      // outside them. The weekday shows in the 780 layout only («05³» below it), so nothing is measured
+      const dayLbl = (d: string, n: number) => `${wide ? `${names[n]} ` : ''}${d.slice(8)}${sup(rowsOn(d).length)}`
       const strip = (
-        <Box key="ds" flexDirection="row" marginBottom={1}>
-          <Button key="ds-prev" plain dimColor label={G.back} onPress={() => void shiftWeek($, -1)} />
+        <Box key="ds" flexDirection="row" gap={1} marginBottom={1}>
+          <Box flexShrink={0}><Button key="ds-prev" plain dimColor label={G.back} onPress={() => void shiftWeek($, -1)} /></Box>
           {days.map((d, n) => {
-            const lbl = dayLbl(d, n, !tight)
+            const lbl = dayLbl(d, n)
             return (
-              <Box key={`dsc-${d}`} flexDirection="column" flexGrow={1} alignItems="flex-start">
-                {d === day ? <Text bold color={C.text}>{lbl}</Text> : <Button key={`ds-${d}`} plain dimColor label={lbl} onPress={() => void $.state.set(CAL_DAY, d)} />}
-                <Text color={C.accent}>{d === day ? G.tabRule.repeat(cellWidth(lbl)) : ' '}</Text>
+              <Box key={`dsc-${d}`} flexDirection="row" justifyContent="center" flexGrow={1} flexShrink={1} width={0} minWidth={0} overflow="hidden">
+                {tabCell(`dst-${d}`, d === day, d === day
+                  ? <Text bold color={C.text}>{lbl}</Text>
+                  : <Button key={`ds-${d}`} plain dimColor label={lbl} onPress={() => void $.state.set(CAL_DAY, d)} />)}
               </Box>
             )
           })}
-          <Button key="ds-next" plain dimColor label={G.fwd} onPress={() => void shiftWeek($, 1)} />
+          <Box flexShrink={0}><Button key="ds-next" plain dimColor label={G.fwd} onPress={() => void shiftWeek($, 1)} /></Box>
         </Box>
       )
       // activity row (§3 + §9): today's in-progress tasks in scope, this session's first; its row carries the Claude plan
@@ -2037,16 +2125,16 @@ export const register: Register = (on, options) => {
         const canOpen = isMe && (st.length > 0 || k > 0)
         const isOpen = canOpen && openOf('cal:act', false)
         const press = x ? toggleSel(x) : () => {}
-        // goW is 0 on the terminal (the title is the Button); on desktop / vscode the trailing › goCell takes its place
-        const w = cols - 4 - (suffix ? sufW + 1 : 0) - (ago ? cellWidth(ago) + 1 : 0) - (canOpen ? 2 : 0) - (x ? goW : 0)
+        // the terminal title budget (the title is the Button there); desktop / vscode cut a Text title in its flex cell instead
+        const w = cols - 4 - (suffix ? sufW + 1 : 0) - (ago ? cellWidth(ago) + 1 : 0) - (canOpen ? 2 : 0)
         return (
           <Box key={`act-${key}`} flexDirection="column" backgroundColor={C.raised} paddingX={1}>
             <Box flexDirection="row" gap={1}>
-              <Text color={C.accent}>{G.run}</Text>
-              <Box flexGrow={1} flexShrink={1}>{x ? titleCell(`actb-${key}`, name, C.text, false, press, w) : <Text color={C.text} wrap="truncate-end">{name}</Text>}</Box>
+              <Box flexShrink={0}><Text color={C.accent}>{G.run}</Text></Box>
+              <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{x ? titleCell(`actb-${key}`, name, C.text, false, press, w) : <Text color={C.text} wrap="truncate-end">{name}</Text>}</Box>
               {suffix ? <Box flexShrink={0}><Text color={C.text}>{suffix}</Text></Box> : null}
               {ago ? <Box flexShrink={0}><Text color={C.muted}>{ago}</Text></Box> : null}
-              {canOpen ? <Button key={`acto-${key}`} plain dimColor label={isOpen ? G.open : G.closed} onPress={() => void togglePhase($, 'cal:act', false)} /> : null}
+              {canOpen ? <Box flexShrink={0}><Button key={`acto-${key}`} plain dimColor label={isOpen ? G.open : G.closed} onPress={() => void togglePhase($, 'cal:act', false)} /></Box> : null}
               {x ? goCell(`actb-${key}`, press) : null}
             </Box>
             {isOpen ? (
@@ -2063,7 +2151,7 @@ export const register: Register = (on, options) => {
       const acts = day === today ? [...live.map(x => actRow(x)), ...(sessionRow ? [actRow(null)] : [])] : []
       // «Өнөөдөр» phase + the day table
       const todayOpen = openOf('cal:today', true)
-      const titleW = wide ? cols - 36 - goW : cols - 25 - goW
+      const titleW = wide ? cols - 36 : cols - 25
       const t1Row = (x: CalItem) => {
         const fin = isFin(x)
         const run = isRun(x)
@@ -2074,12 +2162,12 @@ export const register: Register = (on, options) => {
         return (
           <Box key={`t1-${x.file}`} flexDirection="column">
             <Box key={`t1r-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
-              <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.accent}>{fin ? G.done : run ? G.run : ' '}</Text></Box>
-              <Box width={6} flexShrink={0}><Text color={c} wrap="truncate-end">{time}</Text></Box>
-              {wide ? null : <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.muted}>{gl}</Text></Box>}
-              <Box flexGrow={1} flexShrink={1}>{titleCell(`t1b-${x.file}`, x.title, c, fin, press, titleW)}</Box>
-              {wide ? <Box width={4} flexShrink={0}><Text color={fin ? C.done : C.muted}>{gl}</Text></Box> : null}
-              <Box width={wide ? 18 : 9} flexShrink={0} justifyContent="flex-end"><Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v1Status(x)}</Text></Box>
+              {col(2, <Text color={fin ? C.done : C.accent}>{fin ? G.done : run ? G.run : ' '}</Text>)}
+              {col(6, <Text color={c} wrap="truncate-end">{time}</Text>)}
+              {wide ? null : col(2, <Text color={fin ? C.done : C.muted}>{gl}</Text>)}
+              <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`t1b-${x.file}`, x.title, c, fin, press, titleW)}</Box>
+              {wide ? col(4, <Text color={fin ? C.done : C.muted}>{gl}</Text>) : null}
+              {col(wide ? 18 : 9, <Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v1Status(x)}</Text>, true)}
               {goCell(`t1b-${x.file}`, press)}
             </Box>
             {detail(x)}
@@ -2088,12 +2176,12 @@ export const register: Register = (on, options) => {
       }
       const t1Head = (
         <Box key="t1-head" flexDirection="row" gap={1}>
-          <Box width={2} flexShrink={0} />
-          <Box width={6} flexShrink={0}><Text color={C.muted}>Цаг</Text></Box>
-          {wide ? null : <Box width={2} flexShrink={0} />}
-          <Box flexGrow={1} flexShrink={1}><Text color={C.muted} wrap="truncate-end">Task</Text></Box>
-          {wide ? <Box width={4} flexShrink={0}><Text color={C.muted}>Эзэн</Text></Box> : null}
-          <Box width={wide ? 18 : 9} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Төлөв</Text></Box>
+          {col(2, null)}
+          {col(6, <Text color={C.muted}>Цаг</Text>)}
+          {wide ? null : col(2, null)}
+          <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">Task</Text></Box>
+          {wide ? col(4, <Text color={C.muted}>Эзэн</Text>) : null}
+          {col(wide ? 18 : 9, <Text color={C.muted}>Төлөв</Text>, true)}
           {goPad}
         </Box>
       )
@@ -2114,13 +2202,14 @@ export const register: Register = (on, options) => {
         <Box key="lt" flexDirection="column" paddingLeft={2}>
           {overdue.map(x => (
             <Box key={`lt-${x.file}`} flexDirection="column">
-              <Box key={`ltr-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
-                <Box width={2} flexShrink={0}><Text color={C.muted}>{G.alert}</Text></Box>
-                <Box flexGrow={1} flexShrink={1}>{titleCell(`ltb-${x.file}`, x.title, C.text, false, toggleSel(x), cols - 22 - goW)}</Box>
-                <Box width={5} flexShrink={0}><Text color={C.muted}>{mmdd(x.date)}</Text></Box>
-                <Button key={`ltt-${x.file}`} plain dimColor label="өнөөдөр" onPress={() => void setProp($, x, 'due', today)} />
-                {goCell(`ltb-${x.file}`, toggleSel(x))}
-              </Box>
+              {actionRow(`ltr-${x.file}`, [
+                col(2, <Text color={C.muted}>{G.alert}</Text>, false, `ltg-${x.file}`),
+                <Box key={`ltc-${x.file}`} flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`ltb-${x.file}`, x.title, C.text, false, toggleSel(x), cols - 22)}</Box>,
+              ], [
+                col(5, <Text color={C.muted}>{mmdd(x.date)}</Text>, false, `ltd-${x.file}`),
+                <Button key={`ltt-${x.file}`} plain dimColor label="өнөөдөр" onPress={() => void setProp($, x, 'due', today)} />,
+                goCell(`ltb-${x.file}`, toggleSel(x)),
+              ])}
               {inTable(x) ? null : detail(x)}
             </Box>
           ))}
@@ -2130,20 +2219,20 @@ export const register: Register = (on, options) => {
       const shelfAll = cal.filter(x => x.kind === 'task' && !x.date)
       const shelfOpen = openOf('cal:shelf', false)
       const chipDays = [today, tomorrow, ...(wide ? [2, 3, 4].map(k => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + k); return iso(d) }) : [])]
+      // the chips' terminal width (the title budget only; the chips themselves wrap to a second line when the row is narrow)
       const chipW = 15 + (wide ? 9 : 0)
       const shelfPhase = phase('cal:shelf', 'Огноогүй тавиур', { dflt: false, hint: LBL_SHELF_HINT, count: String(shelfAll.length), mt: overdue.length ? lateOpen : todayOpen })
       const shelfBody = shelfOpen ? (
         <Box key="sh" flexDirection="column" paddingLeft={2}>
           {shelfAll.slice(0, 8).map(x => (
             <Box key={`sh-${x.file}`} flexDirection="column">
-              <Box key={`shr-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
-                <Box width={2} flexShrink={0} />
-                <Box flexGrow={1} flexShrink={1}>{titleCell(`shb-${x.file}`, x.title, C.text, false, toggleSel(x), cols - 7 - chipW - goW)}</Box>
-                <Box flexDirection="row" gap={1} flexShrink={0}>
-                  {chipDays.map((d, n) => <Button key={`shd-${x.file}-${d}`} plain dimColor label={n === 0 ? 'өнөөдөр' : n === 1 ? 'маргааш' : wdName(d)} onPress={() => void setProp($, x, 'due', d)} />)}
-                </Box>
-                {goCell(`shb-${x.file}`, toggleSel(x))}
-              </Box>
+              {actionRow(`shr-${x.file}`, [
+                col(2, null, false, `shg-${x.file}`),
+                <Box key={`shc-${x.file}`} flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`shb-${x.file}`, x.title, C.text, false, toggleSel(x), cols - 7 - chipW)}</Box>,
+              ], [
+                ...chipDays.map((d, n) => <Button key={`shd-${x.file}-${d}`} plain dimColor label={n === 0 ? 'өнөөдөр' : n === 1 ? 'маргааш' : wdName(d)} onPress={() => void setProp($, x, 'due', d)} />),
+                goCell(`shb-${x.file}`, toggleSel(x)),
+              ])}
               {inTable(x) ? null : detail(x)}
             </Box>
           ))}
@@ -2157,11 +2246,11 @@ export const register: Register = (on, options) => {
         const open = () => void openInObsidian($, file)
         return (
           <Box key={`ms-${name}`} flexDirection="row" paddingLeft={2} gap={1}>
-            <Text color={C.accent}>{G.diamond}</Text>
-            <Box flexGrow={1} flexShrink={1}>{titleCell(`msb-${name}`, name, C.text, false, open, cols - 22 - (wide ? 13 : 0) - goW)}</Box>
-            {wide ? <Box width={12} flexShrink={0}><Text color={C.muted} wrap="truncate-end">{stage}</Text></Box> : null}
-            {segBar(Number(pct))}
-            <Box width={4} flexShrink={0} justifyContent="flex-end"><Text color={C.text}>{`${pct}%`}</Text></Box>
+            {col(1, <Text color={C.accent}>{G.diamond}</Text>)}
+            <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`msb-${name}`, name, C.text, false, open, cols - 22 - (wide ? 13 : 0))}</Box>
+            {wide ? col(12, <Text color={C.muted} wrap="truncate-end">{stage}</Text>) : null}
+            <Box flexShrink={0}>{segBar(Number(pct))}</Box>
+            {col(4, <Text color={C.text}>{`${pct}%`}</Text>, true)}
             {goCell(`msb-${name}`, open)}
           </Box>
         )
@@ -2216,13 +2305,13 @@ export const register: Register = (on, options) => {
         count: loading ? undefined : top.length ? `${dn}/${top.length}` : '0',
         dots: loading ? [0, 0, 3] : top.length ? [dn, rn, top.length - dn - rn] : undefined,
       })
-      const rvW = wide ? cols - 2 - 2 - 7 - 17 - 4 - goW : cols - 2 - 2 - 6 - 3 - goW
+      const rvW = wide ? cols - 2 - 2 - 7 - 17 - 4 : cols - 2 - 2 - 6 - 3
       const rvHead = (
         <Box key="rvt-head" flexDirection="row" gap={1}>
           <Box width={2} flexShrink={0} />
-          <Box width={wide ? 7 : 6} flexShrink={0}><Text color={C.muted}>Цаг</Text></Box>
-          <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Task</Text></Box>
-          {wide ? <Box width={17} flexShrink={0}><Text color={C.muted}>Төсөл</Text></Box> : null}
+          <Box width={wide ? 7 : 6} flexShrink={0} overflow="hidden"><Text color={C.muted}>Цаг</Text></Box>
+          <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted}>Task</Text></Box>
+          {wide ? <Box width={17} flexShrink={0} overflow="hidden"><Text color={C.muted}>Төсөл</Text></Box> : null}
           {goPad}
         </Box>
       )
@@ -2234,10 +2323,10 @@ export const register: Register = (on, options) => {
         return (
           <Box key={`rvt-${x.file}`} flexDirection="column">
             <Box key={`rvtr-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
-              <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.accent}>{fin ? G.done : run ? G.run : ' '}</Text></Box>
-              <Box width={wide ? 7 : 6} flexShrink={0}><Text color={c}>{timeOf(x) || '—'}</Text></Box>
-              <Box flexGrow={1} flexShrink={1}>{titleCell(`rvtb-${x.file}`, shortTitle(x.title, x.project), c, fin, press, rvW)}</Box>
-              {wide ? <Box width={17} flexShrink={0}><Text color={fin ? C.done : C.muted} wrap="truncate-end">{x.project || '—'}</Text></Box> : null}
+              <Box width={2} flexShrink={0} overflow="hidden"><Text color={fin ? C.done : C.accent}>{fin ? G.done : run ? G.run : ' '}</Text></Box>
+              <Box width={wide ? 7 : 6} flexShrink={0} overflow="hidden"><Text color={c}>{timeOf(x) || '—'}</Text></Box>
+              <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`rvtb-${x.file}`, shortTitle(x.title, x.project), c, fin, press, rvW)}</Box>
+              {wide ? <Box width={17} flexShrink={0} overflow="hidden"><Text color={fin ? C.done : C.muted} wrap="truncate-end">{x.project || '—'}</Text></Box> : null}
               {goCell(`rvtb-${x.file}`, press)}
             </Box>
             {detail(x)}
@@ -2262,13 +2351,14 @@ export const register: Register = (on, options) => {
         <Box key="rvl" flexDirection="column" paddingLeft={2}>
           {late.slice(0, 5).map(x => (
             <Box key={`rvl-${x.file}`} flexDirection="column">
-              <Box key={`rvlr-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
-                <Box width={2} flexShrink={0}><Text color={C.muted}>{G.alert}</Text></Box>
-                <Box flexGrow={1} flexShrink={1}>{titleCell(`rvlb-${x.file}`, shortTitle(x.title, x.project), C.text, false, toggleSel(x), cols - 2 - 2 - 8 - 8 - 5 - goW)}</Box>
-                <Box width={8} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>{`${daysLate(x.date)} өдөр`}</Text></Box>
-                <Button key={`rvlt-${x.file}`} plain dimColor label="өнөөдөр" onPress={() => void setProp($, x, 'due', today)} />
-                {goCell(`rvlb-${x.file}`, toggleSel(x))}
-              </Box>
+              {actionRow(`rvlr-${x.file}`, [
+                col(2, <Text color={C.muted}>{G.alert}</Text>, false, `rvlg-${x.file}`),
+                <Box key={`rvlc-${x.file}`} flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`rvlb-${x.file}`, shortTitle(x.title, x.project), C.text, false, toggleSel(x), cols - 2 - 2 - 8 - 8 - 5)}</Box>,
+              ], [
+                col(8, <Text color={C.muted}>{`${daysLate(x.date)} өдөр`}</Text>, true, `rvld-${x.file}`),
+                <Button key={`rvlt-${x.file}`} plain dimColor label="өнөөдөр" onPress={() => void setProp($, x, 'due', today)} />,
+                goCell(`rvlb-${x.file}`, toggleSel(x)),
+              ])}
               {top.some(t => t.file === x.file) ? null : detail(x)}
             </Box>
           ))}
@@ -2314,10 +2404,10 @@ export const register: Register = (on, options) => {
         <Box key="rva" flexDirection="column" paddingLeft={2}>
           <Box key="rva-head" flexDirection="row" gap={1}>
             <Box width={2} flexShrink={0} />
-            <Box width={wide ? 16 : undefined} flexGrow={wide ? 0 : 1} flexShrink={wide ? 0 : 1}><Text color={C.muted}>Agent</Text></Box>
-            <Box width={wide ? 14 : 12} flexShrink={0}><Text color={C.muted}>Төлөв</Text></Box>
-            {wide ? <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Task</Text></Box> : null}
-            <Box width={timeW} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Time</Text></Box>
+            <Box width={wide ? 16 : undefined} flexGrow={wide ? 0 : 1} flexShrink={wide ? 0 : 1} minWidth={0} overflow="hidden"><Text color={C.muted}>Agent</Text></Box>
+            <Box width={wide ? 14 : 12} flexShrink={0} overflow="hidden"><Text color={C.muted}>Төлөв</Text></Box>
+            {wide ? <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted}>Task</Text></Box> : null}
+            <Box width={timeW} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={C.muted}>Time</Text></Box>
             {goPad}
           </Box>
           {REVIEW_ROLES.map(slug => {
@@ -2325,17 +2415,17 @@ export const register: Register = (on, options) => {
             const name = AGENT_NAME[slug] ?? slug
             const closed = slug === 'finance' && !privSess
             const press = () => void agentToBoard($)
-            const nameW = wide ? 16 - 2 : cols - 2 - 2 - 2 - 12 - timeW - 5 - goW
+            const nameW = wide ? 16 - 2 : cols - 2 - 2 - 2 - 12 - timeW - 5
             return (
               <Box key={`rva-${slug}`} flexDirection="row" gap={1} hover={closed ? undefined : { backgroundColor: C.raised }}>
-                <Box width={2} flexShrink={0}><Text color={C.accent}>{r.run ? G.run : ' '}</Text></Box>
-                <Box width={wide ? 16 : undefined} flexGrow={wide ? 0 : 1} flexShrink={wide ? 0 : 1} flexDirection="row">
-                  <Box width={2} flexShrink={0}><Text color={C.muted}>{glyphOfRole(slug)}</Text></Box>
-                  <Box flexGrow={1} flexShrink={1}>{closed ? <Text color={C.text} wrap="truncate-end">{name}</Text> : titleCell(`rvab-${slug}`, name, C.text, false, press, nameW)}</Box>
+                <Box width={2} flexShrink={0} overflow="hidden"><Text color={C.accent}>{r.run ? G.run : ' '}</Text></Box>
+                <Box width={wide ? 16 : undefined} flexGrow={wide ? 0 : 1} flexShrink={wide ? 0 : 1} minWidth={0} overflow="hidden" flexDirection="row">
+                  <Box width={2} flexShrink={0} overflow="hidden"><Text color={C.muted}>{glyphOfRole(slug)}</Text></Box>
+                  <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{closed ? <Text color={C.text} wrap="truncate-end">{name}</Text> : titleCell(`rvab-${slug}`, name, C.text, false, press, nameW)}</Box>
                 </Box>
-                <Box width={wide ? 14 : 12} flexShrink={0}><Text color={r.stColor} bold={r.run} wrap="truncate-end">{r.st}</Text></Box>
-                {wide ? <Box flexGrow={1} flexShrink={1}><Text color={r.task === '—' ? C.muted : C.text} wrap="truncate-end">{r.task}</Text></Box> : null}
-                <Box width={timeW} flexShrink={0} justifyContent="flex-end"><Text color={r.time === '—' ? C.muted : C.text} wrap="truncate-end">{r.time}</Text></Box>
+                <Box width={wide ? 14 : 12} flexShrink={0} overflow="hidden"><Text color={r.stColor} bold={r.run} wrap="truncate-end">{r.st}</Text></Box>
+                {wide ? <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={r.task === '—' ? C.muted : C.text} wrap="truncate-end">{r.task}</Text></Box> : null}
+                <Box width={timeW} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={r.time === '—' ? C.muted : C.text} wrap="truncate-end">{r.time}</Text></Box>
                 {closed ? goPad : goCell(`rvab-${slug}`, press)}
               </Box>
             )
@@ -2383,22 +2473,23 @@ export const register: Register = (on, options) => {
         const showLbl = wide && !!it.route && !it.masked && !st
         // the four route squares: 3 cells each + 3 gaps; a 🔒 row has one «fm:inbox» button instead
         const btnW = st ? 1 : it.masked ? 8 : 15
-        const w = cols - 2 - 2 - 1 - btnW - 1 - (showLbl ? 9 : 0) - goW
+        const w = cols - 2 - 2 - 1 - btnW - 1 - (showLbl ? 9 : 0)
         return (
-          <Box key={`ibr-${it.file}`} flexDirection="row" alignItems="center" paddingLeft={2} gap={1}>
-            <Box width={2} flexShrink={0}><Text color={C.muted}>{KIND_GLYPH[it.kind] ?? G.memo}</Text></Box>
-            <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-              {titleCell(`ibt-${it.file}`, it.masked ? `${G.finance} хувийн санхүү` : it.title, C.text, false, press, w)}
-              <Text color={C.muted} wrap="truncate-end">{`${it.hm} · ${it.src}`}</Text>
-            </Box>
-            {goCell(`ibt-${it.file}`, press)}
-            {showLbl ? <Box width={8} flexShrink={0}><Text color={C.accent} wrap="truncate-end">{`→ ${ROUTE_NAME[it.route] ?? ''}`}</Text></Box> : null}
-            <Box flexDirection="row" gap={1} flexShrink={0}>
-              {st === 'handed' ? <Text color={C.accent}>{G.run}</Text>
-                : st ? <Text color={C.muted}>…</Text>
-                : it.masked ? <Button key={`ibm-${it.file}`} plain dimColor label="fm:inbox" onPress={() => runSlash($, 'fm:inbox', '')} />
-                : ROUTES.map(r => sq(`ibb-${it.file}-${r.id}`, r.glyph, r.id === it.route, () => void routeCapture($, member, configured, it.file, r.id)))}
-            </Box>
+          <Box key={`ibr-${it.file}`} flexDirection="column" paddingLeft={2}>
+            {actionRow(`ibrr-${it.file}`, [
+              col(2, <Text color={C.muted}>{KIND_GLYPH[it.kind] ?? G.memo}</Text>, false, `ibg-${it.file}`),
+              <Box key={`ibc-${it.file}`} flexDirection="column" flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">
+                {titleCell(`ibt-${it.file}`, it.masked ? `${G.finance} хувийн санхүү` : it.title, C.text, false, press, w)}
+                <Text color={C.muted} wrap="truncate-end">{`${it.hm} · ${it.src}`}</Text>
+              </Box>,
+              goCell(`ibt-${it.file}`, press),
+            ], [
+              showLbl ? col(8, <Text color={C.accent} wrap="truncate-end">{`→ ${ROUTE_NAME[it.route] ?? ''}`}</Text>, false, `ibl-${it.file}`) : null,
+              ...(st === 'handed' ? [<Text key={`ibh-${it.file}`} color={C.accent}>{G.run}</Text>]
+                : st ? [<Text key={`ibw-${it.file}`} color={C.muted}>…</Text>]
+                : it.masked ? [<Button key={`ibm-${it.file}`} plain dimColor label="fm:inbox" onPress={() => runSlash($, 'fm:inbox', '')} />]
+                : ROUTES.map(r => sq(`ibb-${it.file}-${r.id}`, r.glyph, r.id === it.route, () => void routeCapture($, member, configured, it.file, r.id)))),
+            ], false)}
           </Box>
         )
       }
@@ -2440,7 +2531,7 @@ export const register: Register = (on, options) => {
     }
     // ── V3 «⊟ Хэрэгсэл» (§3 V3): the role's tools by group with live status, a row expands to caps + commands; the SKILL list ──
     const toolsTab = () => {
-      const shownRole = toolsRole || sessRole
+      const shownRole = toolsRole || scopeRole || sessRole
       const info = roles.find(r => r.slug === shownRole)
       const mine = TOOLS.filter(t => !info || t.roles.includes('*') || t.roles.includes(shownRole))
       const stOf = (t: ToolDef): ToolStatus['state'] => (t.check.kind === 'skill' ? 'ok'
@@ -2462,14 +2553,14 @@ export const register: Register = (on, options) => {
         const at = d.toISOString().slice(11, 16)
         return dd === today ? at : dd === yesterday ? `Өч ${at}` : mmdd(dd)
       }
-      const nameW = wide ? cols - 2 - 2 - 2 - 15 - 10 - 5 - goW : cols - 2 - 2 - 2 - 12 - 4 - goW
+      const nameW = wide ? cols - 2 - 2 - 2 - 15 - 10 - 5 : cols - 2 - 2 - 2 - 12 - 4
       const tHead = (
         <Box key="tl-head" flexDirection="row" gap={1}>
           <Box width={2} flexShrink={0} />
           <Box width={2} flexShrink={0} />
-          <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Хэрэгсэл</Text></Box>
-          <Box width={wide ? 15 : 12} flexShrink={0} justifyContent={wide ? 'flex-start' : 'flex-end'}><Text color={C.muted}>Төлөв</Text></Box>
-          {wide ? <Box width={10} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Сүүлд</Text></Box> : null}
+          <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted}>Хэрэгсэл</Text></Box>
+          <Box width={wide ? 15 : 12} flexShrink={0} overflow="hidden" justifyContent={wide ? 'flex-start' : 'flex-end'}><Text color={C.muted}>Төлөв</Text></Box>
+          {wide ? <Box width={10} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={C.muted}>Сүүлд</Text></Box> : null}
           {goPad}
         </Box>
       )
@@ -2508,10 +2599,10 @@ export const register: Register = (on, options) => {
           <Box key={`tl-${t.id}`} flexDirection="column">
             <Box key={`tlr-${t.id}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
               <Box width={2} flexShrink={0} />
-              <Box width={2} flexShrink={0}><Text color={C.muted}>{t.glyph}</Text></Box>
-              <Box flexGrow={1} flexShrink={1}>{titleCell(`tlb-${t.id}`, name, off ? C.done : cr !== undefined && s !== 'ok' ? C.muted : C.text, off, press, nameW)}</Box>
-              <Box width={wide ? 15 : 12} flexShrink={0} justifyContent={wide ? 'flex-start' : 'flex-end'}><Text color={off ? C.done : C.muted} wrap="truncate-end">{stLbl[s] ?? s}</Text></Box>
-              {wide ? <Box width={10} flexShrink={0} justifyContent="flex-end"><Text color={off ? C.done : C.text}>{lastLbl(t.id)}</Text></Box> : null}
+              <Box width={2} flexShrink={0} overflow="hidden"><Text color={C.muted}>{t.glyph}</Text></Box>
+              <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`tlb-${t.id}`, name, off ? C.done : cr !== undefined && s !== 'ok' ? C.muted : C.text, off, press, nameW)}</Box>
+              <Box width={wide ? 15 : 12} flexShrink={0} overflow="hidden" justifyContent={wide ? 'flex-start' : 'flex-end'}><Text color={off ? C.done : C.muted} wrap="truncate-end">{stLbl[s] ?? s}</Text></Box>
+              {wide ? <Box width={10} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={off ? C.done : C.text}>{lastLbl(t.id)}</Text></Box> : null}
               {goCell(`tlb-${t.id}`, press)}
             </Box>
             {toolOpen === t.id ? toolDetail(t, off) : null}
@@ -2539,7 +2630,7 @@ export const register: Register = (on, options) => {
         .map(full => ({ full, label: stripSkill(full) })).filter((x, n, arr) => arr.findIndex(o => o.label === x.label) === n)
       const footer = skills.length ? (
         <Box key="tl-sk" flexDirection="column" marginTop={1}>
-          <Text color={C.border}>{G.rule.repeat(cols)}</Text>
+          {hairline('tl-sk-rule')}
           <Text color={C.muted}>SKILL</Text>
           <Box flexDirection="row" flexWrap="wrap">
             {skills.flatMap((x, n) => [
@@ -2577,9 +2668,9 @@ export const register: Register = (on, options) => {
       const runN = listOf('next').filter(isRun).length
       const doneN = listOf('done').length
       const agentLabel = roleLabel(roleNames[0] ?? '', devs).replace(/^[^\p{L}\p{N}]+/u, '').trim()
-      const scopeHead = scope === 'team' ? 'Баг' : projKey ? proj : personal ? 'GTD' : agentLabel || 'GTD'
+      const scopeHead = scopeAll ? 'Баг' : scopePick ? scopeLabel : projKey ? proj : personal ? 'GTD' : agentLabel || 'GTD'
       const hdr = header('Task самбар', [
-        sq('kb-filter', G.filter, scope !== 'mine', () => void cycleScope($)),
+        sq('kb-filter', G.filter, scopePick !== '', () => void cycleScope($)),
         ...(Input ? [sq('kb-new', G.plus, newCol === 'inbox', () => void setNewTaskCol($, 'inbox'))] : []),
       ], scopeHead, loading ? [] : [`${openN} нээлттэй`, runN ? `${runN} ажиллаж байна` : '', doneN ? `${doneN} дууссан` : ''].filter(Boolean), LBL_KANBAN_DESC)
       if (loading) return <Box key="v2" flexDirection="column">{hdr}<Text color={C.muted}>Ачаалж байна…</Text></Box>
@@ -2592,7 +2683,7 @@ export const register: Register = (on, options) => {
         const title = `${fin ? `${G.done} ` : ''}${shortTitle(x.title, x.project)}`
         const c = fin ? C.done : C.text
         // the card's inner width: column - padding - bar - the selected border; glyph (1) + gap, and the › on desktop
-        const tw = cw - 2 - (run ? 1 : 0) - 2 - 2 - goW
+        const tw = cw - 2 - (run ? 1 : 0) - 2 - 2
         const titleEl = titlePress === 'title'
           ? <Button key={`kbt-${x.file}`} plain dimColor={fin} label={fit(title, Math.max(6, full ? tw : 2 * tw))} onPress={press} />
           : <Text color={c} wrap={full ? 'truncate-end' : 'wrap'}>{title}</Text>
@@ -2605,12 +2696,12 @@ export const register: Register = (on, options) => {
             {run ? <Box width={1} flexShrink={0} backgroundColor={C.accent} /> : null}
             <Box flexDirection="column" flexGrow={1} flexShrink={1} paddingX={1}>
               <Box flexDirection="row" gap={1}>
-                <Box flexGrow={1} flexShrink={1}>{titleEl}</Box>
+                <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleEl}</Box>
                 <Box flexShrink={0}><Text color={C.muted}>{roleGlyph(x)}</Text></Box>
                 {goCell(`kbt-${x.file}`, press)}
               </Box>
               <Box flexDirection="row" justifyContent="space-between" gap={1}>
-                <Box flexShrink={1}><Text color={C.muted} wrap="truncate-end">{x.project || '—'}</Text></Box>
+                <Box flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">{x.project || '—'}</Text></Box>
                 <Box flexShrink={0}>{right}</Box>
               </Box>
             </Box>
@@ -2655,6 +2746,7 @@ export const register: Register = (on, options) => {
         ? <Box key="kb-empty" marginBottom={1}><Text color={C.muted} wrap="truncate-end">Нээлттэй task алга — + дарж нэм</Text></Box>
         : null
       if (board4) {
+        // the 4 columns share the width equally (flexGrow from a zero basis); cw is only the terminal title budget
         const cw = Math.floor((cols - 3) / 4)
         return (
           <Box key="v2" flexDirection="column">
@@ -2662,14 +2754,14 @@ export const register: Register = (on, options) => {
             {empty}
             <Box key="kb-board" flexDirection="row" columnGap={1}>
               {KB_COLS.map(c => (
-                <Box key={`kbcol-${c.id}`} flexDirection="column" width={cw} flexShrink={0}>
+                <Box key={`kbcol-${c.id}`} flexDirection="column" flexGrow={1} flexShrink={1} width={0} minWidth={0}>
                   <Box flexDirection="row">
-                    <Text bold color={C.text}>{c.name}</Text>
-                    <Text color={C.muted}>{` ${listOf(c.id).length}`}</Text>
+                    <Box flexShrink={1} minWidth={0} overflow="hidden"><Text bold color={C.text} wrap="truncate-end">{c.name}</Text></Box>
+                    <Box flexShrink={0}><Text color={C.muted}>{` ${listOf(c.id).length}`}</Text></Box>
                     <Box flexGrow={1} />
-                    {Input ? <Button key={`kbc-${c.id}`} plain dimColor label={G.plus} onPress={() => void setNewTaskCol($, c.id)} /> : null}
+                    {Input ? <Box flexShrink={0}><Button key={`kbc-${c.id}`} plain dimColor label={G.plus} onPress={() => void setNewTaskCol($, c.id)} /></Box> : null}
                   </Box>
-                  <Text color={C.border}>{G.rule.repeat(cw)}</Text>
+                  {hairline(`kbcol-${c.id}-rule`)}
                   {newInput(c.id)}
                   {listOf(c.id).flatMap(x => [card(x, cw, false), sel === x.file ? actions(x, c.id) : null])}
                   {zoneFor(c.id, 'Энд тавих')}
@@ -2680,30 +2772,20 @@ export const register: Register = (on, options) => {
           </Box>
         )
       }
-      // 420: segment switcher «Inbox 3  Next 4  Waiting 2  Done 2», the active one bold with an accent ━ under it
+      // 420: segment switcher «Inbox 3  Next 4  Waiting 2  Done 2», the active one bold with the accent indicator under it
       const active = KB_COLS.some(c => c.id === kanbanCol) ? kanbanCol
         : listOf('next').some(isRun) ? 'next' : KB_COLS.find(c => listOf(c.id).length)?.id ?? 'next'
       const segs = KB_COLS.map(c => ({ id: c.id, label: `${c.name} ${listOf(c.id).length}` }))
-      // an inactive segment is a Button: native on desktop / vscode, drawn 2 cells wider than its label (as the day strip budgets),
-      // so its run carries that padding and the active ━ stays under its own label
-      const segPad = titlePress === 'title' ? 0 : 2
-      const segRuns: { s: string; c: string }[] = []
-      segs.forEach((g, n) => {
-        segRuns.push({ s: (g.id === active ? G.tabRule : G.rule).repeat(cellWidth(g.label) + (g.id === active ? 0 : segPad)), c: g.id === active ? C.accent : C.border })
-        if (n < segs.length - 1) segRuns.push({ s: G.rule.repeat(2), c: C.border })
-      })
-      const segW = segRuns.reduce((a, r) => a + r.s.length, 0)
-      if (segW < cols) segRuns.push({ s: G.rule.repeat(cols - segW), c: C.border })
       return (
         <Box key="v2" flexDirection="column">
           {hdr}
           {empty}
-          <Box key="kb-segs" flexDirection="row" columnGap={2}>
-            {segs.map(g => (g.id === active
+          <Box key="kb-segs" flexDirection="row" flexWrap="wrap" columnGap={2}>
+            {segs.map(g => tabCell(`kbsw-${g.id}`, g.id === active, g.id === active
               ? <Text key={`kbst-${g.id}`} bold color={C.text}>{g.label}</Text>
               : <Button key={`kbs-${g.id}`} plain dimColor label={g.label} onPress={() => void $.state.set({ plugin: 'fm', key: 'kanbanCol' }, g.id)} />))}
           </Box>
-          <Text wrap="truncate-end">{segRuns.map((r, n) => <Text key={`kbsr-${n}`} color={r.c}>{r.s}</Text>)}</Text>
+          {hairline('kb-segs-rule')}
           {newInput(active)}
           {listOf(active).flatMap(x => [card(x, cols, true), sel === x.file ? actions(x, active) : null, sel === x.file ? detail(x) : null])}
           {zoneFor(active, 'Энд чирж тавих')}
@@ -2712,8 +2794,9 @@ export const register: Register = (on, options) => {
     }
     // ── V4 «▭ Төсөл» (§3 V4): phases by activity, the task table, agents, links; a research session's close row ──
     const projectTab = () => {
-      const pName = projPick || proj
-      const own = !projPick || projPick === proj
+      // a project scope shows that project here too; otherwise the Төсөл tab's own pick, else the session's project
+      const pName = scopeProj || projPick || proj
+      const own = pName === proj
       const pickRows = (list: string[]) => list.map(entry => {
         const [pn = '', stage = ''] = entry.split('|')
         const its = all.filter(x => x.kind === 'task' && x.project.toLowerCase() === pn.toLowerCase())
@@ -2721,7 +2804,7 @@ export const register: Register = (on, options) => {
         const press = () => void pickProject($, pn)
         return (
           <Box key={`pjp-${pn}`} flexDirection="row" gap={1} paddingX={1} hover={{ backgroundColor: C.raised }}>
-            <Box flexGrow={1} flexShrink={1}>{titleCell(`pjpb-${pn}`, [pn, stage, `${pct}%`].filter(Boolean).join(' · '), C.text, false, press, cols - 4 - goW)}</Box>
+            <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`pjpb-${pn}`, [pn, stage, `${pct}%`].filter(Boolean).join(' · '), C.text, false, press, cols - 4)}</Box>
             {goCell(`pjpb-${pn}`, press)}
           </Box>
         )
@@ -2757,7 +2840,7 @@ export const register: Register = (on, options) => {
             <Button key="pj-switch" plain dimColor={!switchOpen} label="төсөл солих" onPress={() => void toggleProjSwitch($)} />
             <Button key="pj-reload" plain dimColor label={G.reload} onPress={() => void reloadProject($)} />
             <Button key="pj-kanban" plain dimColor label={`${G.tabKanban} Kanban`} onPress={() => void kanbanFromProject($)} />
-            <Button key="pj-team" plain dimColor={scope !== 'team'} label="👥 баг" onPress={() => void $.state.set(CAL_SCOPE, 'team')} />
+            <Button key="pj-team" plain dimColor={!scopeAll} label="👥 баг" onPress={() => void pickScope($, 'all')} />
           </Box>
           {switchOpen ? pickRows([...(projPick && proj && !projList.some(e => e.split('|')[0] === proj) ? [`${proj}|`] : []), ...projList.filter(e => e.split('|')[0] !== pName)]) : null}
         </Box>
@@ -2784,15 +2867,15 @@ export const register: Register = (on, options) => {
         if (isRun(x)) return wide ? `ажиллаж${x.claimed ? ` · ${x.claimed}` : ''}` : x.claimed || G.run
         return x.status === 'next-action' ? (x.date ? 'товлосон' : 'дараагийн') : x.status === 'waiting' ? 'хүлээгдэж' : x.status === 'inbox' ? 'inbox' : x.status
       }
-      const ptW = wide ? cols - 2 - 2 - 7 - 8 - 16 - 4 - goW : cols - 2 - 2 - 2 - 11 - 4 - goW
+      const ptW = wide ? cols - 2 - 2 - 7 - 8 - 16 - 4 : cols - 2 - 2 - 2 - 11 - 4
       const pHead = (p: string) => (
         <Box key={`pjh-${p}`} flexDirection="row" gap={1}>
           <Box width={2} flexShrink={0} />
           {wide ? null : <Box width={2} flexShrink={0} />}
-          <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Task</Text></Box>
-          {wide ? <Box width={7} flexShrink={0}><Text color={C.muted}>Agent</Text></Box> : null}
-          {wide ? <Box width={8} flexShrink={0}><Text color={C.muted}>Хугацаа</Text></Box> : null}
-          <Box width={wide ? 16 : 11} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Төлөв</Text></Box>
+          <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted}>Task</Text></Box>
+          {wide ? <Box width={7} flexShrink={0} overflow="hidden"><Text color={C.muted}>Agent</Text></Box> : null}
+          {wide ? <Box width={8} flexShrink={0} overflow="hidden"><Text color={C.muted}>Хугацаа</Text></Box> : null}
+          <Box width={wide ? 16 : 11} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={C.muted}>Төлөв</Text></Box>
           {goPad}
         </Box>
       )
@@ -2805,12 +2888,12 @@ export const register: Register = (on, options) => {
         return (
           <Box key={`pj-${x.file}`} flexDirection="column">
             <Box key={`pjr-${x.file}`} flexDirection="row" gap={1} backgroundColor={sel === x.file ? C.raised : undefined} hover={{ backgroundColor: C.raised }}>
-              <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.accent}>{fin ? G.done : run ? G.run : ' '}</Text></Box>
-              {wide ? null : <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.muted}>{gl}</Text></Box>}
-              <Box flexGrow={1} flexShrink={1}>{titleCell(`pjb-${x.file}`, shortTitle(x.title, x.project), c, fin, press, ptW)}</Box>
-              {wide ? <Box width={7} flexShrink={0}><Text color={fin ? C.done : C.muted}>{gl}</Text></Box> : null}
-              {wide ? <Box width={8} flexShrink={0}><Text color={fin ? C.done : C.text}>{x.date ? mmdd(x.date) : '—'}</Text></Box> : null}
-              <Box width={wide ? 16 : 11} flexShrink={0} justifyContent="flex-end"><Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v4Status(x)}</Text></Box>
+              <Box width={2} flexShrink={0} overflow="hidden"><Text color={fin ? C.done : C.accent}>{fin ? G.done : run ? G.run : ' '}</Text></Box>
+              {wide ? null : <Box width={2} flexShrink={0} overflow="hidden"><Text color={fin ? C.done : C.muted}>{gl}</Text></Box>}
+              <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`pjb-${x.file}`, shortTitle(x.title, x.project), c, fin, press, ptW)}</Box>
+              {wide ? <Box width={7} flexShrink={0} overflow="hidden"><Text color={fin ? C.done : C.muted}>{gl}</Text></Box> : null}
+              {wide ? <Box width={8} flexShrink={0} overflow="hidden"><Text color={fin ? C.done : C.text}>{x.date ? mmdd(x.date) : '—'}</Text></Box> : null}
+              <Box width={wide ? 16 : 11} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v4Status(x)}</Text></Box>
               {goCell(`pjb-${x.file}`, press)}
             </Box>
             {detail(x)}
@@ -2858,19 +2941,19 @@ export const register: Register = (on, options) => {
       const agentsBody = slugs.length && agentsOpen ? (
         <Box key="pja" flexDirection="column" paddingLeft={2}>
           <Box key="pja-head" flexDirection="row" gap={1}>
-            <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Agent</Text></Box>
-            {wide ? <Box width={38} flexShrink={0}><Text color={C.muted}>Сүүлийн мессеж</Text></Box> : null}
-            <Box width={6} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Task</Text></Box>
-            <Box width={9} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Хугацаа</Text></Box>
+            <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted}>Agent</Text></Box>
+            {wide ? <Box width={38} flexShrink={0} overflow="hidden"><Text color={C.muted}>Сүүлийн мессеж</Text></Box> : null}
+            <Box width={6} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={C.muted}>Task</Text></Box>
+            <Box width={9} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={C.muted}>Хугацаа</Text></Box>
           </Box>
           {slugs.map(slug => {
             const its = ptasks.filter(x => firstRole(x) === slug)
             return (
               <Box key={`pja-${slug}`} flexDirection="row" gap={1}>
-                <Box flexGrow={1} flexShrink={1}><Text wrap="truncate-end"><Text color={C.muted}>{`${glyphOfRole(slug)} `}</Text><Text color={C.text}>{AGENT_NAME[slug] ?? slug}</Text></Text></Box>
-                {wide ? <Box width={38} flexShrink={0}><Text color={C.muted} wrap="truncate-end">{slug === 'finance' ? '—' : meta.lastMsg[slug] || '—'}</Text></Box> : null}
-                <Box width={6} flexShrink={0} justifyContent="flex-end"><Text color={C.text}>{String(its.length)}</Text></Box>
-                <Box width={9} flexShrink={0} justifyContent="flex-end"><Text color={C.text}>{spent(its)}</Text></Box>
+                <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text wrap="truncate-end"><Text color={C.muted}>{`${glyphOfRole(slug)} `}</Text><Text color={C.text}>{AGENT_NAME[slug] ?? slug}</Text></Text></Box>
+                {wide ? <Box width={38} flexShrink={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">{slug === 'finance' ? '—' : meta.lastMsg[slug] || '—'}</Text></Box> : null}
+                <Box width={6} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={C.text}>{String(its.length)}</Text></Box>
+                <Box width={9} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={C.text}>{spent(its)}</Text></Box>
               </Box>
             )
           })}
@@ -2878,7 +2961,7 @@ export const register: Register = (on, options) => {
       ) : null
       // «Холбоос» (hidden without links): the names as the hint; open → one Button per link (https through the OS opener)
       const linksPhase = meta.links.length ? phase('project:links', 'Холбоос', {
-        dflt: false, hint: fit(meta.links.map(l => l.name).join(' · '), wide ? 40 : 14), count: String(meta.links.length), mt: slugs.length ? agentsOpen : true,
+        dflt: false, hint: meta.links.map(l => l.name).join(' · '), count: String(meta.links.length), mt: slugs.length ? agentsOpen : true,
       }) : null
       const linksBody = meta.links.length && linksOpen ? (
         <Box key="pjl" flexDirection="row" flexWrap="wrap" columnGap={2} paddingLeft={2}>
@@ -2904,6 +2987,7 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="column" backgroundColor={FILL ? C.surface : undefined} minHeight={e.props.scroll.bodyRows}>
         {tabBar}
+        {scopeBar}
         <Box flexDirection="column" paddingX={1} flexGrow={1}>
           {body}
           <Box flexGrow={1} />
@@ -3054,7 +3138,7 @@ export const register: Register = (on, options) => {
       return (
         <Box key={t.title} flexDirection="column" marginTop={1} borderStyle="round" borderColor={late ? '#F7768E' : t.status === 'in-progress' ? IN_PROGRESS : '#3B4261'} paddingX={1}>
           <Box flexDirection="row" justifyContent="space-between" gap={1}>
-            <Box flexGrow={1} flexShrink={1}><Text wrap="truncate-end" bold={!isDone(t)} dimColor={isDone(t)} strikethrough={isDone(t)}>{fit(shortTitle(t.title, t.project, t.private), Math.max(8, width - 5 - (when ? cellWidth(when) + 1 : 0)))}</Text></Box>
+            <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text wrap="truncate-end" bold={!isDone(t)} dimColor={isDone(t)} strikethrough={isDone(t)}>{shortTitle(t.title, t.project, t.private)}</Text></Box>
             {when ? <Box flexShrink={0}><Text color={late ? '#F7768E' : '#737AA2'}>{when}</Text></Box> : null}
           </Box>
           <Box flexDirection="row" justifyContent="space-between" gap={1} flexWrap="wrap">

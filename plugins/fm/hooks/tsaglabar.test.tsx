@@ -50,8 +50,15 @@ function vault(on: On, withRegistry = false, registry: string | (() => string) =
   on('fs.exists', async ($, e) => answer(norm(e.path) in FILES || Object.keys(FILES).some(f => dirOf(f) === norm(e.path))))
   // a missing note reads as '' (the plugin treats a failed read the same way)
   on('fs.read', async ($, e) => answer(WRITES[norm(e.path)] ?? FILES[norm(e.path)] ?? (!norm(e.path).endsWith('registry.json') ? '' : !withRegistry ? '{}' : typeof registry === 'function' ? registry() : registry)))
-  on('fs.list', async ($, e) => answer(Object.keys(FILES).filter(f => dirOf(f) === norm(e.path))
-    .map(f => ({ name: f.slice(f.lastIndexOf('/') + 1), kind: 'file' as const, size: 1, mtimeMs: 1, isLink: false }))))
+  // a folder lists its files and (once each) the sub-folders that hold files deeper down (02-Projects/<name>/ for the pickers)
+  on('fs.list', async ($, e) => {
+    const dir = norm(e.path)
+    const files = Object.keys(FILES).filter(f => dirOf(f) === dir)
+      .map(f => ({ name: f.slice(f.lastIndexOf('/') + 1), kind: 'file' as const, size: 1, mtimeMs: 1, isLink: false }))
+    const subs = [...new Set(Object.keys(FILES).filter(f => f.startsWith(`${dir}/`) && dirOf(f) !== dir).map(f => f.slice(dir.length + 1).split('/')[0] ?? ''))]
+      .filter(Boolean).map(name => ({ name, kind: 'dir' as const, size: 0, mtimeMs: 1, isLink: false }))
+    return answer([...files, ...subs])
+  })
   return clock
 }
 // the fm-tasks pane's «📅 Цаглабар» loads the vault; the Kanban tab's ▽ widens the scope to the team (the sample's tasks
@@ -167,8 +174,8 @@ test('§9: only a task this session started mirrors the plan; its row carries n/
   await desk.unmount()
 })
 
-test('day strip drops the weekday only when the labels would not fit (two-digit count)', async ($, on) => {
-  // one task on each other day of the week, and 13 on Wednesday: «Да 05¹ … Лх 07¹³ … Ба 09⁷ …» = 43 cells + 7 air + ‹ ›
+test('day strip: weekday in the 780 layout only (no measured widths), a two-digit count kept; the selected day has its indicator', async ($, on) => {
+  // one task on each other day of the week, and 13 on Wednesday: «Да 05¹ … Лх 07¹³ … Ба 09⁷ …»
   const extra = ['05', '06', '08', '10', '11', ...Array.from({ length: 13 }, () => '07')].map((dd, n) => [`${V}/01-GTD/Tasks/strip ${n}.md`, task('next-action', '🎨 Creative', `2026-10-${dd}`)] as const)
   for (const [f, t] of extra) FILES[f] = t
   vault(on)
@@ -180,11 +187,19 @@ test('day strip drops the weekday only when the labels would not fit (two-digit 
     await ui.unmount()
     return full ? 'full' : short ? 'short' : 'none'
   }
-  expect(await label('terminal', 56)).toBe('full')
-  expect(await label('terminal', 52)).toBe('short')
+  expect(await label('terminal', 98)).toBe('full')
+  expect(await label('terminal', 76)).toBe('full')
+  expect(await label('terminal', 56)).toBe('short')
   expect(await label('terminal', 50)).toBe('short')
   expect(await label('desktop', 98)).toBe('full')
   expect(await label('desktop', 56)).toBe('short')
+  // the indicator is a 1-row Box under the selected day's label (the accent), the other days' stay empty
+  const ui = await $.ui.mount({ plugin: 'fm', surface: 'desktop', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+  expect((await ui.find({ key: 'dst-2026-10-09-i' }))?.props.backgroundColor).toBe('#2C66AD')
+  expect((await ui.find({ key: 'dst-2026-10-08-i' }))?.props.backgroundColor).toBeUndefined()
+  expect((await ui.find({ key: 'tabw-cal-i' }))?.props.backgroundColor).toBe('#2C66AD')
+  expect((await ui.find({ key: 'tabw-kanban-i' }))?.props.backgroundColor).toBeUndefined()
+  await ui.unmount()
   for (const [f] of extra) delete FILES[f]
 })
 
@@ -741,4 +756,143 @@ test('a non-private session keeps a LOSE error blocking (no local start)', async
   await side.press({ key: 'run-acme carousel #3 — зураг' })
   expect(WRITES[FILE]).toBeUndefined()
   await side.unmount()
+})
+
+// Scope (itge.e 2026-10-09): every tab shows only this session's own scope by default; the tab bar's «▾» picker switches
+// to a registry role, an active project or «👥 Бүгд» (kept in the session's state)
+const ARCH_REG = JSON.stringify({
+  sessions: { 'sid-test': { role: 'developer', title: '🏛️ Architect · PC', device: 'PC' } },
+  roles: { developer: { agent: '🏛️ Architect Agent' }, creative: { agent: '🎨 Creative Agent' }, area: { agent: '📥 GTD Agent' }, finance: { agent: '🔒 Finance Agent', private: true } },
+})
+const SCOPE_FILES: Record<string, string> = {
+  [`${V}/01-GTD/Tasks/Member-д хариу.md`]: task('next-action', '[[Member]]', `${DAY} 15:00`, 'responsible: bd\n'),
+  [`${V}/01-GTD/Tasks/Season 2 бэлтгэл.md`]: task('completed', 'bd', `${DAY} 08:00`, `completed: ${DAY} 08:30\n`),
+  [`${V}/01-GTD/Tasks/Hook цэвэрлэгээ.md`]: task('next-action', '🏛️ Architect · Mac', ''),
+  [`${V}/01-GTD/Tasks/Alpha - CMS.md`]: task('next-action', '🎨 Creative', `${DAY} 12:00`, 'project: "[[02-Projects/Alpha/Alpha]]"\n'),
+  [`${V}/02-Projects/Alpha/Alpha.md`]: '---\ntype: project\nstatus: active\n---\n',
+}
+const withScopeFiles = () => {
+  Object.assign(FILES, SCOPE_FILES)
+  return () => { for (const f of Object.keys(SCOPE_FILES)) { delete FILES[f]; delete WRITES[f] } }
+}
+// the fm-tasks pane's «📅 Цаглабар» loads the vault, scope untouched (the session's own)
+const openOwn = async ($: Engine) => {
+  const tasksPane = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tasks', props: pane(60) })
+  await tasksPane.press({ key: 'pane-cal' })
+  await tasksPane.unmount()
+}
+
+test('scope: an Architect session sees only its own role by default (no bd / other owners / events), on every tab', async ($, on) => {
+  const done = withScopeFiles()
+  try {
+    vault(on, true, ARCH_REG)
+    await openOwn($)
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'desktop', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    expect((await ui.find({ key: 'scope' }))?.props.label).toBe('🏛️ Architect ▾')
+    // «Өнөөдөр» (done rows too), the shelf, Kanban, Тойм: Architect's own tasks only — on any device («· Mac»)
+    expect(await ui.find({ text: 'Pane код review' })).toBeDefined()
+    for (const other of [/Member/, /Season 2/, /acme carousel/, /Daily review/, /Inai Website/]) expect(await ui.find({ text: other })).toBeUndefined()
+    await ui.press({ key: 'phb-cal:shelf' })
+    expect(await ui.find({ text: 'Hook цэвэрлэгээ' })).toBeDefined()
+    expect(await ui.find({ text: 'Skool нийтлэл' })).toBeUndefined()
+    await ui.press({ key: 'tab-kanban' })
+    expect(await ui.find({ text: /acme carousel|Member|Skool/ })).toBeUndefined()
+    expect(await ui.find({ text: 'Pane код review' })).toBeDefined()
+    await ui.press({ key: 'tab-review' })
+    expect(await ui.find({ text: /Member|acme carousel/ })).toBeUndefined()
+    await ui.unmount()
+  } finally {
+    done()
+  }
+})
+
+test('scope: the picker lists roles, projects and «Бүгд»; a project shows that project, «Бүгд» shows all', async ($, on) => {
+  const done = withScopeFiles()
+  try {
+    vault(on, true, ARCH_REG)
+    await openOwn($)
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    await ui.press({ key: 'scope' })
+    expect(await ui.find({ type: 'Text', text: '🏛️ Architect · энэ сешн' })).toBeDefined()
+    expect(await ui.find({ key: 'scope-role:creative' })).toBeDefined()
+    expect(await ui.find({ key: 'scope-role:developer' })).toBeUndefined()
+    // 🔒 a non-private session is not offered the private role
+    expect(await ui.find({ key: 'scope-role:finance' })).toBeUndefined()
+    await ui.press({ key: 'scope-proj:Alpha' })
+    expect(await ui.find({ key: 'scope-menu' })).toBeUndefined()
+    expect((await ui.find({ key: 'scope' }))?.props.label).toBe('▭ Alpha ▾')
+    expect(await ui.find({ text: 'Alpha - CMS' })).toBeDefined()
+    expect(await ui.find({ text: /Pane код review|acme carousel/ })).toBeUndefined()
+    await ui.press({ key: 'tab-project' })
+    expect(await ui.find({ type: 'Text', text: 'Alpha' })).toBeDefined()
+    await ui.press({ key: 'tab-cal' })
+    await ui.press({ key: 'scope' })
+    await ui.press({ key: 'scope-role:creative' })
+    expect(await ui.find({ text: 'acme carousel #3 — зураг' })).toBeDefined()
+    expect(await ui.find({ text: 'Pane код review' })).toBeUndefined()
+    await ui.press({ key: 'scope' })
+    await ui.press({ key: 'scope-all' })
+    expect((await ui.find({ key: 'scope' }))?.props.label).toBe('👥 Бүгд ▾')
+    for (const any of ['Pane код review', 'acme carousel #3 — зураг', 'Member-д хариу', 'Season 2 бэлтгэл']) expect(await ui.find({ text: any })).toBeDefined()
+    // back to the session's own
+    await ui.press({ key: 'scope' })
+    await ui.press({ key: 'scope-own' })
+    expect(await ui.find({ text: 'Member-д хариу' })).toBeUndefined()
+    await ui.unmount()
+  } finally {
+    done()
+  }
+})
+
+test('scope: «Бүгд» in a non-private session still never lists a private task', async ($, on) => {
+  const done = withPrivate()
+  try {
+    vault(on, true)
+    await openOwn($)
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    await ui.press({ key: 'scope' })
+    await ui.press({ key: 'scope-all' })
+    expect(await ui.find({ text: 'acme carousel #3 — зураг' })).toBeDefined()
+    expect(await ui.find({ text: /Зээлийн|Татвар/ })).toBeUndefined()
+    await ui.press({ key: 'tab-kanban' })
+    expect(await ui.find({ text: /Зээлийн|Татвар/ })).toBeUndefined()
+    await ui.unmount()
+  } finally {
+    done()
+  }
+})
+
+test('scope: a private session with «Бүгд» lists its private tasks (money never drawn)', async ($, on) => {
+  const done = withPrivate()
+  try {
+    vault(on, true, FIN_REG)
+    await openOwn($)
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    await ui.press({ key: 'scope' })
+    await ui.press({ key: 'scope-all' })
+    expect(await ui.find({ text: /Зээлийн төлбөр/ })).toBeDefined()
+    expect(await ui.find({ text: /Татвар тайлан/ })).toBeDefined()
+    expect(await ui.find({ text: /1,500,000|₮/ })).toBeUndefined()
+    await ui.unmount()
+  } finally {
+    done()
+  }
+})
+
+test('scope: a half-synced registry keeps the Architect scope (never falls back to itge.e / bd tasks)', async ($, on) => {
+  const done = withScopeFiles()
+  try {
+    let reg = ARCH_REG
+    vault(on, true, () => reg)
+    await openOwn($)
+    reg = '{"sessions": {"sid-te'
+    await $.turn.complete(turnEnd('t1'))
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    expect((await ui.find({ key: 'scope' }))?.props.label).toBe('🏛️ Architect ▾')
+    expect(await ui.find({ text: 'Pane код review' })).toBeDefined()
+    expect(await ui.find({ text: /Member|Season 2|acme carousel/ })).toBeUndefined()
+    await ui.unmount()
+  } finally {
+    done()
+  }
 })
