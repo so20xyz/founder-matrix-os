@@ -25,6 +25,7 @@ const CAL_WEEK = { plugin: 'fm', key: 'calWeek' } as const
 const CAL_SCOPE = { plugin: 'fm', key: 'calScope' } as const
 const CAL_SEL = { plugin: 'fm', key: 'calSel' } as const
 const NAMES = { plugin: 'fm', key: 'names' } as const
+const PROJ = { plugin: 'fm', key: 'proj' } as const
 const TARGETS = ['gtd', 'wiki', 'creative', 'architect', 'development']
 const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 
@@ -213,7 +214,7 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
     if (s) {
       const role = reg.roles?.[s.role] ?? {}
       // a project session names its project folder (sessions[sid].folder); a project-specific role may too
-      const where = typeof s.folder === 'string' ? s.folder : typeof role.project === 'string' ? role.project : ''
+      const where = typeof s.folder === 'string' ? s.folder : typeof s.project === 'string' ? s.project : typeof role.project === 'string' ? role.project : ''
       project = where.replace(/\/$/, '').split('/').pop() ?? ''
       names = [s.title, role.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
     }
@@ -319,7 +320,13 @@ export const register: Register = (on, options) => {
     const meRe = new RegExp(`(^|\\W)(${[member, 'itge\\.e', 'bd', 'me'].filter(Boolean).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(\\W|$)`, 'i')
     const coreName = (n: string) => n.replace(/[^\p{L}\p{N}.\s-]/gu, ' ').replace(/\bagent\b/gi, ' ').replace(/\s+/g, ' ').trim().toLowerCase()
     const roleCores = roleNames.map(coreName).filter(n => n.length > 1)
-    const isMine = (x: CalItem) => x.kind === 'event' || meRe.test(x.owner) || roleCores.some(n => coreName(x.owner).includes(n))
+    // project session → its project's tasks; agent session (not GTD) → that agent's tasks; GTD / unknown → itge.e's own
+    const personal = !roleCores.length || roleCores.some(n => /gtd|area/.test(n))
+    const projKey = proj.toLowerCase()
+    const isMine = (x: CalItem) => projKey
+      ? x.project.toLowerCase() === projKey || (x.kind === 'event' && x.title.toLowerCase().includes(projKey.split(' ')[0]))
+      : personal ? x.kind === 'event' || meRe.test(x.owner) : roleCores.some(n => coreName(x.owner).includes(n))
+    const scopeLabel = projKey ? `💼 ${proj}` : personal ? '👤 миний' : `🤖 ${roleNames[1] || roleNames[0] || 'agent'}`
     const all = cal
     cal = scope === 'team' ? all : all.filter(isMine)
     const itemsOn = (d: string) => cal.filter(x => x.date === d)
@@ -327,7 +334,7 @@ export const register: Register = (on, options) => {
     const overdue = cal.filter(x => x.kind === 'task' && x.date && x.date < today)
     const shelf = cal.filter(x => x.kind === 'task' && !x.date).slice(0, 8)
     const mine = new RegExp(`(^|\\W)(${[member, 'itge\\.e', 'bd', 'me'].filter(Boolean).join('|')})(\\W|$)`, 'i')
-    const turn = cal.filter(x => x.kind === 'task' && mine.test(x.owner)).sort((a, b) => (a.date || '9').localeCompare(b.date || '9')).slice(0, 4)
+    const turn = cal.filter(x => x.kind === 'task' && (scope === 'team' ? mine.test(x.owner) : true)).sort((a, b) => (a.date || '9').localeCompare(b.date || '9')).slice(0, 4)
     const tomorrow = (() => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + 1); return iso(d) })()
     const hhmm = now.toISOString().slice(11, 16)
     const tone = { event: '#a78bfa', task: '#6b8aff', late: '#f87171', today: '#a78bfa', turn: '#f5b544', ok: '#5fd38a', line: '#232837', muted: '#5a6275' }
@@ -387,7 +394,7 @@ export const register: Register = (on, options) => {
             <Button key="wk-prev" label="‹" plain onPress={() => void $.state.set(CAL_WEEK, week - 1)} />
             <Button key="wk-now" label="өнөөдөр" plain onPress={() => { void $.state.set(CAL_WEEK, 0); void $.state.set(CAL_DAY, '') }} />
             <Button key="wk-next" label="›" plain onPress={() => void $.state.set(CAL_WEEK, week + 1)} />
-            <Button key="wk-scope" label={scope === 'team' ? '👥 баг' : '👤 миний'} plain onPress={() => void $.state.set(CAL_SCOPE, scope === 'team' ? 'mine' : 'team')} />
+            <Button key="wk-scope" label={scope === 'team' ? '👥 баг' : scopeLabel} plain onPress={() => void $.state.set(CAL_SCOPE, scope === 'team' ? 'mine' : 'team')} />
             <Button key="wk-load" label="⟳" plain onPress={() => void loadCalendar($)} />
           </Box>
         </Box>
@@ -425,7 +432,7 @@ export const register: Register = (on, options) => {
         ))}
         {overdue.length ? <Box marginTop={1}><Text color={tone.late}>ХУГАЦАА ХЭТЭРСЭН · {overdue.length}</Text></Box> : null}
         {overdue.slice(0, 6).map(x => card(x, true))}
-        <Box marginTop={1}><Text dimColor>ОГНООГҮЙ ТАВИУР · {cal.filter(x => x.kind === 'task' && !x.date).length}{scope === 'mine' ? ' · миний' : ' · баг'}</Text></Box>
+        <Box marginTop={1}><Text dimColor>ОГНООГҮЙ ТАВИУР · {cal.filter(x => x.kind === 'task' && !x.date).length}{scope === 'mine' ? ` · ${scopeLabel}` : ' · баг'}</Text></Box>
         {shelf.map(x => card(x, false))}
         {goals.length ? <Box marginTop={1}><Text dimColor>MILESTONE · ЗОРИЛГО</Text></Box> : null}
         {goals.slice(0, 5).map(g => {
