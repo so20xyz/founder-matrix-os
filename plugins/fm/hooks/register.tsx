@@ -105,7 +105,7 @@ export const register: Register = (on, options) => {
         </Box>
         {collapsed ? null : shown.map(t => {
           const late = !isDone(t) && !!t.due && t.due < today
-          const meta = [label[t.status] ?? t.status, t.due ? `${late ? '⚠ ' : ''}${t.due}` : '', !oneProject && t.project ? t.project : '']
+          const meta = [t.due ? `${late ? '⚠ ' : ''}${t.due}` : '', !oneProject && t.project ? t.project : '']
             .filter(Boolean).join(' · ')
           return (
             <Box key={t.title} flexDirection="column" marginTop={1}>
@@ -114,7 +114,34 @@ export const register: Register = (on, options) => {
                 <Text wrap="truncate-end" dimColor={isDone(t)} strikethrough={isDone(t)}>{shortTitle(t.title, t.project)}</Text>
               </Box>
               <Box flexDirection="row" justifyContent="space-between" paddingLeft={2} gap={1}>
-                <Text dimColor wrap="truncate-end">{meta}</Text>
+                <Box flexDirection="row" gap={1} flexShrink={1}>
+                  {isDone(t) ? <Text dimColor>{label[t.status] ?? t.status}</Text> : (
+                    <Button
+                      key={`status-${t.title}`}
+                      label={`⇄ ${label[t.status] ?? t.status}`}
+                      plain
+                      onPress={() => {
+                        // GTD cycle: inbox → next-action → waiting → completed (written straight to the task note)
+                        const order = ['inbox', 'next-action', 'waiting', 'completed']
+                        const nextStatus = order[(order.indexOf(t.status) + 1) % order.length]
+                        if (!t.file) return
+                        void (async () => {
+                          const body = await $.fs.read(t.file as string).catch(() => '')
+                          const cur = typeof body === 'string' ? body : ''
+                          if (!cur.startsWith('---')) return
+                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+                          let out = cur.replace(/^status:.*$/m, `status: ${nextStatus}`)
+                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out
+                          await $.fs.write(t.file as string, out)
+                          const { value: now = [] } = await $.state.get(TASKS)
+                          await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: nextStatus, updated: day } : x)))
+                          $.ui.toast(`Төлөв → ${nextStatus}`)
+                        })()
+                      }}
+                    />
+                  )}
+                  <Text dimColor wrap="truncate-end">{meta}</Text>
+                </Box>
                 {isDone(t) ? null : (
                   <Box flexDirection="row" gap={2} flexShrink={0}>
                     <Button

@@ -1,6 +1,6 @@
 {
   "name": "fm",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "displayName": "Founder Matrix Second Brain",
   "description": "Хэрэглэгч бүрийн хувийн Obsidian vault-ийг GTD + PARA + атом тэмдэглэлээр ажиллуулах хөдөлгүүр: 7 Agent (Project, Area, Resource, Research, Developer, Creative, Finance), 10 үндсэн skill + 6 хэрэгсэл, fm_doctor суулгалт. / Founder Matrix Second Brain: personal Obsidian vault engine (GTD, PARA, atomic notes, agents, private finance) with guided setup.",
   "author": {
