@@ -2153,8 +2153,8 @@ export const register: Register = (on, options) => {
         .filter(x => (seen.has(x.file) ? false : (seen.add(x.file), true)))
         .sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
     }
-    const v1Status = (x: CalItem) => (isFin(x) ? clockOf(x.completed ?? '') || G.done
-      : isRun(x) ? (wide ? `ажиллаж байна${x.claimed ? ` · ${x.claimed}` : ''}` : x.claimed || G.run)
+    const v1Status = (x: CalItem) => (isFin(x) ? `${clockOf(x.completed ?? '') || G.done}${!wide && x.claimed ? ` ${x.claimed}` : ''}`
+      : isRun(x) ? (wide ? 'ажиллаж байна' : x.claimed || G.run)
       : x.status === 'waiting' ? 'хүлээж'
       : x.kind === 'event' || x.time ? 'товлосон'
       : x.status === 'inbox' ? 'inbox' : 'товлосон')
@@ -2264,7 +2264,7 @@ export const register: Register = (on, options) => {
               {col(6, <Text color={c} wrap="truncate-end">{time}</Text>)}
               {wide ? null : col(2, <Text color={fin ? C.done : C.muted}>{gl}</Text>)}
               <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`t1b-${x.file}`, x.title, c, fin, press, titleW)}</Box>
-              {wide ? col(11, <Text color={fin ? C.done : C.muted} wrap="truncate-end">{ownerShort(x)}</Text>) : null}
+              {wide ? col(15, <Text color={fin ? C.done : C.muted} wrap="truncate-end">{`${ownerShort(x)}${x.claimed ? ` · ${x.claimed}` : ''}`}</Text>) : null}
               {col(wide ? 18 : 9, <Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v1Status(x)}</Text>, true)}
               {goCell(`t1b-${x.file}`, press)}
             </Box>
@@ -2278,7 +2278,7 @@ export const register: Register = (on, options) => {
           {col(6, <Text color={C.muted}>Цаг</Text>)}
           {wide ? null : col(2, null)}
           <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">Task</Text></Box>
-          {wide ? col(11, <Text color={C.muted}>Эзэн</Text>) : null}
+          {wide ? col(15, <Text color={C.muted}>Эзэн</Text>) : null}
           {col(wide ? 18 : 9, <Text color={C.muted}>Төлөв</Text>, true)}
           {goPad}
         </Box>

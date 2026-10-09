@@ -89,7 +89,9 @@ test('V1 day table, activity row and session plan at 780 and 420 widths', async 
   for (const surface of ['terminal', 'desktop'] as const) {
     const wide = await $.ui.mount({ plugin: 'fm', surface, component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
     expect(await wide.find({ type: 'Text', text: '3/7' })).toBeDefined()
-    expect(await wide.find({ type: 'Text', text: 'ажиллаж байна · PC' })).toBeDefined()
+    expect(await wide.find({ type: 'Text', text: 'ажиллаж байна' })).toBeDefined()
+    // the device that holds it is on the owner (Эзэн) cell: «<owner> · PC»
+    expect(await wide.find({ type: 'Text', text: / · PC$/ })).toBeDefined()
     expect(await wide.find({ type: 'Text', text: 'Эзэн' })).toBeDefined()
     expect(await wide.find({ type: 'Text', text: '11m' })).toBeDefined()
     expect(await wide.find({ type: 'Text', text: /Баасан 10\/09/ })).toBeDefined()
