@@ -1,7 +1,7 @@
 import type { Register } from 'claude-code'
 
 import type { VaultTask } from '../types'
-import { matchesSession, parseTask, rank } from './parse'
+import { matchesSession, parseTask, rank, shortTitle } from './parse'
 
 // Task band (itge.e 2026-10-09): above the prompt, the open vault tasks this session's role owns.
 // Area agents match `owner`/`responsible` against their role's names; a project session matches `project:`.
@@ -81,50 +81,58 @@ export const register: Register = (on, options) => {
     if (e.props.hasSurvey || list.length === 0 || hidden) return next(e)
     const { Box, Button, Text } = $.ui.resolve(e)
     const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
+    const isDone = (t: VaultTask) => t.status === 'completed' || t.status === 'done'
     const tone: Record<string, string> = { 'next-action': 'cyan', waiting: 'yellow', inbox: 'gray' }
-    const label: Record<string, string> = { 'next-action': 'хийх', waiting: 'хүлээж буй', inbox: 'inbox' }
-    const shown = list.slice(0, 4)
+    const label: Record<string, string> = { 'next-action': 'хийх', waiting: 'хүлээж буй', inbox: 'inbox', completed: 'өнөөдөр дууссан', done: 'өнөөдөр дууссан' }
+    const open = list.filter(t => !isDone(t))
+    const shown = [...open.slice(0, 4), ...list.filter(isDone).slice(0, 2)]
+    const project = list.find(t => t.project)?.project
+    const oneProject = !!project && list.every(t => t.project === project)
     return (
       <Box flexDirection="column" borderStyle="round" borderColor="gray" borderDimColor paddingX={1}>
         <Box flexDirection="row" justifyContent="space-between">
-          <Text bold>📌 Миний task <Text dimColor>· {list.length}</Text></Text>
+          <Text bold>📌 Миний task <Text dimColor>· {open.length} нээлттэй{oneProject ? ` · ${project}` : ''}</Text></Text>
           <Text dimColor>/tasks</Text>
         </Box>
         {shown.map(t => {
-          const late = !!t.due && t.due < today
+          const late = !isDone(t) && !!t.due && t.due < today
+          const meta = [label[t.status] ?? t.status, t.due ? `${late ? '⚠ ' : ''}${t.due}` : '', !oneProject && t.project ? t.project : '']
+            .filter(Boolean).join(' · ')
           return (
-            <Box key={t.title} flexDirection="row" justifyContent="space-between" gap={1}>
-              <Box flexDirection="row" flexShrink={1} gap={1}>
-                <Text color={late ? 'red' : tone[t.status] ?? 'gray'}>●</Text>
-                <Text wrap="truncate-end">{t.title}</Text>
-                <Text dimColor wrap="truncate-end">
-                  {label[t.status] ?? t.status}{t.due ? ` · ${late ? '⚠ ' : ''}${t.due}` : ''}{t.project ? ` · ${t.project}` : ''}
-                </Text>
+            <Box key={t.title} flexDirection="column" marginTop={1}>
+              <Box flexDirection="row" gap={1}>
+                <Text color={isDone(t) ? 'green' : late ? 'red' : tone[t.status] ?? 'gray'}>{isDone(t) ? '✓' : '●'}</Text>
+                <Text wrap="truncate-end" dimColor={isDone(t)} strikethrough={isDone(t)}>{shortTitle(t.title, t.project)}</Text>
               </Box>
-              <Box flexDirection="row" gap={1} flexShrink={0}>
-                <Button
-                  key={`run-${t.title}`}
-                  label="▶ Хийх"
-                  plain
-                  onPress={() => void $.prompt.submit({
-                    text: `Vault-ийн task-ийг гүйцэтгэ: [[01-GTD/Tasks/${t.title}]] — эхлээд note-ийг уншаад, хийж болох алхмыг хий, дууссан бол status-ийг completed болгож «## Үр дүн» бич.`,
+              <Box flexDirection="row" justifyContent="space-between" paddingLeft={2} gap={1}>
+                <Text dimColor wrap="truncate-end">{meta}</Text>
+                {isDone(t) ? null : (
+                  <Box flexDirection="row" gap={2} flexShrink={0}>
+                    <Button
+                      key={`run-${t.title}`}
+                      label="▶ Хийх"
+                      plain
+                      onPress={() => void $.prompt.submit({
+                        text: `Vault-ийн task-ийг гүйцэтгэ: [[01-GTD/Tasks/${t.title}]] — эхлээд note-ийг уншаад, хийж болох алхмыг хий, дууссан бол status-ийг completed болгож «## Үр дүн» бич.`,
                     asUser: true,
-                  })}
-                />
-                <Button
-                  key={`hand-${t.title}`}
-                  label="↪ Шилжүүлэх"
-                  plain
-                  onPress={() => void $.prompt.submit({
-                    text: `Task-ийг тохирох agent руу шилжүүл (Notion шиг): [[01-GTD/Tasks/${t.title}]] — note-ийг уншаад ажлын төрлөөр нь сонго: судалгаа → 📚 Wiki, дизайн/контент → 🎨 Creative, тодорхой төслийн ажил → owner "💼 Project" + project, GTD/хүмүүс/санах → 📥 GTD. Frontmatter: owner = тэр agent, status: inbox, delegated_from = энэ сешний дүр, delegated: өнөөдөр; «## Шилжүүлэлт» хэсэгт яагаад ба юу хүлээж буйг нэг мөр. Discord линк хэрэггүй (base өөрөө шинэчлэгдэнэ), зөвхөн яаралтай бол илгээ. Аль agent нь эргэлзээтэй бол надаас асуу.`,
+                      })}
+                    />
+                    <Button
+                      key={`hand-${t.title}`}
+                      label="↪ Шилжүүлэх"
+                      plain
+                      onPress={() => void $.prompt.submit({
+                        text: `Task-ийг тохирох agent руу шилжүүл (Notion шиг): [[01-GTD/Tasks/${t.title}]] — note-ийг уншаад ажлын төрлөөр нь сонго: судалгаа → 📚 Wiki, дизайн/контент → 🎨 Creative, тодорхой төслийн ажил → owner "💼 Project" + project, GTD/хүмүүс/санах → 📥 GTD. Frontmatter: owner = тэр agent, status: inbox, delegated_from = энэ сешний дүр, delegated: өнөөдөр; «## Шилжүүлэлт» хэсэгт яагаад ба юу хүлээж буйг нэг мөр. Discord линк хэрэггүй (base өөрөө шинэчлэгдэнэ), зөвхөн яаралтай бол илгээ. Аль agent нь эргэлзээтэй бол надаас асуу.`,
                     asUser: true,
-                  })}
-                />
+                      })}
+                    />
+                  </Box>
+                )}
               </Box>
             </Box>
           )
         })}
-        {list.length > shown.length ? <Text dimColor>  +{list.length - shown.length} бусад · Tasks base → 🤖 Agent бүрээр</Text> : null}
+        {open.length > 4 ? <Text dimColor>+{open.length - 4} бусад · Tasks base → 🤖 Agent бүрээр</Text> : null}
       </Box>
     )
   })

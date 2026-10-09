@@ -26,3 +26,12 @@ test('area session matches its role names, project session its project', () => {
   expect(matchesSession(t('💼 Project', 'Alpha Site'), ['📁 Alpha Site'], 'Alpha Site')).toBe(true)
   expect(matchesSession(t('💼 Project', 'Beta Site'), ['📁 Alpha Site'], 'Alpha Site')).toBe(false)
 })
+
+import { shortTitle } from './parse'
+
+test('shortTitle drops a leading project name; done tasks only from today', () => {
+  expect(shortTitle('Alpha Site - 2-р уулзалт', 'Alpha Site')).toBe('2-р уулзалт')
+  expect(shortTitle('Other thing', 'Alpha Site')).toBe('Other thing')
+  const d = (title: string, updated: string) => ({ title, status: 'completed', due: '', owner: 'x', updated })
+  expect(rank([d('old', '2026-10-01'), d('new', '2026-10-09')], '2026-10-09').map(t => t.title)).toEqual(['new'])
+})
