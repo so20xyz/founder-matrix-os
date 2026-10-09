@@ -1,4 +1,4 @@
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
 import type { VaultTask } from '../types'
 import { matchesSession, parseTask, rank, shortTitle } from './parse'
@@ -16,6 +16,40 @@ const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 
 // file name -> last seen mtime and parsed task (re-read only files that changed)
 const cache = new Map<string, { mtime: number; task: VaultTask | null }>()
+
+const OPEN_ORDER = ['inbox', 'next-action', 'waiting']
+function nextOpenStatus(status: string): string {
+  return OPEN_ORDER[(OPEN_ORDER.indexOf(status) + 1) % OPEN_ORDER.length]
+}
+
+/** Write a GTD status (and today's `updated`) into the task note, mirror it in state. */
+async function setStatus($: EngineInterface, t: VaultTask, status: string) {
+  if (!t.file) return
+  const body = await $.fs.read(t.file).catch(() => '')
+  const cur = typeof body === 'string' ? body : ''
+  if (!cur.startsWith('---')) return
+  const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
+  let out = cur.replace(/^status:.*$/m, `status: ${status}`)
+  out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}\nupdated: ${day}`)
+  await $.fs.write(t.file, out)
+  const { value: now = [] } = await $.state.get(TASKS)
+  await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status, updated: day } : x)))
+  await $.state.set(CONFIRMING, '')
+  $.ui.toast(`Төлөв → ${status}`)
+}
+
+/** Append a dated comment under «## 💬 Сэтгэгдэл» in the task note. */
+async function addComment($: EngineInterface, t: VaultTask, value: string, member: string) {
+  const text = value.trim()
+  if (!text || !t.file) return
+  const at = new Date(await $.clock.now()).toISOString().slice(0, 16).replace('T', ' ')
+  const body = await $.fs.read(t.file).catch(() => '')
+  const cur = typeof body === 'string' ? body : ''
+  const head = cur.includes('## 💬 Сэтгэгдэл') ? '' : '\n\n## 💬 Сэтгэгдэл\n'
+  await $.fs.write(t.file, `${cur.replace(/\s*$/, '')}${head}\n- ${at} · ${member}: ${text}\n`)
+  await $.state.set(COMMENTING, '')
+  $.ui.toast('Коммент task-д хадгалагдлаа')
+}
 
 export const register: Register = (on, options) => {
   const configured = String((options as Record<string, unknown>).vault_path ?? '')
@@ -253,169 +287,71 @@ updated: ${day}`)
     )
   })
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
+  // Side pane (/tasks-pane): a small dashboard — status mix bar, then open / today-done cards
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { value: list = [] } = await $.state.get(TASKS)
-    const { value: hidden = false } = await $.state.get(HIDDEN)
-    void hidden
-    if (list.length === 0) { const { Text } = $.ui.resolve(e); return <Text dimColor>Нээлттэй task алга.</Text> }
-    const { Box, Button, Input, Text } = $.ui.resolve(e)
-    const collapsed = false
     const { value: commenting = '' } = await $.state.get(COMMENTING)
     const { value: confirming = '' } = await $.state.get(CONFIRMING)
+    const { Box, Button, Input, Text } = $.ui.resolve(e)
     const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
     const isDone = (t: VaultTask) => t.status === 'completed' || t.status === 'done'
-    const tone: Record<string, string> = { 'next-action': 'cyan', waiting: 'yellow', inbox: 'gray' }
-    const label: Record<string, string> = { 'next-action': 'хийх', waiting: 'хүлээж буй', inbox: 'inbox', completed: 'өнөөдөр дууссан', done: 'өнөөдөр дууссан' }
+    const tone: Record<string, string> = { 'next-action': '#7AA2F7', waiting: '#E0AF68', inbox: '#737AA2', completed: '#9ECE6A', done: '#9ECE6A' }
+    const label: Record<string, string> = { 'next-action': 'хийх', waiting: 'хүлээж буй', inbox: 'inbox', completed: 'дууссан', done: 'дууссан' }
     const open = list.filter(t => !isDone(t))
-    const shown = [...open, ...list.filter(isDone)]
+    const done = list.filter(isDone)
     const project = list.find(t => t.project)?.project
     const oneProject = !!project && list.every(t => t.project === project)
+    const width = Math.max(20, (e.viewport?.columns ?? 60) - 6)
+    const counts = ['next-action', 'waiting', 'inbox'].map(k => ({ k, n: open.filter(t => t.status === k).length }))
+    const total = Math.max(1, open.length + done.length)
+    const seg = (n: number) => '█'.repeat(Math.round((n / total) * width))
+    const row = (t: VaultTask) => {
+      const late = !isDone(t) && !!t.due && t.due < today
+      return (
+        <Box key={t.title} flexDirection="column" marginTop={1} borderStyle="round" borderColor={late ? '#F7768E' : '#3B4261'} paddingX={1}>
+          <Box flexDirection="row" justifyContent="space-between" gap={1}>
+            <Text wrap="truncate-end" bold={!isDone(t)} dimColor={isDone(t)} strikethrough={isDone(t)}>{shortTitle(t.title, t.project)}</Text>
+            <Text color={late ? '#F7768E' : '#737AA2'}>{late ? `⚠ ${t.due}` : t.due || ''}</Text>
+          </Box>
+          <Box flexDirection="row" justifyContent="space-between" gap={1}>
+            <Box flexDirection="row" gap={1}>
+              {isDone(t)
+                ? <Button key={`reopen-${t.title}`} label="↺ буцааж нээх" plain onPress={() => void setStatus($, t, 'next-action')} />
+                : <Button key={`status-${t.title}`} label={`● ${label[t.status] ?? t.status} ⇄`} plain onPress={() => void setStatus($, t, nextOpenStatus(t.status))} />}
+              {!oneProject && t.project ? <Text dimColor>{t.project}</Text> : null}
+            </Box>
+            {isDone(t) ? null : (
+              <Box flexDirection="row" gap={2} flexShrink={0}>
+                <Button key={`done-${t.title}`} label={confirming === t.title ? '✓ батлах?' : '✓'} plain
+                  onPress={() => void (confirming === t.title ? setStatus($, t, 'completed') : $.state.set(CONFIRMING, t.title))} />
+                <Button key={`note-${t.title}`} label="💬" plain onPress={() => void $.state.set(COMMENTING, commenting === t.title ? '' : t.title)} />
+                <Button key={`run-${t.title}`} label="▶" plain onPress={() => void $.prompt.submit({ text: `Vault-ийн task-ийг гүйцэтгэ: [[01-GTD/Tasks/${t.title}]] — эхлээд note-ийг уншаад, хийж болох алхмыг хий, дууссан бол status-ийг completed болгож «## Үр дүн» бич.`, asUser: true })} />
+                <Button key={`hand-${t.title}`} label="↪" plain onPress={() => void $.prompt.submit({ text: `Task-ийг тохирох agent руу шилжүүл (Notion шиг): [[01-GTD/Tasks/${t.title}]] — note-ийг уншаад ажлын төрлөөр нь сонго: судалгаа → 📚 Wiki, дизайн/контент → 🎨 Creative, тодорхой төслийн ажил → owner "💼 Project" + project, GTD/хүмүүс/санах → 📥 GTD. Frontmatter: owner = тэр agent, status: inbox, delegated_from = энэ сешний дүр, delegated: өнөөдөр; «## Шилжүүлэлт» хэсэгт яагаад ба юу хүлээж буйг нэг мөр. Discord линк хэрэггүй, зөвхөн яаралтай бол илгээ. Аль agent нь эргэлзээтэй бол надаас асуу.`, asUser: true })} />
+              </Box>
+            )}
+          </Box>
+          {commenting === t.title && t.file ? (
+            <Input key={`input-${t.title}`} label="💬 " placeholder="Коммент бичээд Enter" submitLabel="хадгалах" autoFocus
+              onSubmit={value => void addComment($, t, value, member)} />
+          ) : null}
+        </Box>
+      )
+    }
     return (
       <Box flexDirection="column" paddingX={1}>
-        <Box flexDirection="row" justifyContent="space-between">
-          <Box flexDirection="row" gap={1}>
-            
-            <Text bold>📌 Миний task <Text dimColor>· {open.length} нээлттэй{oneProject ? ` · ${project}` : ''}</Text></Text>
-          </Box>
-          <Text dimColor>/tasks-pane</Text>
+        <Text dimColor>VAULT TASKS{oneProject ? ` · ${project}` : ''}</Text>
+        <Box flexDirection="row" marginTop={1}>
+          {counts.map(c => <Text key={`bar-${c.k}`} color={tone[c.k]}>{seg(c.n)}</Text>)}
+          <Text color={tone.completed}>{seg(done.length)}</Text>
         </Box>
-        {collapsed ? null : shown.map(t => {
-          const late = !isDone(t) && !!t.due && t.due < today
-          const meta = [t.due ? `${late ? '⚠ ' : ''}${t.due}` : '', !oneProject && t.project ? t.project : '']
-            .filter(Boolean).join(' · ')
-          return (
-            <Box key={t.title} flexDirection="column" marginTop={1}>
-              <Box flexDirection="row" gap={1}>
-                <Text color={isDone(t) ? 'green' : late ? 'red' : tone[t.status] ?? 'gray'}>{isDone(t) ? '✓' : '●'}</Text>
-                <Text wrap="truncate-end" dimColor={isDone(t)} strikethrough={isDone(t)}>{shortTitle(t.title, t.project)}</Text>
-              </Box>
-              <Box flexDirection="row" justifyContent="space-between" paddingLeft={2} gap={1}>
-                <Box flexDirection="row" gap={1} flexShrink={1}>
-                  {isDone(t) ? (
-                    <Button key={`reopen-${t.title}`} label="↺ буцааж нээх" plain onPress={() => {
-                        if (!t.file) return
-                        void (async () => {
-                          const body = await $.fs.read(t.file as string).catch(() => '')
-                          const cur = typeof body === 'string' ? body : ''
-                          if (!cur.startsWith('---')) return
-                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
-                          let out = cur.replace(/^status:.*$/m, 'status: next-action')
-                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
-updated: ${day}`)
-                          await $.fs.write(t.file as string, out)
-                          const { value: now = [] } = await $.state.get(TASKS)
-                          await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: 'next-action', updated: day } : x)))
-                          await $.state.set(CONFIRMING, '')
-                          $.ui.toast('Task дахин нээгдлээ')
-                        })()
-                      }} />
-                  ) : (
-                    <Button
-                      key={`status-${t.title}`}
-                      label={`⇄ ${label[t.status] ?? t.status}`}
-                      plain
-                      onPress={() => {
-                        // GTD cycle: inbox → next-action → waiting (completing has its own confirmed ✓ button)
-                        const order = ['inbox', 'next-action', 'waiting']
-                        const nextStatus = order[(order.indexOf(t.status) + 1) % order.length]
-                        if (!t.file) return
-                        void (async () => {
-                          const body = await $.fs.read(t.file as string).catch(() => '')
-                          const cur = typeof body === 'string' ? body : ''
-                          if (!cur.startsWith('---')) return
-                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
-                          let out = cur.replace(/^status:.*$/m, `status: ${nextStatus}`)
-                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
-updated: ${day}`)
-                          await $.fs.write(t.file as string, out)
-                          const { value: now = [] } = await $.state.get(TASKS)
-                          await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: nextStatus, updated: day } : x)))
-                          $.ui.toast(`Төлөв → ${nextStatus}`)
-                        })()
-                      }}
-                    />
-                  )}
-                  <Text dimColor wrap="truncate-end">{meta}</Text>
-                </Box>
-                {isDone(t) ? null : (
-                  <Box flexDirection="row" gap={2} flexShrink={0}>
-                    <Button
-                      key={`done-${t.title}`}
-                      label={confirming === t.title ? '✓ батлах?' : '✓'}
-                      plain
-                      onPress={confirming === t.title ? () => {
-                        if (!t.file) return
-                        void (async () => {
-                          const body = await $.fs.read(t.file as string).catch(() => '')
-                          const cur = typeof body === 'string' ? body : ''
-                          if (!cur.startsWith('---')) return
-                          const day = new Date(await $.clock.now()).toISOString().slice(0, 10)
-                          let out = cur.replace(/^status:.*$/m, 'status: completed')
-                          out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}
-updated: ${day}`)
-                          await $.fs.write(t.file as string, out)
-                          const { value: now = [] } = await $.state.get(TASKS)
-                          await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status: 'completed', updated: day } : x)))
-                          await $.state.set(CONFIRMING, '')
-                          $.ui.toast('Task дууссан ✓')
-                        })()
-                      } : () => void $.state.set(CONFIRMING, t.title)}
-                    />
-                    <Button
-                      key={`note-${t.title}`}
-                      label="💬"
-                      plain
-                      onPress={() => void $.state.set(COMMENTING, commenting === t.title ? '' : t.title)}
-                    />
-                    <Button
-                      key={`run-${t.title}`}
-                      label="▶ Хийх"
-                      plain
-                      onPress={() => void $.prompt.submit({
-                        text: `Vault-ийн task-ийг гүйцэтгэ: [[01-GTD/Tasks/${t.title}]] — эхлээд note-ийг уншаад, хийж болох алхмыг хий, дууссан бол status-ийг completed болгож «## Үр дүн» бич.`,
-                    asUser: true,
-                      })}
-                    />
-                    <Button
-                      key={`hand-${t.title}`}
-                      label="↪ Шилжүүлэх"
-                      plain
-                      onPress={() => void $.prompt.submit({
-                        text: `Task-ийг тохирох agent руу шилжүүл (Notion шиг): [[01-GTD/Tasks/${t.title}]] — note-ийг уншаад ажлын төрлөөр нь сонго: судалгаа → 📚 Wiki, дизайн/контент → 🎨 Creative, тодорхой төслийн ажил → owner "💼 Project" + project, GTD/хүмүүс/санах → 📥 GTD. Frontmatter: owner = тэр agent, status: inbox, delegated_from = энэ сешний дүр, delegated: өнөөдөр; «## Шилжүүлэлт» хэсэгт яагаад ба юу хүлээж буйг нэг мөр. Discord линк хэрэггүй (base өөрөө шинэчлэгдэнэ), зөвхөн яаралтай бол илгээ. Аль agent нь эргэлзээтэй бол надаас асуу.`,
-                    asUser: true,
-                      })}
-                    />
-                  </Box>
-                )}
-              </Box>
-              {commenting === t.title && t.file ? (
-                <Box paddingLeft={2}>
-                  <Input
-                    key={`input-${t.title}`}
-                    label="💬 "
-                    placeholder="Коммент бичээд Enter (Esc — болих)"
-                    submitLabel="хадгалах"
-                    autoFocus
-                    onSubmit={value => {
-                      const text = value.trim()
-                      if (!text || !t.file) return
-                      void (async () => {
-                        const at = new Date(await $.clock.now()).toISOString().slice(0, 16).replace('T', ' ')
-                        const body = await $.fs.read(t.file as string).catch(() => '')
-                        const cur = typeof body === 'string' ? body : ''
-                        const head = cur.includes('## 💬 Сэтгэгдэл') ? '' : '\n\n## 💬 Сэтгэгдэл\n'
-                        await $.fs.write(t.file as string, `${cur.replace(/\s*$/, '')}${head}\n- ${at} · ${member}: ${text}\n`)
-                        await $.state.set(COMMENTING, '')
-                        $.ui.toast('Коммент task-д хадгалагдлаа')
-                      })()
-                    }}
-                  />
-                </Box>
-              ) : null}
-            </Box>
-          )
-        })}
-        {false ? <Text dimColor>+{open.length - 4} бусад · Tasks base → 🤖 Agent бүрээр</Text> : null}
+        <Box flexDirection="row" gap={2}>
+          {counts.map(c => <Text key={`leg-${c.k}`} dimColor><Text color={tone[c.k]}>■</Text> {label[c.k]} {c.n}</Text>)}
+          <Text dimColor><Text color={tone.completed}>■</Text> өнөөдөр {done.length}</Text>
+        </Box>
+        <Box marginTop={1}><Text dimColor>НЭЭЛТТЭЙ · {open.length}</Text></Box>
+        {open.length === 0 ? <Text dimColor>Нээлттэй task алга.</Text> : open.map(row)}
+        {done.length ? <Box marginTop={1}><Text dimColor>ӨНӨӨДӨР ДУУССАН · {done.length}</Text></Box> : null}
+        {done.map(row)}
       </Box>
     )
   })
