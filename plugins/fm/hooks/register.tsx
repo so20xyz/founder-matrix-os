@@ -48,6 +48,7 @@ const C = {
   bg: '#1A1A19', surface: '#262625', raised: '#313130',
   text: '#F2F1EC', muted: '#9A9893', border: '#3A3A38', accent: '#2C66AD',
   done: '#93918C', ring: '#5A5A59', run: '#605F5C',
+  now: '#E5484D', // the «одоо» line only
 }
 // false = no root / tab bar / capture fill (light-theme escape hatch); the raised bands stay
 const FILL = true
@@ -1993,7 +1994,7 @@ export const register: Register = (on, options) => {
     const tabCell = (key: string, isActive: boolean, kid: JSX.Element) => (
       <Box key={key} flexDirection="column" alignItems="stretch" flexShrink={0}>
         {kid}
-        <Box key={`${key}-i`} height={1} backgroundColor={isActive ? C.accent : undefined} />
+        <Box key={`${key}-i`} height={0} backgroundColor={isActive ? C.accent : undefined} />
       </Box>
     )
     // a full-width hairline: a long ─ run clipped by its own 1-row box (no width is measured)
@@ -2004,7 +2005,7 @@ export const register: Register = (on, options) => {
     const tabBar = (
       <Box key="tabbar" flexDirection="row" columnGap={2} paddingX={1} backgroundColor={FILL ? C.bg : undefined}>
         {TABS.map(t => tabCell(`tabw-${t.id}`, t.id === tab, t.id === tab
-          ? <Text key={`tabt-${t.id}`} color={C.text} bold>{`${t.glyph} ${t.label}`}</Text>
+          ? <Text key={`tabt-${t.id}`} color={C.accent} bold underline>{`${t.glyph} ${t.label}`}</Text>
           : <Button key={`tab-${t.id}`} plain dimColor label={wide ? `${t.glyph} ${t.label}` : t.glyph} onPress={() => void selectTab($, t.id)} />))}
         <Box flexGrow={1} />
         <Box flexShrink={0}><Button key="scope" plain dimColor={!scopePick && !scopeMenu} label={`${scopeLabel} ▾`} onPress={() => void toggleScopeMenu($)} /></Box>
@@ -2047,6 +2048,13 @@ export const register: Register = (on, options) => {
     const loading = calVersion === 0
     const firstRole = (x: CalItem) => ownersOfItem(x).map(o => roleOf(o, devs, [member])).find(Boolean) ?? ''
     const roleGlyph = (x: CalItem) => (x.kind === 'event' ? G.person : glyphOfRole(firstRole(x)))
+    // Эзэн column: the owner's own short name («🏛️ Architect» → «Architect», bd → itge.e), «уулзалт» for events
+    const ownerShort = (x: CalItem) => {
+      if (x.kind === 'event') return 'уулзалт'
+      const o = (ownersOfItem(x)[0] ?? '').replace(/^["']|["']$/g, '')
+      const name = (o.replace(/^[^\p{L}\p{N}@]+/u, '').split(/\s[·(]/)[0] ?? '').replace(/^@/, '').trim()
+      return /^(bd|me|itge\.?e)$/i.test(name) ? 'itge.e' : name || '—'
+    }
     const isRun = (x: CalItem) => x.kind === 'task' && x.status === 'in-progress'
     const isFin = (x: CalItem) => x.kind === 'task' && x.status === 'completed'
     const sortKey = (x: CalItem) => (isFin(x) ? x.time || clockOf(x.completed ?? '') || '99' : isRun(x) ? clockOf(x.started ?? '') || x.time || '00' : x.time || '99')
@@ -2090,8 +2098,10 @@ export const register: Register = (on, options) => {
             return (
               <Box key={`dsc-${d}`} flexDirection="row" justifyContent="center" flexGrow={1} flexShrink={1} width={0} minWidth={0} overflow="hidden">
                 {tabCell(`dst-${d}`, d === day, d === day
-                  ? <Text bold color={C.text}>{lbl}</Text>
-                  : <Button key={`ds-${d}`} plain dimColor label={lbl} onPress={() => void $.state.set(CAL_DAY, d)} />)}
+                  ? <Text key={`dsl-${d}`} bold underline color={C.accent}>{lbl}</Text>
+                  : d === today
+                    ? <Button key={`ds-${d}`} plain label={lbl} onPress={() => void $.state.set(CAL_DAY, d)} />
+                    : <Button key={`ds-${d}`} plain dimColor label={lbl} onPress={() => void $.state.set(CAL_DAY, d)} />)}
               </Box>
             )
           })}
@@ -2166,7 +2176,7 @@ export const register: Register = (on, options) => {
               {col(6, <Text color={c} wrap="truncate-end">{time}</Text>)}
               {wide ? null : col(2, <Text color={fin ? C.done : C.muted}>{gl}</Text>)}
               <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`t1b-${x.file}`, x.title, c, fin, press, titleW)}</Box>
-              {wide ? col(4, <Text color={fin ? C.done : C.muted}>{gl}</Text>) : null}
+              {wide ? col(11, <Text color={fin ? C.done : C.muted} wrap="truncate-end">{ownerShort(x)}</Text>) : null}
               {col(wide ? 18 : 9, <Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v1Status(x)}</Text>, true)}
               {goCell(`t1b-${x.file}`, press)}
             </Box>
@@ -2180,7 +2190,7 @@ export const register: Register = (on, options) => {
           {col(6, <Text color={C.muted}>Цаг</Text>)}
           {wide ? null : col(2, null)}
           <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">Task</Text></Box>
-          {wide ? col(4, <Text color={C.muted}>Эзэн</Text>) : null}
+          {wide ? col(11, <Text color={C.muted}>Эзэн</Text>) : null}
           {col(wide ? 18 : 9, <Text color={C.muted}>Төлөв</Text>, true)}
           {goPad}
         </Box>
@@ -2193,7 +2203,21 @@ export const register: Register = (on, options) => {
       const todayBody = !todayOpen ? null
         : loading ? <Box key="t1-load" paddingLeft={2}><Text color={C.muted}>Ачаалж байна…</Text></Box>
         : !rows.length ? <Box key="t1-empty" paddingLeft={2}><Text color={C.muted} wrap="truncate-end">Өнөөдөр товлосон зүйл алга — огноогүй тавиураас товло</Text></Box>
-        : <Box key="t1" flexDirection="column" paddingLeft={2}>{[t1Head, ...rows.map(t1Row)]}</Box>
+        : <Box key="t1" flexDirection="column" paddingLeft={2}>{(() => {
+            // now-line (itge.e): on today, a red «HH:MM ── одоо» rule between what is before and after the current time
+            const hm = now.toISOString().slice(11, 16)
+            const out: JSX.Element[] = [t1Head]
+            let placed = day !== today
+            for (const x of rows) {
+              if (!placed && sortKey(x) > hm) {
+                out.push(<Box key="t1-now" flexDirection="row" gap={1} height={1} overflow="hidden"><Text color={C.now} bold>{`${hm} `}</Text><Text color={C.now}>{'─'.repeat(200)}</Text></Box>)
+                placed = true
+              }
+              out.push(t1Row(x))
+            }
+            if (!placed) out.push(<Box key="t1-now" flexDirection="row" gap={1} height={1} overflow="hidden"><Text color={C.now} bold>{`${hm} `}</Text><Text color={C.now}>{'─'.repeat(200)}</Text></Box>)
+            return out
+          })()}</Box>
       // «Хоцорсон» (closed by default, only when there is any): ⚠ title · MM/DD · өнөөдөр
       const overdue = cal.filter(x => x.kind === 'task' && x.date && x.date < today).sort((a, b) => a.date.localeCompare(b.date))
       const lateOpen = openOf('cal:late', false)
@@ -2240,13 +2264,13 @@ export const register: Register = (on, options) => {
           {!shelfAll.length ? <Text color={C.muted}>Огноогүй task алга</Text> : null}
         </Box>
       ) : null
-      // «Milestone · зорилго» (open by default, omitted without goals): ◇ name · stage · ▰▱ · pct
+      // «Milestone · зорилго» (open by default, omitted without goals): ⚑ name · stage · ▰▱ · pct
       const goalRows = goals.slice(0, 6).map(g => {
         const [pct = '0', name = '', stage = '', file = ''] = g.split('|')
         const open = () => void openInObsidian($, file)
         return (
           <Box key={`ms-${name}`} flexDirection="row" paddingLeft={2} gap={1}>
-            {col(1, <Text color={C.accent}>{G.diamond}</Text>)}
+            {col(2, <Text color={C.accent}>⚑</Text>)}
             <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`msb-${name}`, name, C.text, false, open, cols - 22 - (wide ? 13 : 0))}</Box>
             {wide ? col(12, <Text color={C.muted} wrap="truncate-end">{stage}</Text>) : null}
             <Box flexShrink={0}>{segBar(Number(pct))}</Box>
@@ -2782,7 +2806,7 @@ export const register: Register = (on, options) => {
           {empty}
           <Box key="kb-segs" flexDirection="row" flexWrap="wrap" columnGap={2}>
             {segs.map(g => tabCell(`kbsw-${g.id}`, g.id === active, g.id === active
-              ? <Text key={`kbst-${g.id}`} bold color={C.text}>{g.label}</Text>
+              ? <Text key={`kbst-${g.id}`} bold underline color={C.accent}>{g.label}</Text>
               : <Button key={`kbs-${g.id}`} plain dimColor label={g.label} onPress={() => void $.state.set({ plugin: 'fm', key: 'kanbanCol' }, g.id)} />))}
           </Box>
           {hairline('kb-segs-rule')}

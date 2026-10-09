@@ -193,9 +193,10 @@ test('day strip: weekday in the 780 layout only (no measured widths), a two-digi
   expect(await label('terminal', 50)).toBe('short')
   expect(await label('desktop', 98)).toBe('full')
   expect(await label('desktop', 56)).toBe('short')
-  // the indicator is a 1-row Box under the selected day's label (the accent), the other days' stay empty
+  // the active tab / selected day is underlined in the accent (a thin line on desktop, no extra row)
   const ui = await $.ui.mount({ plugin: 'fm', surface: 'desktop', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
   expect((await ui.find({ key: 'dst-2026-10-09-i' }))?.props.backgroundColor).toBe('#2C66AD')
+  expect((await ui.find({ key: 'dst-2026-10-09-i' }))?.props.height).toBe(0)
   expect((await ui.find({ key: 'dst-2026-10-08-i' }))?.props.backgroundColor).toBeUndefined()
   expect((await ui.find({ key: 'tabw-cal-i' }))?.props.backgroundColor).toBe('#2C66AD')
   expect((await ui.find({ key: 'tabw-kanban-i' }))?.props.backgroundColor).toBeUndefined()
