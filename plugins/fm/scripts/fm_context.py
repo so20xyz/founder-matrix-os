@@ -25,6 +25,12 @@ import sys
 ROLE_MAX_BYTES = 3 * 1024      # role rules budget
 TOTAL_MAX_BYTES = 10 * 1024    # whole additionalContext budget
 
+DECISIONS_MAX = 5              # recent decision atoms shown at session start
+DECISIONS_MAX_BYTES = 1400
+DECISIONS_REL = ("04-Resources", "Atomic", "decisions")
+_DATED_RE = re.compile(r"^\d{4}-\d{2}-\d{2} - .+\.md$")
+_FM_FIELD_RE = re.compile(r"^(decision|role|private|supersededby):[ \t]*(.*)$", re.MULTILINE)
+
 NO_ROLE_HINT = "дүргүй: /fm:role <slug> ажиллуул"
 
 RULE_HEADING_RE = re.compile(
@@ -157,6 +163,24 @@ def extract_rules(text):
     return out, truthy(fields.get("private"))
 
 
+def recent_decisions(vault, slug):
+    """Newest decision atoms (file name date, desc): this role's first, then the rest; superseded and private skipped."""
+    from fm_common import read_text
+    d = vault.joinpath(*DECISIONS_REL)
+    if not d.is_dir():
+        return []
+    mine, other = [], []
+    for name in sorted((n for n in os.listdir(d) if _DATED_RE.match(n)), reverse=True)[:60]:
+        head = read_text(d / name)[:3000]
+        f = {k: v.strip().strip('"\'') for k, v in _FM_FIELD_RE.findall(head)}
+        if f.get("private", "").lower() == "true" or f.get("supersededby", "[]") not in ("", "[]"):
+            continue
+        what = f.get("decision") or next((l[2:].strip() for l in head.splitlines() if l.startswith("# ")), "")
+        line = "- %s [[%s]]%s" % (name[:10], "/".join(DECISIONS_REL + (name[:-3],)), (" - " + what[:140]) if what else "")
+        (mine if slug and f.get("role") == slug else other).append(line)
+    return (mine + other)[:DECISIONS_MAX]
+
+
 def build_context(vault, session_id):
     from fm_common import BOOT_REL, byte_len, read_text, rel_posix, truncate_utf8
 
@@ -189,6 +213,14 @@ def build_context(vault, session_id):
     if private:
         header.append("PRIVATE сешн: хувийн санхүүгийн мэдээлэл vault-аас гарахгүй "
                       "(git, Discord, STATUS, хураасан атом руу бичихгүй).")
+
+    dec_block = ""
+    if not private:   # a Finance session gets no shared-atom digest
+        lines = recent_decisions(vault, role["slug"] if role else "")
+        if lines:
+            body, _ = truncate_utf8("\n".join(lines), DECISIONS_MAX_BYTES)
+            dec_block = ("\n## Сүүлийн шийдвэрүүд (өмнө нь шийдсэн эсэхийг эндээс эхэлж шалга)\n\n%s\n" % body)
+    role_block += dec_block
 
     head_text = "\n".join(header) + "\n"
     boot_path = vault / BOOT_REL
