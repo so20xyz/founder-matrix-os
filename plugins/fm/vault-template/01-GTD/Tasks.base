@@ -7,9 +7,9 @@ filters:
     - '!file.inFolder("99-Archive")'
 formulas:
   days_until_due: 'if(due, (date(due) - today()).days, "")'
-  overdue: 'if(due, date(due) < today() && status != "completed" && status != "cancelled", false)'
+  overdue: 'if(due, date(due) < today() && status != "completed" && status != "done" && status != "cancelled", false)'
   owner_icon: 'if(owner == "me", "👤", if(owner && owner.toString().startsWith("@"), "👥", if(owner, "🤖", "❔")))'
-  status_icon: 'if(status == "inbox", "📥", if(status == "next-action", "⏭️", if(status == "waiting", "⏳", if(status == "someday", "💭", if(status == "completed", "✅", if(status == "cancelled", "🚫", "❔"))))))'
+  status_icon: 'if(status == "inbox", "📥", if(status == "next-action", "⏭️", if(status == "in-progress", "▶️", if(status == "waiting", "⏳", if(status == "someday", "💭", if(status == "completed" || status == "done", "✅", if(status == "cancelled", "🚫", "❔")))))))'
   priority_icon: 'if(priority == "high", "🔴", if(priority == "medium", "🟡", if(priority == "low", "🟢", "")))'
 properties:
   formula.days_until_due:
@@ -32,6 +32,12 @@ properties:
     displayName: Төсөл
   context:
     displayName: Контекст
+  started:
+    displayName: Эхэлсэн
+  completed:
+    displayName: Дууссан
+  claimed:
+    displayName: Төхөөрөмж
 views:
   - type: table
     name: Inbox
@@ -43,6 +49,16 @@ views:
       - file.basename
       - formula.priority_icon
       - project
+  - type: table
+    name: ▶ Яг одоо
+    filters:
+      and:
+        - status == "in-progress"
+    order:
+      - file.basename
+      - owner
+      - claimed
+      - started
   - type: table
     name: Next Action
     filters:
@@ -64,6 +80,7 @@ views:
       and:
         - owner == "me"
         - status != "completed"
+        - status != "done"
         - status != "cancelled"
     groupBy:
       property: status
@@ -81,6 +98,7 @@ views:
         - owner != "me"
         - '!owner.toString().startsWith("@")'
         - status != "completed"
+        - status != "done"
         - status != "cancelled"
     groupBy:
       property: owner
@@ -97,6 +115,7 @@ views:
       and:
         - context == "home"
         - status != "completed"
+        - status != "done"
         - status != "cancelled"
     groupBy:
       property: status
@@ -112,6 +131,7 @@ views:
       and:
         - context == "work"
         - status != "completed"
+        - status != "done"
         - status != "cancelled"
     groupBy:
       property: status
@@ -147,10 +167,12 @@ views:
     filters:
       or:
         - status == "completed"
+        - status == "done"
         - status == "cancelled"
     order:
       - formula.status_icon
       - file.basename
+      - completed
       - updated
       - project
   - type: table
@@ -163,9 +185,11 @@ views:
         - and:
             - status != "inbox"
             - status != "next-action"
+            - status != "in-progress"
             - status != "waiting"
             - status != "someday"
             - status != "completed"
+            - status != "done"
             - status != "cancelled"
     order:
       - file.basename

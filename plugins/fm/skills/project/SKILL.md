@@ -72,7 +72,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${use
 | # | Алхам | Нотолгоо |
 |---|---|---|
 | 1 | **Тооллого** — төслийн хавтас + гадна байгаа таск, лог, атом (`project:` энэ төсөл рүү заасан) | тоо + файлын нэр |
-| 2 | **Нээлттэй таск** бүрд шийдвэр: `completed` / `cancelled` / залгамжлагч төсөл эсвэл Area руу `project:` солих. Бусад дүрийн таскийг өөрөө засахгүй — эзэнд нь task үүсгэж дамжуул | таск бүрийн шинэ төлөв |
+| 2 | **Нээлттэй таск** (`inbox · next-action · in-progress · waiting`) бүрд шийдвэр: `completed` / `cancelled` / залгамжлагч төсөл эсвэл Area руу `project:` солих. `in-progress` (▶ `claimed` · `started`) бол эхлээд түүнийг авсан сешнтэй тохир. Төлөвийг `/fm:task` `set`-ээр солих — `completed:` цагийг бичиж, requeue/`cancelled` үед `claimed:`, `started:`, `completed:`-ийг хоосолно. Бусад дүрийн таскийг өөрөө засахгүй — эзэнд нь task үүсгэж дамжуул | таск бүрийн шинэ төлөв |
 | 3 | **Нээлттэй асуултууд бүтэн текстээр** `_BRAIN.md`-д — «3 асуулт байна» биш, асуулт өөрөө | хэсгийн агуулга |
 | 4 | **Handoff тэмдэглэл** төслийн хавтсанд: юу хийгдсэн · юу үлдсэн · мэдлэг хаана · шударга «бүртгэгдээгүй» | файлын зам |
 | 5 | **Шийдвэрийн атом** (`04-Resources/Atomic/decisions/`) — яагаад хаагдсан. Resource дүрд task болгож өгч болно | атомын зам |
@@ -93,9 +93,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${use
 3. Бүгдийг нэг хүснэгтээр харуулж **батлуул**. Гишүүн засварлаж болно.
 4. Батлагдсаныг хэрэгжүүл:
    - самбар дээр картыг зөв багана руу зөөх, `@{огноо}` шинэчлэх, хаягдлыг `✅ Completed`-д `~~зураастай~~` + «dropped» тэмдэглэлтэй;
-   - таскийн файлын `status`-ыг баганатай тааруулах (`/fm:task`-ийн `set` команд).
+   - таскийн файлын `status`-ыг баганатай тааруулах (`/fm:task`-ийн `set` команд — `started:`/`claimed:` (`in-progress`), `completed:` (`completed`)-ийг өөрөө бичнэ, буцаахад хоосолно).
    - **Устгахгүй.** Нэмэлт зөөлт + зураас л.
-   Багана ↔ status: `📥 Inbox`→`inbox` · `⏭️ Next Action`→`next-action` · `⏳ Waiting On`→`waiting` · `💭 Someday / Maybe`→`someday` · `✅ Completed`→`completed`.
+   Багана ↔ status: `📥 Inbox`→`inbox` · `⏭️ Next Action`→`next-action` · `▶️ In Progress`→`in-progress` · `⏳ Waiting On`→`waiting` · `💭 Someday / Maybe`→`someday` · `✅ Completed` (хуучин `Done`)→`completed`.
 5. Самбарын файлд `## For future agent` гарчиг **бүү нэм** — Kanban plugin түүнийг багана болгоно.
 6. Юу хаашаа зөөгдсөнийг товч тайлагна.
 

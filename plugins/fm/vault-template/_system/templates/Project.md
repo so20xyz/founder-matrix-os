@@ -41,6 +41,7 @@ filters:
     - file.inFolder("01-GTD/Tasks")
     - type == "task"
     - status != "completed"
+    - status != "done"
     - status != "cancelled"
     - list(project).contains(this)
 views:

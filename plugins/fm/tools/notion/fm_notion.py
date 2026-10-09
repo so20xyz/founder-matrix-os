@@ -264,6 +264,7 @@ SKIP_PARTS = {'.obsidian', '_trash', '.trash', '_system', '99-Archive', 'node_mo
 PRIVATE_TYPES = {'bill', 'income'}
 TYPE_ALIAS = {'task': 'task', 'project': 'project', 'meeting': 'meeting', 'event': 'meeting', 'reference': 'ref', 'person': 'note'}
 TASK_STATUS = {'inbox': ['Inbox'], 'next-action': ['Next Action', 'Next', 'To Do', 'To-do', 'Not started'],
+               'in-progress': ['In progress', 'Doing'],  # Notion-ийн анхдагч «In progress» (том жижиг үсэг хамаагүй)
                'waiting': ['Waiting on', 'Waiting'], 'someday': ['Someday / Maybe', 'Someday'],
                'completed': DONE_WORDS, 'cancelled': ['Cancelled', 'Canceled', 'Archived']}
 

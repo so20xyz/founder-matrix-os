@@ -5,20 +5,40 @@ Usage:
     fm_task.py new   <vault> "<title>" --owner <role-slug|Role name|me|@Name> [--project "02-Projects/.../Name/Name"]
                      [--status next-action] [--priority high|medium|low] [--due YYYY-MM-DD] [--context work|home]
                      [--body "..."]
-    fm_task.py claim <vault> "<task title or file>" --by "<Role> · <device>"
-    fm_task.py done  <vault> "<task title or file>" --by "<Role> · <device>" --summary "..."
+    fm_task.py claim <vault> "<task title or file>" --by "<Role> · <device>" [--device PC|Mac]
+    fm_task.py done  <vault> "<task title or file>" --by "<Role> · <device>" --summary "..." [--device PC|Mac]
     fm_task.py set   <vault> "<task title or file>" [--status S] [--owner O] [--priority P] [--due D]
+                     [--device PC|Mac] [--sid <session id>]
     fm_task.py list  <vault> [--owner R] [--status S] [--open]
 
-Claim rule: the first session that takes a task appends `🙋 <who> авлаа` under `## Явц`;
-when finished it appends `✅ дууслаа: ...` and sets status: completed. A task with an open
-🙋 by someone else cannot be claimed (exit 4).
+Lifecycle (decision 2026-10-09): inbox -> in-progress -> completed (+ next-action, waiting, someday,
+cancelled; legacy `done` = completed everywhere). Open = inbox | next-action | in-progress | waiting.
+Timestamps are local "YYYY-MM-DD HH:MM": `started:` + `claimed: <PC|Mac>` (unquoted) when work begins
+(status -> in-progress), `completed:` when status -> completed.
+A task that was not in-progress gets a fresh `started:`/`claimed:` (stale values from an earlier run
+are overwritten); one already in-progress keeps them. A task that was not completed (legacy done counts
+as completed) gets a fresh `completed:`; one already completed keeps it.
+Requeue = status -> inbox | next-action | waiting | someday | cancelled: clears `claimed:`, `started:`
+and `completed:`, the `## Явц` line «✏️ status=<that status>» closes an open 🙋, and when the note had
+`claimed:` and the relay is set up (<vault>/_system/fm/discord.json + the plugin's tools/relay/relay.py)
+`set` first runs `relay.py release "<task path>" --sid <sid>` (env FM_VAULT=<vault>, FMOS_DEVICE=<device>)
+so earlier claims on #sys-dispatch stop counting. sid = --sid > env CLAUDE_SESSION_ID > CLAUDE_CODE_SESSION_ID.
+
+Claim rule (vault-only fallback; with the Discord relay use `relay.py claim`, which decides across
+devices first): the first session that takes a task appends `🙋 <who> авлаа` under `## Явц` and sets
+in-progress/started/claimed; when finished it appends `✅ дууслаа: ...` and sets status: completed +
+completed:. A task with an open 🙋 by someone else, or in-progress with `claimed:` another device,
+cannot be claimed (exit 4). Device = --device, else the `· PC` / `· Mac` suffix of --by, else
+fmconfig.DEVICE: env FMOS_DEVICE > ~/.fmos/config.json "device" (location: env FMOS_CONFIG) >
+"Mac" on macOS, else "PC".
 
 Pure standard library, Python 3.9+, macOS / Windows / Linux. Writes only inside 01-GTD/Tasks/.
 """
 import datetime
+import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -36,7 +56,13 @@ def tasks_dir(vault: Path) -> Path:
     return vault / TASKS
 ROLES_DIR = Path("03-Areas") / "AI Team" / "ai-workers"
 ROLES_DIR_CUR = Path("04-Areas") / "AI Team" / "ai-workers"  # одоогийн layout (fallback)
-STATUSES = ["inbox", "someday", "next-action", "waiting", "completed", "cancelled"]
+STATUSES = ["inbox", "someday", "next-action", "in-progress", "waiting", "completed", "cancelled"]
+STATUS_ALIASES = {"done": "completed"}  # хуучин утга
+CLOSED = ("completed", "done", "cancelled")
+REQUEUE = ("inbox", "next-action", "waiting", "someday", "cancelled")  # claimed/started/completed хоосорно
+_HERE = Path(__file__).resolve().parent  # plugins/fm/skills/task/scripts
+RELAY = (_HERE.parents[2] if len(_HERE.parents) > 2 else _HERE) / "tools" / "relay" / "relay.py"  # plugins/fm/tools/relay/relay.py
+DEVICES = {"pc": "PC", "mac": "Mac"}
 PRIORITIES = ["high", "medium", "low"]
 PRIORITY_ALIASES = {"🔴": "high", "🟡": "medium", "🟢": "low", "h": "high", "m": "medium", "l": "low"}
 CONTEXTS = ["home", "work"]
@@ -69,7 +95,7 @@ def _opt(args: List[str], key: str, default: str = "") -> str:
 
 def _positional(args: List[str]) -> List[str]:
     flags_with_value = {"--owner", "--project", "--status", "--priority", "--due", "--context",
-                        "--body", "--by", "--summary"}
+                        "--body", "--by", "--summary", "--device", "--sid"}
     out, skip = [], False
     for a in args:
         if skip:
@@ -119,6 +145,11 @@ def fm_set(fm: List[str], key: str, value: str) -> List[str]:
     return out
 
 
+def fm_clear(fm: List[str], key: str) -> List[str]:
+    """Empty an existing `key:` (a missing key is not added)."""
+    return [("%s:" % key) if re.match(r"^%s:" % re.escape(key), line) else line for line in fm]
+
+
 def yaml_str(s: str) -> str:
     return '"%s"' % s.replace("\\", "\\\\").replace('"', '\\"')
 
@@ -131,6 +162,10 @@ def from_template(vault: Path, name: str, title: str) -> Tuple[List[str], List[s
     today = datetime.date.today().isoformat()
     text = re.sub(r"\{\{date(:[^}]*)?\}\}", today, tpl.read_text(encoding="utf-8-sig"))
     text = re.sub(r"\{\{fm:date\}\}", today, text).replace("{{title}}", title)
+    # Templater tags (Obsidian is not running here): date / title filled, anything else blanked
+    text = re.sub(r"<%\s*tp\.date\.now\([^)]*\)\s*%>", today, text)
+    text = re.sub(r"<%\s*tp\.file\.title\s*%>", title, text)
+    text = re.sub(r"<%[^%]*%>", "", text)
     return split_note(text)
 
 
@@ -206,8 +241,166 @@ def now_stamp() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
+def norm_status(status: str) -> str:
+    """Validate a --status value (legacy `done` -> completed); dies on unknown."""
+    status = STATUS_ALIASES.get(status.strip(), status.strip())
+    if status not in STATUSES:
+        _die("status буруу: %s (%s)" % (status, " | ".join(STATUSES)))
+    return status
+
+
+def local_device() -> str:
+    """This machine, same as relay fmconfig.DEVICE: env FMOS_DEVICE > config "device" ($FMOS_CONFIG or
+    ~/.fmos/config.json) > "Mac" on macOS, else "PC". pc/mac in any case -> PC/Mac; other names stay as they are."""
+    cfg_file = os.path.expanduser(os.environ.get("FMOS_CONFIG") or str(Path.home() / ".fmos" / "config.json"))
+    try:
+        with open(cfg_file, encoding="utf-8") as fh:
+            cfg = json.load(fh)
+    except Exception:
+        cfg = {}
+    if not isinstance(cfg, dict):
+        cfg = {}
+    dev = str(os.environ.get("FMOS_DEVICE") or cfg.get("device") or ("Mac" if sys.platform == "darwin" else "PC")).strip()
+    return DEVICES.get(dev.lower(), dev)
+
+
+def device_of(args: List[str], who: str = "") -> str:
+    """--device PC|Mac, else the `· PC` / `(Mac)` / `- Mac` suffix of --by, else local_device()."""
+    dev = _opt(args, "--device").strip()
+    if dev:
+        if dev.lower() not in DEVICES:
+            _die("--device буруу: %s (PC | Mac)" % dev)
+        return DEVICES[dev.lower()]
+    if who:
+        m = re.search(r"[·\-(\s]\s*(pc|mac)\)?\s*$", who, re.IGNORECASE)
+        if m:
+            return DEVICES[m.group(1).lower()]
+    return local_device()
+
+
+def canon_status(status: str) -> str:
+    """A note's status value, legacy `done` read as completed (no validation)."""
+    status = (status or "").strip().lower()
+    return STATUS_ALIASES.get(status, status)
+
+
+def unquote_claimed(fm: List[str]) -> List[str]:
+    """`claimed: "PC"` (older relay) -> `claimed: PC`: every writer stores the device unquoted."""
+    for line in fm:
+        m = re.match(r"^claimed:\s*([\"'])(.*)\1\s*$", line)
+        if m:
+            return fm_set(fm, "claimed", m.group(2).strip()) if m.group(2).strip() else fm_clear(fm, "claimed")
+    return fm
+
+
+def mark_started(fm: List[str], device: str, was: Optional[str] = None) -> List[str]:
+    """status -> in-progress. `was` = the status before (default: the note's). Not in-progress before -> fresh
+    `started:` now + `claimed:` device (stale values from an earlier run are overwritten); already in-progress ->
+    `started:` / `claimed:` are only filled when empty. `claimed:` is always unquoted."""
+    if was is None:
+        was = fm_get(fm, "status")
+    fm = unquote_claimed(fm_set(fm, "status", "in-progress"))
+    if canon_status(was) != "in-progress":
+        fm = fm_set(fm, "started", now_stamp())
+        fm = fm_set(fm, "claimed", device) if device else fm_clear(fm, "claimed")
+        return fm
+    if not fm_get(fm, "started"):
+        fm = fm_set(fm, "started", now_stamp())
+    if device and not fm_get(fm, "claimed"):
+        fm = fm_set(fm, "claimed", device)
+    return fm
+
+
+def mark_completed(fm: List[str], was: Optional[str] = None) -> List[str]:
+    """status -> completed. `was` = the status before (default: the note's). Not completed before (legacy `done`
+    counts as completed) -> a fresh `completed:` now (a stale value from an earlier run is overwritten); already
+    completed -> `completed:` stays as it is. `started:` / `claimed:` stay for the day log."""
+    if was is None:
+        was = fm_get(fm, "status")
+    fm = unquote_claimed(fm_set(fm, "status", "completed"))
+    if canon_status(was) != "completed":
+        fm = fm_set(fm, "completed", now_stamp())
+    return fm
+
+
+def requeue(fm: List[str], status: str) -> List[str]:
+    """status -> inbox | next-action | waiting | someday | cancelled: `claimed:`, `started:`, `completed:` are emptied
+    (the requeued / delegated / parked task is free to be claimed again; nothing of the old run is left)."""
+    fm = fm_set(fm, "status", status)
+    for key in ("claimed", "started", "completed"):
+        fm = fm_clear(fm, key)
+    return fm
+
+
+def apply_status(fm: List[str], status: str, args: List[str], was: Optional[str] = None) -> List[str]:
+    """Set a validated status: in-progress -> mark_started, completed -> mark_completed, a requeue status -> requeue."""
+    if status == "in-progress":
+        return mark_started(fm, device_of(args), was)
+    if status == "completed":
+        return mark_completed(fm, was)
+    return requeue(fm, status)
+
+
+def session_id(args: List[str]) -> str:
+    """--sid > env CLAUDE_SESSION_ID (the relay's own) > CLAUDE_CODE_SESSION_ID (Claude Code's Bash env) > ""."""
+    return (_opt(args, "--sid") or os.environ.get("CLAUDE_SESSION_ID") or os.environ.get("CLAUDE_CODE_SESSION_ID")
+            or "").strip()
+
+
+def vault_rel(vault: Path, path: Path) -> str:
+    """Vault-relative posix path of a note (as given, else both resolved); outside the vault -> the path itself."""
+    for p, v in ((path, vault), (path.resolve(), vault.resolve())):
+        try:
+            return p.relative_to(v).as_posix()
+        except ValueError:
+            continue
+    return str(path)
+
+
+def relay_release(vault: Path, path: Path, args: List[str]) -> Optional[str]:
+    """Requeue of a claimed task: `relay.py release "<task path>" --sid <sid>` with env FM_VAULT=<vault> and
+    FMOS_DEVICE=<device>, so earlier claims on #sys-dispatch stop counting (the relay also clears claimed:/started:).
+    Returns None when the relay is not set up for this vault (no <vault>/_system/fm/discord.json — then there is no
+    bus and nothing to withdraw), else a one-line outcome: RELEASED | RELEASE private | RELEASE missing |
+    RELEASE error | «no sid» / «no relay» (nothing run: no session id / relay.py not next to this plugin)."""
+    if not (vault / "_system" / "fm" / "discord.json").is_file():
+        return None
+    if not RELAY.is_file():
+        return "no relay"
+    rel = vault_rel(vault, path)
+    sid = session_id(args)
+    if not sid:
+        return "no sid"
+    env = dict(os.environ, FM_VAULT=os.path.abspath(str(vault)), FMOS_DEVICE=device_of(args),
+               PYTHONIOENCODING="utf-8")
+    try:
+        res = subprocess.run([sys.executable, str(RELAY), "release", rel, "--sid", sid], env=env,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=90)
+    except (OSError, subprocess.SubprocessError) as e:
+        sys.stderr.write("relay release: %r\n" % (e,))
+        return "RELEASE error"
+    err = res.stderr.decode("utf-8", "replace").strip()
+    if err:
+        sys.stderr.write(err + "\n")
+    lines = [l.strip() for l in res.stdout.decode("utf-8", "replace").splitlines() if l.strip()]
+    out = lines[-1] if lines else ""
+    return out if out.startswith("RELEASE") else "RELEASE error"
+
+
+def other_device_claim(fm: List[str], device: str) -> str:
+    """Device holding an in-progress task per frontmatter `claimed:` when it is not `device` (unknown counts as other)."""
+    claimed = fm_get(fm, "claimed")
+    if fm_get(fm, "status") == "in-progress" and claimed and claimed.lower() != device.lower():
+        return claimed
+    return ""
+
+
+REQUEUE_LINE = re.compile(r"✏.*\bstatus=(?:%s)(?![\w-])" % "|".join(re.escape(s) for s in REQUEUE))
+
+
 def open_claim(body: List[str]) -> Optional[str]:
-    """Return who holds an open 🙋 claim (no ✅ after it), else None."""
+    """Return who holds an open 🙋 claim, else None. A later `✅ дууслаа` or a requeue line `✏️ status=<inbox |
+    next-action | waiting | someday | cancelled>` (written by `set`) closes it."""
     holder = None
     in_progress = False
     for line in body:
@@ -219,7 +412,7 @@ def open_claim(body: List[str]) -> Optional[str]:
         m = re.search(r"🙋\s*(.+?)\s+авлаа", line)
         if m:
             holder = m.group(1).strip()
-        elif "✅" in line and "дууслаа" in line:
+        elif ("✅" in line and "дууслаа" in line) or REQUEUE_LINE.search(line):
             holder = None
     return holder
 
@@ -257,8 +450,7 @@ def cmd_new(vault: Path, args: List[str]) -> None:
     if not owner:
         _die("--owner заавал: дүрийн slug/нэр (\"area\", \"Creative\"), \"me\" эсвэл \"@Нэр\".")
     owner = resolve_owner(vault, owner)
-    if status not in STATUSES:
-        _die("status буруу: %s (%s)" % (status, " | ".join(STATUSES)))
+    status = norm_status(status)
     priority = resolve_priority(priority)
     if due and not re.match(r"^\d{4}-\d{2}-\d{2}$", due):
         _die("due нь YYYY-MM-DD байх ёстой: %s" % due)
@@ -286,6 +478,7 @@ def cmd_new(vault: Path, args: List[str]) -> None:
                      ("due", due), ("project", yaml_str("[[%s]]" % project) if project else ""),
                      ("context", context), ("up", yaml_str("[[%s/Tasks]]" % tasks_dir(vault).relative_to(vault).as_posix()))):
         fm = fm_set(fm, key, val)
+    fm = apply_status(fm, status, args, was="")  # a new note: nothing started yet
     if name != title:
         fm.append("aliases:\n  - %s" % yaml_str(title))
     if project:
@@ -310,11 +503,12 @@ def cmd_claim(vault: Path, args: List[str]) -> None:
     pos = _positional(args)
     who = _opt(args, "--by").strip()
     if not pos or not who:
-        _die("Хэрэглээ: fm_task.py claim <vault> \"<таск>\" --by \"<Дүр> · <device>\"")
+        _die("Хэрэглээ: fm_task.py claim <vault> \"<таск>\" --by \"<Дүр> · <device>\" [--device PC|Mac]")
+    device = device_of(args, who)
     path = find_task(vault, pos[0])
     fm, body = split_note(path.read_text(encoding="utf-8-sig"))
     status = fm_get(fm, "status")
-    if status in ("completed", "cancelled"):
+    if status in CLOSED:
         _die("Таск аль хэдийн %s — авах боломжгүй." % status, 4)
     holder = open_claim(body)
     if holder and holder != who:
@@ -322,8 +516,10 @@ def cmd_claim(vault: Path, args: List[str]) -> None:
     if holder == who:
         _out("Та аль хэдийн авсан байна: %s" % path.name)
         return
-    if status in ("inbox", "someday", ""):
-        fm = fm_set(fm, "status", "next-action")
+    other = other_device_claim(fm, device)
+    if other:
+        _die("▶ %s аль хэдийн авсан (in-progress, started %s). Давхар бүү ав." % (other, fm_get(fm, "started") or "?"), 4)
+    fm = mark_started(fm, device)
     fm = fm_set(fm, "updated", datetime.date.today().isoformat())
     body = append_progress(body, "- %s 🙋 %s авлаа" % (now_stamp(), who))
     write(path, join_note(fm, body))
@@ -335,13 +531,17 @@ def cmd_done(vault: Path, args: List[str]) -> None:
     who = _opt(args, "--by").strip()
     summary = _opt(args, "--summary").strip()
     if not pos or not who or not summary:
-        _die("Хэрэглээ: fm_task.py done <vault> \"<таск>\" --by \"<Дүр> · <device>\" --summary \"...\"")
+        _die("Хэрэглээ: fm_task.py done <vault> \"<таск>\" --by \"<Дүр> · <device>\" --summary \"...\" [--device PC|Mac]")
+    device = device_of(args, who)
     path = find_task(vault, pos[0])
     fm, body = split_note(path.read_text(encoding="utf-8-sig"))
     holder = open_claim(body)
     if holder and holder != who:
         _die("Энэ таскийг 🙋 %s авсан. Түүний өмнөөс ✅ бүү тавь." % holder, 4)
-    fm = fm_set(fm, "status", "completed")
+    other = other_device_claim(fm, device)
+    if other:
+        _die("Энэ таскийг ▶ %s авсан. Түүний өмнөөс ✅ бүү тавь." % other, 4)
+    fm = mark_completed(fm)
     fm = fm_set(fm, "updated", datetime.date.today().isoformat())
     body = append_progress(body, "- %s ✅ дууслаа: %s (%s)" % (now_stamp(), summary, who))
     write(path, join_note(fm, body))
@@ -351,15 +551,17 @@ def cmd_done(vault: Path, args: List[str]) -> None:
 def cmd_set(vault: Path, args: List[str]) -> None:
     pos = _positional(args)
     if not pos:
-        _die("Хэрэглээ: fm_task.py set <vault> \"<таск>\" --status S [--owner R] [--priority P] [--due D]")
+        _die("Хэрэглээ: fm_task.py set <vault> \"<таск>\" --status S [--owner R] [--priority P] [--due D] "
+             "[--device PC|Mac] [--sid <session id>]")
     path = find_task(vault, pos[0])
     fm, body = split_note(path.read_text(encoding="utf-8-sig"))
     changes = []
+    notes = []  # type: List[str]
+    had_claim = bool(fm_get(fm, "claimed"))
     status = _opt(args, "--status")
     if status:
-        if status not in STATUSES:
-            _die("status буруу: %s" % status)
-        fm = fm_set(fm, "status", status)
+        status = norm_status(status)
+        fm = apply_status(fm, status, args)
         changes.append("status=%s" % status)
     owner = _opt(args, "--owner")
     if owner:
@@ -379,10 +581,25 @@ def cmd_set(vault: Path, args: List[str]) -> None:
         changes.append("due=%s" % due)
     if not changes:
         _die("Өөрчлөх талбар өгөөгүй.")
+    if status in REQUEUE and had_claim:
+        # every argument is valid: withdraw the claim on #sys-dispatch first, or it makes every new claim LOSE for 24 h
+        res = relay_release(vault, path, args)
+        retry = 'python3 "%s" release "%s" --sid <sid>' % (RELAY.as_posix(), vault_rel(vault, path))
+        if res in ("no sid", "no relay"):
+            notes.append("⚠️ %s — #sys-dispatch дээрх claim хүчинтэй хэвээр. Гараар: %s"
+                         % ("Сешний id (--sid) алга" if res == "no sid" else "relay.py олдсонгүй (%s)" % RELAY.as_posix(),
+                            retry))
+        elif res == "RELEASE error":
+            notes.append("⚠️ relay release амжилтгүй (RELEASE error) — #sys-dispatch дээрх claim хүчинтэй хэвээр "
+                         "(шинэ авалт 24 цаг LOSE болно). Дараа нь дахин: %s" % retry)
+        elif res:
+            notes.append("relay release → %s" % res)
     fm = fm_set(fm, "updated", datetime.date.today().isoformat())
     body = append_progress(body, "- %s ✏️ %s" % (now_stamp(), ", ".join(changes)))
     write(path, join_note(fm, body))
-    _out("%s → %s" % (", ".join(changes), path.relative_to(vault).as_posix()))
+    _out("%s → %s" % (", ".join(changes), vault_rel(vault, path)))
+    for n in notes:
+        _out(n)
 
 
 def cmd_list(vault: Path, args: List[str]) -> None:
@@ -393,6 +610,8 @@ def cmd_list(vault: Path, args: List[str]) -> None:
     if owner:
         owner = resolve_owner(vault, owner)
     status = _opt(args, "--status")
+    if status:
+        status = norm_status(status)
     rows = []
     for p in sorted(folder.glob("*.md")):
         fm, body = split_note(p.read_text(encoding="utf-8-sig"))
@@ -401,14 +620,17 @@ def cmd_list(vault: Path, args: List[str]) -> None:
         st, ow = fm_get(fm, "status"), fm_get(fm, "owner")
         if owner and ow != owner:
             continue
-        if status and st != status:
+        if status and STATUS_ALIASES.get(st, st) != status:
             continue
-        if "--open" in args and st in ("completed", "cancelled"):
+        if "--open" in args and st in CLOSED:
             continue
         holder = open_claim(body)
-        rows.append("%s | %s | %s | %s | %s%s" % (st or "?", fm_get(fm, "priority") or "-", ow or "-",
-                                                 fm_get(fm, "due") or "-", p.stem,
-                                                 "  🙋 " + holder if holder else ""))
+        running = ""
+        if st == "in-progress":
+            running = "  ▶ %s %s" % (fm_get(fm, "claimed") or "?", fm_get(fm, "started") or "")
+        rows.append("%s | %s | %s | %s | %s%s%s" % (st or "?", fm_get(fm, "priority") or "-", ow or "-",
+                                                   fm_get(fm, "due") or "-", p.stem,
+                                                   "  🙋 " + holder if holder else "", running.rstrip()))
     _out("status | prio | owner | due | таск")
     for r in rows:
         _out(r)

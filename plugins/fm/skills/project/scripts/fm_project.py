@@ -41,7 +41,7 @@ LEGACY_DIRS = {"1-Active": "active", "2-Planning": "planning", "3-On-hold": "on-
 CSS_REL = ".obsidian/snippets/fm-project-status.css"
 STATUS_COLORS = {"active": "#3A7BF0", "planning": "#8FB8FF", "on-hold": "#E0962E", "waiting": "#E0962E"}
 OTHER_COLOR = "#6E6E6E"  # completed / cancelled / unknown
-OPEN_TASK = {"inbox", "next-action", "waiting"}
+OPEN_TASK = {"inbox", "next-action", "in-progress", "waiting"}
 LINK_EXT = {".md", ".base", ".canvas"}
 SKIP_DIRS = {".obsidian", "_trash", ".trash", ".git", ".backups", "node_modules"}
 PROJECTS_NEW, PROJECTS_CUR = "02-Projects", "03-Projects"  # layout 2026-10-09; одоогийн нэр = fallback
@@ -55,7 +55,7 @@ def proj_rel(vault: Path, rel: str) -> str:
 
 
 BOARDS = Path("01-GTD") / "boards"  # хуучин vault-д л (template-д самбар байхгүй)
-COLUMN_STATUS = {"inbox": "inbox", "next action": "next-action", "waiting": "waiting",
+COLUMN_STATUS = {"inbox": "inbox", "next action": "next-action", "in progress": "in-progress", "waiting": "waiting",
                  "someday": "someday", "completed": "completed", "done": "completed"}
 MAX_REL_PATH = 60
 
