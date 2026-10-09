@@ -159,9 +159,9 @@ async function setProp($: EngineInterface, item: CalItem, key: 'due' | 'status' 
   const day = localNow(await $.clock.now()).toISOString().slice(0, 10)
   out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}\nupdated: ${day}`)
   await $.fs.write(item.file, out)
-  const field = key === 'due' ? 'date' : key
   const { value: cal = [] } = await $.state.get(CAL)
-  await $.state.set(CAL, cal.map(x => (x.file === item.file ? { ...x, [field]: value } : x)))
+  const patch = (x: CalItem): CalItem => (key === 'due' ? { ...x, date: value } : key === 'status' ? { ...x, status: value } : { ...x, priority: value })
+  await $.state.set(CAL, cal.map(x => (x.file === item.file ? patch(x) : x)))
   $.ui.toast(key === 'due' ? (value ? `📅 ${value}` : '📅 огноо арилгалаа') : `${key} → ${value || '—'}`)
 }
 
