@@ -147,6 +147,24 @@ async function setDue($: EngineInterface, item: CalItem, day: string) {
   $.ui.toast(`📅 ${day} руу товлолоо`)
 }
 
+/** Notion-like property edit on a Цаглабар item: write one frontmatter field ('' removes it), keep CAL in sync. */
+async function setProp($: EngineInterface, item: CalItem, key: 'due' | 'status' | 'priority', value: string) {
+  const body = await $.fs.read(item.file).catch(() => '')
+  const cur = typeof body === 'string' ? body : ''
+  if (!cur.startsWith('---')) return
+  const re = new RegExp(`^${key}:.*$`, 'm')
+  let out = value
+    ? (re.test(cur) ? cur.replace(re, `${key}: ${value}`) : cur.replace(/^status:.*$/m, m => `${m}\n${key}: ${value}`))
+    : cur.replace(new RegExp(`^${key}:.*\\r?\\n`, 'm'), '')
+  const day = localNow(await $.clock.now()).toISOString().slice(0, 10)
+  out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}\nupdated: ${day}`)
+  await $.fs.write(item.file, out)
+  const field = key === 'due' ? 'date' : key
+  const { value: cal = [] } = await $.state.get(CAL)
+  await $.state.set(CAL, cal.map(x => (x.file === item.file ? { ...x, [field]: value } : x)))
+  $.ui.toast(key === 'due' ? (value ? `📅 ${value}` : '📅 огноо арилгалаа') : `${key} → ${value || '—'}`)
+}
+
 /** ISO week number of a YYYY-MM-DD day. */
 function isoWeek(day: string): number {
   const d = new Date(`${day}T00:00:00Z`)
@@ -217,6 +235,7 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
       // a project session names its project folder (sessions[sid].folder); a project-specific role may too
       const where = typeof s.folder === 'string' ? s.folder : typeof s.project === 'string' ? s.project : typeof role.project === 'string' ? role.project : ''
       project = where.replace(/\/$/, '').split('/').pop() ?? ''
+      if (!project && s.role === 'project' && typeof s.title === 'string') project = s.title.replace(/^[^\p{L}\p{N}]+/u, '').trim()
       names = [s.title, role.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
     }
   } catch {
@@ -352,17 +371,76 @@ export const register: Register = (on, options) => {
         {x.project ? <Text dimColor wrap="truncate-end">· {x.project}</Text> : null}
       </Box>
     )
+    const weekAhead = Array.from({ length: 7 }, (_, n) => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + n); return iso(d) })
+    const wdName = (d: string) => ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'][new Date(d).getUTCDay()]
+    const pick = (key: string, label: string, on: boolean, color: string, press: () => void) => on
+      ? <Text key={key} color="#0a0c11" backgroundColor={color}>{` ${label} `}</Text>
+      : <Button key={key} label={label} plain onPress={press} />
     const detail = (x: CalItem) => sel === x.file ? (
-      <Box key={`det-${x.file}`} flexDirection="column" marginLeft={2} paddingX={1} borderStyle="round" borderColor={tone.line}>
-        <Text dimColor>{x.kind === 'event' ? 'УУЛЗАЛТ' : 'TASK'} · {x.status || '—'}{x.owner ? ` · ${x.owner}` : ''}{x.date ? ` · ${x.date}${x.time ? ' ' + x.time : ''}` : ''}</Text>
+      <Box key={`det-${x.file}`} flexDirection="column" marginLeft={2} paddingX={1} borderStyle="round" borderColor={tone.task}>
+        <Text dimColor>{x.kind === 'event' ? 'УУЛЗАЛТ' : 'TASK'}{x.owner ? ` · 👤 ${x.owner.replace(/^"|"$/g, '')}` : ''}{x.project ? ` · ${x.project}` : ''}</Text>
+        {x.kind === 'task' ? (
+          <Box flexDirection="column">
+            <Box flexDirection="row" gap={1} flexWrap="wrap">
+              <Text color={tone.muted}>Огноо </Text>
+              {weekAhead.map((d, n) => pick(`pd-${x.file}-${d}`, n === 0 ? 'өнөөдөр' : n === 1 ? 'маргааш' : `${wdName(d)} ${d.slice(8)}`, x.date === d, tone.task, () => void setProp($, x, 'due', d)))}
+              {x.date && !weekAhead.includes(x.date) ? pick(`pd-${x.file}-cur`, x.date.slice(5), true, x.date < today ? tone.late : tone.task, () => {}) : null}
+              {x.date ? <Button key={`pdx-${x.file}`} label="✕" plain onPress={() => void setProp($, x, 'due', '')} /> : null}
+            </Box>
+            <Box flexDirection="row" gap={1} flexWrap="wrap">
+              <Text color={tone.muted}>Төлөв </Text>
+              {(['inbox', 'next-action', 'waiting'] as const).map(st => pick(`ps-${x.file}-${st}`, st, x.status === st, st === 'waiting' ? tone.turn : st === 'inbox' ? '#8790a3' : tone.task, () => void setProp($, x, 'status', st)))}
+              <Button key={`psd-${x.file}`} label="✓ дууссан" plain onPress={() => void setProp($, x, 'status', 'completed')} />
+            </Box>
+            <Box flexDirection="row" gap={1}>
+              <Text color={tone.muted}>Чухал </Text>
+              {['🔴', '🟡', '🟢'].map(pr => pick(`pp-${x.file}-${pr}`, pr, x.priority === pr, '#3b4261', () => void setProp($, x, 'priority', pr)))}
+              {x.priority ? <Button key={`ppx-${x.file}`} label="✕" plain onPress={() => void setProp($, x, 'priority', '')} /> : null}
+            </Box>
+          </Box>
+        ) : <Text dimColor>{x.date}{x.time ? ` ${x.time}` : ''}</Text>}
         <Box flexDirection="row" gap={2} flexWrap="wrap">
-          <Button key={`obs-${x.file}`} label="↗ Obsidian-д нээх" plain onPress={() => void openInObsidian($, x.file)} />
-          {x.kind === 'task' ? <Button key={`d0-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} /> : null}
-          {x.kind === 'task' ? <Button key={`d1-${x.file}`} label="→ маргааш" plain onPress={() => void setDue($, x, tomorrow)} /> : null}
+          <Button key={`obs-${x.file}`} label="↗ Obsidian" plain onPress={() => void openInObsidian($, x.file)} />
           <Button key={`ask-${x.file}`} label="▶ Claude-д өгөх" plain onPress={() => void $.prompt.submit({ text: `Энэ ${x.kind === 'event' ? 'уулзалт' : 'task'}-ийг уншаад дараагийн алхмыг хий: [[${x.file.replace(/^.*?\/(0[0-9]-[^/]+\/.*)\.md$/, '$1')}]]`, asUser: true })} />
+          <Button key={`cls-${x.file}`} label="хаах" plain onPress={() => void $.state.set(CAL_SEL, '')} />
         </Box>
       </Box>
     ) : null
+    // Google-Calendar-like day grid: untimed first, then hour rows with items, red now-line on today
+    const dayGrid = (d: string) => {
+      const its = itemsOn(d)
+      const untimed = its.filter(x => !x.time)
+      const timed = its.filter(x => x.time).sort((a, b) => a.time.localeCompare(b.time))
+      const hours = timed.map(x => Number(x.time.slice(0, 2)))
+      const from = Math.min(9, ...hours), to = Math.max(18, ...hours)
+      const nowH = d === today ? Number(hhmm.slice(0, 2)) : -1
+      return (
+        <Box key={`grid-${d}`} flexDirection="column" marginTop={1}>
+          <Text dimColor>{wdName(d)} {d.slice(5)} · ӨДРИЙН ХУВААРЬ · {its.length}</Text>
+          {untimed.map(x => (
+            <Box key={`gu-${x.file}`} flexDirection="column">
+              <Box flexDirection="row" gap={1}><Text color={tone.muted}>өдөржин│</Text><Text color={x.kind === 'event' ? tone.event : tone.task}>▌</Text><Button key={`gub-${x.file}`} label={shortTitle(x.title, x.project)} plain onPress={() => void $.state.set(CAL_SEL, sel === x.file ? '' : x.file)} /></Box>
+              {detail(x)}
+            </Box>
+          ))}
+          {Array.from({ length: to - from + 1 }, (_, k) => from + k).map(h => {
+            const hs = String(h).padStart(2, '0')
+            const at = timed.filter(x => x.time.slice(0, 2) === hs)
+            return (
+              <Box key={`gh-${d}-${hs}`} flexDirection="column">
+                {h === nowH ? <Text color={tone.late}>{hhmm} ●─────────────── одоо</Text> : null}
+                {at.length ? at.map(x => (
+                  <Box key={`gt-${x.file}`} flexDirection="column">
+                    <Box flexDirection="row" gap={1}><Text color={tone.muted}>{x.time.padEnd(5)}   │</Text><Text color={x.kind === 'event' ? tone.event : tone.task} backgroundColor={x.kind === 'event' ? '#2a2342' : '#1c2440'}>{` ${shortTitle(x.title, x.project)} `}</Text><Button key={`gtb-${x.file}`} label="›" plain onPress={() => void $.state.set(CAL_SEL, sel === x.file ? '' : x.file)} /></Box>
+                    {detail(x)}
+                  </Box>
+                )) : <Text color={tone.line}>{`${hs}:00   │`}</Text>}
+              </Box>
+            )
+          })}
+        </Box>
+      )
+    }
     const chip = (key: string, text: string, color: string) => (
       <Text key={key} color="#0a0c11" backgroundColor={color}>{` ${text} `}</Text>
     )
@@ -382,12 +460,6 @@ export const register: Register = (on, options) => {
           {x.project ? chip(`cp-${x.file}`, x.project, '#a78bfa') : null}
           {x.owner ? <Text key={`co-${x.file}`} dimColor>👤 {x.owner.replace(/^"|"$/g, '')}</Text> : null}
           {x.priority ? <Text key={`cr-${x.file}`}>{x.priority}</Text> : null}
-        </Box>
-        <Box flexDirection="row" gap={2}>
-          <Button key={`c0-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} />
-          <Button key={`c1-${x.file}`} label="→ маргааш" plain onPress={() => void setDue($, x, tomorrow)} />
-          {day !== today ? <Button key={`c2-${x.file}`} label={`→ ${day.slice(5)}`} plain onPress={() => void setDue($, x, day)} /> : null}
-          <Button key={`c3-${x.file}`} label="↗" plain onPress={() => void openInObsidian($, x.file)} />
         </Box>
         {detail(x)}
       </Box>
@@ -452,7 +524,7 @@ export const register: Register = (on, options) => {
               )
             })}
           </Box>
-          {itemsOn(day).length ? <Box flexDirection="column" marginTop={1}><Text dimColor>{day.slice(5)} · {itemsOn(day).length}</Text>{itemsOn(day).map(x => <Box key={`ptl-${x.file}`} flexDirection="column">{line(x)}{detail(x)}</Box>)}</Box> : null}
+          {dayGrid(day)}
           <Box marginTop={1}><Text><Text color={tone.late}>Хоцорсон {late.length}</Text><Text dimColor> · </Text><Text color={tone.muted}>Огноогүй {tasks.filter(x => !x.date).length}</Text><Text dimColor> · </Text><Text color={tone.ok}>Дууссан {done.length}</Text></Text></Box>
           {view === 'timeline' ? (
             <Box flexDirection="column">
@@ -503,7 +575,7 @@ export const register: Register = (on, options) => {
           <Box marginTop={1} borderStyle="round" borderColor={tone.line} paddingX={1}>
             <Input key="pt-capture" label="＋ " placeholder={`Барих — ${proj}… Enter → Inbox`} submitLabel="барих" onSubmit={value => void captureToInbox($, value)} />
           </Box>
-          <Text dimColor>сонгосон мөр дээр: → өнөөдөр · → маргааш · ↗ Obsidian · ▶ Claude</Text>
+          <Text dimColor>нэр дээр дарж огноо · төлөв · чухлыг солино</Text>
         </Box>
       )
     }
@@ -549,16 +621,7 @@ export const register: Register = (on, options) => {
             )
           })}
         </Box>
-        <Box marginTop={1}><Text dimColor>ӨДРИЙН ДАРААЛАЛ · {ofDay.length}</Text></Box>
-        {ofDay.length === 0 ? <Text dimColor>Энэ өдөр товлосон зүйл алга.</Text> : null}
-        {ofDay.map((x, n) => (
-          <Box key={`row-${x.file}`} flexDirection="column">
-            {day === today && x.time && x.time > hhmm && (n === 0 || (ofDay[n - 1].time || '') <= hhmm)
-              ? <Text color={tone.late}>── {hhmm} одоо ──────────</Text> : null}
-            {line(x)}
-            {detail(x)}
-          </Box>
-        ))}
+        {dayGrid(day)}
         {overdue.length ? <Box marginTop={1}><Text color={tone.late}>ХУГАЦАА ХЭТЭРСЭН · {overdue.length}</Text></Box> : null}
         {overdue.slice(0, 6).map(x => card(x, true))}
         <Box marginTop={1}><Text dimColor>ОГНООГҮЙ ТАВИУР · {cal.filter(x => x.kind === 'task' && !x.date).length}{scope === 'mine' ? ` · ${scopeLabel}` : ' · баг'}</Text></Box>
