@@ -9,12 +9,15 @@ import { matchesSession, parseTask, rank, shortTitle } from './parse'
 
 const TASKS = { plugin: 'fm', key: 'tasks' } as const
 const HIDDEN = { plugin: 'fm', key: 'isHidden' } as const
+const COLLAPSED = { plugin: 'fm', key: 'collapsed' } as const
+const COMMENTING = { plugin: 'fm', key: 'commenting' } as const
 
 // file name -> last seen mtime and parsed task (re-read only files that changed)
 const cache = new Map<string, { mtime: number; task: VaultTask | null }>()
 
 export const register: Register = (on, options) => {
   const configured = String((options as Record<string, unknown>).vault_path ?? '')
+  const member = String((options as Record<string, unknown>).member ?? '') || 'me'
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'tasks', description: 'Энэ дүрийн vault task-ын самбарыг харуулах/нуух' })
@@ -59,7 +62,8 @@ export const register: Register = (on, options) => {
       const hit = cache.get(f.name)
       if (hit && hit.mtime === f.mtimeMs) continue
       const text = await $.fs.read(`${dir}/${f.name}`).catch(() => '')
-      cache.set(f.name, { mtime: f.mtimeMs, task: parseTask(f.name, typeof text === 'string' ? text : '') })
+      const parsed = parseTask(f.name, typeof text === 'string' ? text : '')
+      cache.set(f.name, { mtime: f.mtimeMs, task: parsed ? { ...parsed, file: `${dir}/${f.name}` } : null })
     }
     for (const k of [...cache.keys()]) if (!seen.has(k)) cache.delete(k)
     const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
@@ -79,7 +83,9 @@ export const register: Register = (on, options) => {
     const { value: list = [] } = await $.state.get(TASKS)
     const { value: hidden = false } = await $.state.get(HIDDEN)
     if (e.props.hasSurvey || list.length === 0 || hidden) return next(e)
-    const { Box, Button, Text } = $.ui.resolve(e)
+    const { Box, Button, Input, Text } = $.ui.resolve(e)
+    const { value: collapsed = false } = await $.state.get(COLLAPSED)
+    const { value: commenting = '' } = await $.state.get(COMMENTING)
     const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
     const isDone = (t: VaultTask) => t.status === 'completed' || t.status === 'done'
     const tone: Record<string, string> = { 'next-action': 'cyan', waiting: 'yellow', inbox: 'gray' }
@@ -91,10 +97,13 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="column" borderStyle="round" borderColor="gray" borderDimColor paddingX={1}>
         <Box flexDirection="row" justifyContent="space-between">
-          <Text bold>📌 Миний task <Text dimColor>· {open.length} нээлттэй{oneProject ? ` · ${project}` : ''}</Text></Text>
+          <Box flexDirection="row" gap={1}>
+            <Button key="fold" label={collapsed ? '▸' : '▾'} plain onPress={() => void $.state.set(COLLAPSED, !collapsed)} />
+            <Text bold>📌 Миний task <Text dimColor>· {open.length} нээлттэй{oneProject ? ` · ${project}` : ''}</Text></Text>
+          </Box>
           <Text dimColor>/tasks</Text>
         </Box>
-        {shown.map(t => {
+        {collapsed ? null : shown.map(t => {
           const late = !isDone(t) && !!t.due && t.due < today
           const meta = [label[t.status] ?? t.status, t.due ? `${late ? '⚠ ' : ''}${t.due}` : '', !oneProject && t.project ? t.project : '']
             .filter(Boolean).join(' · ')
@@ -108,6 +117,12 @@ export const register: Register = (on, options) => {
                 <Text dimColor wrap="truncate-end">{meta}</Text>
                 {isDone(t) ? null : (
                   <Box flexDirection="row" gap={2} flexShrink={0}>
+                    <Button
+                      key={`note-${t.title}`}
+                      label="💬"
+                      plain
+                      onPress={() => void $.state.set(COMMENTING, commenting === t.title ? '' : t.title)}
+                    />
                     <Button
                       key={`run-${t.title}`}
                       label="▶ Хийх"
@@ -129,10 +144,34 @@ export const register: Register = (on, options) => {
                   </Box>
                 )}
               </Box>
+              {commenting === t.title && t.file ? (
+                <Box paddingLeft={2}>
+                  <Input
+                    key={`input-${t.title}`}
+                    label="💬 "
+                    placeholder="Коммент бичээд Enter (Esc — болих)"
+                    submitLabel="хадгалах"
+                    autoFocus
+                    onSubmit={value => {
+                      const text = value.trim()
+                      if (!text || !t.file) return
+                      void (async () => {
+                        const at = new Date(await $.clock.now()).toISOString().slice(0, 16).replace('T', ' ')
+                        const body = await $.fs.read(t.file as string).catch(() => '')
+                        const cur = typeof body === 'string' ? body : ''
+                        const head = cur.includes('## 💬 Сэтгэгдэл') ? '' : '\n\n## 💬 Сэтгэгдэл\n'
+                        await $.fs.write(t.file as string, `${cur.replace(/\s*$/, '')}${head}\n- ${at} · ${member}: ${text}\n`)
+                        await $.state.set(COMMENTING, '')
+                        $.ui.toast('Коммент task-д хадгалагдлаа')
+                      })()
+                    }}
+                  />
+                </Box>
+              ) : null}
             </Box>
           )
         })}
-        {open.length > 4 ? <Text dimColor>+{open.length - 4} бусад · Tasks base → 🤖 Agent бүрээр</Text> : null}
+        {!collapsed && open.length > 4 ? <Text dimColor>+{open.length - 4} бусад · Tasks base → 🤖 Agent бүрээр</Text> : null}
       </Box>
     )
   })
