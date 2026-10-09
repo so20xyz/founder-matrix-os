@@ -22,6 +22,9 @@ const TSAG = 'fm-tsaglabar'
 const CAL = { plugin: 'fm', key: 'cal' } as const
 const CAL_DAY = { plugin: 'fm', key: 'calDay' } as const
 const CAL_WEEK = { plugin: 'fm', key: 'calWeek' } as const
+const CAL_SCOPE = { plugin: 'fm', key: 'calScope' } as const
+const CAL_SEL = { plugin: 'fm', key: 'calSel' } as const
+const NAMES = { plugin: 'fm', key: 'names' } as const
 const TARGETS = ['gtd', 'wiki', 'creative', 'architect', 'development']
 const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 
@@ -168,6 +171,25 @@ function localNow(ms: number): Date {
   return new Date(ms - new Date(ms).getTimezoneOffset() * 60000)
 }
 
+/** Open a vault note in Obsidian (obsidian:// URL through the OS opener). */
+async function openInObsidian($: EngineInterface, file: string) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  if (!vault || !file.startsWith(vault)) return
+  const name = vault.split('/').pop() ?? ''
+  const rel = file.slice(vault.length + 1).replace(/\.md$/, '')
+  const url = `obsidian://open?vault=${encodeURIComponent(name)}&file=${encodeURIComponent(rel)}`
+  const win = (await $.env.get('OS')) === 'Windows_NT'
+  await $.process.run(win ? ['cmd', '/c', 'start', '', url] : ['open', url]).catch(() => null)
+  $.ui.toast('↗ Obsidian-д нээлээ')
+}
+
+/** Open the Цаглабар pane (from anywhere: command, 📅 button). */
+async function openTsaglabar($: EngineInterface) {
+  await loadCalendar($)
+  await loadGoals($)
+  await $.ui.open({ id: TSAG, title: '📅 Цаглабар' })
+}
+
 const OPEN_ORDER = ['inbox', 'next-action', 'waiting']
 function nextOpenStatus(status: string): string {
   return OPEN_ORDER[(OPEN_ORDER.indexOf(status) + 1) % OPEN_ORDER.length]
@@ -242,6 +264,7 @@ export const register: Register = (on, options) => {
     } catch {
       names = []
     }
+    await $.state.set(NAMES, names)
     let dir = `${vault}/01-GTD/Tasks`
     if (!(await $.fs.exists(dir))) dir = `${vault}/00-GTD/Tasks`
     const entries = await $.fs.list(dir).catch(() => [])
@@ -264,16 +287,17 @@ export const register: Register = (on, options) => {
   })
 
   on('command.run', { command: 'tsaglabar' }, async ($) => {
-    await loadCalendar($)
-    await loadGoals($)
-    await $.ui.open({ id: TSAG, title: '📅 Цаглабар' })
+    await openTsaglabar($)
     return { text: 'Цаглабар нээгдлээ' }
   })
 
   on('ui.render', { component: 'Pane', requestId: TSAG }, async ($, e) => {
-    const { value: cal = [] } = await $.state.get(CAL)
+    let { value: cal = [] } = await $.state.get(CAL)
     const { value: week = 0 } = await $.state.get(CAL_WEEK)
     const { value: goals = [] } = await $.state.get(GOALS)
+    const { value: scope = 'mine' } = await $.state.get(CAL_SCOPE)
+    const { value: sel = '' } = await $.state.get(CAL_SEL)
+    const { value: roleNames = [] } = await $.state.get(NAMES)
     const { Box, Button, Input, Text } = $.ui.resolve(e)
     const now = localNow(await $.clock.now())
     const iso = (d: Date) => d.toISOString().slice(0, 10)
@@ -283,6 +307,12 @@ export const register: Register = (on, options) => {
     const monday = new Date(now); monday.setUTCDate(now.getUTCDate() - ((now.getUTCDay() + 6) % 7) + week * 7)
     const days = Array.from({ length: 7 }, (_, n) => { const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + n); return iso(d) })
     const names = ['Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя', 'Ня']
+    const meRe = new RegExp(`(^|\\W)(${[member, 'itge\\.e', 'bd', 'me'].filter(Boolean).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(\\W|$)`, 'i')
+    const coreName = (n: string) => n.replace(/[^\p{L}\p{N}.\s-]/gu, ' ').replace(/\bagent\b/gi, ' ').replace(/\s+/g, ' ').trim().toLowerCase()
+    const roleCores = roleNames.map(coreName).filter(n => n.length > 1)
+    const isMine = (x: CalItem) => x.kind === 'event' || meRe.test(x.owner) || roleCores.some(n => coreName(x.owner).includes(n))
+    const all = cal
+    cal = scope === 'team' ? all : all.filter(isMine)
     const itemsOn = (d: string) => cal.filter(x => x.date === d)
     const ofDay = itemsOn(day).sort((a, b) => (a.time || '99').localeCompare(b.time || '99'))
     const overdue = cal.filter(x => x.kind === 'task' && x.date && x.date < today)
@@ -296,10 +326,21 @@ export const register: Register = (on, options) => {
       <Box key={x.file} flexDirection="row" gap={1}>
         <Text color={x.kind === 'event' ? tone.event : tone.task}>{x.time || (x.kind === 'event' ? '··:··' : ' task')}</Text>
         <Text color={x.kind === 'event' ? tone.event : tone.task}>{x.kind === 'event' ? '◆' : '●'}</Text>
-        <Text wrap="truncate-end">{x.title}</Text>
+        <Button key={`open-${x.file}`} label={x.title} plain onPress={() => void $.state.set(CAL_SEL, sel === x.file ? '' : x.file)} />
         {x.project ? <Text dimColor wrap="truncate-end">· {x.project}</Text> : null}
       </Box>
     )
+    const detail = (x: CalItem) => sel === x.file ? (
+      <Box key={`det-${x.file}`} flexDirection="column" marginLeft={2} paddingX={1} borderStyle="round" borderColor={tone.line}>
+        <Text dimColor>{x.kind === 'event' ? 'УУЛЗАЛТ' : 'TASK'} · {x.status || '—'}{x.owner ? ` · ${x.owner}` : ''}{x.date ? ` · ${x.date}${x.time ? ' ' + x.time : ''}` : ''}</Text>
+        <Box flexDirection="row" gap={2} flexWrap="wrap">
+          <Button key={`obs-${x.file}`} label="↗ Obsidian-д нээх" plain onPress={() => void openInObsidian($, x.file)} />
+          {x.kind === 'task' ? <Button key={`d0-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} /> : null}
+          {x.kind === 'task' ? <Button key={`d1-${x.file}`} label="→ маргааш" plain onPress={() => void setDue($, x, tomorrow)} /> : null}
+          <Button key={`ask-${x.file}`} label="▶ Claude-д өгөх" plain onPress={() => void $.prompt.submit({ text: `Энэ ${x.kind === 'event' ? 'уулзалт' : 'task'}-ийг уншаад дараагийн алхмыг хий: [[${x.file.replace(/^.*?\/(0[0-9]-[^/]+\/.*)\.md$/, '$1')}]]`, asUser: true })} />
+        </Box>
+      </Box>
+    ) : null
     return (
       <Box flexDirection="column" paddingX={1}>
         <Box flexDirection="row" justifyContent="space-between">
@@ -308,6 +349,7 @@ export const register: Register = (on, options) => {
             <Button key="wk-prev" label="‹" plain onPress={() => void $.state.set(CAL_WEEK, week - 1)} />
             <Button key="wk-now" label="өнөөдөр" plain onPress={() => { void $.state.set(CAL_WEEK, 0); void $.state.set(CAL_DAY, '') }} />
             <Button key="wk-next" label="›" plain onPress={() => void $.state.set(CAL_WEEK, week + 1)} />
+            <Button key="wk-scope" label={scope === 'team' ? '👥 баг' : '👤 миний'} plain onPress={() => void $.state.set(CAL_SCOPE, scope === 'team' ? 'mine' : 'team')} />
             <Button key="wk-load" label="⟳" plain onPress={() => void loadCalendar($)} />
           </Box>
         </Box>
@@ -315,7 +357,7 @@ export const register: Register = (on, options) => {
         {turn.map(x => (
           <Box key={`turn-${x.file}`} flexDirection="row" gap={1}>
             <Text color={tone.turn}>▌</Text>
-            <Text wrap="truncate-end">{x.title}</Text>
+            <Button key={`tn-${x.file}`} label={x.title} plain onPress={() => void openInObsidian($, x.file)} />
             <Text dimColor>{x.date ? x.date.slice(5) : 'огноогүй'} · {x.status}</Text>
           </Box>
         ))}
@@ -340,19 +382,20 @@ export const register: Register = (on, options) => {
             {day === today && x.time && x.time > hhmm && (n === 0 || (ofDay[n - 1].time || '') <= hhmm)
               ? <Text color={tone.late}>── {hhmm} одоо ──────────</Text> : null}
             {line(x)}
+            {detail(x)}
           </Box>
         ))}
         {overdue.length ? <Box marginTop={1}><Text color={tone.late}>ХУГАЦАА ХЭТЭРСЭН · {overdue.length}</Text></Box> : null}
         {overdue.slice(0, 6).map(x => (
           <Box key={`late-${x.file}`} flexDirection="row" justifyContent="space-between" gap={1}>
-            <Text wrap="truncate-end"><Text color={tone.late}>⚠ {x.date.slice(5)}</Text> {x.title}</Text>
+            <Box flexDirection="row" gap={1} flexShrink={1}><Text color={tone.late}>⚠ {x.date.slice(5)}</Text><Button key={`lt-${x.file}`} label={x.title} plain onPress={() => void openInObsidian($, x.file)} /></Box>
             <Button key={`late-today-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} />
           </Box>
         ))}
-        <Box marginTop={1}><Text dimColor>ОГНООГҮЙ ТАВИУР · {cal.filter(x => x.kind === 'task' && !x.date).length}</Text></Box>
+        <Box marginTop={1}><Text dimColor>ОГНООГҮЙ ТАВИУР · {cal.filter(x => x.kind === 'task' && !x.date).length}{scope === 'mine' ? ' · миний' : ' · баг'}</Text></Box>
         {shelf.map(x => (
           <Box key={`shelf-${x.file}`} flexDirection="row" justifyContent="space-between" gap={1}>
-            <Text wrap="truncate-end"><Text color="#737AA2">○</Text> {x.title}{x.owner ? <Text dimColor> · {x.owner}</Text> : null}</Text>
+            <Box flexDirection="row" gap={1} flexShrink={1}><Text color="#737AA2">○</Text><Button key={`sh-o-${x.file}`} label={x.title} plain onPress={() => void openInObsidian($, x.file)} />{scope === 'team' && x.owner ? <Text dimColor>· {x.owner}</Text> : null}</Box>
             <Box flexDirection="row" gap={2} flexShrink={0}>
               <Button key={`sh-today-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} />
               <Button key={`sh-tmr-${x.file}`} label="→ маргааш" plain onPress={() => void setDue($, x, tomorrow)} />
@@ -416,7 +459,10 @@ export const register: Register = (on, options) => {
             <Button key="fold" label={collapsed ? '▸' : '▾'} plain onPress={() => void $.state.set(COLLAPSED, !collapsed)} />
             <Text bold>📌 Миний task <Text dimColor>· {open.length} нээлттэй{oneProject ? ` · ${project}` : ''}</Text></Text>
           </Box>
-          <Text dimColor>/tasks</Text>
+          <Box flexDirection="row" gap={2}>
+            <Button key="to-cal" label="📅" plain onPress={() => void openTsaglabar($)} />
+            <Text dimColor>/tasks</Text>
+          </Box>
         </Box>
         {collapsed ? null : shown.map(t => {
           const late = !isDone(t) && !!t.due && t.due < today
@@ -616,7 +662,10 @@ updated: ${day}`)
     }
     return (
       <Box flexDirection="column" paddingX={1}>
-        <Text dimColor>VAULT TASKS{oneProject ? ` · ${project}` : ''}</Text>
+        <Box flexDirection="row" justifyContent="space-between">
+          <Text dimColor>VAULT TASKS{oneProject ? ` · ${project}` : ''}</Text>
+          <Button key="pane-cal" label="📅 Цаглабар" plain onPress={() => void openTsaglabar($)} />
+        </Box>
         <Box flexDirection="row" marginTop={1}>
           {counts.map(c => <Text key={`bar-${c.k}`} color={tone[c.k]}>{seg(c.n)}</Text>)}
           <Text color={tone.completed}>{seg(done.length)}</Text>

@@ -4,6 +4,6 @@ export type VaultTask = { title: string; status: string; due: string; owner: str
 
 declare module 'claude-code' {
   interface PluginState {
-    'fm': { tasks: VaultTask[]; isHidden: boolean; collapsed: boolean; commenting: string; confirming: string; vault: string; feed: string[]; watching: boolean; goals: string[]; health: string; target: string; cal: CalItem[]; calDay: string; calWeek: number }
+    'fm': { tasks: VaultTask[]; isHidden: boolean; collapsed: boolean; commenting: string; confirming: string; vault: string; feed: string[]; watching: boolean; goals: string[]; health: string; target: string; cal: CalItem[]; calDay: string; calWeek: number; calScope: string; calSel: string; names: string[] }
   }
 }
