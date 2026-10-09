@@ -1,8 +1,8 @@
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, Timer } from 'claude-code'
 
-import type { CalItem, VaultTask } from '../types'
+import type { CalItem, InboxItem, RoleInfo, ToolStatus, VaultTask } from '../types'
 import type { ClaimVerdict } from './parse'
-import { applyStatus, cellWidth, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, isDone, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, parseRelease, parseTask, projectOf, rank, roleLabel, sessionScope, shortTitle, timesOf } from './parse'
+import { applyStatus, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planWindow, projectOf, rank, roleLabel, roleOf, sanitizeDesc, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
 
 // Task band (itge.e 2026-10-09): above the prompt, the open vault tasks this session's role owns.
 // Area agents match `owner`/`responsible` against their role's names, device-agnostic ("📚 Wiki" is every Wiki session, PC or Mac);
@@ -31,20 +31,100 @@ const CAL_SCOPE = { plugin: 'fm', key: 'calScope' } as const
 const CAL_SEL = { plugin: 'fm', key: 'calSel' } as const
 const NAMES = { plugin: 'fm', key: 'names' } as const
 const PROJ = { plugin: 'fm', key: 'proj' } as const
-const CAL_VIEW = { plugin: 'fm', key: 'calView' } as const
-const CAL_DONE = { plugin: 'fm', key: 'calDone' } as const
 const TARGETS = ['gtd', 'wiki', 'creative', 'architect', 'development']
 const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 const BUSY = { plugin: 'fm', key: 'busy' } as const
 const OFFERS = { plugin: 'fm', key: 'offers' } as const
 const DEVICES = { plugin: 'fm', key: 'devices' } as const
 
-// in-progress has its own color on every surface (chips, bars, ▶ marks); activity tags moved off teal to stay distinct
+// Цаглабар v2 (Figma «pane design v2», 2026-10-09): one palette, one accent. The accent marks only ▷ running, done dots /
+// lit segments, the active day's ━, the selected border, active editor chips and ◇ goals; done/ring/run are lib.js greys.
+const C = {
+  bg: '#1A1A19', surface: '#262625', raised: '#313130',
+  text: '#F2F1EC', muted: '#9A9893', border: '#3A3A38', accent: '#2C66AD',
+  done: '#93918C', ring: '#5A5A59', run: '#605F5C',
+}
+// false = no root / tab bar / capture fill (light-theme escape hatch); the raised bands stay
+const FILL = true
+// one glyph per meaning, one cell each (🔒 two). Never measured with cellWidth/fit: parse.ts counts the emoji-capable ones
+// (☼ ⚠ ✎ ✉ ↗ ⚙) as two cells, though terminals draw them as one
+const G = {
+  tabCal: '▦', tabKanban: '▥', tabTools: '⊟', tabProject: '▭', tabInbox: '⊔', tabReview: '☼',
+  creative: '◍', architect: '▥', gtd: '⊔', wiki: '◫', project: '▭', person: '⚇', unknown: '◌', finance: '🔒',
+  back: '‹', fwd: '›', today: '▦', reload: '↻', filter: '▽', plus: '+', more: '⋯', note: '≡', link: '↗', palette: '◍',
+  open: '⌄', closed: '›', run: '▷', done: '✓', diamond: '◇', alert: '⚠', step: '○', gear: '⚙',
+  dot: '▪', dotOff: '▫', segOn: '▰', segOff: '▱', tabRule: '━', rule: '─',
+  pen: '✎', sparkle: '✧', frame: '#', image: '⊡', grid: '⊞',
+  chat: '✉', clip: '↗', idea: '✦', meet: '▦', memo: '▤',
+}
+const TABS = [
+  { id: 'cal', glyph: G.tabCal, label: 'Цаглабар' }, { id: 'kanban', glyph: G.tabKanban, label: 'Kanban' },
+  { id: 'tools', glyph: G.tabTools, label: 'Хэрэгсэл' }, { id: 'project', glyph: G.tabProject, label: 'Төсөл' },
+  { id: 'inbox', glyph: G.tabInbox, label: 'Inbox' }, { id: 'review', glyph: G.tabReview, label: 'Тойм' },
+] as const
+// honest labels ship by default (no drag in the primitives); the design strings wait for itge.e's OK
+const LBL_SHELF_HINT = 'дарж товлох' // design: «чирж цаг руу»
+const LBL_KANBAN_DESC = 'Карт сонгоод багана руу зөө' // design: «Багана хооронд чирж төлөв солино»
+const LBL_KANBAN_HINT = 'Карт сонго · h/l зөөх · Enter нээх' // design: «Чирж багана солих · ←/→ зөөх · Enter нээх»
+// V2 Kanban columns, in board order (a card moves one column with ‹ / ›; `status` is what a move writes)
+const KB_COLS = [
+  { id: 'inbox', name: 'Inbox', status: 'inbox' }, { id: 'next', name: 'Next', status: 'next-action' },
+  { id: 'waiting', name: 'Waiting', status: 'waiting' }, { id: 'done', name: 'Done', status: 'completed' },
+] as const
+// V4 project phases = the INAI activities (a task's `activity:`), in work order; a task without one falls under «Бусад»
+const PHASES = ['Brief', 'Бэлтгэл', 'Дизайн', 'Хөгжүүлэлт', 'Контент']
+// V4 agent table: role slug → display name, and the agent state note whose «## ТҮҮХ» gives «Сүүлийн мессеж»
+const AGENT_NAME: Record<string, string> = { creative: 'Creative', developer: 'Architect', resource: 'Wiki', project: 'Project', area: 'GTD', finance: 'Finance' }
+const STATE_NOTE: Record<string, string> = { creative: 'creative', developer: 'developer', resource: 'wiki', area: 'area', project: 'project' }
+// V6 «Агентууд»: the fixed rows, in design order (Finance always «хаалттай», never its tasks)
+const REVIEW_ROLES = ['creative', 'developer', 'resource', 'project', 'area', 'finance']
+// V3 Higgsfield: the MCP server in its tool-name spelling ($.mcp.call accepts it); only the credits are ever shown (🔒)
+const HIGGS_SERVER = '5a008e26-266c-4e5b-88f7-171a0f359578'
+// V3 tool manifest (the data source until tool notes carry group: / roles:). check: process = a bridge CLI's `status`,
+// mcp = the server's balance, skill = always there, watching = the Discord watcher, health = the brain check summary
+type ToolCheck = { kind: 'process'; script: string; args: string[] } | { kind: 'mcp'; tool: string } | { kind: 'skill' } | { kind: 'watching' } | { kind: 'health' }
+type ToolDef = { id: string; group: string; glyph: string; name: string; roles: string[]; skill?: string; caps?: string; cmds?: string[]; check: ToolCheck }
+const TOOLS: ToolDef[] = [
+  { id: 'figma', group: 'Дизайн', glyph: G.pen, name: 'Figma bridge', roles: ['creative'], skill: 'fm:figma',
+    caps: 'зурах · засах · PNG/SVG export · contrast · давхцал · Smart Animate · коммент',
+    cmds: ['$ fig.py run -f pane.js -t 120', '$ fig.py export 12:345 --scale 2', '/ fm:figma  icon sheet зур'],
+    check: { kind: 'process', script: 'tools/figma/fig.py', args: ['status'] } },
+  { id: 'higgsfield', group: 'Дизайн', glyph: G.sparkle, name: 'Higgsfield', roles: ['creative'], check: { kind: 'mcp', tool: 'balance' } },
+  { id: 'framer', group: 'Дизайн', glyph: G.frame, name: 'Framer bridge', roles: ['creative', 'developer'], skill: 'fm:framer',
+    cmds: ['$ fr.py status', '$ fr.py pages', '/ fm:framer'],
+    check: { kind: 'process', script: 'tools/framer/fr.py', args: ['status'] } },
+  { id: 'post', group: 'Контент', glyph: G.image, name: 'Post · carousel', roles: ['creative'], skill: 'fm:post', check: { kind: 'skill' } },
+  { id: 'moodboard', group: 'Контент', glyph: G.grid, name: 'Moodboard', roles: ['creative'], check: { kind: 'skill' } },
+  { id: 'relay', group: 'Холбоо', glyph: G.chat, name: 'Discord relay', roles: ['*'], skill: 'fm:relay', check: { kind: 'watching' } },
+  { id: 'notion', group: 'Холбоо', glyph: G.wiki, name: 'Notion', roles: ['project', 'area'], skill: 'fm:notion', check: { kind: 'skill' } },
+  { id: 'save', group: 'Vault', glyph: G.memo, name: 'fm:save', roles: ['*'], cmds: ['/ fm:save'], check: { kind: 'skill' } },
+  { id: 'watch', group: 'Vault', glyph: G.reload, name: 'fm:watch', roles: ['creative', 'resource'], cmds: ['/ fm:watch'], check: { kind: 'skill' } },
+  { id: 'brain', group: 'Vault', glyph: G.done, name: 'Brain check', roles: ['*'], check: { kind: 'health' } },
+]
+const GROUPS = ['Дизайн', 'Контент', 'Холбоо', 'Vault']
+// V5 routes (one square each), the capture kinds' glyphs and the source labels
+const ROUTES = [
+  { id: 'task', glyph: G.done, name: 'Task' }, { id: 'note', glyph: G.note, name: 'Note' },
+  { id: 'agent', glyph: G.palette, name: 'Агент' }, { id: 'project', glyph: G.project, name: 'Төсөл' },
+] as const
+const ROUTE_NAME: Record<string, string> = { task: 'Task', note: 'Note', agent: 'Агент', project: 'Төсөл' }
+const KIND_GLYPH: Record<string, string> = { chat: G.chat, clip: G.clip, idea: G.idea, meet: G.meet, memo: G.memo }
+const SRC_LABEL: Record<string, string> = { tsaglabar: 'Барих', telegram: 'Telegram', clip: 'Clip', web: 'Clip', 'web-clip': 'Clip', notion: 'Notion' }
+// the minute clock behind the elapsed labels (a reload kills it; session.start starts a new one)
+let tickTimer: Timer | null = null
+
+// in-progress has its own color on the band and the fm-tasks pane (chips, bars, ▶ marks)
 const IN_PROGRESS = '#2dd4bf'
-const ACTIVITY = '#f472b6'
 
 // file name -> last seen mtime and parsed task (re-read only files that changed)
 const cache = new Map<string, { mtime: number; task: VaultTask | null }>()
+// Цаглабар's own caches (full path -> last seen mtime and what it read): tasks / events, inbox captures, role notes' skills.
+// A note the plugin writes itself is dropped from calCache (forgetCal), so its next read is fresh whatever the mtime says
+const calCache = new Map<string, { mtime: number; item: CalItem | null }>()
+const inboxCache = new Map<string, { mtime: number; item: InboxItem | null }>()
+// loadResearchHub's frontmatter reads (every turn end in a research session), by file mtime like calCache
+const frontCache = new Map<string, { mtime: number; fm: string }>()
+const noteSkills = new Map<string, string[]>()
 // one claim at a time; the watcher loop of the latest start (an older loop must not reset WATCHING)
 let draining = false
 let watchGen = 0
@@ -279,6 +359,7 @@ async function releaseClaim($: EngineInterface, file: string, name: string) {
 
 /** After the relay wrote a task note (claim WIN): mirror its status and times into the band's list and Цаглабар. */
 async function mirrorNote($: EngineInterface, file: string) {
+  forgetCal(file)
   const body = await $.fs.read(file).catch(() => '')
   const text = typeof body === 'string' ? body : ''
   const status = normStatus(fmGet(text.startsWith('---') ? text.slice(0, Math.max(0, text.indexOf('\n---', 3))) : '', 'status')) || 'in-progress'
@@ -309,9 +390,14 @@ async function drainOffers($: EngineInterface, configured: string) {
       await mirrorOffers($)
       const name = offer.path.split('/').pop()?.replace(/\.md$/, '') ?? offer.path
       const verdict = await claimTask($, offer.path)
+      const vaultNow = await vaultOf($)
+      forgetCal(vaultNow && !offer.path.startsWith(`${vaultNow}/`) ? `${vaultNow}/${offer.path}` : offer.path)
       await reloadTasks($, configured)
       await loadCalendar($)
       if (verdict.win) {
+        // the relay's paths are vault-relative; the marker holds the note's full path (as the task list does)
+        const vault = await vaultOf($)
+        await markPlan($, vault && !offer.path.startsWith(`${vault}/`) ? `${vault}/${offer.path}` : offer.path)
         await markBusy($, false)
         $.ui.toast(`▶ Task авлаа: ${name}`)
         await $.prompt.submit({ text: `Энэ task-ийг гүйцэтгэ (in-progress болсон): [[${offer.path.replace(/\.md$/, '')}]] — дуусахад status: completed, completed: цаг, «## Үр дүн».`, asUser: true })
@@ -382,7 +468,10 @@ async function loadGoals($: EngineInterface) {
     const t = typeof body === 'string' ? body : ''
     if (!/^type:\s*goal/m.test(t) || /^status:\s*(done|completed|dropped)/m.test(t)) continue
     const prog = String(Math.min(100, Number((t.match(/^progress:\s*(\d+)/m) || [])[1] ?? 0)))
-    goals.push(`${prog}|${f.name.replace(/\.md$/, '')}`)
+    // pct|name|stage|file: goal notes carry `category:` (Skill / Business) until a `stage:` key exists (spec §6)
+    const fm = t.startsWith('---') ? t.slice(0, Math.max(0, t.indexOf('\n---', 3))) : ''
+    const stage = (fmGet(fm, 'stage') || fmGet(fm, 'category')).replace(/^\[+|\]+$/g, '').split('|')[0]?.split('/').pop()?.trim() ?? ''
+    goals.push(`${prog}|${f.name.replace(/\.md$/, '')}|${stage.replace(/\|/g, ' ')}|${dir}/${f.name}`)
   }
   await $.state.set(GOALS, goals.sort((a, b) => Number(b.split('|')[0]) - Number(a.split('|')[0])))
 }
@@ -402,41 +491,63 @@ async function runBrainCheck($: EngineInterface) {
   }
 }
 
-/** Цаглабар data: every open team task (not private) + every event, as dated/undated items. */
+/** Цаглабар data: every open team task (not private) + every event, as dated/undated items (unchanged notes from calCache). */
 async function loadCalendar($: EngineInterface) {
   const { value: vault = '' } = await $.state.get(VAULT)
   if (!vault) return
   const items: CalItem[] = []
-  const field = (fm: string, k: string) => (fm.match(new RegExp(`^${k}:[ \\t]*"?([^"\\r\\n]*)"?`, 'm'))?.[1] ?? '').trim()
+  const seen = new Set<string>()
   for (const [dir, kind] of [[`${vault}/01-GTD/Tasks`, 'task'], [`${vault}/01-GTD/Events`, 'event']] as const) {
     const entries = await $.fs.list(dir).catch(() => [])
     for (const f of entries) {
       if (f.kind !== 'file' || !f.name.endsWith('.md')) continue
-      const body = await $.fs.read(`${dir}/${f.name}`).catch(() => '')
-      const t = typeof body === 'string' ? body : ''
-      if (!t.startsWith('---')) continue
-      const fm = t.slice(0, Math.max(0, t.indexOf('\n---', 3)))
-      if (/^private:\s*true/m.test(fm) || /^type:\s*index/m.test(fm)) continue
-      const raw = field(fm, 'status')
-      // a task's legacy `done` is completed (normStatus); events keep their own status words
-      const status = kind === 'task' ? normStatus(raw) : raw
-      if (kind === 'task' && !/^(inbox|next-action|in-progress|waiting|completed)$/.test(status)) continue
-      if (kind === 'event' && /^(done|cancelled)$/.test(status)) continue
-      const when = kind === 'task' ? field(fm, 'due') : (field(fm, 'scheduled') || field(fm, 'date'))
-      const [date = '', time = ''] = when.split(/[ T]/)
-      const project = projectOf(field(fm, 'project'))
-      const activity = field(fm, 'activity').replace(/^\[\[|\]\]$/g, '').split('|')[0].split('/').pop() ?? ''
-      // research: "[[04-Resources/Research/<topic>/<hub>]]" → <topic> (the hub note may be named apart from its folder)
-      const segs = field(fm, 'research').replace(/^\[\[|\]\]$/g, '').split('|')[0].split('#')[0].replace(/\.md$/, '').split('/').filter(Boolean)
-      const ri = segs.indexOf('Research')
-      const research = (ri >= 0 && segs[ri + 1] ? segs[ri + 1] : segs.length > 1 ? segs[segs.length - 2] : segs[0] ?? '').trim()
-      // live activity: started / claimed while in-progress, completed (else updated) once done
-      const times = kind === 'task' ? { started: field(fm, 'started'), completed: field(fm, 'completed'), claimed: field(fm, 'claimed'), updated: field(fm, 'updated') } : {}
-      items.push({ kind, title: f.name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), owners: ownersOf(fm), project, activity, priority: field(fm, 'priority'), research, file: `${dir}/${f.name}`, ...times })
+      const path = `${dir}/${f.name}`
+      seen.add(path)
+      // turn.complete reloads every turn: an unchanged note keeps what it read last time
+      const hit = calCache.get(path)
+      if (hit && hit.mtime === f.mtimeMs) {
+        if (hit.item) items.push(hit.item)
+        continue
+      }
+      const body = await $.fs.read(path).catch(() => '')
+      const item = calItemOf(typeof body === 'string' ? body : '', dir, f.name, kind)
+      calCache.set(path, { mtime: f.mtimeMs, item })
+      if (item) items.push(item)
     }
   }
+  for (const k of [...calCache.keys()]) if (!seen.has(k)) calCache.delete(k)
   await $.state.set({ plugin: 'fm', key: 'cal' }, items)
   await loadResearchHub($, vault)
+}
+
+/** A note this plugin just wrote: its next loadCalendar reads it afresh (an mtime may not move within a second). */
+function forgetCal(file: string) {
+  calCache.delete(file)
+  frontCache.delete(file)
+}
+
+/** One task / event note → its Цаглабар item; null for a private, index, closed or unknown-status note. */
+function calItemOf(t: string, dir: string, name: string, kind: 'task' | 'event'): CalItem | null {
+  const field = (fm: string, k: string) => (fm.match(new RegExp(`^${k}:[ \\t]*"?([^"\\r\\n]*)"?`, 'm'))?.[1] ?? '').trim()
+  if (!t.startsWith('---')) return null
+  const fm = t.slice(0, Math.max(0, t.indexOf('\n---', 3)))
+  if (/^private:\s*true/m.test(fm) || /^type:\s*index/m.test(fm)) return null
+  const raw = field(fm, 'status')
+  // a task's legacy `done` is completed (normStatus); events keep their own status words
+  const status = kind === 'task' ? normStatus(raw) : raw
+  if (kind === 'task' && !/^(inbox|next-action|in-progress|waiting|completed)$/.test(status)) return null
+  if (kind === 'event' && /^(done|cancelled)$/.test(status)) return null
+  const when = kind === 'task' ? field(fm, 'due') : (field(fm, 'scheduled') || field(fm, 'date'))
+  const [date = '', time = ''] = when.split(/[ T]/)
+  const project = projectOf(field(fm, 'project'))
+  const activity = (field(fm, 'activity').replace(/^\[\[|\]\]$/g, '').split('|')[0] ?? '').split('/').pop() ?? ''
+  // research: "[[04-Resources/Research/<topic>/<hub>]]" → <topic> (the hub note may be named apart from its folder)
+  const segs = ((field(fm, 'research').replace(/^\[\[|\]\]$/g, '').split('|')[0] ?? '').split('#')[0] ?? '').replace(/\.md$/, '').split('/').filter(Boolean)
+  const ri = segs.indexOf('Research')
+  const research = ((ri >= 0 && segs[ri + 1] ? segs[ri + 1] : segs.length > 1 ? segs[segs.length - 2] : segs[0]) ?? '').trim()
+  // live activity: started / claimed while in-progress, completed (else updated) once done
+  const times = kind === 'task' ? { started: field(fm, 'started'), completed: field(fm, 'completed'), claimed: field(fm, 'claimed'), updated: field(fm, 'updated') } : {}
+  return { kind, title: name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), owners: ownersOf(fm), project, activity, priority: field(fm, 'priority'), research, file: `${dir}/${name}`, ...times }
 }
 
 /** Research session (folder under 04-Resources/Research/<topic>): find its hub note, keep file + status (frontmatter only). */
@@ -448,10 +559,15 @@ async function loadResearchHub($: EngineInterface, vault: string) {
     return
   }
   const base = `${vault}/04-Resources/Research/${topic}`
-  const frontOf = async (file: string) => {
+  // a listed note with an unchanged mtime keeps the frontmatter read last time (mtime 0: always read)
+  const frontOf = async (file: string, mtime = 0) => {
+    const hit = mtime ? frontCache.get(file) : undefined
+    if (hit && hit.mtime === mtime) return hit.fm
     const body = await $.fs.read(file).catch(() => '')
     const t = typeof body === 'string' ? body : ''
-    return t.startsWith('---') ? t.slice(0, Math.max(0, t.indexOf('\n---', 3))) : ''
+    const fm = t.startsWith('---') ? t.slice(0, Math.max(0, t.indexOf('\n---', 3))) : ''
+    if (mtime) frontCache.set(file, { mtime, fm })
+    return fm
   }
   // hub = <topic>.md; else the research/project note whose `project:` does not point back into Research
   // (sub-notes link their hub, e.g. 1 хувь/3 Үйлчилгээ → project: [[…/1 хувь]]); an alias naming the topic wins.
@@ -461,7 +577,7 @@ async function loadResearchHub($: EngineInterface, vault: string) {
     const entries = await $.fs.list(base).catch(() => [])
     for (const f of entries) {
       if (f.kind !== 'file' || !f.name.endsWith('.md') || f.name.startsWith('_')) continue
-      const fm = await frontOf(`${base}/${f.name}`)
+      const fm = await frontOf(`${base}/${f.name}`, f.mtimeMs)
       if (!/^type:[ \t]*"?(research|project)"?[ \t]*$/m.test(fm) || /^project:.*04-Resources\/Research\//m.test(fm) || fmList(fm, 'research').length) continue
       if (!file) file = `${base}/${f.name}`
       if (fm.includes(topic)) { file = `${base}/${f.name}`; break }
@@ -469,12 +585,15 @@ async function loadResearchHub($: EngineInterface, vault: string) {
   }
   const status = file ? ((await frontOf(file)).match(/^status:[ \t]*"?([^"\r\n]*)"?/m)?.[1] ?? '').trim() : ''
   let open = 0
+  const seen = new Set<string>()
   for (const f of await $.fs.list(`${vault}/01-GTD/Tasks`).catch(() => [])) {
     if (f.kind !== 'file' || !f.name.endsWith('.md')) continue
-    const fm = await frontOf(`${vault}/01-GTD/Tasks/${f.name}`)
+    seen.add(`${vault}/01-GTD/Tasks/${f.name}`)
+    const fm = await frontOf(`${vault}/01-GTD/Tasks/${f.name}`, f.mtimeMs)
     if (!new RegExp(`^research:.*Research/${topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`, 'm').test(fm)) continue
     if (!/^status:[ \t]*"?(completed|done|cancelled)"?[ \t]*$/m.test(fm)) open++
   }
+  for (const k of [...frontCache.keys()]) if (k.startsWith(`${vault}/01-GTD/Tasks/`) && !seen.has(k)) frontCache.delete(k)
   await $.state.set({ plugin: 'fm', key: 'researchHub' }, { file, status, open })
 }
 
@@ -505,18 +624,6 @@ async function closeResearch($: EngineInterface) {
   $.ui.toast(`✅ Судалгаа хаагдлаа · status: done · closed: ${day}`)
 }
 
-/** Schedule an undated / overdue task: write its `due`. */
-async function setDue($: EngineInterface, item: CalItem, day: string) {
-  const body = await $.fs.read(item.file).catch(() => '')
-  const cur = typeof body === 'string' ? body : ''
-  if (!cur.startsWith('---')) return
-  const out = /^due:.*$/m.test(cur) ? cur.replace(/^due:.*$/m, `due: ${day}`) : cur.replace(/^status:.*$/m, m => `${m}\ndue: ${day}`)
-  await $.fs.write(item.file, out)
-  const { value: cal = [] } = await $.state.get({ plugin: 'fm', key: 'cal' })
-  await $.state.set({ plugin: 'fm', key: 'cal' }, cal.map(x => (x.file === item.file ? { ...x, date: day } : x)))
-  $.ui.toast(`📅 ${day} руу товлолоо`)
-}
-
 /**
  * Notion-like property edit on a Цаглабар item: write one frontmatter field ('' removes it), keep CAL in sync.
  * A status edit also writes started/claimed (→ in-progress) or completed (→ completed), local "YYYY-MM-DD HH:MM";
@@ -529,6 +636,7 @@ async function setProp($: EngineInterface, item: CalItem, key: 'due' | 'status' 
     if (!how) return
     if (how === 'won') {
       await mirrorNote($, item.file)
+      await markPlan($, item.file)
       $.ui.toast(`▶ Task авлаа: ${item.title}`)
       return
     }
@@ -549,10 +657,13 @@ async function setProp($: EngineInterface, item: CalItem, key: 'due' | 'status' 
     out = fmSet(fmSet(cur.slice(0, end), key, v, eol), 'updated', stamp.slice(0, 10), eol) + cur.slice(end)
   }
   await $.fs.write(item.file, out)
+  forgetCal(item.file)
   const { value: cal = [] } = await $.state.get({ plugin: 'fm', key: 'cal' })
   const patch = (x: CalItem): CalItem => (key === 'due' ? { ...x, date: value, time: value ? x.time : '' } : key === 'status' ? { ...x, status: value, ...timesOf(out) } : { ...x, priority: value })
   await $.state.set({ plugin: 'fm', key: 'cal' }, cal.map(x => (x.file === item.file ? patch(x) : x)))
   $.ui.toast(key === 'due' ? (value ? `📅 ${value}` : '📅 огноо арилгалаа') : `${key} → ${value || '—'}`)
+  if (key === 'status' && value === 'in-progress') await markPlan($, item.file)
+  if (key === 'status' && isRequeue(value)) await unmarkPlan($, item.file)
   if (key === 'status' && isRequeue(value) && timesOf(cur).claimed) await releaseClaim($, item.file, item.title)
 }
 
@@ -573,9 +684,14 @@ async function captureToInbox($: EngineInterface, value: string) {
   const day = now.toISOString().slice(0, 10)
   const stamp = now.toISOString().slice(11, 16).replace(':', '')
   const safe = text.replace(/[\\/:*?"<>|#^[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60)
-  const file = `${vault}/01-GTD/Inbox/${day} ${stamp} - ${safe}.md`
-  await $.fs.write(file, `---\ndate: ${day}\ntype: capture\ntags: [capture]\nstatus: inbox\nsource: tsaglabar\nai-first: true\nup: "[[01-GTD/Inbox/Inbox]]"\n---\n\n# ${safe}\n\n${text}\n`)
+  // a second capture of the same text in the same minute gets « (2)», never overwriting the first
+  let file = `${vault}/01-GTD/Inbox/${day} ${stamp} - ${safe}.md`
+  for (let n = 2; n < 50 && (await $.fs.exists(file)); n++) file = `${vault}/01-GTD/Inbox/${day} ${stamp} - ${safe} (${n}).md`
+  // only the file name is sanitised: the H1 keeps the text as typed (V5 shows it, a routed task is named from it)
+  const head = (text.split('\n')[0] ?? '').trim().slice(0, 120)
+  await $.fs.write(file, `---\ndate: ${day}\ntype: capture\ntags: [capture]\nstatus: inbox\nsource: tsaglabar\nai-first: true\nup: "[[01-GTD/Inbox/Inbox]]"\n---\n\n# ${head}\n\n${text}\n`)
   $.ui.toast('📥 Inbox-д барьлаа')
+  await loadInbox($)
 }
 
 /** «Now» shifted to the machine's local time, so toISOString() reads local date/time (Mongolia = UTC+8). */
@@ -605,7 +721,11 @@ async function openTsaglabar($: EngineInterface, configured = '') {
   await resolveContext($, configured)
   await loadCalendar($)
   await loadGoals($)
-  await $.ui.open({ id: TSAG, title: '📅 Цаглабар' })
+  await loadProject($)
+  // the tab it reopens on reads its own data too (Inbox / Хэрэгсэл)
+  const { value: tab = '' } = await $.state.get({ plugin: 'fm', key: 'tsagTab' })
+  if (tab === 'inbox' || tab === 'tools') await loadTab($, tab)
+  await $.ui.open({ id: TSAG, title: '📅 Цаглабар', columns: 96 })
 }
 
 /**
@@ -622,6 +742,8 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
   let names: string[] = []
   let project = ''
   let folder = ''
+  let roleSlug = ''
+  const roles: RoleInfo[] = []
   const devices = [await deviceOf($)]
   try {
     const reg = JSON.parse(typeof regText === 'string' ? regText : '{}')
@@ -641,9 +763,22 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
       project = projectOf(where)
       names = [s.title, role?.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
     }
+    if (typeof s?.role === 'string') roleSlug = s.role
+    // the registry's live roles (not inactive, not merged): V3's ◍ picker and footer, V6's rows. Label = agent minus emoji / «Agent»
+    const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+    for (const [slug, raw] of Object.entries((reg.roles ?? {}) as Record<string, Record<string, unknown>>)) {
+      if (!raw || raw.active === false || raw.merged_into) continue
+      const agent = str(raw.agent)
+      const note = str(raw.note)
+      const own = Array.isArray(raw.skills) ? raw.skills.filter((x): x is string => typeof x === 'string') : []
+      const skills = [...new Set([...own, ...(await noteSkillsOf($, vault, note))])]
+      roles.push({ slug, label: agent.replace(/^[^\p{L}\p{N}]+/u, '').replace(/\s+Agent$/i, '').trim() || slug, agent, skills, note, channel: str(raw.channel), private: raw.private === true })
+    }
   } catch {
     names = []
   }
+  await $.state.set({ plugin: 'fm', key: 'role' }, roleSlug)
+  await $.state.set({ plugin: 'fm', key: 'roles' }, roles)
   await $.state.set(NAMES, names)
   await $.state.set(PROJ, project)
   await $.state.set({ plugin: 'fm', key: 'projDir' }, folder)
@@ -664,6 +799,7 @@ async function setStatus($: EngineInterface, t: VaultTask, status: string): Prom
     if (!how) return false
     if (how === 'won') {
       await mirrorNote($, t.file)
+      await markPlan($, t.file)
       await $.state.set(CONFIRMING, '')
       $.ui.toast(`▶ Task авлаа: ${t.title}`)
       return true
@@ -674,6 +810,7 @@ async function setStatus($: EngineInterface, t: VaultTask, status: string): Prom
   const out = applyStatus(cur, status, localStamp(await $.clock.now()), await deviceOf($))
   if (!out) return false
   await $.fs.write(t.file, out)
+  forgetCal(t.file)
   const times = timesOf(out)
   const { value: now = [] } = await $.state.get(TASKS)
   await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status, ...times } : x)))
@@ -681,14 +818,20 @@ async function setStatus($: EngineInterface, t: VaultTask, status: string): Prom
   await $.state.set({ plugin: 'fm', key: 'cal' }, calNow.map(x => (x.file === t.file ? { ...x, status, ...times } : x)))
   await $.state.set(CONFIRMING, '')
   $.ui.toast(status === 'completed' ? 'Task дууссан ✓' : `Төлөв → ${status}`)
+  if (status === 'in-progress') await markPlan($, t.file)
+  if (isRequeue(status)) await unmarkPlan($, t.file)
   if (isRequeue(status) && timesOf(cur).claimed) await releaseClaim($, t.file, t.title)
   return true
 }
 
-/** ▶: hand the task to Claude; unless this device already runs it, it is claimed first (a LOSE shows who has it, nothing runs). */
+/**
+ * ▶: hand the task to Claude; unless this device already runs it, it is claimed first (a LOSE shows who has it, nothing runs).
+ * Either way this session now works on it, so it becomes the plan mirror's target (markPlan).
+ */
 async function runTask($: EngineInterface, t: VaultTask) {
   const mine = t.status === 'in-progress' && sameDevice(t.claimed, await deviceOf($))
   if (!mine && !(await setStatus($, t, 'in-progress'))) return
+  if (t.file) await markPlan($, t.file)
   await $.prompt.submit({
     text: `Vault-ийн task-ийг гүйцэтгэ (in-progress болсон): [[01-GTD/Tasks/${t.title}]] — эхлээд note-ийг уншаад, хийж болох алхмыг хий, дууссан бол status: completed, completed: цаг болгож «## Үр дүн» бич.`,
     asUser: true,
@@ -706,6 +849,737 @@ async function addComment($: EngineInterface, t: VaultTask, value: string, membe
   await $.fs.write(t.file, `${cur.replace(/\s*$/, '')}${head}\n- ${at} · ${member}: ${text}\n`)
   await $.state.set(COMMENTING, '')
   $.ui.toast('Коммент task-д хадгалагдлаа')
+}
+
+/** A registry role slug → its one-cell glyph (V1 Эзэн column, V6 agent rows). */
+function glyphOfRole(slug: string): string {
+  return slug === 'creative' ? G.creative : slug === 'developer' ? G.architect : slug === 'resource' ? G.wiki
+    : slug === 'project' ? G.project : slug === 'area' ? G.gtd : slug === 'finance' ? G.finance : slug === 'person' ? G.person : G.unknown
+}
+
+/** Weeks between the Monday of `today` and the Monday of `day` (the day strip's calWeek). */
+function weekOffset(today: string, day: string): number {
+  const mon = (s: string) => { const d = new Date(`${s}T00:00:00Z`); return d.getTime() - ((d.getUTCDay() + 6) % 7) * 86400000 }
+  return Math.round((mon(day) - mon(today)) / (7 * 86400000))
+}
+
+/** A pending card «✓?» belongs to the selection it was asked on: dropped whenever the selection changes (a segment switch keeps both). */
+async function clearCardConfirm($: EngineInterface) {
+  const { value: cur = '' } = await $.state.get(CONFIRMING)
+  if (cur.startsWith('kb-')) await $.state.set(CONFIRMING, '')
+}
+
+/** Every Цаглабар selection write: the new selection, and any pending card «✓?» dropped with the old one. */
+async function setSel($: EngineInterface, file: string) {
+  await $.state.set(CAL_SEL, file)
+  await clearCardConfirm($)
+}
+
+/** A tab press: remember it, drop the selection and any open inline input, refresh what the tab reads. */
+async function selectTab($: EngineInterface, tab: string) {
+  await $.state.set({ plugin: 'fm', key: 'tsagTab' }, tab)
+  await setSel($, '')
+  await $.state.set({ plugin: 'fm', key: 'newTaskCol' }, '')
+  await loadTab($, tab)
+}
+
+/** What a tab reads, refreshed: Inbox its captures, Хэрэгсэл the live checks, the rest the tasks (+ goals / the project note). */
+async function loadTab($: EngineInterface, tab: string) {
+  if (tab === 'inbox') return loadInbox($)
+  if (tab === 'tools') return loadTools($, false)
+  await loadCalendar($)
+  if (tab === 'cal') await loadGoals($)
+  if (tab === 'project') await loadProject($)
+}
+
+/** Open / close a phase row (`<tab>:<name>`); `dflt` = its state while never toggled. */
+async function togglePhase($: EngineInterface, id: string, dflt: boolean) {
+  const { value: open = {} } = await $.state.get({ plugin: 'fm', key: 'phaseOpen' })
+  await $.state.set({ plugin: 'fm', key: 'phaseOpen' }, { ...open, [id]: !(open[id] ?? dflt) })
+}
+
+/** Select / unselect a Цаглабар row (read fresh, so a press never acts on a stale draw). */
+async function toggleCalSel($: EngineInterface, file: string) {
+  const { value: cur = '' } = await $.state.get(CAL_SEL)
+  await setSel($, cur === file ? '' : file)
+}
+
+/** Move the selected day by `delta` days; the strip follows into the week that holds it. */
+async function shiftDay($: EngineInterface, delta: number) {
+  const today = localNow(await $.clock.now()).toISOString().slice(0, 10)
+  const { value: picked = '' } = await $.state.get(CAL_DAY)
+  const d = new Date(`${picked || today}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + delta)
+  const day = d.toISOString().slice(0, 10)
+  await $.state.set(CAL_DAY, day === today ? '' : day)
+  await $.state.set(CAL_WEEK, weekOffset(today, day))
+}
+
+/** The strip's ‹ › : a week back / ahead, the selected weekday kept. */
+async function shiftWeek($: EngineInterface, delta: number) {
+  await shiftDay($, delta * 7)
+}
+
+/** ▦: back to today and its week. */
+async function goToday($: EngineInterface) {
+  await $.state.set(CAL_DAY, '')
+  await $.state.set(CAL_WEEK, 0)
+}
+
+/** ↻: re-read tasks, events and goals. */
+async function reloadCal($: EngineInterface) {
+  await loadCalendar($)
+  await loadGoals($)
+  $.ui.toast(G.reload)
+}
+
+/** ▽: the shared scope filter, mine ↔ team (V1 follows V2). */
+async function cycleScope($: EngineInterface) {
+  const { value: scope = 'mine' } = await $.state.get(CAL_SCOPE)
+  await $.state.set(CAL_SCOPE, scope === 'mine' ? 'team' : 'mine')
+}
+
+/** The status a Kanban column stands for (a move or a «+» in it writes this); '' for no column. */
+function colStatus(col: string): string {
+  return KB_COLS.find(c => c.id === col)?.status ?? ''
+}
+
+/** A column's «+» (or the header's): open its inline «Шинэ task» input, a second press closes it; the 420 segment follows. */
+async function setNewTaskCol($: EngineInterface, col: string) {
+  const { value: cur = '' } = await $.state.get({ plugin: 'fm', key: 'newTaskCol' })
+  await $.state.set({ plugin: 'fm', key: 'newTaskCol' }, cur === col ? '' : col)
+  if (cur !== col) await $.state.set({ plugin: 'fm', key: 'kanbanCol' }, col)
+}
+
+/**
+ * A new task note in 01-GTD/Tasks: the name sanitised as captureToInbox's (80 cells), « (2)», « (3)»… when taken (Drive
+ * duplicates); owner by session (project → 💼 Project, personal → member, an agent → its role label); the session's project /
+ * research linked. Frontmatter + an H1 only; then the band's list and Цаглабар reload.
+ */
+async function createTask($: EngineInterface, member: string, configured: string, value: string, status: string,
+  extra: { due?: string; body?: string; source?: string; owner?: string; project?: string; delegatedFrom?: string; noScope?: boolean } = {}): Promise<string> {
+  const title = value.trim()
+  const { value: vault = '' } = await $.state.get(VAULT)
+  const safe = title.replace(/[\\/:*?"<>|#^[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80).trim()
+  if (!safe || !vault || !status) return ''
+  const dir = `${vault}/01-GTD/Tasks`
+  let name = safe
+  for (let n = 2; n < 50 && (await $.fs.exists(`${dir}/${name}.md`)); n++) name = `${safe} (${n})`
+  const { value: names = [] } = await $.state.get(NAMES)
+  const { value: proj = '' } = await $.state.get(PROJ)
+  const { value: folder = '' } = await $.state.get({ plugin: 'fm', key: 'projDir' })
+  const { value: devs = [] } = await $.state.get(DEVICES)
+  const { value: hub = { file: '', status: '' } } = await $.state.get({ plugin: 'fm', key: 'researchHub' })
+  // noScope (a V5 agent / project hand-off): neither the session's project nor its research hub is linked
+  const inResearch = folder.startsWith('04-Resources/Research/')
+  const research = !extra.noScope && inResearch
+  const cores = names.map(n => core(n, devs)).filter(n => n.length > 1)
+  const personal = !cores.length || cores.some(n => /gtd|area/.test(n))
+  // a V5 hand-off names its own owner / project (an agent's inbox, a project's task) over the session's
+  const owner = extra.owner || (proj && !inResearch ? '💼 Project' : personal ? member : roleLabel(names[0] ?? '', devs))
+  const ownProj = extra.project || extra.noScope ? '' : proj
+  const projLink = folder.startsWith('02-Projects/') ? `${folder}/${proj}` : `02-Projects/${proj}/${proj}`
+  // loadResearchHub counts a task open by «research: …/Research/<topic>/…», so the link names the hub note inside the topic
+  const hubLink = hub.file ? vaultRel(vault, hub.file).replace(/\.md$/, '') : `${folder}/${folder.split('/').pop() ?? ''}`
+  const stamp = localStamp(await $.clock.now())
+  const q = (v: string) => `"${v.replace(/"/g, "'")}"`
+  const lines = ['---', `date: ${stamp.slice(0, 10)}`, `updated: ${stamp.slice(0, 10)}`, 'type: task', `status: ${status}`,
+    ...(status === 'completed' ? [`completed: ${stamp}`] : []),
+    `owner: ${q(owner)}`, 'priority: ""', `due: ${extra.due ?? ''}`,
+    ...(extra.project ? [`project: ${q(`[[02-Projects/${extra.project}/${extra.project}]]`)}`] : ownProj && !research ? [`project: ${q(`[[${projLink}]]`)}`] : []),
+    ...(research && !extra.project ? [`research: ${q(`[[${hubLink}]]`)}`] : []),
+    ...(extra.delegatedFrom ? [`delegated_from: ${q(extra.delegatedFrom)}`, `delegated: ${stamp.slice(0, 10)}`] : []),
+    'tags: [task]', 'ai-first: true', `source: ${extra.source ?? 'tsaglabar'}`, 'up: "[[01-GTD/Tasks/Tasks]]"', '---', '', `# ${safe}`, '',
+    ...(extra.body?.trim() ? [extra.body.trim(), ''] : [])]
+  await $.fs.write(`${dir}/${name}.md`, lines.join('\n'))
+  forgetCal(`${dir}/${name}.md`)
+  await reloadTasks($, configured)
+  await loadCalendar($)
+  $.ui.toast(`＋ Task: ${name}`)
+  return name
+}
+
+/** A Kanban «Шинэ task» input's Enter: the task in that column's status, then the input closes. */
+async function submitNewTask($: EngineInterface, member: string, configured: string, value: string, col: string) {
+  await createTask($, member, configured, value, colStatus(col))
+  await $.state.set({ plugin: 'fm', key: 'newTaskCol' }, '')
+}
+
+/** The selected Kanban card, read fresh (a press never acts on a stale draw); undefined when it is no task any more. */
+async function selectedCard($: EngineInterface, file: string): Promise<CalItem | undefined> {
+  const { value: cal = [] } = await $.state.get({ plugin: 'fm', key: 'cal' })
+  return cal.find(c => c.file === file && c.kind === 'task')
+}
+
+/**
+ * «Энд тавих» / ‹ › / ↺: the selected card to `col` through setProp (→ in-progress claims, → completed stamps, a requeue
+ * releases a claim), then the selection clears.
+ */
+async function moveSel($: EngineInterface, col: string) {
+  const { value: file = '' } = await $.state.get(CAL_SEL)
+  const x = await selectedCard($, file)
+  const status = colStatus(col)
+  if (!x || !status) return
+  await setProp($, x, 'status', status)
+  await setSel($, '')
+}
+
+/** A card's ✓: the first press asks («✓?»), the second completes it. */
+async function confirmCardDone($: EngineInterface, file: string) {
+  const { value: cur = '' } = await $.state.get(CONFIRMING)
+  if (cur !== `kb-${file}`) {
+    await $.state.set(CONFIRMING, `kb-${file}`)
+    return
+  }
+  await $.state.set(CONFIRMING, '')
+  const x = await selectedCard($, file)
+  if (!x) return
+  await setProp($, x, 'status', 'completed')
+  await setSel($, '')
+}
+
+/** A card's ▷: the Цаглабар item as a band task, handed to runTask (claim first unless this device runs it). */
+async function runCard($: EngineInterface, file: string) {
+  const x = await selectedCard($, file)
+  if (!x) return
+  await runTask($, {
+    title: x.title, status: x.status, due: x.date, owner: x.owner, file: x.file,
+    ...(x.owners ? { owners: x.owners } : {}), ...(x.project ? { project: x.project } : {}), ...(x.started ? { started: x.started } : {}),
+    ...(x.completed ? { completed: x.completed } : {}), ...(x.claimed ? { claimed: x.claimed } : {}),
+  })
+}
+
+/** A [[wikilink]] / path value → its last segment («[[03-Areas/…/activities/Хөгжүүлэлт]]» → «Хөгжүүлэлт»). */
+function linkBase(value: string): string {
+  return ((value.replace(/^\[\[|\]\]$/g, '').split('|')[0] ?? '').split('/').pop() ?? '').replace(/\.md$/, '').trim()
+}
+
+/** Active projects (02-Projects/<P>/<P>.md, type: project, status: active) as «name|stage» for the V4 picker. */
+async function loadProjects($: EngineInterface) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  if (!vault) return
+  const out: string[] = []
+  for (const d of await $.fs.list(`${vault}/02-Projects`).catch(() => [])) {
+    if (d.kind !== 'dir') continue
+    const body = await $.fs.read(`${vault}/02-Projects/${d.name}/${d.name}.md`).catch(() => '')
+    const t = typeof body === 'string' ? body : ''
+    const fm = t.startsWith('---') ? t.slice(0, Math.max(0, t.indexOf('\n---', 3))) : ''
+    if (fmGet(fm, 'type') !== 'project' || fmGet(fm, 'status') !== 'active') continue
+    out.push(`${d.name}|${linkBase(fmGet(fm, 'stage')).replace(/\|/g, ' ')}`)
+  }
+  await $.state.set({ plugin: 'fm', key: 'projList' }, out.sort((a, b) => a.localeCompare(b)))
+}
+
+/**
+ * V4 data for the shown project (projPick, else the session's): its note's frontmatter read by key only (never `finance:`):
+ * stage, description / summary / goal (money stripped, 🔒), due (YYYY-MM-DD only), links (`links:` «Name | url» / «[Name](url)»,
+ * plus figma / framer / repo / drive URLs); and each agent's last «## ТҮҮХ» line. No project → the active-project picker list.
+ */
+async function loadProject($: EngineInterface) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  if (!vault) return
+  const { value: proj = '' } = await $.state.get(PROJ)
+  const { value: pick = '' } = await $.state.get({ plugin: 'fm', key: 'projPick' })
+  const { value: folder = '' } = await $.state.get({ plugin: 'fm', key: 'projDir' })
+  const { value: hub = { file: '', status: '' } } = await $.state.get({ plugin: 'fm', key: 'researchHub' })
+  const name = pick || proj
+  if (!name) {
+    await loadProjects($)
+    await $.state.set({ plugin: 'fm', key: 'projMeta' }, { name: '', file: '', stage: '', desc: '', due: '', links: [], lastMsg: {} })
+    return
+  }
+  const own = !pick || pick === proj
+  const cands = [own && folder.startsWith('02-Projects/') ? `${vault}/${folder}/${name}.md` : '', `${vault}/02-Projects/${name}/${name}.md`, own ? hub.file : '']
+  let file = ''
+  for (const c of cands) if (c && (await $.fs.exists(c))) { file = c; break }
+  const body = file ? await $.fs.read(file).catch(() => '') : ''
+  const t = typeof body === 'string' ? body : ''
+  const fm = t.startsWith('---') ? t.slice(0, Math.max(0, t.indexOf('\n---', 3))) : ''
+  const isUrl = (u: string) => /^https?:\/\/\S+$/i.test(u)
+  const links: { name: string; url: string }[] = []
+  for (const raw of fmList(fm, 'links')) {
+    const md = raw.match(/^\[([^\]]+)\]\((\S+)\)$/)
+    const bar = raw.split('|').map(v => v.trim())
+    const [label, url] = md ? [md[1] ?? '', md[2] ?? ''] : bar.length > 1 ? [bar[0] ?? '', bar.slice(1).join('|')] : [raw.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0] ?? raw, raw]
+    if (isUrl(url)) links.push({ name: label || url, url })
+  }
+  for (const [k, label] of [['figma', 'Figma'], ['framer', 'Framer'], ['repo', 'Repo'], ['drive', 'Drive']] as const) {
+    const url = fmGet(fm, k)
+    if (isUrl(url) && !links.some(l => l.url === url)) links.push({ name: label, url })
+  }
+  const due = fmGet(fm, 'due')
+  const lastMsg: Record<string, string> = {}
+  for (const [slug, note] of Object.entries(STATE_NOTE)) {
+    const md = await $.fs.read(`${vault}/_system/fm/state/${note}.md`).catch(() => '')
+    const line = lastHistoryLine(typeof md === 'string' ? md : '')
+    const safe = sanitizeDesc(line)
+    if (safe) lastMsg[slug] = safe
+  }
+  await $.state.set({ plugin: 'fm', key: 'projMeta' }, {
+    name, file, stage: linkBase(fmGet(fm, 'stage')),
+    desc: sanitizeDesc(fmGet(fm, 'description') || fmGet(fm, 'summary') || fmGet(fm, 'goal')),
+    due: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : '', links, lastMsg,
+  })
+}
+
+/** «төсөл солих» → a project row: show that project (the session's own when it is the session's), menu and list closed. */
+async function pickProject($: EngineInterface, name: string) {
+  const { value: proj = '' } = await $.state.get(PROJ)
+  await $.state.set({ plugin: 'fm', key: 'projPick' }, name === proj ? '' : name)
+  await $.state.set({ plugin: 'fm', key: 'projMenu' }, false)
+  const { value: open = {} } = await $.state.get({ plugin: 'fm', key: 'phaseOpen' })
+  await $.state.set({ plugin: 'fm', key: 'phaseOpen' }, { ...open, 'project:switch': false })
+  await setSel($, '')
+  await loadProject($)
+}
+
+/**
+ * ⋯ → ▥ Kanban: the board is scoped to the session's project, so a picked other project is dropped first (V4 shows the
+ * session's own again) — the board and the project tab never disagree on which project is shown.
+ */
+async function kanbanFromProject($: EngineInterface) {
+  const { value: pick = '' } = await $.state.get({ plugin: 'fm', key: 'projPick' })
+  if (pick) await $.state.set({ plugin: 'fm', key: 'projPick' }, '')
+  await $.state.set({ plugin: 'fm', key: 'projMenu' }, false)
+  await selectTab($, 'kanban')
+}
+
+/** ⋯: the V4 inline menu on / off. */
+async function toggleProjMenu($: EngineInterface) {
+  const { value: isOpen = false } = await $.state.get({ plugin: 'fm', key: 'projMenu' })
+  await $.state.set({ plugin: 'fm', key: 'projMenu' }, !isOpen)
+}
+
+/** «төсөл солих»: the active-project list on / off (read afresh when it opens). */
+async function toggleProjSwitch($: EngineInterface) {
+  const { value: open = {} } = await $.state.get({ plugin: 'fm', key: 'phaseOpen' })
+  const show = !(open['project:switch'] ?? false)
+  await $.state.set({ plugin: 'fm', key: 'phaseOpen' }, { ...open, 'project:switch': show })
+  if (show) await loadProjects($)
+}
+
+/** V4 ↻ (⋯ menu): tasks, events and the project note again. */
+async function reloadProject($: EngineInterface) {
+  await loadCalendar($)
+  await loadProject($)
+  $.ui.toast(G.reload)
+}
+
+/** A project link (https only) through the OS opener; on Windows through url.dll, so no shell reads the URL. */
+async function openUrl($: EngineInterface, url: string) {
+  if (!/^https?:\/\/\S+$/i.test(url)) return
+  const win = (await $.env.get('OS')) === 'Windows_NT'
+  await $.process.run(win ? ['rundll32', 'url.dll,FileProtocolHandler', url] : ['open', url]).catch(() => null)
+  $.ui.toast(`${G.link} ${url.replace(/^https?:\/\/(www\.)?/i, '').slice(0, 48)}`)
+}
+
+// ── V5 «⊔ Inbox»: captures in 01-GTD/Inbox, routed by frontmatter only (nothing is ever deleted or moved) ──
+
+// the day inboxCache was filled on: a suggestion's due («Пүрэв» → its date) is relative to today, so a new day reads afresh
+let inboxDay = ''
+
+/**
+ * One capture note → its V5 row: day (frontmatter date), hm (the file name's «YYYY-MM-DD HHMM - », else the mtime), title (H1,
+ * else the file name's tail), the body, status / source / route / routed / routed_to, and the suggestion (frontmatter route:
+ * wins, else classifyCapture). A 🔒 capture (finance words with digits, or private: true) keeps neither title nor text.
+ */
+function inboxItemOf(text: string, path: string, name: string, mtime: Date, today: string, projectNames: string[]): InboxItem | null {
+  const end = text.startsWith('---') ? text.indexOf('\n---', 3) : -1
+  const fm = end > 0 ? text.slice(0, end) : ''
+  if (/^type:\s*index/m.test(fm)) return null
+  const after = end > 0 ? text.indexOf('\n', end + 4) : -1
+  const rest = end > 0 ? (after >= 0 ? text.slice(after + 1) : '') : text
+  const named = name.match(/^(\d{4}-\d{2}-\d{2}) (\d{2})(\d{2}) - (.*)\.md$/)
+  const h1 = rest.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? ''
+  const body = rest.replace(/^#\s+.+$/m, '').trim()
+  // an older Барих capture's H1 is its file-name-sanitised prefix («Пүрэв 15 00 …»): the body's first line is the real text
+  const first = (body.split('\n')[0] ?? '').trim()
+  const mangled = !!h1 && !!first && first !== h1 && first.replace(/[\\/:*?"<>|#^[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60).trim() === h1
+  const title = mangled ? first : h1 || (named?.[4] ?? name.replace(/\.md$/, '')).trim()
+  const day = fmGet(fm, 'date').slice(0, 10) || named?.[1] || mtime.toISOString().slice(0, 10)
+  const hm = named ? `${named[2]}:${named[3]}` : mtime.toISOString().slice(11, 16)
+  const src = fmGet(fm, 'source').toLowerCase()
+  // a Save-to-Inbox web clip keeps its link in frontmatter `url:` → the suggestion (Note) and /fm:save see it
+  const url = fmGet(fm, 'url').match(/^https?:\/\/\S+/)?.[0] ?? ''
+  const guess = classifyCapture({ title, body: url ? `${body}\n${url}` : body, src, today }, projectNames)
+  const masked = guess.masked || /^private:\s*true/m.test(fm)
+  const fmRoute = fmGet(fm, 'route').toLowerCase()
+  const route = masked ? '' : (ROUTE_NAME[fmRoute] ? fmRoute : guess.route)
+  // a web clip waits for triage as status: draft (tagged inbox) — open, like a capture's status: inbox
+  const raw = normStatus(fmGet(fm, 'status'))
+  const clip = src === 'web-clip' || fmList(fm, 'tags').some(t => t.toLowerCase() === 'inbox')
+  const status = raw === 'draft' && clip ? 'inbox' : raw || 'inbox'
+  return {
+    file: path, title: masked ? '' : title, text: masked ? '' : body, day, hm, src: SRC_LABEL[src] ?? (src || 'Барих'), kind: guess.kind, route,
+    ...(guess.agent ? { agent: guess.agent } : {}), ...(guess.project ? { project: guess.project } : {}), ...(guess.due ? { due: guess.due } : {}),
+    ...(url && !masked ? { url } : {}),
+    status, routed: fmGet(fm, 'routed'), routedTo: fmGet(fm, 'routed_to'), masked,
+  }
+}
+
+/** V5 data: the open captures (status inbox) and the ones routed today, newest first (unchanged notes from inboxCache). */
+async function loadInbox($: EngineInterface) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  if (!vault) return
+  const today = localNow(await $.clock.now()).toISOString().slice(0, 10)
+  if (inboxDay !== today) {
+    inboxCache.clear()
+    inboxDay = today
+  }
+  const projectNames = (await $.fs.list(`${vault}/02-Projects`).catch(() => [])).filter(d => d.kind === 'dir').map(d => d.name)
+  const dir = `${vault}/01-GTD/Inbox`
+  const items: InboxItem[] = []
+  const seen = new Set<string>()
+  for (const f of await $.fs.list(dir).catch(() => [])) {
+    if (f.kind !== 'file' || !f.name.endsWith('.md') || f.name === 'Inbox.md') continue
+    const path = `${dir}/${f.name}`
+    seen.add(path)
+    const hit = inboxCache.get(path)
+    let item = hit && hit.mtime === f.mtimeMs ? hit.item : undefined
+    if (item === undefined) {
+      const body = await $.fs.read(path).catch(() => '')
+      item = inboxItemOf(typeof body === 'string' ? body : '', path, f.name, localNow(f.mtimeMs), today, projectNames)
+      inboxCache.set(path, { mtime: f.mtimeMs, item })
+    }
+    if (item && (item.status === 'inbox' || (item.status === 'routed' && (item.routed ?? '').startsWith(today)))) items.push(item)
+  }
+  for (const k of [...inboxCache.keys()]) if (!seen.has(k)) inboxCache.delete(k)
+  await $.state.set({ plugin: 'fm', key: 'inbox' }, items.sort((a, b) => `${b.day} ${b.hm}`.localeCompare(`${a.day} ${a.hm}`)))
+  // a ▷ hand-off ends once its capture is gone or no longer open (the skill routed it)
+  const { value: busy = {} } = await $.state.get({ plugin: 'fm', key: 'inboxBusy' })
+  const ended = Object.keys(busy).filter(f => busy[f] === 'handed' && inboxCache.get(f)?.item?.status !== 'inbox')
+  if (ended.length) {
+    for (const f of ended) handedRan.delete(f)
+    await $.state.set({ plugin: 'fm', key: 'inboxBusy' }, Object.fromEntries(Object.entries(busy).filter(([f]) => !ended.includes(f))))
+  }
+}
+
+// ▷ hand-offs whose /fm:inbox command already ran: the next main-loop turn end frees the row if the skill left it open
+const handedRan = new Set<string>()
+
+/** Drop a capture's ▷ / busy mark (its route buttons come back). */
+async function clearInboxBusy($: EngineInterface, file: string) {
+  handedRan.delete(file)
+  const { value: now = {} } = await $.state.get({ plugin: 'fm', key: 'inboxBusy' })
+  if (!(file in now)) return
+  const { [file]: _gone, ...others } = now
+  await $.state.set({ plugin: 'fm', key: 'inboxBusy' }, others)
+}
+
+/** A capture handed to a slash command: ▷ (no route buttons) until the command is refused or the capture is routed. */
+async function markHanded($: EngineInterface, file: string) {
+  const { value: now = {} } = await $.state.get({ plugin: 'fm', key: 'inboxBusy' })
+  await $.state.set({ plugin: 'fm', key: 'inboxBusy' }, { ...now, [file]: 'handed' })
+}
+
+/** Main-loop turn end: a ▷ whose command ran and whose capture is still open was not routed by the skill — free it. */
+async function settleHanded($: EngineInterface) {
+  if (!handedRan.size) return
+  const files = [...handedRan]
+  handedRan.clear()
+  const { value: now = {} } = await $.state.get({ plugin: 'fm', key: 'inboxBusy' })
+  const left = Object.fromEntries(Object.entries(now).filter(([f, v]) => !(v === 'handed' && files.includes(f))))
+  if (Object.keys(left).length !== Object.keys(now).length) await $.state.set({ plugin: 'fm', key: 'inboxBusy' }, left)
+}
+
+/** A routed capture: frontmatter only (status: routed, routed, routed_to, route, updated), then V5 reloads. */
+async function markRouted($: EngineInterface, file: string, to: string, route: string) {
+  const body = await $.fs.read(file).catch(() => '')
+  const cur = typeof body === 'string' ? body : ''
+  const end = cur.startsWith('---') ? cur.indexOf('\n---', 3) : -1
+  if (end < 0) return
+  const eol = cur.includes('\r\n') ? '\r\n' : '\n'
+  const stamp = localStamp(await $.clock.now())
+  let fm = cur.slice(0, end)
+  fm = fmSet(fm, 'status', 'routed', eol)
+  fm = fmSet(fm, 'routed', stamp, eol)
+  fm = fmSet(fm, 'routed_to', `"${to.replace(/"/g, "'")}"`, eol)
+  fm = fmSet(fm, 'route', route, eol)
+  fm = fmSet(fm, 'updated', stamp.slice(0, 10), eol)
+  await $.fs.write(file, fm + cur.slice(end))
+  inboxCache.delete(file)
+  await loadInbox($)
+}
+
+/**
+ * A route square on a capture: ✓ Task → a task note (due from the text) · ≡ Note → /fm:save with its link or text ·
+ * ◍ Агент → a task in that agent's inbox (delegated_from = this session's role) · ▭ Төсөл → a task of the named project, else
+ * /fm:inbox route. The capture itself only gets status: routed (markRouted); a hand-off to a prompt shows ▷ («handed»).
+ */
+async function routeCapture($: EngineInterface, member: string, configured: string, file: string, route: string) {
+  const { value: list = [] } = await $.state.get({ plugin: 'fm', key: 'inbox' })
+  const it = list.find(x => x.file === file)
+  const { value: busy = {} } = await $.state.get({ plugin: 'fm', key: 'inboxBusy' })
+  if (!it || it.masked || it.status !== 'inbox' || busy[file] || !ROUTE_NAME[route]) return
+  await $.state.set({ plugin: 'fm', key: 'inboxBusy' }, { ...busy, [file]: 'busy' })
+  let mark = ''
+  try {
+    if (route === 'note') {
+      const url = it.url || (`${it.title}\n${it.text}`.match(/https?:\/\/\S+/)?.[0] ?? '')
+      // ▷ until /fm:save is accepted; only then is the capture marked routed (a refused command leaves it open)
+      mark = 'handed'
+      await markHanded($, file)
+      runSlash($, 'fm:save', url || it.text || it.title,
+        async () => {
+          await markRouted($, file, 'fm:save', 'note')
+          await clearInboxBusy($, file)
+        },
+        () => clearInboxBusy($, file))
+    } else if (route === 'project' && !it.project) {
+      const { value: vault = '' } = await $.state.get(VAULT)
+      mark = 'handed'
+      await markHanded($, file)
+      runSlash($, 'fm:inbox', `route ${vaultRel(vault, file)}`, async () => { handedRan.add(file) }, () => clearInboxBusy($, file))
+    } else {
+      const { value: names = [] } = await $.state.get(NAMES)
+      const { value: devs = [] } = await $.state.get(DEVICES)
+      const name = await createTask($, member, configured, it.title, 'inbox', {
+        body: it.text !== it.title ? it.text : '', source: 'capture',
+        ...(route === 'task' && it.due ? { due: it.due } : {}),
+        ...(route === 'agent' ? { owner: it.agent || '🎨 Creative', delegatedFrom: roleLabel(names[0] ?? '', devs) || member } : {}),
+        ...(route === 'project' && it.project ? { project: it.project } : {}),
+        // a hand-off names its own owner / project: the session's project / research links stay off it
+        ...(route === 'agent' || route === 'project' ? { noScope: true } : {}),
+      })
+      if (name) {
+        await markRouted($, file, `[[01-GTD/Tasks/${name}]]`, route)
+        $.ui.toast(`→ ${ROUTE_NAME[route]}: ${name}`)
+      }
+    }
+  } finally {
+    // a hand-off's ▷ was set before its command was queued; its callbacks / loadInbox clear it
+    if (!mark) await clearInboxBusy($, file)
+  }
+}
+
+/** ✓ (header): the first press asks («✓?»), the second applies every suggestion in turn (🔒 rows never). */
+async function acceptAll($: EngineInterface, member: string, configured: string) {
+  const { value: cur = '' } = await $.state.get(CONFIRMING)
+  if (cur !== 'ib-all') {
+    await $.state.set(CONFIRMING, 'ib-all')
+    return
+  }
+  await $.state.set(CONFIRMING, '')
+  const { value: list = [] } = await $.state.get({ plugin: 'fm', key: 'inbox' })
+  for (const it of list.filter(x => x.status === 'inbox' && x.route && !x.masked)) await routeCapture($, member, configured, it.file, it.route)
+}
+
+// ── V3 «⊟ Хэрэгсэл»: live checks of the bridge CLIs and Higgsfield, «Сүүлд» from the tool.call hook ──
+
+// the checks' results as they come in (module memory, so parallel checks never overwrite one another), mirrored to toolStatus
+const toolLive: Record<string, ToolStatus> = {}
+
+/** One tool's live check: a bridge CLI's `status` (fig.py: plugin connected; fr.py: a project seen), or Higgsfield's credits. */
+async function checkTool($: EngineInterface, t: ToolDef): Promise<ToolStatus> {
+  const prev = toolLive[t.id]
+  const keep = prev?.credits !== undefined ? { credits: prev.credits } : {}
+  if (t.check.kind === 'process') {
+    const win = (await $.env.get('OS')) === 'Windows_NT'
+    const r = await $.process.run([win ? 'python' : 'python3', `${$.plugin.root}/${t.check.script}`, ...t.check.args], { timeoutMs: 8000 }).catch(() => null)
+    const out = r?.stdout ?? ''
+    const ok = !!r && r.exitCode === 0 && (t.id === 'figma' ? /['"]plugin['"]\s*:\s*(True|true)/.test(out) : /"projects"\s*:\s*\[\s*"/.test(out))
+    return { state: ok ? 'ok' : 'off', at: await $.clock.now() }
+  }
+  if (t.check.kind === 'mcp') {
+    try {
+      const res = await $.mcp.call(HIGGS_SERVER, t.check.tool, {})
+      const text = [...res.content.map(b => {
+        const v = (b as { text?: unknown }).text
+        return typeof v === 'string' ? v : ''
+      }), res.structuredContent ? JSON.stringify(res.structuredContent) : ''].join('\n')
+      // credits only: the plan and any money are never read out (🔒)
+      const m = text.match(/"?credits"?\s*[:=]\s*([\d.]+)/i)
+      if (res.isError || !m) return { state: 'error', ...keep, at: await $.clock.now() }
+      return { state: 'ok', credits: Number(m[1]), at: await $.clock.now() }
+    } catch {
+      return { state: 'off', ...keep, at: await $.clock.now() }
+    }
+  }
+  return { state: 'ok', at: await $.clock.now() }
+}
+
+/** V3 data: every live-checked tool (process / mcp) older than a minute (or all, `force`), in parallel; never from a draw. */
+async function loadTools($: EngineInterface, force: boolean) {
+  const { value: cur = {} } = await $.state.get({ plugin: 'fm', key: 'toolStatus' })
+  const at = await $.clock.now()
+  Object.assign(toolLive, cur)
+  const due = TOOLS.filter(t => (t.check.kind === 'process' || t.check.kind === 'mcp') && (force || !cur[t.id] || at - (cur[t.id]?.at ?? 0) > 60000))
+  if (!due.length) return
+  for (const t of due) toolLive[t.id] = { ...toolLive[t.id], state: 'checking', at }
+  await $.state.set({ plugin: 'fm', key: 'toolStatus' }, { ...toolLive })
+  await Promise.all(due.map(async t => {
+    toolLive[t.id] = await checkTool($, t)
+    await $.state.set({ plugin: 'fm', key: 'toolStatus' }, { ...toolLive })
+  }))
+}
+
+/** A tool this session just used (tool.call hook): its time into $.store toolLastUsed (across sessions) and the pane's mirror. */
+async function noteToolUse($: EngineInterface, id: string) {
+  const at = await $.clock.now()
+  const stored = await $.store.get('toolLastUsed')
+  const used: Record<string, number> = stored && typeof stored === 'object' && !Array.isArray(stored) ? { ...(stored as Record<string, number>) } : {}
+  used[id] = at
+  await $.store.set('toolLastUsed', used)
+  await $.state.set({ plugin: 'fm', key: 'toolUsed' }, used)
+}
+
+/** The tool id a tool call stands for («Сүүлд»): fig.py / fr.py in Bash, a Higgsfield MCP tool, the post / figma / framer skills. */
+function toolOfCall(tool: string, command: string, skill: string): string {
+  if (tool === 'Bash') return /\bfig\.py\b/.test(command) ? 'figma' : /\bfr\.py\b/.test(command) ? 'framer' : ''
+  if (tool === 'Skill') return ({ 'fm:post': 'post', 'fm:figma': 'figma', 'fm:framer': 'framer' } as Record<string, string>)[skill.trim()] ?? ''
+  return tool.startsWith(`mcp__${HIGGS_SERVER}__`) ? 'higgsfield' : ''
+}
+
+/** ◍: the next registry role's tools (a private role only when it is the session's own), back to the session's. */
+async function cycleToolsRole($: EngineInterface) {
+  const { value: roles = [] } = await $.state.get({ plugin: 'fm', key: 'roles' })
+  const { value: role = '' } = await $.state.get({ plugin: 'fm', key: 'role' })
+  const { value: picked = '' } = await $.state.get({ plugin: 'fm', key: 'toolsRole' })
+  const list = roles.filter(r => !r.private || r.slug === role).map(r => r.slug)
+  if (!list.length) return
+  const at = list.indexOf(picked || role)
+  const want = list[(at + 1) % list.length] ?? ''
+  await $.state.set({ plugin: 'fm', key: 'toolsRole' }, want === role ? '' : want)
+  await $.state.set({ plugin: 'fm', key: 'toolOpen' }, '')
+}
+
+/** A tool row's press: expand it (one at a time), a second press folds it. */
+async function toggleToolOpen($: EngineInterface, id: string) {
+  const { value: cur = '' } = await $.state.get({ plugin: 'fm', key: 'toolOpen' })
+  await $.state.set({ plugin: 'fm', key: 'toolOpen' }, cur === id ? '' : id)
+}
+
+/** A command line in a tool's detail: onto the clipboard of the surface that pressed it. */
+async function copyCmd($: EngineInterface, text: string, surface: Parameters<EngineInterface['ui']['copy']>[0]['surface']) {
+  await $.ui.copy({ text, surface })
+  $.ui.toast('хуулав')
+}
+
+/** «асаах» on an off tool: Claude is asked to start it (a server is never started from here). */
+async function startTool($: EngineInterface, id: string) {
+  const t = TOOLS.find(x => x.id === id)
+  if (!t) return
+  await $.prompt.submit({ text: `${t.name}-ийг асааж өг${t.skill ? ` (/${t.skill})` : ''}: bridge сервер ба plugin-ийг ажиллуулаад status-ыг шалга.`, asUser: true })
+}
+
+// ── V6 «☼ Тойм» ──
+
+/** ≡: today's daily note in Obsidian, or a toast when there is none. */
+async function openDaily($: EngineInterface) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  const today = localNow(await $.clock.now()).toISOString().slice(0, 10)
+  const file = `${vault}/01-GTD/Daily/${today}.md`
+  if (!vault || !(await $.fs.exists(file))) {
+    $.ui.toast('Өдрийн тэмдэглэл алга')
+    return
+  }
+  await openInObsidian($, file)
+}
+
+/** ▷: the morning review (/fm:update daily); its time is kept (state for the header, $.store across sessions). */
+async function runReview($: EngineInterface) {
+  const stamp = localStamp(await $.clock.now())
+  await $.state.set({ plugin: 'fm', key: 'reviewAt' }, stamp)
+  await $.store.set('reviewAt', { day: stamp.slice(0, 10), hm: stamp.slice(11, 16) }).catch(() => null)
+  runSlash($, 'fm:update', 'daily')
+}
+
+/**
+ * A slash command (a skill) as if the person typed it: queued until the session is idle, so it is never awaited (a prompt
+ * cannot carry a «/» text: the host refuses it). An unknown name or a refusal is a toast.
+ */
+function runSlash($: EngineInterface, command: string, args: string, done?: () => Promise<void>, fail?: () => Promise<void>) {
+  void $.command.run({ command, args }).then(
+    () => (done ? done().catch(() => null) : null),
+    () => {
+      $.ui.toast(`⚠ /${command} ажиллуулж чадсангүй`)
+      return fail ? fail().catch(() => null) : null
+    })
+}
+
+/** An agent row (V6): the team's board (the Kanban owner filter is a later step). */
+async function agentToBoard($: EngineInterface) {
+  await $.state.set(CAL_SCOPE, 'team')
+  await selectTab($, 'kanban')
+}
+
+/** A role note's frontmatter `skills:` (once per load; the V3 footer adds them to the registry's). */
+async function noteSkillsOf($: EngineInterface, vault: string, note: string): Promise<string[]> {
+  if (!note) return []
+  const hit = noteSkills.get(note)
+  if (hit) return hit
+  const body = await $.fs.read(`${vault}/${note}`).catch(() => '')
+  const t = typeof body === 'string' ? body : ''
+  const skills = fmList(t.startsWith('---') ? t.slice(0, Math.max(0, t.indexOf('\n---', 3))) : '', 'skills')
+  noteSkills.set(note, skills)
+  return skills
+}
+
+/** The minute clock: its write redraws the pane's elapsed labels («11m»). */
+async function stampTick($: EngineInterface) {
+  await $.state.set({ plugin: 'fm', key: 'tick' }, await $.clock.now())
+}
+
+/**
+ * Claude's own task list (TaskCreated / TaskCompleted) → planSteps: a created id is (re)added as open, a completed one is
+ * ticked (added done when it predates this load). The session's in-progress vault task mirrors it at turn end (mirrorPlan).
+ */
+async function notePlanStep($: EngineInterface, id: string, subject: string, isDoneStep: boolean) {
+  const at = localNow(await $.clock.now()).getTime()
+  const { value: steps = [] } = await $.state.get({ plugin: 'fm', key: 'planSteps' })
+  const hit = steps.find(s => s.id === id)
+  const out = isDoneStep
+    ? (hit ? steps.map(s => (s.id === id ? { ...s, subject: subject || s.subject, done: true } : s)) : [...steps, { id, subject, done: true, at }])
+    : [...steps.filter(s => s.id !== id), { id, subject, done: false, at }]
+  await $.state.set({ plugin: 'fm', key: 'planSteps' }, out.slice(-40))
+  // the note itself is mirrored at turn end (mirrorPlan in turn.complete), so Claude's own Edit/Write mid-turn never races it
+}
+
+/** Two vault paths name the same note (either slash, any case: Windows paths). */
+function samePath(a: string, b: string): boolean {
+  return !!a && !!b && a.replace(/\\/g, '/').toLowerCase() === b.replace(/\\/g, '/').toLowerCase()
+}
+
+/**
+ * §9 marker: this session itself started or claimed `file` (▶ runTask, a status edit → in-progress, a dispatch WIN), so the
+ * plan mirror may write into it; `at` = local-shifted ms of that start (the steps' since filter). Another start of the
+ * same task keeps the first `at`; a different task replaces the marker.
+ */
+async function markPlan($: EngineInterface, file: string) {
+  const { value: cur = { file: '', at: 0 } } = await $.state.get({ plugin: 'fm', key: 'planFile' })
+  if (samePath(cur.file, file) && cur.at) return
+  await $.state.set({ plugin: 'fm', key: 'planFile' }, { file, at: localNow(await $.clock.now()).getTime() })
+}
+
+/** A requeue of the marked task from this session (back to inbox / next-action / waiting): the mirror stops writing to it. */
+async function unmarkPlan($: EngineInterface, file: string) {
+  const { value: cur = { file: '', at: 0 } } = await $.state.get({ plugin: 'fm', key: 'planFile' })
+  if (samePath(cur.file, file)) await $.state.set({ plugin: 'fm', key: 'planFile' }, { file: '', at: 0 })
+}
+
+/**
+ * The steps since this session started its vault task (planFile only: never a device guess or an unclaimed task), as
+ * `- [x]` / `- [ ]` lines in the note's managed «## Явц» block (<!-- fm:plan --> … <!-- /fm:plan -->), rewritten in place:
+ * nothing else in the note changes (a 🔒 task too: the block is vault-local), so Mac sessions and the daily note see the
+ * progress. Only while the note is in progress, or completed (then the steps up to its completed stamp).
+ */
+async function mirrorPlan($: EngineInterface) {
+  const { value: mark = { file: '', at: 0 } } = await $.state.get({ plugin: 'fm', key: 'planFile' })
+  if (!mark.file) return
+  const { value: steps = [] } = await $.state.get({ plugin: 'fm', key: 'planSteps' })
+  const body = await $.fs.read(mark.file).catch(() => '')
+  const cur = typeof body === 'string' ? body : ''
+  if (!cur.startsWith('---')) return
+  const end = cur.indexOf('\n---', 3)
+  const status = normStatus(fmGet(end > 0 ? cur.slice(0, end) : '', 'status'))
+  if (status !== 'in-progress' && status !== 'completed') return
+  const since = planWindow(steps, mark.at, status === 'completed' ? timesOf(cur).completed : '')
+  if (!since.length) return
+  const out = planBlock(cur, since)
+  if (out !== cur) {
+    await $.fs.write(mark.file, out)
+    forgetCal(mark.file)
+  }
 }
 
 const HANDOFF = 'Task-ийг тохирох agent руу шилжүүл (Notion шиг): [[01-GTD/Tasks/{title}]] — note-ийг уншаад ажлын төрлөөр нь сонго: судалгаа → 📚 Wiki, дизайн/контент → 🎨 Creative, тодорхой төслийн ажил → owner "💼 Project" + project, GTD/хүмүүс/санах → 📥 GTD. Frontmatter: owner = тэр agent, status: inbox, delegated_from = энэ сешний дүр, delegated: өнөөдөр; «## Шилжүүлэлт» хэсэгт яагаад ба юу хүлээж буйг нэг мөр. Discord линк хэрэггүй (base өөрөө шинэчлэгдэнэ), зөвхөн яаралтай бол илгээ. Аль agent нь эргэлзээтэй бол надаас асуу.'
@@ -730,6 +1604,18 @@ export const register: Register = (on, options) => {
     await mirrorOffers($)
     const { value: wasWatching = false } = await $.state.get(WATCHING)
     if (wasWatching) await startWatch($, configured)
+    // the minute clock behind Цаглабар's elapsed labels (one per load)
+    tickTimer?.cancel()
+    tickTimer = $.clock.every(60000, () => void stampTick($))
+    await stampTick($)
+    // across sessions ($.store): the last morning review (V6 header) and when each tool was last used (V3 «Сүүлд»)
+    const rv = await $.store.get('reviewAt').catch(() => undefined)
+    if (rv && typeof rv === 'object' && !Array.isArray(rv)) {
+      const { day = '', hm = '' } = rv as { day?: unknown; hm?: unknown }
+      if (typeof day === 'string' && typeof hm === 'string' && day && hm) await $.state.set({ plugin: 'fm', key: 'reviewAt' }, `${day} ${hm}`)
+    }
+    const used = await $.store.get('toolLastUsed').catch(() => undefined)
+    if (used && typeof used === 'object' && !Array.isArray(used)) await $.state.set({ plugin: 'fm', key: 'toolUsed' }, used as Record<string, number>)
     return started
   })
 
@@ -749,8 +1635,50 @@ export const register: Register = (on, options) => {
   on('turn.complete', async ($, e, next) => {
     if (!e.agentId) await $.state.set(BUSY, { since: 0, turn: false })
     await reloadTasks($, configured)
+    if (!e.agentId) {
+      // Цаглабар follows the turn's writes once it has been opened (unchanged notes come from the mtime caches)
+      const { version: calVersion } = await $.state.get({ plugin: 'fm', key: 'cal' })
+      if (calVersion > 0) await loadCalendar($)
+      const { value: tabNow = '' } = await $.state.get({ plugin: 'fm', key: 'tsagTab' })
+      if (tabNow === 'inbox') await loadInbox($)
+      // a ▷ /fm:inbox hand-off whose turn has ended with the capture still open gets its route buttons back
+      await settleHanded($)
+      await mirrorPlan($).catch(() => null)
+    }
     const answered = await next(e)
     if (!e.agentId && !e.isAborted && e.reason !== 'aborted') void drainOffers($, configured)
+    return answered
+  })
+
+  // V3 «Сүүлд»: a fig.py / fr.py command, a Higgsfield MCP tool or the post / figma / framer skill, once it ran (not denied)
+  on('tool.call', async ($, e, next) => {
+    const id = toolOfCall(e.tool, e.tool === 'Bash' ? e.command : '', e.tool === 'Skill' ? e.skill : '')
+    if (!id) return next(e)
+    const r = await next(e)
+    if (!('deny' in r && r.deny)) await noteToolUse($, id).catch(() => null)
+    return r
+  })
+
+  // §9: Claude's own task list → the activity row's «n/m алхам» and the task note's «## Явц» block (main loop only)
+  on('classic.TaskCreated', async ($, e, next) => {
+    const answered = await next(e)
+    if (!e.agent_id) await notePlanStep($, e.task_id, e.task_subject, false).catch(() => null)
+    return answered
+  })
+
+  on('classic.TaskCompleted', async ($, e, next) => {
+    const answered = await next(e)
+    if (!e.agent_id) await notePlanStep($, e.task_id, e.task_subject, true).catch(() => null)
+    return answered
+  })
+
+  // in-flight background work at the main loop's stop → the activity row's «⚙ k»
+  on('classic.Stop', async ($, e, next) => {
+    const answered = await next(e)
+    if (!e.agent_id) {
+      const bg = (e.background_tasks ?? []).map(b => ({ id: b.id, type: b.type, status: b.status, description: (b.description ?? '').slice(0, 160) }))
+      await $.state.set({ plugin: 'fm', key: 'bgTasks' }, bg)
+    }
     return answered
   })
 
@@ -760,19 +1688,48 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'Pane', requestId: TSAG }, async ($, e) => {
-    let { value: cal = [] } = await $.state.get({ plugin: 'fm', key: 'cal' })
+    const { value: all = [], version: calVersion } = await $.state.get({ plugin: 'fm', key: 'cal' })
     const { value: week = 0 } = await $.state.get(CAL_WEEK)
     const { value: goals = [] } = await $.state.get(GOALS)
     const { value: scope = 'mine' } = await $.state.get(CAL_SCOPE)
     const { value: sel = '' } = await $.state.get(CAL_SEL)
     const { value: roleNames = [] } = await $.state.get(NAMES)
     const { value: proj = '' } = await $.state.get(PROJ)
-    const { value: view = 'board' } = await $.state.get(CAL_VIEW)
-    const { value: showDone = false } = await $.state.get(CAL_DONE)
     const { value: devs = [] } = await $.state.get(DEVICES)
+    const { value: confirming = '' } = await $.state.get(CONFIRMING)
+    const { value: kanbanCol = '' } = await $.state.get({ plugin: 'fm', key: 'kanbanCol' })
+    const { value: newTaskCol = '' } = await $.state.get({ plugin: 'fm', key: 'newTaskCol' })
+    const { value: projPick = '' } = await $.state.get({ plugin: 'fm', key: 'projPick' })
+    const { value: projMeta = { name: '', file: '', stage: '', desc: '', due: '', links: [], lastMsg: {} } } = await $.state.get({ plugin: 'fm', key: 'projMeta' })
+    const { value: projMenu = false } = await $.state.get({ plugin: 'fm', key: 'projMenu' })
+    const { value: projList = [], version: projListVersion } = await $.state.get({ plugin: 'fm', key: 'projList' })
+    const { value: tabPicked = '' } = await $.state.get({ plugin: 'fm', key: 'tsagTab' })
+    const { value: phaseOpen = {} } = await $.state.get({ plugin: 'fm', key: 'phaseOpen' })
+    // read only to subscribe: the minute timer's write redraws the elapsed labels
+    await $.state.get({ plugin: 'fm', key: 'tick' })
+    const { value: planMark = { file: '', at: 0 } } = await $.state.get({ plugin: 'fm', key: 'planFile' })
+    const { value: planSteps = [] } = await $.state.get({ plugin: 'fm', key: 'planSteps' })
+    const { value: bgTasks = [] } = await $.state.get({ plugin: 'fm', key: 'bgTasks' })
+    // V3 / V5 / V6
+    const { value: sessRole = '' } = await $.state.get({ plugin: 'fm', key: 'role' })
+    const { value: roles = [] } = await $.state.get({ plugin: 'fm', key: 'roles' })
+    const { value: toolsRole = '' } = await $.state.get({ plugin: 'fm', key: 'toolsRole' })
+    const { value: toolOpen = '' } = await $.state.get({ plugin: 'fm', key: 'toolOpen' })
+    const { value: toolStatus = {} } = await $.state.get({ plugin: 'fm', key: 'toolStatus' })
+    const { value: toolUsed = {} } = await $.state.get({ plugin: 'fm', key: 'toolUsed' })
+    const { value: watching = false } = await $.state.get(WATCHING)
+    const { value: health = '' } = await $.state.get(HEALTH)
+    const { value: inboxList = [], version: inboxVersion } = await $.state.get({ plugin: 'fm', key: 'inbox' })
+    const { value: inboxBusy = {} } = await $.state.get({ plugin: 'fm', key: 'inboxBusy' })
+    const { value: reviewAt = '' } = await $.state.get({ plugin: 'fm', key: 'reviewAt' })
+    const { value: busy = { since: 0, turn: false } } = await $.state.get(BUSY)
     const agents = (await $.agent.list().catch(() => [])).filter(g => g.status !== 'completed' && g.status !== 'killed')
-    const { Box, Button, Input, Text } = $.ui.resolve(e)
+    // mobile has no Input: capture bars and inline inputs are left out there
+    const els = $.ui.resolve(e)
+    const { Box, Button, Text } = els
+    const Input = 'Input' in els ? els.Input : undefined
     const now = localNow(await $.clock.now())
+    const nowLocal = now.getTime()
     const iso = (d: Date) => d.toISOString().slice(0, 10)
     const today = iso(now)
     const { value: picked = '' } = await $.state.get(CAL_DAY)
@@ -780,9 +1737,15 @@ export const register: Register = (on, options) => {
     const monday = new Date(now); monday.setUTCDate(now.getUTCDate() - ((now.getUTCDay() + 6) % 7) + week * 7)
     const days = Array.from({ length: 7 }, (_, n) => { const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + n); return iso(d) })
     const names = ['Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя', 'Ня']
-    // responsive: the body's cells inside paddingX pick the layout (≥62 bordered strip + inline meta, below that compact)
-    const cols = Math.max(24, (e.props.bodyColumns ?? e.viewport?.columns ?? 80) - 2)
-    const narrow = cols < 62
+    // width (§1.3): wide = the 780 layout (the day strip measures its own fit)
+    const bodyCols = e.props.bodyColumns ?? e.viewport?.columns ?? 80
+    const cols = Math.max(24, bodyCols - 2)
+    const wide = bodyCols >= 76
+    // V2: 4 columns of ≥ 20 cells from 84; below that one column with a segment switcher (the 420 layout)
+    const board4 = bodyCols >= 84
+    const tab = tabPicked || (proj ? 'project' : 'cal')
+    // terminal: a title is a plain Button; desktop / vscode draw every Button natively, so a title is a Text plus a trailing ›
+    const titlePress = e.surface === 'terminal' ? 'title' : 'chevron'
     const meRe = new RegExp(`(^|\\W)(${[member, 'itge.e', 'bd', 'me'].filter(Boolean).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(\\W|$)`, 'i')
     const coreOf = (n: string) => core(n, devs)
     const roleCores = roleNames.map(coreOf).filter(n => n.length > 1)
@@ -799,399 +1762,1092 @@ export const register: Register = (on, options) => {
     const isMine = (x: CalItem) => projKey
       ? x.project.toLowerCase() === projKey || ofResearch(x) || (x.kind === 'event' && !x.project && x.title.toLowerCase().includes(projKey))
       : personal ? x.kind === 'event' || ownersOfItem(x).some(o => meRe.test(o)) : ownerMatches(ownersOfItem(x), x.project, roleNames, proj, devs)
-    const scopeLabel = projKey ? `💼 ${proj}` : personal ? '👤 миний' : roleLabel(roleNames[0] || 'agent', devs)
-    const all = cal
-    cal = scope === 'team' ? all : all.filter(isMine)
-    const done = cal.filter(x => x.kind === 'task' && x.status === 'completed')
-    cal = cal.filter(x => !done.includes(x))
-    const itemsOn = (d: string) => cal.filter(x => x.date === d)
-    const overdue = cal.filter(x => x.kind === 'task' && x.date && x.date < today)
-    const shelf = cal.filter(x => x.kind === 'task' && !x.date).slice(0, 8)
-    const turn = cal.filter(x => x.kind === 'task' && (scope === 'team' ? meRe.test(x.owner) : true))
-      .sort((a, b) => Number(b.status === 'in-progress') - Number(a.status === 'in-progress') || (a.date || '9').localeCompare(b.date || '9')).slice(0, 4)
+    const scoped = scope === 'team' ? all : all.filter(isMine)
+    const done = scoped.filter(x => x.kind === 'task' && x.status === 'completed')
+    const cal = scoped.filter(x => !done.includes(x))
     const tomorrow = (() => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + 1); return iso(d) })()
     const hm = now.toISOString().slice(11, 16)
-    const tone = { event: '#a78bfa', task: '#6b8aff', late: '#f87171', today: '#a78bfa', turn: '#f5b544', ok: '#5fd38a', line: '#232837', muted: '#5a6275', prog: IN_PROGRESS }
-    const statusColor: Record<string, string> = { 'next-action': '#6b8aff', 'in-progress': IN_PROGRESS, waiting: '#f5b544', inbox: '#8790a3', completed: '#5fd38a' }
     const ownerOf = (x: CalItem) => x.owner.replace(/^"|"$/g, '')
-    const toggleSel = (x: CalItem) => () => void $.state.set(CAL_SEL, sel === x.file ? '' : x.file)
-    // the selected day's grid draws an item's editor; every other place draws it only for items the grid does not show
-    const inGrid = (x: CalItem) => x.date === day || (day === today && x.kind === 'task' && x.status === 'in-progress')
+    const toggleSel = (x: CalItem) => () => void toggleCalSel($, x.file)
     const weekAhead = Array.from({ length: 7 }, (_, n) => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + n); return iso(d) })
-    const wdName = (d: string) => ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'][new Date(d).getUTCDay()]
-    const pick = (key: string, label: string, active: boolean, color: string, press: () => void) => active
-      ? <Text key={key} color="#0a0c11" backgroundColor={color}>{` ${label} `}</Text>
-      : <Button key={key} label={label} plain onPress={press} />
+    const wdName = (d: string) => ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'][new Date(d).getUTCDay()] ?? ''
+    const mmdd = (d: string) => d.slice(5).replace('-', '/')
+    const openOf = (id: string, dflt: boolean) => phaseOpen[id] ?? dflt
+    // DetailEditor (§1.10): an active chip is text on the accent; the rest plain Buttons
+    const pick = (key: string, label: string, active: boolean, press: () => void) => active
+      ? <Text key={key} color={C.text} backgroundColor={C.accent}>{` ${label} `}</Text>
+      : <Button key={key} label={label} plain dimColor onPress={press} />
     // a property row of the editor: fixed label column, values wrap under the first value (not under the label)
     const propRow = (key: string, label: string, kids: (JSX.Element | null)[]) => (
       <Box key={key} flexDirection="row" gap={1}>
-        <Box flexShrink={0} width={5}><Text color={tone.muted}>{label}</Text></Box>
+        <Box flexShrink={0} width={6}><Text color={C.muted}>{label}</Text></Box>
         <Box flexDirection="row" flexWrap="wrap" columnGap={1} flexGrow={1} flexShrink={1}>{kids}</Box>
       </Box>
     )
     const detail = (x: CalItem) => sel === x.file ? (
-      <Box key={`det-${x.file}`} flexDirection="column" marginLeft={narrow ? 0 : 2} paddingX={1} borderStyle="round" borderColor={x.status === 'in-progress' ? tone.prog : tone.task}>
-        <Text dimColor wrap="truncate-end">{x.kind === 'event' ? 'УУЛЗАЛТ' : 'TASK'}{x.owner ? ` · 👤 ${ownerOf(x)}` : ''}{x.project ? ` · ${x.project}` : ''}{x.status === 'in-progress' && x.started ? ` · ▶ ${clockOf(x.started)}${x.claimed ? ` ${x.claimed}` : ''}` : ''}</Text>
+      <Box key={`det-${x.file}`} flexDirection="column" marginLeft={wide ? 2 : 0} paddingX={1} borderStyle="round" borderColor={x.status === 'in-progress' ? C.accent : C.border}>
+        <Text color={C.muted} wrap="truncate-end">{x.kind === 'event' ? 'УУЛЗАЛТ' : 'TASK'}{x.owner ? ` · ${G.person} ${ownerOf(x)}` : ''}{x.project ? ` · ${x.project}` : ''}{x.status === 'in-progress' && x.started ? ` · ${G.run} ${clockOf(x.started)}${x.claimed ? ` ${x.claimed}` : ''}` : ''}</Text>
         {x.kind === 'task' ? (
           <Box flexDirection="column">
             {propRow(`pr-d-${x.file}`, 'Огноо', [
-              ...weekAhead.map((d, n) => pick(`pd-${x.file}-${d}`, n === 0 ? 'өнөөдөр' : n === 1 ? 'маргааш' : `${wdName(d)} ${d.slice(8)}`, x.date === d, tone.task, () => void setProp($, x, 'due', d))),
-              x.date && !weekAhead.includes(x.date) ? pick(`pd-${x.file}-cur`, x.date.slice(5), true, x.date < today ? tone.late : tone.task, () => {}) : null,
-              x.date ? <Button key={`pdx-${x.file}`} label="✕" plain onPress={() => void setProp($, x, 'due', '')} /> : null,
+              ...weekAhead.map((d, n) => pick(`pd-${x.file}-${d}`, n === 0 ? 'өнөөдөр' : n === 1 ? 'маргааш' : `${wdName(d)} ${d.slice(8)}`, x.date === d, () => void setProp($, x, 'due', d))),
+              x.date && !weekAhead.includes(x.date) ? pick(`pd-${x.file}-cur`, mmdd(x.date), true, () => {}) : null,
+              x.date ? <Button key={`pdx-${x.file}`} label="✕" plain dimColor onPress={() => void setProp($, x, 'due', '')} /> : null,
             ])}
             {propRow(`pr-s-${x.file}`, 'Төлөв', [
-              ...OPEN_ORDER.map(st => pick(`ps-${x.file}-${st}`, st, x.status === st, statusColor[st] ?? '#8790a3', () => void setProp($, x, 'status', st))),
-              <Button key={`psd-${x.file}`} label="✓ дууссан" plain onPress={() => void setProp($, x, 'status', 'completed')} />,
+              ...OPEN_ORDER.map(st => pick(`ps-${x.file}-${st}`, st, x.status === st, () => void setProp($, x, 'status', st))),
+              pick(`psd-${x.file}`, `${G.done} дууссан`, x.status === 'completed', () => void setProp($, x, 'status', 'completed')),
             ])}
             {propRow(`pr-p-${x.file}`, 'Чухал', [
-              ...['🔴', '🟡', '🟢'].map(pr => pick(`pp-${x.file}-${pr}`, pr, x.priority === pr, '#3b4261', () => void setProp($, x, 'priority', pr))),
-              x.priority ? <Button key={`ppx-${x.file}`} label="✕" plain onPress={() => void setProp($, x, 'priority', '')} /> : null,
+              ...['🔴', '🟡', '🟢'].map(pr => pick(`pp-${x.file}-${pr}`, pr, x.priority === pr, () => void setProp($, x, 'priority', pr))),
+              x.priority ? <Button key={`ppx-${x.file}`} label="✕" plain dimColor onPress={() => void setProp($, x, 'priority', '')} /> : null,
             ])}
           </Box>
-        ) : <Text dimColor>{x.date}{x.time ? ` ${x.time}` : ''}</Text>}
+        ) : <Text color={C.muted}>{x.date}{x.time ? ` ${x.time}` : ''}</Text>}
         <Box flexDirection="row" columnGap={2} flexWrap="wrap">
-          <Button key={`obs-${x.file}`} label="↗ Obsidian" plain onPress={() => void openInObsidian($, x.file)} />
-          <Button key={`ask-${x.file}`} label="▶ Claude-д өгөх" plain onPress={() => void $.prompt.submit({ text: `Энэ ${x.kind === 'event' ? 'уулзалт' : 'task'}-ийг уншаад дараагийн алхмыг хий: [[${x.file.replace(/^.*?\/(0[0-9]-[^/]+\/.*)\.md$/, '$1')}]]`, asUser: true })} />
-          <Button key={`cls-${x.file}`} label="хаах" plain onPress={() => void $.state.set(CAL_SEL, '')} />
+          <Button key={`obs-${x.file}`} label={`${G.link} Obsidian`} plain onPress={() => void openInObsidian($, x.file)} />
+          <Button key={`ask-${x.file}`} label={`${G.run} Claude-д өгөх`} plain onPress={() => void $.prompt.submit({ text: `Энэ ${x.kind === 'event' ? 'уулзалт' : 'task'}-ийг уншаад дараагийн алхмыг хий: [[${x.file.replace(/^.*?\/(0[0-9]-[^/]+\/.*)\.md$/, '$1')}]]`, asUser: true })} />
+          <Button key={`cls-${x.file}`} label="хаах" plain onPress={() => void setSel($, '')} />
         </Box>
       </Box>
     ) : null
-    // Google-Calendar-like day grid: untimed first, then hour rows; on today the red now-line carries the in-progress tasks,
-    // and tasks done that day sit at their completed time (the day's real log)
-    const gutterW = narrow ? 6 : 9
-    const gut = (t: string) => (narrow ? `${t.padEnd(5)}│` : `${t.padEnd(5)}   │`)
-    const blank = gut('')
-    const dayGrid = (d: string) => {
-      const live = d === today ? cal.filter(x => x.kind === 'task' && x.status === 'in-progress') : []
-      const its = itemsOn(d).filter(x => !live.includes(x))
-      const fin = done.filter(x => doneOn(x) === d)
-      const finAt = (x: CalItem) => ((x.completed ?? '').slice(0, 10) === d ? clockOf(x.completed ?? '') : '')
-      const hourOf = (x: CalItem) => parseInt(x.time, 10)
-      const timed = its.filter(x => x.time && hourOf(x) >= 0 && hourOf(x) < 24).sort((a, b) => a.time.localeCompare(b.time))
-      const untimed = its.filter(x => !timed.includes(x))
-      const finTimed = fin.filter(x => finAt(x))
-      const finUntimed = fin.filter(x => !finAt(x))
-      const nowH = d === today ? Number(hm.slice(0, 2)) : -1
-      const hours = [...timed.map(hourOf), ...finTimed.map(x => parseInt(finAt(x), 10)), ...(nowH >= 0 ? [nowH] : [])]
-      const from = Math.min(9, ...hours), to = Math.max(18, ...hours)
-      const room = cols - gutterW - 1
-      const nowLine = <Text key={`now-${d}`} color={tone.late} wrap="truncate-end">{hm} ●{'─'.repeat(Math.max(3, Math.min(15, cols - 13)))} одоо</Text>
-      const atRow = (x: CalItem) => (
-        <Box key={`gt-${x.file}`} flexDirection="column">
+    // ── v2 shell (§1): SqBtn, PhaseRow, dots, segment bar, title cells, TabBar, Header, CaptureBar ──
+    const sq = (key: string, glyph: string, isOn: boolean, press: () => void) => (
+      <Box key={`${key}-w`} paddingX={1} backgroundColor={isOn ? C.raised : undefined}>
+        <Button key={key} plain label={glyph} dimColor={!isOn} onPress={press} />
+      </Box>
+    )
+    const dotLine = ([d, r, p]: [number, number, number]) => {
+      const cap = Math.max(4, cols - 8)
+      const dn = Math.min(d, cap)
+      const rn = Math.min(r, cap - dn)
+      const pn = Math.min(p, cap - dn - rn)
+      const more = d + r + p - dn - rn - pn
+      return <Text><Text color={C.accent}>{G.dot.repeat(dn)}</Text><Text color={C.run}>{G.dot.repeat(rn)}</Text><Text color={C.ring}>{G.dotOff.repeat(pn)}</Text><Text color={C.muted}>{more ? ` +${more}` : ''}</Text></Text>
+    }
+    const segBar = (pct: number) => {
+      const lit = segLit(pct)
+      return <Text><Text color={C.accent}>{G.segOn.repeat(lit)}</Text><Text color={C.ring}>{G.segOff.repeat(10 - lit)}</Text></Text>
+    }
+    const phase = (id: string, title: string, o: { dflt: boolean; count?: string; hint?: string; dim?: boolean; dots?: [number, number, number]; mt?: boolean }) => {
+      const isOpen = openOf(id, o.dflt)
+      return (
+        <Box key={`ph-${id}`} flexDirection="column" backgroundColor={isOpen ? C.raised : undefined} paddingX={1} marginTop={o.mt ? 1 : 0}>
           <Box flexDirection="row" gap={1}>
-            <Text color={tone.muted}>{gut(x.time)}</Text>
-            <Text color={x.kind === 'event' ? tone.event : x.status === 'in-progress' ? tone.prog : tone.task} backgroundColor={x.kind === 'event' ? '#2a2342' : '#1c2440'} wrap="truncate-end">{` ${fit(shortTitle(x.title, x.project), room - 5)} `}</Text>
-            <Button key={`gtb-${x.file}`} label="›" plain onPress={toggleSel(x)} />
+            <Box flexGrow={1} flexShrink={1}><Text color={o.dim ? C.muted : C.text} wrap="truncate-end">{title}</Text></Box>
+            {o.hint ? <Box flexShrink={1}><Text color={C.muted} wrap="truncate-end">{o.hint}</Text></Box> : null}
+            {o.count ? <Box flexShrink={0}><Text color={C.muted}>{o.count}</Text></Box> : null}
+            <Button key={`phb-${id}`} plain dimColor label={isOpen ? G.open : G.closed} onPress={() => void togglePhase($, id, o.dflt)} />
           </Box>
-          {detail(x)}
+          {isOpen && o.dots ? dotLine(o.dots) : null}
         </Box>
       )
-      // «✓ HH:MM <title>» at the completed time
-      const doneRow = (x: CalItem) => (
-        <Box key={`gd-${x.file}`} flexDirection="row" gap={1}>
-          <Text color={tone.muted}>{blank}</Text>
-          <Text color={tone.ok} dimColor wrap="truncate-end">{fit(`✓ ${finAt(x)} ${shortTitle(x.title, x.project)}`, room)}</Text>
+    }
+    const goW = titlePress === 'title' ? 0 : 3
+    const titleCell = (key: string, text: string, color: string, dim: boolean, press: () => void, w: number) => titlePress === 'title'
+      ? <Button key={key} plain dimColor={dim} label={fit(text, Math.max(6, w))} onPress={press} />
+      : <Text color={color} wrap="truncate-end">{text}</Text>
+    const goCell = (key: string, press: () => void) => titlePress === 'title'
+      ? null
+      : <Box key={`${key}-gw`} width={2} flexShrink={0}><Button key={`${key}-go`} plain dimColor label={G.fwd} onPress={press} /></Box>
+    const goPad = titlePress === 'title' ? null : <Box width={2} flexShrink={0} />
+    // TabBar (§1.5): labels for every tab when wide, only the active one below that; row 2 underlines the active tab
+    const tabRuns: { s: string; c: string }[] = [{ s: G.rule, c: C.border }]
+    TABS.forEach((t, n) => {
+      const isActive = t.id === tab
+      const w = 1 + (wide || isActive ? 1 + cellWidth(t.label) : 0)
+      tabRuns.push({ s: (isActive ? G.tabRule : G.rule).repeat(w), c: isActive ? C.text : C.border })
+      if (n < TABS.length - 1) tabRuns.push({ s: G.rule.repeat(2), c: C.border })
+    })
+    const usedW = tabRuns.reduce((a, r) => a + r.s.length, 0)
+    if (usedW < bodyCols) tabRuns.push({ s: G.rule.repeat(bodyCols - usedW), c: C.border })
+    const tabBar = (
+      <Box key="tabbar" flexDirection="column" backgroundColor={FILL ? C.bg : undefined}>
+        <Box flexDirection="row" columnGap={2} paddingX={1}>
+          {TABS.map(t => (t.id === tab
+            ? <Text key={`tabt-${t.id}`} color={C.text} bold>{`${t.glyph} ${t.label}`}</Text>
+            : <Button key={`tab-${t.id}`} plain dimColor label={wide ? `${t.glyph} ${t.label}` : t.glyph} onPress={() => void selectTab($, t.id)} />))}
+        </Box>
+        <Text wrap="truncate-end">{tabRuns.map((r, n) => <Text key={`tabr-${n}`} color={r.c}>{r.s}</Text>)}</Text>
+      </Box>
+    )
+    // Header (§1.6): title + square buttons, bold meta head then «  ·  »-joined rest, a muted description line
+    const header = (title: string, buttons: JSX.Element[], metaHead: string, metaRest: string[], desc: string) => (
+      <Box key="hdr" flexDirection="column" marginBottom={1} marginTop={1}>
+        <Box flexDirection="row" justifyContent="space-between" gap={1}>
+          <Box flexShrink={1}><Text bold color={C.text} wrap="truncate-end">{title}</Text></Box>
+          <Box flexDirection="row" gap={1} flexShrink={0}>{buttons}</Box>
+        </Box>
+        <Text wrap="truncate-end"><Text bold color={C.text}>{metaHead}</Text><Text color={C.muted}>{metaRest.length ? `  ${metaRest.join('  ·  ')}` : ''}</Text></Text>
+        {desc ? <Text color={C.muted} wrap="truncate-end">{desc}</Text> : null}
+      </Box>
+    )
+    const captureBar = (id: string, placeholder: string) => (Input ? (
+      <Box key={`${id}-capw`} backgroundColor={FILL ? C.bg : undefined} paddingX={1}>
+        <Box flexGrow={1} borderStyle="round" borderColor={C.border} paddingX={1}>
+          <Input key={`${id}-capture`} label="+ " placeholder={placeholder} submitLabel="Enter" onSubmit={value => void captureToInbox($, value)} />
+        </Box>
+      </Box>
+    ) : null)
+
+    // ── V1 «▦ Цаглабар» (§3 V1 + §9) ──
+    const loading = calVersion === 0
+    const firstRole = (x: CalItem) => ownersOfItem(x).map(o => roleOf(o, devs, [member])).find(Boolean) ?? ''
+    const roleGlyph = (x: CalItem) => (x.kind === 'event' ? G.person : glyphOfRole(firstRole(x)))
+    const isRun = (x: CalItem) => x.kind === 'task' && x.status === 'in-progress'
+    const isFin = (x: CalItem) => x.kind === 'task' && x.status === 'completed'
+    const sortKey = (x: CalItem) => (isFin(x) ? x.time || clockOf(x.completed ?? '') || '99' : isRun(x) ? clockOf(x.started ?? '') || x.time || '00' : x.time || '99')
+    // a day's rows: open items dated d, tasks done that day, and on today every in-progress task whatever its date
+    const rowsOn = (d: string) => {
+      const seen = new Set<string>()
+      return [...cal.filter(x => x.date === d), ...done.filter(x => doneOn(x) === d), ...(d === today ? cal.filter(isRun) : [])]
+        .filter(x => (seen.has(x.file) ? false : (seen.add(x.file), true)))
+        .sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+    }
+    const v1Status = (x: CalItem) => (isFin(x) ? clockOf(x.completed ?? '') || G.done
+      : isRun(x) ? (wide ? `ажиллаж байна${x.claimed ? ` · ${x.claimed}` : ''}` : x.claimed || G.run)
+      : x.status === 'waiting' ? 'хүлээж'
+      : x.kind === 'event' || x.time ? 'товлосон'
+      : x.status === 'inbox' ? 'inbox' : 'товлосон')
+    const calTab = () => {
+      const rows = rowsOn(day)
+      const inTable = (x: CalItem) => rows.some(r => r.file === x.file)
+      const dn = rows.filter(isFin).length
+      const rn = rows.filter(isRun).length
+      // «N agent»: distinct roles with an in-progress task, team-wide (the V6 rows in state «ажиллаж»)
+      const working = new Set(all.filter(isRun).map(firstRole).filter(r => r && r !== 'person')).size
+      const wdFull = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'][new Date(day).getUTCDay()] ?? ''
+      const hdr = header('Цаглабар', [
+        sq('hd-prev', G.back, false, () => void shiftDay($, -1)),
+        sq('hd-today', G.today, false, () => void goToday($)),
+        sq('hd-next', G.fwd, false, () => void shiftDay($, 1)),
+        sq('hd-reload', G.reload, false, () => void reloadCal($)),
+      ], `${wide ? wdFull : wdName(day)} ${mmdd(day)}`,
+      [`W${isoWeek(day)}`, working ? `${working} agent` : '', wide && !loading ? `${dn}/${rows.length} дууссан` : ''].filter(Boolean),
+      'Өнөөдрийн хуваарь, огноогүй тавиур, зорилгын ахиц')
+      // day strip: ‹ 7 days › — label «Да 05³» (count in superscript), the selected day bold with a blue ━ under it. No gap:
+      // the flexGrow columns space themselves. The weekday drops («05³») when the strip would not fit the real width: every
+      // label + 1 cell of air (so neighbours never touch) + the ‹ › buttons; a native Button (desktop / vscode) draws wider
+      // than its label, so each one is budgeted 2 cells more there
+      const dayLbl = (d: string, n: number, withWd: boolean) => `${withWd ? `${names[n]} ` : ''}${d.slice(8)}${sup(rowsOn(d).length)}`
+      const btnPad = titlePress === 'title' ? 0 : 2
+      const stripNeed = days.reduce((a, d, n) => a + cellWidth(dayLbl(d, n, true)) + 1 + (d === day ? 0 : btnPad), 0) + 2 + 2 * btnPad
+      const tight = stripNeed > cols
+      const strip = (
+        <Box key="ds" flexDirection="row" marginBottom={1}>
+          <Button key="ds-prev" plain dimColor label={G.back} onPress={() => void shiftWeek($, -1)} />
+          {days.map((d, n) => {
+            const lbl = dayLbl(d, n, !tight)
+            return (
+              <Box key={`dsc-${d}`} flexDirection="column" flexGrow={1} alignItems="flex-start">
+                {d === day ? <Text bold color={C.text}>{lbl}</Text> : <Button key={`ds-${d}`} plain dimColor label={lbl} onPress={() => void $.state.set(CAL_DAY, d)} />}
+                <Text color={C.accent}>{d === day ? G.tabRule.repeat(cellWidth(lbl)) : ' '}</Text>
+              </Box>
+            )
+          })}
+          <Button key="ds-next" plain dimColor label={G.fwd} onPress={() => void shiftWeek($, 1)} />
         </Box>
       )
-      // «▶ <started HH:MM>– <title> · <owner> · <claimed device>» under the now-line
-      const liveRow = (x: CalItem) => {
-        const sc = clockOf(x.started ?? '')
-        const st = sc ? ((x.started ?? '').slice(0, 10) === today ? sc : `${(x.started ?? '').slice(5, 10)} ${sc}`) : ''
-        // the title gives way first: owner · device stay visible (owner dropped before the device when the row is short)
-        const pre = `▶ ${st ? `${st}– ` : ''}`
-        const avail = room - 3 - cellWidth(pre)
-        const full = `${x.owner ? ` · ${ownerOf(x)}` : ''}${x.claimed ? ` · ${x.claimed}` : ''}`
-        const suf = avail - cellWidth(full) >= 10 ? full : x.claimed ? ` · ${x.claimed}` : ''
-        const text = `${pre}${fit(shortTitle(x.title, x.project), Math.max(6, avail - cellWidth(suf)))}${suf}`
+      // activity row (§3 + §9): today's in-progress tasks in scope, this session's first; its row carries the Claude plan
+      // (n/m алхам since it went in progress) and the background work (⚙ k), and expands to list them
+      const bgList = [...bgTasks.filter(b => /^(running|pending)$/.test(b.status)),
+        ...agents.filter(g => g.status === 'running').map(g => ({ id: g.id, type: g.type, status: g.status, description: g.description }))]
+        .filter((b, n, arr) => arr.findIndex(o => o.id === b.id) === n)
+      const liveAll = cal.filter(isRun)
+      // this session's task = the one it started or claimed itself (planFile), never a guess from the device or an unclaimed task
+      const mineItem = planMark.file ? (liveAll.find(x => samePath(x.file, planMark.file)) ?? all.find(x => samePath(x.file, planMark.file) && isRun(x))) : undefined
+      const live = (mineItem ? [mineItem, ...liveAll.filter(x => x.file !== mineItem.file)] : liveAll)
+        .map((x, n) => ({ x, n, own: mineItem && x.file === mineItem.file ? 0 : sameDevice(x.claimed, devs[0] ?? '') ? 1 : 2 }))
+        .sort((a, b) => a.own - b.own || a.n - b.n).map(o => o.x).slice(0, 3)
+      const actRow = (x: CalItem | null) => {
+        const isMe = !x || (!!mineItem && x.file === mineItem.file)
+        const st = isMe ? (x ? planWindow(planSteps, planMark.at, '') : planSteps) : []
+        const n = st.filter(s => s.done).length
+        const k = isMe ? bgList.length : 0
+        const key = x ? x.file : 'session'
+        const clock = x ? clockOf(x.started ?? '') : ''
+        const name = x ? `${clock ? `${clock} · ` : ''}${shortTitle(x.title, x.project)}` : 'энэ сешн'
+        const plainSuf = [x?.claimed ?? '', st.length ? `${n}/${st.length} алхам` : ''].filter(Boolean).join(' · ')
+        const suffix = [plainSuf, k ? `${G.gear} ${k}` : ''].filter(Boolean).join(' · ')
+        // the gear is budgeted as one cell (never measured: parse.ts counts it as an emoji)
+        const sufW = cellWidth(plainSuf) + (k ? (plainSuf ? 3 : 0) + 2 + String(k).length : 0)
+        const ago = x ? fmtAgo(x.started ?? '', nowLocal) : ''
+        const canOpen = isMe && (st.length > 0 || k > 0)
+        const isOpen = canOpen && openOf('cal:act', false)
+        const press = x ? toggleSel(x) : () => {}
+        // goW is 0 on the terminal (the title is the Button); on desktop / vscode the trailing › goCell takes its place
+        const w = cols - 4 - (suffix ? sufW + 1 : 0) - (ago ? cellWidth(ago) + 1 : 0) - (canOpen ? 2 : 0) - (x ? goW : 0)
         return (
-          <Box key={`gl-${x.file}`} flexDirection="column">
+          <Box key={`act-${key}`} flexDirection="column" backgroundColor={C.raised} paddingX={1}>
             <Box flexDirection="row" gap={1}>
-              <Text color={tone.muted}>{blank}</Text>
-              <Text color={tone.prog} wrap="truncate-end">{fit(text, room - 3)}</Text>
-              <Button key={`glb-${x.file}`} label="›" plain onPress={toggleSel(x)} />
+              <Text color={C.accent}>{G.run}</Text>
+              <Box flexGrow={1} flexShrink={1}>{x ? titleCell(`actb-${key}`, name, C.text, false, press, w) : <Text color={C.text} wrap="truncate-end">{name}</Text>}</Box>
+              {suffix ? <Box flexShrink={0}><Text color={C.text}>{suffix}</Text></Box> : null}
+              {ago ? <Box flexShrink={0}><Text color={C.muted}>{ago}</Text></Box> : null}
+              {canOpen ? <Button key={`acto-${key}`} plain dimColor label={isOpen ? G.open : G.closed} onPress={() => void togglePhase($, 'cal:act', false)} /> : null}
+              {x ? goCell(`actb-${key}`, press) : null}
+            </Box>
+            {isOpen ? (
+              <Box flexDirection="column" paddingLeft={2}>
+                {st.slice(0, 8).map(s => <Text key={`acts-${s.id}-${s.at}`} color={s.done ? C.done : C.text} wrap="truncate-end">{`${s.done ? G.done : G.step} ${s.subject}`}</Text>)}
+                {st.length > 8 ? <Text color={C.muted}>{`+${st.length - 8}`}</Text> : null}
+                {bgList.map(b => <Text key={`actg-${b.id}`} color={C.muted} wrap="truncate-end">{`${G.gear} ${b.description || b.type} · ${b.status}`}</Text>)}
+              </Box>
+            ) : null}
+          </Box>
+        )
+      }
+      const sessionRow = !mineItem && (planSteps.some(s => !s.done) || bgList.length > 0)
+      const acts = day === today ? [...live.map(x => actRow(x)), ...(sessionRow ? [actRow(null)] : [])] : []
+      // «Өнөөдөр» phase + the day table
+      const todayOpen = openOf('cal:today', true)
+      const titleW = wide ? cols - 36 - goW : cols - 25 - goW
+      const t1Row = (x: CalItem) => {
+        const fin = isFin(x)
+        const run = isRun(x)
+        const c = fin ? C.done : C.text
+        const time = x.time || (run ? clockOf(x.started ?? '') : fin ? clockOf(x.completed ?? '') : '') || '—'
+        const gl = roleGlyph(x)
+        const press = toggleSel(x)
+        return (
+          <Box key={`t1-${x.file}`} flexDirection="column">
+            <Box key={`t1r-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
+              <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.accent}>{fin ? G.done : run ? G.run : ' '}</Text></Box>
+              <Box width={6} flexShrink={0}><Text color={c} wrap="truncate-end">{time}</Text></Box>
+              {wide ? null : <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.muted}>{gl}</Text></Box>}
+              <Box flexGrow={1} flexShrink={1}>{titleCell(`t1b-${x.file}`, x.title, c, fin, press, titleW)}</Box>
+              {wide ? <Box width={4} flexShrink={0}><Text color={fin ? C.done : C.muted}>{gl}</Text></Box> : null}
+              <Box width={wide ? 18 : 9} flexShrink={0} justifyContent="flex-end"><Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v1Status(x)}</Text></Box>
+              {goCell(`t1b-${x.file}`, press)}
             </Box>
             {detail(x)}
           </Box>
         )
       }
-      return (
-        <Box key={`grid-${d}`} flexDirection="column" marginTop={1}>
-          <Text dimColor wrap="truncate-end">{wdName(d)} {d.slice(5)} · ӨДРИЙН ХУВААРЬ · {its.length + live.length}{fin.length ? ` · ✓ ${fin.length}` : ''}</Text>
-          {untimed.map(x => (
-            <Box key={`gu-${x.file}`} flexDirection="column">
-              <Box flexDirection="row" gap={1}>
-                <Text color={tone.muted}>өдөржин│</Text>
-                <Text color={x.kind === 'event' ? tone.event : x.status === 'in-progress' ? tone.prog : tone.task}>▌</Text>
-                <Button key={`gub-${x.file}`} label={fit(shortTitle(x.title, x.project), cols - 12)} plain onPress={toggleSel(x)} />
+      const t1Head = (
+        <Box key="t1-head" flexDirection="row" gap={1}>
+          <Box width={2} flexShrink={0} />
+          <Box width={6} flexShrink={0}><Text color={C.muted}>Цаг</Text></Box>
+          {wide ? null : <Box width={2} flexShrink={0} />}
+          <Box flexGrow={1} flexShrink={1}><Text color={C.muted} wrap="truncate-end">Task</Text></Box>
+          {wide ? <Box width={4} flexShrink={0}><Text color={C.muted}>Эзэн</Text></Box> : null}
+          <Box width={wide ? 18 : 9} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Төлөв</Text></Box>
+          {goPad}
+        </Box>
+      )
+      const todayPhase = phase('cal:today', day === today ? 'Өнөөдөр' : `${wdName(day)} ${mmdd(day)}`, {
+        dflt: true, mt: acts.length > 0,
+        count: loading ? undefined : `${dn}/${rows.length}`,
+        dots: loading ? [0, 0, 5] : rows.length ? [dn, rn, rows.length - dn - rn] : undefined,
+      })
+      const todayBody = !todayOpen ? null
+        : loading ? <Box key="t1-load" paddingLeft={2}><Text color={C.muted}>Ачаалж байна…</Text></Box>
+        : !rows.length ? <Box key="t1-empty" paddingLeft={2}><Text color={C.muted} wrap="truncate-end">Өнөөдөр товлосон зүйл алга — огноогүй тавиураас товло</Text></Box>
+        : <Box key="t1" flexDirection="column" paddingLeft={2}>{[t1Head, ...rows.map(t1Row)]}</Box>
+      // «Хоцорсон» (closed by default, only when there is any): ⚠ title · MM/DD · өнөөдөр
+      const overdue = cal.filter(x => x.kind === 'task' && x.date && x.date < today).sort((a, b) => a.date.localeCompare(b.date))
+      const lateOpen = openOf('cal:late', false)
+      const latePhase = overdue.length ? phase('cal:late', 'Хоцорсон', { dflt: false, count: String(overdue.length), mt: todayOpen }) : null
+      const lateBody = overdue.length && lateOpen ? (
+        <Box key="lt" flexDirection="column" paddingLeft={2}>
+          {overdue.map(x => (
+            <Box key={`lt-${x.file}`} flexDirection="column">
+              <Box key={`ltr-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
+                <Box width={2} flexShrink={0}><Text color={C.muted}>{G.alert}</Text></Box>
+                <Box flexGrow={1} flexShrink={1}>{titleCell(`ltb-${x.file}`, x.title, C.text, false, toggleSel(x), cols - 22 - goW)}</Box>
+                <Box width={5} flexShrink={0}><Text color={C.muted}>{mmdd(x.date)}</Text></Box>
+                <Button key={`ltt-${x.file}`} plain dimColor label="өнөөдөр" onPress={() => void setProp($, x, 'due', today)} />
+                {goCell(`ltb-${x.file}`, toggleSel(x))}
               </Box>
-              {detail(x)}
+              {inTable(x) ? null : detail(x)}
             </Box>
           ))}
-          {finUntimed.map(x => (
-            <Box key={`gf-${x.file}`} flexDirection="row" gap={1}>
-              <Text color={tone.muted}>өдөржин│</Text>
-              <Text color={tone.ok} dimColor wrap="truncate-end">{fit(`✓ ${shortTitle(x.title, x.project)}`, cols - 10)}</Text>
+        </Box>
+      ) : null
+      // «Огноогүй тавиур» (closed by default): up to 8 undated tasks with quick-date chips; the title opens the full editor
+      const shelfAll = cal.filter(x => x.kind === 'task' && !x.date)
+      const shelfOpen = openOf('cal:shelf', false)
+      const chipDays = [today, tomorrow, ...(wide ? [2, 3, 4].map(k => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + k); return iso(d) }) : [])]
+      const chipW = 15 + (wide ? 9 : 0)
+      const shelfPhase = phase('cal:shelf', 'Огноогүй тавиур', { dflt: false, hint: LBL_SHELF_HINT, count: String(shelfAll.length), mt: overdue.length ? lateOpen : todayOpen })
+      const shelfBody = shelfOpen ? (
+        <Box key="sh" flexDirection="column" paddingLeft={2}>
+          {shelfAll.slice(0, 8).map(x => (
+            <Box key={`sh-${x.file}`} flexDirection="column">
+              <Box key={`shr-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
+                <Box width={2} flexShrink={0} />
+                <Box flexGrow={1} flexShrink={1}>{titleCell(`shb-${x.file}`, x.title, C.text, false, toggleSel(x), cols - 7 - chipW - goW)}</Box>
+                <Box flexDirection="row" gap={1} flexShrink={0}>
+                  {chipDays.map((d, n) => <Button key={`shd-${x.file}-${d}`} plain dimColor label={n === 0 ? 'өнөөдөр' : n === 1 ? 'маргааш' : wdName(d)} onPress={() => void setProp($, x, 'due', d)} />)}
+                </Box>
+                {goCell(`shb-${x.file}`, toggleSel(x))}
+              </Box>
+              {inTable(x) ? null : detail(x)}
             </Box>
           ))}
-          {Array.from({ length: to - from + 1 }, (_, k) => from + k).map(hr => {
-            const hs = String(hr).padStart(2, '0')
-            const rows = [
-              ...timed.filter(x => hourOf(x) === hr).map(x => ({ at: x.time, fin: false, el: atRow(x) })),
-              ...finTimed.filter(x => parseInt(finAt(x), 10) === hr).map(x => ({ at: finAt(x), fin: true, el: doneRow(x) })),
-            ].sort((a, b) => a.at.localeCompare(b.at))
-            const isNow = hr === nowH
-            const before = isNow ? rows.filter(r => r.at <= hm) : rows
-            const after = isNow ? rows.filter(r => r.at > hm) : []
-            const lead = before[0]
-            // the hour's «HH:00 │» first, then items ≤ now, then the now-line (+ in-progress), then later items
+          {shelfAll.length > 8 ? <Text color={C.muted}>{`+${shelfAll.length - 8} бусад`}</Text> : null}
+          {!shelfAll.length ? <Text color={C.muted}>Огноогүй task алга</Text> : null}
+        </Box>
+      ) : null
+      // «Milestone · зорилго» (open by default, omitted without goals): ◇ name · stage · ▰▱ · pct
+      const goalRows = goals.slice(0, 6).map(g => {
+        const [pct = '0', name = '', stage = '', file = ''] = g.split('|')
+        const open = () => void openInObsidian($, file)
+        return (
+          <Box key={`ms-${name}`} flexDirection="row" paddingLeft={2} gap={1}>
+            <Text color={C.accent}>{G.diamond}</Text>
+            <Box flexGrow={1} flexShrink={1}>{titleCell(`msb-${name}`, name, C.text, false, open, cols - 22 - (wide ? 13 : 0) - goW)}</Box>
+            {wide ? <Box width={12} flexShrink={0}><Text color={C.muted} wrap="truncate-end">{stage}</Text></Box> : null}
+            {segBar(Number(pct))}
+            <Box width={4} flexShrink={0} justifyContent="flex-end"><Text color={C.text}>{`${pct}%`}</Text></Box>
+            {goCell(`msb-${name}`, open)}
+          </Box>
+        )
+      })
+      const goalPhase = goals.length ? phase('cal:goals', 'Milestone · зорилго', { dflt: true, count: String(goals.length), mt: shelfOpen }) : null
+      return (
+        <Box key="v1" flexDirection="column">
+          {hdr}
+          {strip}
+          {acts}
+          {todayPhase}
+          {todayBody}
+          {latePhase}
+          {lateBody}
+          {shelfPhase}
+          {shelfBody}
+          {goalPhase}
+          {goals.length && openOf('cal:goals', true) ? <Box key="ms" flexDirection="column" marginTop={1}>{goalRows}</Box> : null}
+        </Box>
+      )
+    }
+    const wdFullOf = (d: string) => ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'][new Date(d).getUTCDay()] ?? ''
+    const yesterday = (() => { const d = new Date(now); d.setUTCDate(now.getUTCDate() - 1); return iso(d) })()
+    const mutedRow = (key: string, text: string) => <Box key={key} paddingLeft={2}><Text color={C.muted} wrap="truncate-end">{text}</Text></Box>
+    // ── V6 «☼ Тойм» (§3 V6): today's top 3, overdue, yesterday's done, every agent's state ──
+    const reviewTab = () => {
+      const hdr = header('Өглөөний тойм', [
+        sq('rv-note', G.note, false, () => void openDaily($)),
+        // dim while a turn runs (a prompt would only queue behind it)
+        sq('rv-run', G.run, !busy.turn, () => void runReview($)),
+      ], `${wdFullOf(today)} ${mmdd(today)}`, [reviewAt.startsWith(`${today} `) ? reviewAt.slice(11, 16) : hm, `W${isoWeek(today)}`],
+      'Өнөөдрийн 3 гол ажил, хоцорсон, агентуудын төлөв')
+      // «Өнөөдөр»: due today (any status) + today's events + every running task; by time, untimed last (🔴 first among them)
+      const seenR = new Set<string>()
+      const timeOf = (x: CalItem) => x.time || (isRun(x) ? clockOf(x.started ?? '') : isFin(x) ? clockOf(x.completed ?? '') : '')
+      const top = [...scoped.filter(x => x.date === today), ...cal.filter(isRun)]
+        .filter(x => (seenR.has(x.file) ? false : (seenR.add(x.file), true)))
+        .sort((a, b) => {
+          const ta = timeOf(a)
+          const tb = timeOf(b)
+          if (ta && tb) return ta.localeCompare(tb)
+          if (ta || tb) return ta ? -1 : 1
+          return (a.priority === '🔴' ? 0 : 1) - (b.priority === '🔴' ? 0 : 1)
+        }).slice(0, 3)
+      // an event is done once its time has passed (an untimed one after its day)
+      const isDoneR = (x: CalItem) => isFin(x) || (x.kind === 'event' && x.date === today && !!x.time && x.time <= hm)
+      const dn = top.filter(isDoneR).length
+      const rn = top.filter(x => isRun(x) && !isDoneR(x)).length
+      const todayOpen = openOf('review:today', true)
+      const todayPh = phase('review:today', 'Өнөөдөр', {
+        dflt: true, dim: !loading && !top.length,
+        count: loading ? undefined : top.length ? `${dn}/${top.length}` : '0',
+        dots: loading ? [0, 0, 3] : top.length ? [dn, rn, top.length - dn - rn] : undefined,
+      })
+      const rvW = wide ? cols - 2 - 2 - 7 - 17 - 4 - goW : cols - 2 - 2 - 6 - 3 - goW
+      const rvHead = (
+        <Box key="rvt-head" flexDirection="row" gap={1}>
+          <Box width={2} flexShrink={0} />
+          <Box width={wide ? 7 : 6} flexShrink={0}><Text color={C.muted}>Цаг</Text></Box>
+          <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Task</Text></Box>
+          {wide ? <Box width={17} flexShrink={0}><Text color={C.muted}>Төсөл</Text></Box> : null}
+          {goPad}
+        </Box>
+      )
+      const rvRow = (x: CalItem) => {
+        const fin = isDoneR(x)
+        const run = isRun(x) && !fin
+        const c = fin ? C.done : C.text
+        const press = toggleSel(x)
+        return (
+          <Box key={`rvt-${x.file}`} flexDirection="column">
+            <Box key={`rvtr-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
+              <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.accent}>{fin ? G.done : run ? G.run : ' '}</Text></Box>
+              <Box width={wide ? 7 : 6} flexShrink={0}><Text color={c}>{timeOf(x) || '—'}</Text></Box>
+              <Box flexGrow={1} flexShrink={1}>{titleCell(`rvtb-${x.file}`, shortTitle(x.title, x.project), c, fin, press, rvW)}</Box>
+              {wide ? <Box width={17} flexShrink={0}><Text color={fin ? C.done : C.muted} wrap="truncate-end">{x.project || '—'}</Text></Box> : null}
+              {goCell(`rvtb-${x.file}`, press)}
+            </Box>
+            {detail(x)}
+          </Box>
+        )
+      }
+      const todayBody = !todayOpen ? null
+        : loading ? mutedRow('rvt-load', 'Ачаалж байна…')
+        : !top.length ? (
+          <Box key="rvt-empty" flexDirection="row" gap={2} paddingLeft={2} flexWrap="wrap">
+            <Text color={C.muted}>Өнөөдөр товлосон ажил алга</Text>
+            <Button key="rv-to-cal" plain dimColor label={`Цаглабар руу ${G.fwd}`} onPress={() => void selectTab($, 'cal')} />
+          </Box>
+        )
+        : <Box key="rvt" flexDirection="column" paddingLeft={2}>{[rvHead, ...top.map(rvRow)]}</Box>
+      // «Хоцорсон»: most overdue first, 5 at most; dim, closed and «0» when there is none
+      const late = cal.filter(x => x.kind === 'task' && x.date && x.date < today).sort((a, b) => a.date.localeCompare(b.date))
+      const daysLate = (d: string) => Math.max(1, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${d}T00:00:00Z`)) / 86400000))
+      const lateOpen = openOf('review:late', late.length > 0)
+      const latePh = phase('review:late', 'Хоцорсон', { dflt: late.length > 0, dim: !late.length, count: String(late.length), mt: todayOpen })
+      const lateBody = lateOpen && late.length ? (
+        <Box key="rvl" flexDirection="column" paddingLeft={2}>
+          {late.slice(0, 5).map(x => (
+            <Box key={`rvl-${x.file}`} flexDirection="column">
+              <Box key={`rvlr-${x.file}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
+                <Box width={2} flexShrink={0}><Text color={C.muted}>{G.alert}</Text></Box>
+                <Box flexGrow={1} flexShrink={1}>{titleCell(`rvlb-${x.file}`, shortTitle(x.title, x.project), C.text, false, toggleSel(x), cols - 2 - 2 - 8 - 8 - 5 - goW)}</Box>
+                <Box width={8} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>{`${daysLate(x.date)} өдөр`}</Text></Box>
+                <Button key={`rvlt-${x.file}`} plain dimColor label="өнөөдөр" onPress={() => void setProp($, x, 'due', today)} />
+                {goCell(`rvlb-${x.file}`, toggleSel(x))}
+              </Box>
+              {top.some(t => t.file === x.file) ? null : detail(x)}
+            </Box>
+          ))}
+          {late.length > 5 ? <Text color={C.muted}>{`+${late.length - 5}`}</Text> : null}
+        </Box>
+      ) : null
+      // «Өчигдөр»: what was finished yesterday, dim
+      const yDone = done.filter(x => doneOn(x) === yesterday).sort((a, b) => (a.completed || '').localeCompare(b.completed || ''))
+      const yOpen = openOf('review:yesterday', false)
+      const yPh = phase('review:yesterday', 'Өчигдөр', { dflt: false, dim: true, count: `${G.done} ${yDone.length}`, mt: lateOpen && late.length > 0 })
+      const yBody = yOpen ? (
+        <Box key="rvy" flexDirection="column" paddingLeft={2}>
+          {yDone.length ? yDone.map(x => {
+            const clock = clockOf(x.completed ?? '')
+            return <Text key={`rvy-${x.file}`} color={C.done} wrap="truncate-end">{`${G.done} ${clock ? `${clock} ` : ''}${shortTitle(x.title, x.project)}`}</Text>
+          }) : <Text color={C.muted}>—</Text>}
+        </Box>
+      ) : null
+      // «Агентууд»: one fixed row per role, its state read from the team's tasks (owners → roleOf); Finance is always closed
+      const prio = (x: CalItem) => (x.priority === '🔴' ? 0 : x.priority === '🟡' ? 1 : x.priority === '🟢' ? 2 : 3)
+      const stateOf = (slug: string) => {
+        if (slug === 'finance') return { st: 'хаалттай', stColor: C.done, task: '—', time: '—', run: false }
+        const its = all.filter(x => x.kind === 'task' && firstRole(x) === slug)
+        const running = its.filter(isRun).sort((a, b) => (b.started || '').localeCompare(a.started || ''))[0]
+        if (running) {
+          const ago = fmtAgo(running.started ?? '', nowLocal) || '—'
+          return { st: 'ажиллаж', stColor: C.text, task: shortTitle(running.title, running.project), time: wide && running.claimed ? `${ago} · ${running.claimed}` : ago, run: true }
+        }
+        const waiting = its.find(x => x.status === 'waiting')
+        if (waiting) return { st: 'хүлээж', stColor: C.muted, task: shortTitle(waiting.title, waiting.project), time: '—', run: false }
+        const queued = its.filter(x => x.status === 'next-action').sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || prio(a) - prio(b))
+        if (queued[0]) {
+          const first = queued[0]
+          return { st: `дараалал ${queued.length}`, stColor: C.muted, task: slug === 'project' && first.project ? first.project : shortTitle(first.title, first.project), time: '—', run: false }
+        }
+        return { st: 'сул', stColor: C.done, task: '—', time: '—', run: false }
+      }
+      const timeW = wide ? 10 : 6
+      const agOpen = openOf('review:agents', true)
+      const agPh = phase('review:agents', 'Агентууд', { dflt: true, count: String(REVIEW_ROLES.length), mt: yOpen })
+      const agBody = agOpen ? (
+        <Box key="rva" flexDirection="column" paddingLeft={2}>
+          <Box key="rva-head" flexDirection="row" gap={1}>
+            <Box width={2} flexShrink={0} />
+            <Box width={wide ? 16 : undefined} flexGrow={wide ? 0 : 1} flexShrink={wide ? 0 : 1}><Text color={C.muted}>Agent</Text></Box>
+            <Box width={wide ? 14 : 12} flexShrink={0}><Text color={C.muted}>Төлөв</Text></Box>
+            {wide ? <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Task</Text></Box> : null}
+            <Box width={timeW} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Time</Text></Box>
+            {goPad}
+          </Box>
+          {REVIEW_ROLES.map(slug => {
+            const r = stateOf(slug)
+            const name = AGENT_NAME[slug] ?? slug
+            const closed = slug === 'finance'
+            const press = () => void agentToBoard($)
+            const nameW = wide ? 16 - 2 : cols - 2 - 2 - 2 - 12 - timeW - 5 - goW
             return (
-              <Box key={`gh-${d}-${hs}`} flexDirection="column">
-                {!lead || lead.fin ? <Text color={tone.line}>{gut(`${hs}:00`)}</Text> : null}
-                {before.map(r => r.el)}
-                {isNow ? nowLine : null}
-                {isNow ? live.map(liveRow) : null}
-                {after.map(r => r.el)}
+              <Box key={`rva-${slug}`} flexDirection="row" gap={1} hover={closed ? undefined : { backgroundColor: C.raised }}>
+                <Box width={2} flexShrink={0}><Text color={C.accent}>{r.run ? G.run : ' '}</Text></Box>
+                <Box width={wide ? 16 : undefined} flexGrow={wide ? 0 : 1} flexShrink={wide ? 0 : 1} flexDirection="row">
+                  <Box width={2} flexShrink={0}><Text color={C.muted}>{glyphOfRole(slug)}</Text></Box>
+                  <Box flexGrow={1} flexShrink={1}>{closed ? <Text color={C.text} wrap="truncate-end">{name}</Text> : titleCell(`rvab-${slug}`, name, C.text, false, press, nameW)}</Box>
+                </Box>
+                <Box width={wide ? 14 : 12} flexShrink={0}><Text color={r.stColor} bold={r.run} wrap="truncate-end">{r.st}</Text></Box>
+                {wide ? <Box flexGrow={1} flexShrink={1}><Text color={r.task === '—' ? C.muted : C.text} wrap="truncate-end">{r.task}</Text></Box> : null}
+                <Box width={timeW} flexShrink={0} justifyContent="flex-end"><Text color={r.time === '—' ? C.muted : C.text} wrap="truncate-end">{r.time}</Text></Box>
+                {closed ? goPad : goCell(`rvab-${slug}`, press)}
+              </Box>
+            )
+          })}
+          {agents.length ? (
+            <Box key="rva-sess" flexDirection="column" marginTop={1}>
+              <Text color={C.muted}>энэ сешн</Text>
+              {agents.map(g => <Text key={`rvag-${g.id}`} color={C.text} wrap="truncate-end">{`${g.description || g.type} · ${g.status}`}</Text>)}
+            </Box>
+          ) : null}
+        </Box>
+      ) : null
+      return (
+        <Box key="v6" flexDirection="column">
+          {hdr}
+          {todayPh}
+          {todayBody}
+          {latePh}
+          {lateBody}
+          {yPh}
+          {yBody}
+          {agPh}
+          {agBody}
+        </Box>
+      )
+    }
+    // ── V5 «⊔ Inbox» (§3 V5): today's captures with one-press routes, older days, today's routed log ──
+    const inboxTab = () => {
+      const loadingI = inboxVersion === 0
+      const openI = inboxList.filter(x => x.status === 'inbox')
+      const todayI = openI.filter(x => x.day === today)
+      const older = openI.filter(x => x.day !== today)
+      const routedI = inboxList.filter(x => x.status === 'routed').sort((a, b) => (b.routed || '').localeCompare(a.routed || ''))
+      const sugg = openI.filter(x => x.route && !x.masked).length
+      const newest = openI[0]?.hm ?? ''
+      const hdr = header('Inbox ангилах', [
+        ...(sugg ? [sq('ib-all', confirming === 'ib-all' ? `${G.done}?` : G.done, true, () => void acceptAll($, member, configured))] : []),
+        sq('ib-reload', G.reload, false, () => void loadInbox($)),
+      ], loadingI ? '— зүйл' : `${openI.length} зүйл`, loadingI ? [] : [sugg ? `${sugg} санал` : '', newest ? `сүүлд ${newest}` : ''].filter(Boolean),
+      'Нэг товшилтоор чиглүүл — санал болгосон товч тодорно')
+      const confirmRow = confirming === 'ib-all' && sugg ? mutedRow('ib-confirm', `${G.done} ${sugg} санал хэрэгжүүлэх? — дахин дар`) : null
+      const ibRow = (it: InboxItem) => {
+        const st = inboxBusy[it.file] ?? ''
+        const press = () => void openInObsidian($, it.file)
+        const showLbl = wide && !!it.route && !it.masked && !st
+        // the four route squares: 3 cells each + 3 gaps; a 🔒 row has one «fm:inbox» button instead
+        const btnW = st ? 1 : it.masked ? 8 : 15
+        const w = cols - 2 - 2 - 1 - btnW - 1 - (showLbl ? 9 : 0) - goW
+        return (
+          <Box key={`ibr-${it.file}`} flexDirection="row" alignItems="center" paddingLeft={2} gap={1}>
+            <Box width={2} flexShrink={0}><Text color={C.muted}>{KIND_GLYPH[it.kind] ?? G.memo}</Text></Box>
+            <Box flexDirection="column" flexGrow={1} flexShrink={1}>
+              {titleCell(`ibt-${it.file}`, it.masked ? `${G.finance} хувийн санхүү` : it.title, C.text, false, press, w)}
+              <Text color={C.muted} wrap="truncate-end">{`${it.hm} · ${it.src}`}</Text>
+            </Box>
+            {goCell(`ibt-${it.file}`, press)}
+            {showLbl ? <Box width={8} flexShrink={0}><Text color={C.accent} wrap="truncate-end">{`→ ${ROUTE_NAME[it.route] ?? ''}`}</Text></Box> : null}
+            <Box flexDirection="row" gap={1} flexShrink={0}>
+              {st === 'handed' ? <Text color={C.accent}>{G.run}</Text>
+                : st ? <Text color={C.muted}>…</Text>
+                : it.masked ? <Button key={`ibm-${it.file}`} plain dimColor label="fm:inbox" onPress={() => runSlash($, 'fm:inbox', '')} />
+                : ROUTES.map(r => sq(`ibb-${it.file}-${r.id}`, r.glyph, r.id === it.route, () => void routeCapture($, member, configured, it.file, r.id)))}
+            </Box>
+          </Box>
+        )
+      }
+      const todayOpen = openOf('inbox:today', todayI.length > 0)
+      const todayPh = phase('inbox:today', 'Өнөөдөр', {
+        dflt: todayI.length > 0, dim: !todayI.length,
+        hint: wide && todayI.length ? 'Task · Note · Агент · Төсөл' : undefined, count: String(todayI.length),
+      })
+      const todayBody = loadingI ? mutedRow('ib-load', 'Ачаалж байна…')
+        : !openI.length ? mutedRow('ib-empty', `Inbox хоосон ${G.done}`)
+        : todayOpen && todayI.length ? <Box key="ibt" flexDirection="column">{todayI.map(ibRow)}</Box> : null
+      const olderOpen = openOf('inbox:older', false)
+      const olderPh = older.length ? phase('inbox:older', 'Өмнөх өдрүүд', { dflt: false, count: String(older.length), mt: todayOpen && todayI.length > 0 }) : null
+      const olderBody = older.length && olderOpen ? <Box key="ibo" flexDirection="column">{older.map(ibRow)}</Box> : null
+      const routedOpen = openOf('inbox:routed', false)
+      const lastRouted = clockOf(routedI[0]?.routed ?? '')
+      const routedPh = phase('inbox:routed', 'Ангилсан', {
+        dflt: false, dim: true, hint: lastRouted ? `сүүлд ${lastRouted}` : undefined, count: `${G.done} ${routedI.length}`, mt: olderOpen && older.length > 0,
+      })
+      const routedBody = routedOpen ? (
+        <Box key="ibd" flexDirection="column" paddingLeft={2}>
+          {routedI.length ? routedI.map(it => (
+            <Text key={`ibd-${it.file}`} color={C.done} wrap="truncate-end">{`${G.done} ${clockOf(it.routed ?? '')} ${it.masked ? `${G.finance} хувийн санхүү` : it.title} → ${ROUTE_NAME[it.route] ?? (it.routedTo || '—')}`}</Text>
+          )) : <Text color={C.muted}>—</Text>}
+        </Box>
+      ) : null
+      return (
+        <Box key="v5" flexDirection="column">
+          {hdr}
+          {confirmRow}
+          {todayPh}
+          {todayBody}
+          {olderPh}
+          {olderBody}
+          {routedPh}
+          {routedBody}
+        </Box>
+      )
+    }
+    // ── V3 «⊟ Хэрэгсэл» (§3 V3): the role's tools by group with live status, a row expands to caps + commands; the SKILL list ──
+    const toolsTab = () => {
+      const shownRole = toolsRole || sessRole
+      const info = roles.find(r => r.slug === shownRole)
+      const mine = TOOLS.filter(t => !info || t.roles.includes('*') || t.roles.includes(shownRole))
+      const stOf = (t: ToolDef): ToolStatus['state'] => (t.check.kind === 'skill' ? 'ok'
+        : t.check.kind === 'watching' ? (watching ? 'ok' : 'off')
+        : t.check.kind === 'health' ? (health.startsWith('✓') ? 'ok' : health ? 'error' : 'off')
+        : toolStatus[t.id]?.state ?? 'checking')
+      const okN = mine.filter(t => stOf(t) === 'ok').length
+      const hdr = header('Агентын хэрэгсэл', [
+        sq('tl-role', G.palette, !!toolsRole, () => void cycleToolsRole($)),
+        sq('tl-reload', G.reload, false, () => void loadTools($, true)),
+      ], info ? info.label : 'дүр тодорхойгүй', [`${mine.length} хэрэгсэл`, `${okN} холбогдсон`], 'Энэ дүрийн хэрэгсэл, skill — мөр дээр дарж дэлгэнэ')
+      const stLbl: Record<string, string> = { ok: 'холбогдсон', off: 'унтарсан', checking: 'шалгаж…', error: `${G.alert} алдаа` }
+      const credits = (n: number) => String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      const lastLbl = (id: string) => {
+        const ms = toolUsed[id]
+        if (!ms) return '—'
+        const d = localNow(ms)
+        const dd = iso(d)
+        const at = d.toISOString().slice(11, 16)
+        return dd === today ? at : dd === yesterday ? `Өч ${at}` : mmdd(dd)
+      }
+      const nameW = wide ? cols - 2 - 2 - 2 - 15 - 10 - 5 - goW : cols - 2 - 2 - 2 - 12 - 4 - goW
+      const tHead = (
+        <Box key="tl-head" flexDirection="row" gap={1}>
+          <Box width={2} flexShrink={0} />
+          <Box width={2} flexShrink={0} />
+          <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Хэрэгсэл</Text></Box>
+          <Box width={wide ? 15 : 12} flexShrink={0} justifyContent={wide ? 'flex-start' : 'flex-end'}><Text color={C.muted}>Төлөв</Text></Box>
+          {wide ? <Box width={10} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Сүүлд</Text></Box> : null}
+          {goPad}
+        </Box>
+      )
+      const toolDetail = (t: ToolDef, off: boolean) => {
+        const cmds = t.cmds ?? (t.skill ? [`/ ${t.skill}`] : [])
+        return (
+          <Box key={`tld-${t.id}`} flexDirection="column" paddingLeft={4}>
+            {t.caps ? <Text color={C.muted} wrap={wide ? 'truncate-end' : 'wrap'}>{t.caps}</Text> : null}
+            {cmds.length ? (
+              <Box flexDirection="column" borderStyle="round" borderColor={C.border} backgroundColor={C.bg} paddingX={1} marginTop={t.caps ? 1 : 0}>
+                {cmds.map((c, n) => {
+                  const slash = c.startsWith('/')
+                  const shown = c.replace(/^[$/]\s*/, '')
+                  const copyText = slash ? `/${shown.replace(/\s+/g, ' ')}` : shown
+                  return (
+                    <Box key={`tlc-${t.id}-${n}`} flexDirection="row">
+                      <Text color={C.muted}>{slash ? '/ ' : '$ '}</Text>
+                      <Button key={`tlcb-${t.id}-${n}`} plain label={shown} onPress={pr => void copyCmd($, copyText, pr.surface)} />
+                    </Box>
+                  )
+                })}
+              </Box>
+            ) : null}
+            {off ? <Box marginTop={cmds.length || t.caps ? 1 : 0}><Button key={`tlon-${t.id}`} plain dimColor label="асаах" onPress={() => void startTool($, t.id)} /></Box> : null}
+            {!t.caps && !cmds.length && !off ? <Text color={C.muted}>—</Text> : null}
+          </Box>
+        )
+      }
+      const tRow = (t: ToolDef) => {
+        const s = stOf(t)
+        const off = s === 'off'
+        const cr = t.check.kind === 'mcp' ? toolStatus[t.id]?.credits : undefined
+        const name = cr !== undefined ? `${t.name} · ${credits(cr)} кредит` : t.name
+        const press = () => void toggleToolOpen($, t.id)
+        return (
+          <Box key={`tl-${t.id}`} flexDirection="column">
+            <Box key={`tlr-${t.id}`} flexDirection="row" gap={1} hover={{ backgroundColor: C.raised }}>
+              <Box width={2} flexShrink={0} />
+              <Box width={2} flexShrink={0}><Text color={C.muted}>{t.glyph}</Text></Box>
+              <Box flexGrow={1} flexShrink={1}>{titleCell(`tlb-${t.id}`, name, off ? C.done : cr !== undefined && s !== 'ok' ? C.muted : C.text, off, press, nameW)}</Box>
+              <Box width={wide ? 15 : 12} flexShrink={0} justifyContent={wide ? 'flex-start' : 'flex-end'}><Text color={off ? C.done : C.muted} wrap="truncate-end">{stLbl[s] ?? s}</Text></Box>
+              {wide ? <Box width={10} flexShrink={0} justifyContent="flex-end"><Text color={off ? C.done : C.text}>{lastLbl(t.id)}</Text></Box> : null}
+              {goCell(`tlb-${t.id}`, press)}
+            </Box>
+            {toolOpen === t.id ? toolDetail(t, off) : null}
+          </Box>
+        )
+      }
+      let headShown = false
+      let prevOpen = false
+      const sections = GROUPS.map(g => ({ g, its: mine.filter(t => t.group === g) })).filter(x => x.its.length).flatMap(({ g, its }, gi) => {
+        const id = `tools:${g}`
+        // a group holding one of the role's own skills / services opens by default (Дизайн and Контент for Creative)
+        const dflt = info ? its.some(t => t.roles.includes(shownRole) && (!!t.skill || t.check.kind === 'mcp')) : gi === 0
+        const isOpen = openOf(id, dflt)
+        const k = its.filter(t => stOf(t) === 'ok').length
+        const ck = its.filter(t => stOf(t) === 'checking').length
+        const head = phase(id, g, { dflt, count: gi === 0 ? `${k}/${its.length} холбогдсон` : `${k}/${its.length}`, dots: [k, ck, its.length - k - ck], mt: prevOpen })
+        prevOpen = isOpen
+        if (!isOpen) return [head]
+        const rows = [...(headShown ? [] : [tHead]), ...its.map(tRow)]
+        headShown = true
+        return [head, <Box key={`tlt-${g}`} flexDirection="column" paddingLeft={2}>{rows}</Box>]
+      })
+      // SKILL: the role's registry skills ∪ its note's `skills:`, minus the tool rows' own, every plugin prefix but fm: dropped
+      const skills = (info?.skills ?? []).filter(sk => !TOOLS.some(t => t.skill === sk))
+        .map(full => ({ full, label: stripSkill(full) })).filter((x, n, arr) => arr.findIndex(o => o.label === x.label) === n)
+      const footer = skills.length ? (
+        <Box key="tl-sk" flexDirection="column" marginTop={1}>
+          <Text color={C.border}>{G.rule.repeat(cols)}</Text>
+          <Text color={C.muted}>SKILL</Text>
+          <Box flexDirection="row" flexWrap="wrap">
+            {skills.flatMap((x, n) => [
+              n ? <Text key={`tlsx-${n}`} color={C.muted}>{' · '}</Text> : null,
+              <Button key={`tls-${x.full}`} plain label={x.label} onPress={() => runSlash($, x.full, '')} />,
+            ])}
+          </Box>
+        </Box>
+      ) : null
+      return (
+        <Box key="v3" flexDirection="column">
+          {hdr}
+          {mine.length ? sections : mutedRow('tl-none', 'Энэ дүрд хэрэгсэл бүртгэгдээгүй')}
+          {footer}
+        </Box>
+      )
+    }
+    // ── V2 «▥ Kanban» (§3 V2): 4 columns from board4, one column + segment switcher below; select a card, then «Энд тавих» ──
+    const kanbanTab = () => {
+      const prio = (x: CalItem) => (x.priority === '🔴' ? 0 : x.priority === '🟡' ? 1 : x.priority === '🟢' ? 2 : 3)
+      const byDue = (a: CalItem, b: CalItem) => (a.date || '9999').localeCompare(b.date || '9999') || prio(a) - prio(b)
+      const tasks = cal.filter(x => x.kind === 'task')
+      const cards: Record<string, CalItem[]> = {
+        inbox: tasks.filter(x => x.status === 'inbox').sort(byDue),
+        next: tasks.filter(x => x.status === 'next-action' || isRun(x)).sort((a, b) => Number(isRun(b)) - Number(isRun(a)) || byDue(a, b)),
+        waiting: tasks.filter(x => x.status === 'waiting').sort(byDue),
+        done: done.filter(x => doneOn(x) === today).sort((a, b) => (b.completed || b.updated || '').localeCompare(a.completed || a.updated || '')),
+      }
+      const listOf = (col: string) => cards[col] ?? []
+      // mobile has no Input, so no inline «Шинэ task»: its «+» buttons are left out and a stale newTaskCol counts as none
+      const newCol = Input ? newTaskCol : ''
+      const selCol = KB_COLS.find(c => listOf(c.id).some(x => x.file === sel))?.id ?? ''
+      const selItem = selCol ? listOf(selCol).find(x => x.file === sel) : undefined
+      const openN = listOf('inbox').length + listOf('next').length + listOf('waiting').length
+      const runN = listOf('next').filter(isRun).length
+      const doneN = listOf('done').length
+      const agentLabel = roleLabel(roleNames[0] ?? '', devs).replace(/^[^\p{L}\p{N}]+/u, '').trim()
+      const scopeHead = scope === 'team' ? 'Баг' : projKey ? proj : personal ? 'GTD' : agentLabel || 'GTD'
+      const hdr = header('Task самбар', [
+        sq('kb-filter', G.filter, scope !== 'mine', () => void cycleScope($)),
+        ...(Input ? [sq('kb-new', G.plus, newCol === 'inbox', () => void setNewTaskCol($, 'inbox'))] : []),
+      ], scopeHead, loading ? [] : [`${openN} нээлттэй`, runN ? `${runN} ажиллаж байна` : '', doneN ? `${doneN} дууссан` : ''].filter(Boolean), LBL_KANBAN_DESC)
+      if (loading) return <Box key="v2" flexDirection="column">{hdr}<Text color={C.muted}>Ачаалж байна…</Text></Box>
+      // TaskCard: raised; the selected one bordered in the accent; a running one with a 1-cell accent bar on its left
+      const card = (x: CalItem, cw: number, full: boolean) => {
+        const isSel = sel === x.file
+        const run = isRun(x)
+        const fin = isFin(x)
+        const press = toggleSel(x)
+        const title = `${fin ? `${G.done} ` : ''}${shortTitle(x.title, x.project)}`
+        const c = fin ? C.done : C.text
+        // the card's inner width: column - padding - bar - the selected border; glyph (1) + gap, and the › on desktop
+        const tw = cw - 2 - (run ? 1 : 0) - 2 - 2 - goW
+        const titleEl = titlePress === 'title'
+          ? <Button key={`kbt-${x.file}`} plain dimColor={fin} label={fit(title, Math.max(6, full ? tw : 2 * tw))} onPress={press} />
+          : <Text color={c} wrap={full ? 'truncate-end' : 'wrap'}>{title}</Text>
+        const right = run
+          ? <Text><Text color={C.accent}>{`${G.run} `}</Text><Text color={C.text}>{x.claimed || ''}</Text></Text>
+          : fin ? <Text color={C.done}>{`${G.done} ${clockOf(x.completed ?? '')}`.trim()}</Text>
+          : <Text color={C.muted}>{x.date ? mmdd(x.date) : '—'}</Text>
+        return (
+          <Box key={`kb-${x.file}`} flexDirection="row" backgroundColor={isSel ? undefined : C.raised} borderStyle={isSel ? 'round' : undefined} borderColor={isSel ? C.accent : undefined} marginTop={1}>
+            {run ? <Box width={1} flexShrink={0} backgroundColor={C.accent} /> : null}
+            <Box flexDirection="column" flexGrow={1} flexShrink={1} paddingX={1}>
+              <Box flexDirection="row" gap={1}>
+                <Box flexGrow={1} flexShrink={1}>{titleEl}</Box>
+                <Box flexShrink={0}><Text color={C.muted}>{roleGlyph(x)}</Text></Box>
+                {goCell(`kbt-${x.file}`, press)}
+              </Box>
+              <Box flexDirection="row" justifyContent="space-between" gap={1}>
+                <Box flexShrink={1}><Text color={C.muted} wrap="truncate-end">{x.project || '—'}</Text></Box>
+                <Box flexShrink={0}>{right}</Box>
+              </Box>
+            </Box>
+          </Box>
+        )
+      }
+      // the selected card's actions: ‹ / › one column (h / l), ▷ run, ✓ (asks first), ↗ Obsidian; a done card only reopens
+      const actions = (x: CalItem, col: string) => {
+        const i = KB_COLS.findIndex(c => c.id === col)
+        const prev = i > 0 ? KB_COLS[i - 1] : undefined
+        const fwdCol = i >= 0 && i < KB_COLS.length - 1 ? KB_COLS[i + 1] : undefined
+        if (col === 'done') {
+          return (
+            <Box key={`kba-${x.file}`} flexDirection="row" paddingX={1}>
+              <Button key={`kbr-${x.file}`} plain label="↺ буцааж нээх" onPress={() => void moveSel($, 'next')} />
+            </Box>
+          )
+        }
+        return (
+          <Box key={`kba-${x.file}`} flexDirection="row" columnGap={2} flexWrap="wrap" paddingX={1}>
+            {prev ? <Button key="kb-mv-prev" plain hotkey="h" label={`${G.back} ${prev.name}`} onPress={() => void moveSel($, prev.id)} /> : null}
+            {fwdCol ? <Button key="kb-mv-next" plain hotkey="l" label={`${fwdCol.name} ${G.fwd}`} onPress={() => void moveSel($, fwdCol.id)} /> : null}
+            <Button key={`kbrun-${x.file}`} plain label={G.run} onPress={() => void runCard($, x.file)} />
+            <Button key={`kbok-${x.file}`} plain label={confirming === `kb-${x.file}` ? `${G.done}?` : G.done} onPress={() => void confirmCardDone($, x.file)} />
+            <Button key={`kbo-${x.file}`} plain label={G.link} onPress={() => void openInObsidian($, x.file)} />
+          </Box>
+        )
+      }
+      // DropZone: where the selected card can go; with nothing selected an empty column shows «Хоосон»
+      const zone = (col: string, label: string) => (
+        <Box key={`kbz-${col}`} borderStyle="dashed" borderColor={C.border} justifyContent="center" marginTop={1}>
+          {label ? <Button key={`kbzb-${col}`} plain dimColor label={label} onPress={() => void moveSel($, col)} /> : <Text color={C.muted}>Хоосон</Text>}
+        </Box>
+      )
+      const zoneFor = (col: string, label: string) => (selItem ? (selCol !== col ? zone(col, label) : null) : !listOf(col).length && newCol !== col ? zone(col, '') : null)
+      const newInput = (col: string) => (Input && newCol === col ? (
+        <Box key={`kbnw-${col}`} marginTop={1} borderStyle="round" borderColor={C.border}>
+          <Input key={`kbn-${col}`} label="+ " placeholder="Шинэ task — Enter" submitLabel="Enter" autoFocus onSubmit={value => void submitNewTask($, member, configured, value, col)} />
+        </Box>
+      ) : null)
+      const empty = !openN && !doneN && !newCol
+        ? <Box key="kb-empty" marginBottom={1}><Text color={C.muted} wrap="truncate-end">Нээлттэй task алга — + дарж нэм</Text></Box>
+        : null
+      if (board4) {
+        const cw = Math.floor((cols - 3) / 4)
+        return (
+          <Box key="v2" flexDirection="column">
+            {hdr}
+            {empty}
+            <Box key="kb-board" flexDirection="row" columnGap={1}>
+              {KB_COLS.map(c => (
+                <Box key={`kbcol-${c.id}`} flexDirection="column" width={cw} flexShrink={0}>
+                  <Box flexDirection="row">
+                    <Text bold color={C.text}>{c.name}</Text>
+                    <Text color={C.muted}>{` ${listOf(c.id).length}`}</Text>
+                    <Box flexGrow={1} />
+                    {Input ? <Button key={`kbc-${c.id}`} plain dimColor label={G.plus} onPress={() => void setNewTaskCol($, c.id)} /> : null}
+                  </Box>
+                  <Text color={C.border}>{G.rule.repeat(cw)}</Text>
+                  {newInput(c.id)}
+                  {listOf(c.id).flatMap(x => [card(x, cw, false), sel === x.file ? actions(x, c.id) : null])}
+                  {zoneFor(c.id, 'Энд тавих')}
+                </Box>
+              ))}
+            </Box>
+            {selItem ? <Box key="kb-det" flexDirection="column" marginTop={1}>{detail(selItem)}</Box> : null}
+          </Box>
+        )
+      }
+      // 420: segment switcher «Inbox 3  Next 4  Waiting 2  Done 2», the active one bold with an accent ━ under it
+      const active = KB_COLS.some(c => c.id === kanbanCol) ? kanbanCol
+        : listOf('next').some(isRun) ? 'next' : KB_COLS.find(c => listOf(c.id).length)?.id ?? 'next'
+      const segs = KB_COLS.map(c => ({ id: c.id, label: `${c.name} ${listOf(c.id).length}` }))
+      // an inactive segment is a Button: native on desktop / vscode, drawn 2 cells wider than its label (as the day strip budgets),
+      // so its run carries that padding and the active ━ stays under its own label
+      const segPad = titlePress === 'title' ? 0 : 2
+      const segRuns: { s: string; c: string }[] = []
+      segs.forEach((g, n) => {
+        segRuns.push({ s: (g.id === active ? G.tabRule : G.rule).repeat(cellWidth(g.label) + (g.id === active ? 0 : segPad)), c: g.id === active ? C.accent : C.border })
+        if (n < segs.length - 1) segRuns.push({ s: G.rule.repeat(2), c: C.border })
+      })
+      const segW = segRuns.reduce((a, r) => a + r.s.length, 0)
+      if (segW < cols) segRuns.push({ s: G.rule.repeat(cols - segW), c: C.border })
+      return (
+        <Box key="v2" flexDirection="column">
+          {hdr}
+          {empty}
+          <Box key="kb-segs" flexDirection="row" columnGap={2}>
+            {segs.map(g => (g.id === active
+              ? <Text key={`kbst-${g.id}`} bold color={C.text}>{g.label}</Text>
+              : <Button key={`kbs-${g.id}`} plain dimColor label={g.label} onPress={() => void $.state.set({ plugin: 'fm', key: 'kanbanCol' }, g.id)} />))}
+          </Box>
+          <Text wrap="truncate-end">{segRuns.map((r, n) => <Text key={`kbsr-${n}`} color={r.c}>{r.s}</Text>)}</Text>
+          {newInput(active)}
+          {listOf(active).flatMap(x => [card(x, cols, true), sel === x.file ? actions(x, active) : null, sel === x.file ? detail(x) : null])}
+          {zoneFor(active, 'Энд чирж тавих')}
+        </Box>
+      )
+    }
+    // ── V4 «▭ Төсөл» (§3 V4): phases by activity, the task table, agents, links; a research session's close row ──
+    const projectTab = () => {
+      const pName = projPick || proj
+      const own = !projPick || projPick === proj
+      const pickRows = (list: string[]) => list.map(entry => {
+        const [pn = '', stage = ''] = entry.split('|')
+        const its = all.filter(x => x.kind === 'task' && x.project.toLowerCase() === pn.toLowerCase())
+        const pct = its.length ? Math.round((its.filter(isFin).length / its.length) * 100) : 0
+        const press = () => void pickProject($, pn)
+        return (
+          <Box key={`pjp-${pn}`} flexDirection="row" gap={1} paddingX={1} hover={{ backgroundColor: C.raised }}>
+            <Box flexGrow={1} flexShrink={1}>{titleCell(`pjpb-${pn}`, [pn, stage, `${pct}%`].filter(Boolean).join(' · '), C.text, false, press, cols - 4 - goW)}</Box>
+            {goCell(`pjpb-${pn}`, press)}
+          </Box>
+        )
+      })
+      if (!pName) {
+        return (
+          <Box key="v4" flexDirection="column">
+            {header('Төсөл', [sq('pj-reload', G.reload, false, () => void loadProject($))], 'Идэвхтэй төсөл', projList.length ? [String(projList.length)] : [], 'Төслөө сонго — мөр дээр дарна')}
+            {projList.length ? pickRows(projList) : <Text color={C.muted}>{projListVersion === 0 ? 'Ачаалж байна…' : 'Идэвхтэй төсөл алга'}</Text>}
+          </Box>
+        )
+      }
+      const isResearch = own && !!hub.file
+      const meta = projMeta.name === pName ? projMeta : { name: pName, file: '', stage: '', desc: '', due: '', links: [], lastMsg: {} as Record<string, string> }
+      const pKey = pName.toLowerCase()
+      const ptasks = all.filter(x => x.kind === 'task' && (x.project.toLowerCase() === pKey || (own && ofResearch(x))))
+      const finN = ptasks.filter(isFin).length
+      const pct = ptasks.length ? Math.round((finN / ptasks.length) * 100) : 0
+      const slugs = [...new Set(ptasks.map(firstRole).filter(r => r && r !== 'person'))]
+      const linksOpen = openOf('project:links', false)
+      const hdr = header(pName, [
+        sq('pj-note', G.note, false, () => void openInObsidian($, meta.file)),
+        sq('pj-link', G.link, linksOpen && meta.links.length > 0, () => void togglePhase($, 'project:links', false)),
+        sq('pj-more', G.more, projMenu, () => void toggleProjMenu($)),
+      ], meta.stage || (isResearch ? 'Судалгаа' : 'Төсөл'),
+      [`${ptasks.length} task`, slugs.length ? `${slugs.length} agent` : '', ...(wide ? [meta.due ? `${mmdd(meta.due)} хүртэл` : '', `${pct}%`] : [])].filter(Boolean),
+      meta.desc)
+      // ⋯ menu: switch project, ↻, to the Kanban tab, team scope; «төсөл солих» lists the active projects
+      const switchOpen = openOf('project:switch', false)
+      const menu = projMenu ? (
+        <Box key="pj-menu" flexDirection="column" marginBottom={1}>
+          <Box flexDirection="row" columnGap={2} flexWrap="wrap">
+            <Button key="pj-switch" plain dimColor={!switchOpen} label="төсөл солих" onPress={() => void toggleProjSwitch($)} />
+            <Button key="pj-reload" plain dimColor label={G.reload} onPress={() => void reloadProject($)} />
+            <Button key="pj-kanban" plain dimColor label={`${G.tabKanban} Kanban`} onPress={() => void kanbanFromProject($)} />
+            <Button key="pj-team" plain dimColor={scope !== 'team'} label="👥 баг" onPress={() => void $.state.set(CAL_SCOPE, 'team')} />
+          </Box>
+          {switchOpen ? pickRows([...(projPick && proj && !projList.some(e => e.split('|')[0] === proj) ? [`${proj}|`] : []), ...projList.filter(e => e.split('|')[0] !== pName)]) : null}
+        </Box>
+      ) : null
+      // research: ≥ 1 task and all completed → suggest closing (never automatic; the press is itge.e's confirmation)
+      const canClose = isResearch && hub.status === 'active' && (hub.open ?? 0) === 0 && ptasks.length > 0 && finN === ptasks.length
+      const closeRow = canClose ? (
+        <Box key="pj-close" flexDirection="row" gap={1} flexWrap="wrap" marginBottom={1}>
+          <Text color={C.text}>{`${G.done} Бүх task дууссан — судалгааг хаах уу?`}</Text>
+          <Button key="pj-close-research" plain label={`${G.done} хаах`} onPress={() => void closeResearch($)} />
+        </Box>
+      ) : null
+      // phases: the project's stage is the current one (open, dots); earlier ones all done read «✓ MM/DD»; «Бусад» = no activity
+      const phaseOf = (x: CalItem) => (PHASES.includes(x.activity ?? '') ? x.activity ?? '' : 'Бусад')
+      const si = PHASES.indexOf(meta.stage)
+      const names4 = [...PHASES, ...(ptasks.some(x => phaseOf(x) === 'Бусад') ? ['Бусад'] : [])]
+      const runTask0 = ptasks.find(isRun)
+      const curName = si >= 0 ? PHASES[si] : runTask0 ? phaseOf(runTask0) : names4.find(p => ptasks.some(x => phaseOf(x) === p && !isFin(x))) ?? names4[names4.length - 1]
+      const rowRank = (x: CalItem) => (isFin(x) ? 0 : isRun(x) ? 1 : 2)
+      const sortRows = (a: CalItem, b: CalItem) => rowRank(a) - rowRank(b)
+        || (rowRank(a) === 0 ? (a.completed || a.updated || '').localeCompare(b.completed || b.updated || '') : (a.date || '9999').localeCompare(b.date || '9999'))
+      const v4Status = (x: CalItem) => {
+        if (isFin(x)) { const d = doneOn(x); return d === today ? clockOf(x.completed ?? '') || G.done : d ? mmdd(d) : G.done }
+        if (isRun(x)) return wide ? `ажиллаж${x.claimed ? ` · ${x.claimed}` : ''}` : x.claimed || G.run
+        return x.status === 'next-action' ? (x.date ? 'товлосон' : 'дараагийн') : x.status === 'waiting' ? 'хүлээгдэж' : x.status === 'inbox' ? 'inbox' : x.status
+      }
+      const ptW = wide ? cols - 2 - 2 - 7 - 8 - 16 - 4 - goW : cols - 2 - 2 - 2 - 11 - 4 - goW
+      const pHead = (p: string) => (
+        <Box key={`pjh-${p}`} flexDirection="row" gap={1}>
+          <Box width={2} flexShrink={0} />
+          {wide ? null : <Box width={2} flexShrink={0} />}
+          <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Task</Text></Box>
+          {wide ? <Box width={7} flexShrink={0}><Text color={C.muted}>Agent</Text></Box> : null}
+          {wide ? <Box width={8} flexShrink={0}><Text color={C.muted}>Хугацаа</Text></Box> : null}
+          <Box width={wide ? 16 : 11} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Төлөв</Text></Box>
+          {goPad}
+        </Box>
+      )
+      const pRow = (x: CalItem) => {
+        const fin = isFin(x)
+        const run = isRun(x)
+        const c = fin ? C.done : C.text
+        const gl = roleGlyph(x)
+        const press = toggleSel(x)
+        return (
+          <Box key={`pj-${x.file}`} flexDirection="column">
+            <Box key={`pjr-${x.file}`} flexDirection="row" gap={1} backgroundColor={sel === x.file ? C.raised : undefined} hover={{ backgroundColor: C.raised }}>
+              <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.accent}>{fin ? G.done : run ? G.run : ' '}</Text></Box>
+              {wide ? null : <Box width={2} flexShrink={0}><Text color={fin ? C.done : C.muted}>{gl}</Text></Box>}
+              <Box flexGrow={1} flexShrink={1}>{titleCell(`pjb-${x.file}`, shortTitle(x.title, x.project), c, fin, press, ptW)}</Box>
+              {wide ? <Box width={7} flexShrink={0}><Text color={fin ? C.done : C.muted}>{gl}</Text></Box> : null}
+              {wide ? <Box width={8} flexShrink={0}><Text color={fin ? C.done : C.text}>{x.date ? mmdd(x.date) : '—'}</Text></Box> : null}
+              <Box width={wide ? 16 : 11} flexShrink={0} justifyContent="flex-end"><Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v4Status(x)}</Text></Box>
+              {goCell(`pjb-${x.file}`, press)}
+            </Box>
+            {detail(x)}
+          </Box>
+        )
+      }
+      let prevOpen = false
+      const sections = loading ? [<Box key="pj-load" paddingLeft={2}><Text color={C.muted}>Ачаалж байна…</Text></Box>] : names4.flatMap(p => {
+        const its = ptasks.filter(x => phaseOf(x) === p).sort(sortRows)
+        const fin = its.filter(isFin)
+        const rn = its.filter(isRun).length
+        const i = PHASES.indexOf(p)
+        const isCur = p === curName
+        const isPast = si >= 0 && i >= 0 && i < si && fin.length === its.length
+        const last = fin.map(doneOn).filter(Boolean).sort().pop() ?? ''
+        const id = `project:${p}`
+        const isOpen = openOf(id, isCur)
+        const head = phase(id, p, {
+          dflt: isCur, dim: isPast, mt: prevOpen,
+          count: isPast ? (last ? `${G.done} ${mmdd(last)}` : G.done) : `${fin.length}/${its.length}`,
+          dots: isCur && its.length ? [fin.length, rn, its.length - fin.length - rn] as [number, number, number] : undefined,
+        })
+        prevOpen = isOpen
+        const rows = !isOpen ? null : its.length
+          ? <Box key={`pjt-${p}`} flexDirection="column" paddingLeft={2}>{[pHead(p), ...its.map(pRow)]}</Box>
+          : <Box key={`pjt-${p}`} paddingLeft={2}><Text color={C.muted}>—</Text></Box>
+        return [head, rows]
+      })
+      const emptyRow = !loading && !ptasks.length ? <Box key="pj-empty" paddingLeft={2} marginTop={1}><Text color={C.muted}>Энэ төсөлд task алга</Text></Box> : null
+      // «Агент»: one row per role among the project's tasks; time = Σ(completed − started) + the running ones so far
+      const spent = (its: CalItem[]) => {
+        let ms = 0
+        let any = false
+        for (const x of its) {
+          const from = stampMs(x.started ?? '')
+          const to = isFin(x) ? stampMs(x.completed ?? '') : isRun(x) ? nowLocal : NaN
+          if (Number.isNaN(from) || Number.isNaN(to) || to < from) continue
+          ms += to - from
+          any = true
+        }
+        return any ? fmtSpan(ms) : '—'
+      }
+      const agentsOpen = openOf('project:agents', true)
+      const agentsPhase = slugs.length ? phase('project:agents', 'Агент', { dflt: true, count: String(slugs.length), mt: true }) : null
+      const agentsBody = slugs.length && agentsOpen ? (
+        <Box key="pja" flexDirection="column" paddingLeft={2}>
+          <Box key="pja-head" flexDirection="row" gap={1}>
+            <Box flexGrow={1} flexShrink={1}><Text color={C.muted}>Agent</Text></Box>
+            {wide ? <Box width={38} flexShrink={0}><Text color={C.muted}>Сүүлийн мессеж</Text></Box> : null}
+            <Box width={6} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Task</Text></Box>
+            <Box width={9} flexShrink={0} justifyContent="flex-end"><Text color={C.muted}>Хугацаа</Text></Box>
+          </Box>
+          {slugs.map(slug => {
+            const its = ptasks.filter(x => firstRole(x) === slug)
+            return (
+              <Box key={`pja-${slug}`} flexDirection="row" gap={1}>
+                <Box flexGrow={1} flexShrink={1}><Text wrap="truncate-end"><Text color={C.muted}>{`${glyphOfRole(slug)} `}</Text><Text color={C.text}>{AGENT_NAME[slug] ?? slug}</Text></Text></Box>
+                {wide ? <Box width={38} flexShrink={0}><Text color={C.muted} wrap="truncate-end">{slug === 'finance' ? '—' : meta.lastMsg[slug] || '—'}</Text></Box> : null}
+                <Box width={6} flexShrink={0} justifyContent="flex-end"><Text color={C.text}>{String(its.length)}</Text></Box>
+                <Box width={9} flexShrink={0} justifyContent="flex-end"><Text color={C.text}>{spent(its)}</Text></Box>
               </Box>
             )
           })}
         </Box>
-      )
-    }
-    // 7-day strip: bordered boxes when wide; below 62 cells borderless columns (weekday / date / marks) that always fit
-    const strip = (boxKey: string, btnKey: string) => (
-      <Box flexDirection="row" marginTop={1} gap={narrow ? 0 : 1}>
-        {days.map((d, n) => {
-          const its = itemsOn(d)
-          const ev = its.filter(x => x.kind === 'event').length
-          const tk = its.length - ev
-          const late = its.some(x => x.kind === 'task' && x.date < today)
-          const cap = narrow ? 1 : 3
-          const marks = <Text><Text color={tone.event}>{'◆'.repeat(Math.min(ev, cap))}</Text><Text color={late ? tone.late : tone.task}>{'●'.repeat(Math.min(tk, cap))}</Text>{ev + tk ? '' : '·'}</Text>
-          return narrow ? (
-            <Box key={`${boxKey}-${d}`} flexDirection="column" alignItems="center" flexGrow={1} flexShrink={1}>
-              <Text color={d === today ? tone.task : tone.muted}>{names[n]}</Text>
-              {d === day
-                ? <Text color="#0a0c11" backgroundColor={tone.today}>{d.slice(8)}</Text>
-                : <Button key={`${btnKey}-${d}`} label={d.slice(8)} plain onPress={() => void $.state.set(CAL_DAY, d)} />}
-              {marks}
-            </Box>
-          ) : (
-            <Box key={`${boxKey}-${d}`} flexDirection="column" alignItems="center" flexGrow={1} borderStyle="round"
-              borderColor={d === day ? tone.today : d === today ? tone.task : tone.line}>
-              <Button key={`${btnKey}-${d}`} label={`${names[n]} ${d.slice(8)}`} plain onPress={() => void $.state.set(CAL_DAY, d)} />
-              {marks}
-            </Box>
-          )
-        })}
-      </Box>
-    )
-    const chip = (key: string, text: string, color: string) => (
-      <Text key={key} color="#0a0c11" backgroundColor={color}>{` ${text} `}</Text>
-    )
-    const card = (x: CalItem, late: boolean) => {
-      const when = x.date ? x.date.slice(5) : 'огноогүй'
-      return (
-        <Box key={`card-${x.file}`} flexDirection="column" marginTop={1} paddingX={1} borderStyle="round" borderColor={late ? tone.late : tone.line}>
-          <Box flexDirection="row" justifyContent="space-between" gap={1}>
-            <Box flexDirection="row" gap={1} flexGrow={1} flexShrink={1}>
-              <Text color={late ? tone.late : x.status === 'in-progress' ? tone.prog : '#737AA2'}>{late ? '⚠' : x.status === 'in-progress' ? '▶' : '○'}</Text>
-              <Button key={`ct-${x.file}`} label={fit(x.title, Math.max(8, cols - cellWidth(when) - 8))} plain onPress={toggleSel(x)} />
-            </Box>
-            <Box flexShrink={0}><Text color={late ? tone.late : tone.muted}>{when}</Text></Box>
-          </Box>
-          <Box flexDirection="row" columnGap={1} flexWrap="wrap">
-            {chip(`cs-${x.file}`, x.status || '—', statusColor[x.status] ?? '#8790a3')}
-            {x.activity ? chip(`ca-${x.file}`, x.activity, ACTIVITY) : null}
-            {x.project ? chip(`cp-${x.file}`, x.project, '#a78bfa') : null}
-            {x.owner ? <Text key={`co-${x.file}`} dimColor>👤 {ownerOf(x)}</Text> : null}
-            {x.priority ? <Text key={`cr-${x.file}`}>{x.priority}</Text> : null}
-          </Box>
-          {inGrid(x) ? null : detail(x)}
-        </Box>
-      )
-    }
-    // Project Tracker (Figma «04 Төсөл · A — board by status»): a project session sees its project as a board
-    if (projKey && scope !== 'team') {
-      const tasks = cal.filter(x => x.kind === 'task')
-      const total = tasks.length + done.length
-      const pct = total ? Math.round((done.length / total) * 100) : 0
-      const barW = Math.max(8, Math.min(20, cols - 14))
-      const fill = Math.round((pct / 100) * barW)
-      // never automatic: ≥1 task and all completed → suggest closing; the button press is itge.e's confirmation
-      const isResearch = !!hub.file
-      const canClose = isResearch && hub.status === 'active' && (hub.open ?? 0) === 0 && tasks.length === 0 && done.length > 0
-      const nextEv = cal.filter(x => x.kind === 'event' && x.date >= today).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0]
-      const late = tasks.filter(x => x.date && x.date < today)
-      const byDate = (a: CalItem, b: CalItem) => (a.date || '9').localeCompare(b.date || '9')
-      const group = (st: string) => tasks.filter(x => x.status === st && !(x.date && x.date < today)).sort(byDate)
-      // one line per task: title cut to fit, date (and when wide activity · owner) in a fixed right column
-      const row = (x: CalItem, color: string, mark: string) => {
-        const extra = [x.activity ?? '', x.owner ? `👤 ${ownerOf(x)}` : ''].filter(Boolean).join(' · ')
-        const right = [narrow ? '' : extra, x.priority ?? '', x.date ? x.date.slice(5) : ''].filter(Boolean)
-        const rightW = right.reduce((a, s) => a + cellWidth(s) + 1, 0)
-        return (
-          <Box key={`pt-${x.file}`} flexDirection="column">
-            <Box flexDirection="row" gap={1}>
-              <Text color={color}>{mark}</Text>
-              <Box flexGrow={1} flexShrink={1}><Button key={`ptb-${x.file}`} label={fit(shortTitle(x.title, x.project), Math.max(8, cols - rightW - 3))} plain onPress={toggleSel(x)} /></Box>
-              <Box flexShrink={0} flexDirection="row" gap={1}>
-                {!narrow && x.activity ? <Text color={ACTIVITY}>{x.activity}</Text> : null}
-                {!narrow && x.owner ? <Text dimColor>👤 {ownerOf(x)}</Text> : null}
-                {x.priority ? <Text>{x.priority}</Text> : null}
-                {x.date ? <Text color={x.date < today ? tone.late : tone.muted}>{x.date.slice(5)}</Text> : null}
-              </Box>
-            </Box>
-            {narrow && extra ? <Box paddingLeft={2}><Text dimColor wrap="truncate-end">{fit(extra, cols - 2)}</Text></Box> : null}
-            {inGrid(x) ? null : detail(x)}
-          </Box>
-        )
-      }
-      const section = (key: string, title: string, color: string, list: CalItem[], mark: string) => list.length ? (
-        <Box key={`sec-${key}`} flexDirection="column" marginTop={1}>
-          <Text color={color}>{title} · {list.length}</Text>
-          {list.map(x => row(x, color, mark))}
+      ) : null
+      // «Холбоос» (hidden without links): the names as the hint; open → one Button per link (https through the OS opener)
+      const linksPhase = meta.links.length ? phase('project:links', 'Холбоос', {
+        dflt: false, hint: fit(meta.links.map(l => l.name).join(' · '), wide ? 40 : 14), count: String(meta.links.length), mt: slugs.length ? agentsOpen : true,
+      }) : null
+      const linksBody = meta.links.length && linksOpen ? (
+        <Box key="pjl" flexDirection="row" flexWrap="wrap" columnGap={2} paddingLeft={2}>
+          {meta.links.map((l, n) => <Button key={`pjl-${n}`} plain label={`${G.link} ${l.name}`} onPress={() => void openUrl($, l.url)} />)}
         </Box>
       ) : null
       return (
-        <Box flexDirection="column" paddingX={1}>
-          <Box flexDirection={narrow ? 'column' : 'row'} justifyContent="space-between">
-            <Text wrap="truncate-end"><Text bold>{isResearch ? '🔬' : '💼'} {proj}</Text><Text color={tone.ok}>{isResearch && hub.status === 'done' ? '  ✓ Done' : '  ● Active'}</Text></Text>
-            <Box flexDirection="row" columnGap={2} flexWrap="wrap">
-              <Button key="pt-prev" label="‹" plain onPress={() => void $.state.set(CAL_WEEK, week - 1)} />
-              <Button key="pt-now" label="өнөөдөр" plain onPress={() => { void $.state.set(CAL_WEEK, 0); void $.state.set(CAL_DAY, '') }} />
-              <Button key="pt-next" label="›" plain onPress={() => void $.state.set(CAL_WEEK, week + 1)} />
-              <Button key="pt-view" label={view === 'timeline' ? '▦ самбар' : '☰ шугам'} plain onPress={() => void $.state.set(CAL_VIEW, view === 'timeline' ? 'board' : 'timeline')} />
-              <Button key="pt-scope" label="👥 баг" plain onPress={() => void $.state.set(CAL_SCOPE, 'team')} />
-              <Button key="pt-load" label="⟳" plain onPress={() => void loadCalendar($)} />
-            </Box>
-          </Box>
-          <Box flexDirection="row" gap={1}>
-            <Text><Text color={tone.ok}>{'▓'.repeat(fill)}</Text><Text color={tone.line}>{'░'.repeat(barW - fill)}</Text></Text>
-            <Text dimColor>{done.length}/{total} · {pct}%</Text>
-          </Box>
-          {canClose ? (
-            <Box flexDirection="row" gap={1} flexWrap="wrap">
-              <Text color={tone.ok}>✅ Бүх task дууссан — судалгааг хаах уу?</Text>
-              <Button key="pt-close-research" label="✓ хаах" plain onPress={() => void closeResearch($)} />
-            </Box>
-          ) : null}
-          {nextEv ? <Text wrap="truncate-end"><Text color={tone.event}>◆ Дараагийн: </Text>{nextEv.title}<Text dimColor> · {nextEv.date.slice(5)}{nextEv.time ? ` ${nextEv.time}` : ''}</Text></Text> : null}
-          {strip('ptd', 'ptdb')}
-          {dayGrid(day)}
-          <Box marginTop={1}><Text wrap="truncate-end"><Text color={tone.late}>{narrow ? '⚠' : 'Хоцорсон'} {late.length}</Text><Text dimColor> · </Text><Text color={tone.prog}>▶ {tasks.filter(x => x.status === 'in-progress').length}</Text><Text dimColor> · </Text><Text color={tone.muted}>{narrow ? '○' : 'Огноогүй'} {tasks.filter(x => !x.date).length}</Text><Text dimColor> · </Text><Text color={tone.ok}>{narrow ? '✓' : 'Дууссан'} {done.length}</Text></Text></Box>
-          {view === 'timeline' ? (
-            <Box flexDirection="column">
-              {section('late', '⚠ ХОЦОРСОН', tone.late, late.sort(byDate), '⚠')}
-              {days.filter(d => d >= today).map(d => {
-                const its = itemsOn(d).sort((a, b) => (a.time || '99').localeCompare(b.time || '99'))
-                if (!its.length) return null
-                const wd = ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'][new Date(d).getUTCDay()]
-                return (
-                  <Box key={`tl-${d}`} flexDirection="column" marginTop={1}>
-                    <Text color={d === today ? tone.today : tone.muted}>{wd} {d.slice(5)}{d === today ? ' · өнөөдөр' : d === tomorrow ? ' · маргааш' : ''}</Text>
-                    {its.map(x => {
-                      const mk = x.kind === 'event' ? '◆' : x.status === 'in-progress' ? '▶' : x.status === 'waiting' ? '⏸' : x.status === 'inbox' ? '○' : '◐'
-                      const c = x.kind === 'event' ? tone.event : x.status === 'in-progress' ? tone.prog : x.status === 'waiting' ? tone.turn : tone.task
-                      const who = !narrow && x.owner ? `👤 ${ownerOf(x)}` : ''
-                      return (
-                        <Box key={`tlr-${x.file}`} flexDirection="column">
-                          <Box flexDirection="row" gap={1}>
-                            <Text color={tone.muted}>{x.time || '     '} │</Text>
-                            <Text color={c}>{mk}</Text>
-                            <Box flexGrow={1} flexShrink={1}><Button key={`tlb-${x.file}`} label={fit(shortTitle(x.title, x.project), Math.max(8, cols - 11 - (who ? cellWidth(who) + 1 : 0)))} plain onPress={toggleSel(x)} /></Box>
-                            {who ? <Box flexShrink={0}><Text dimColor>{who}</Text></Box> : null}
-                          </Box>
-                          {inGrid(x) ? null : detail(x)}
-                        </Box>
-                      )
-                    })}
-                  </Box>
-                )
-              })}
-              {section('later', 'ДАРАА', tone.muted, tasks.filter(x => x.date && x.date >= today && !days.includes(x.date)).sort(byDate), '○')}
-              {section('nodate', 'ОГНООГҮЙ', tone.muted, tasks.filter(x => !x.date), '○')}
-            </Box>
-          ) : (
-            <Box flexDirection="column">
-              {section('late', '⚠ ХОЦОРСОН', tone.late, late.sort(byDate), '⚠')}
-              {section('prog', '▶ IN PROGRESS', tone.prog, group('in-progress'), '▶')}
-              {section('next', 'NEXT ACTION', tone.task, group('next-action'), '◐')}
-              {section('wait', 'WAITING', tone.turn, group('waiting'), '⏸')}
-              {section('inbox', 'INBOX', '#8790a3', group('inbox'), '○')}
-            </Box>
-          )}
-          {done.length ? (
-            <Box flexDirection="column" marginTop={1}>
-              <Button key="pt-done" label={`${showDone ? '▾' : '▸'} DONE · ${done.length}`} plain onPress={() => void $.state.set(CAL_DONE, !showDone)} />
-              {showDone ? done.slice(0, 12).map(x => <Text key={`ptx-${x.file}`} dimColor strikethrough wrap="truncate-end">  ✓ {fit(shortTitle(x.title, x.project), cols - 4)}</Text>) : null}
-            </Box>
-          ) : null}
-          {agents.length ? <Box marginTop={1}><Text color={tone.ok}>АГЕНТУУД ОДОО · {agents.length}</Text></Box> : null}
-          {agents.map(g => <Text key={`pta-${g.id}`} wrap="truncate-end"><Text color={tone.ok}>{g.status === 'running' ? '●' : '○'} </Text>{g.description}<Text dimColor> · {g.status}</Text></Text>)}
-          <Box marginTop={1} borderStyle="round" borderColor={tone.line} paddingX={1}>
-            <Input key="pt-capture" label="＋ " placeholder={`Барих — ${proj}… Enter → Inbox`} submitLabel="барих" onSubmit={value => void captureToInbox($, value)} />
-          </Box>
-          <Text dimColor wrap="truncate-end">нэр дээр дарж огноо · төлөв · чухлыг солино</Text>
+        <Box key="v4" flexDirection="column">
+          {hdr}
+          {menu}
+          {closeRow}
+          {sections}
+          {emptyRow}
+          {agentsPhase}
+          {agentsBody}
+          {linksPhase}
+          {linksBody}
         </Box>
       )
     }
+    const body = tab === 'cal' ? calTab() : tab === 'kanban' ? kanbanTab() : tab === 'project' ? projectTab()
+      : tab === 'tools' ? toolsTab() : tab === 'inbox' ? inboxTab() : reviewTab()
     return (
-      <Box flexDirection="column" paddingX={1}>
-        <Box flexDirection={narrow ? 'column' : 'row'} justifyContent="space-between">
-          <Text wrap="truncate-end"><Text bold>{['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'][new Date(day).getUTCDay()]} {day.slice(5).replace('-', '/')}</Text><Text dimColor> · W{isoWeek(day)}{day === today ? ' · өнөөдөр' : ''}</Text></Text>
-          <Box flexDirection="row" columnGap={2} flexWrap="wrap">
-            <Button key="wk-prev" label="‹" plain onPress={() => void $.state.set(CAL_WEEK, week - 1)} />
-            <Button key="wk-now" label="өнөөдөр" plain onPress={() => { void $.state.set(CAL_WEEK, 0); void $.state.set(CAL_DAY, '') }} />
-            <Button key="wk-next" label="›" plain onPress={() => void $.state.set(CAL_WEEK, week + 1)} />
-            <Button key="wk-scope" label={scope === 'team' ? '👥 баг' : fit(scopeLabel, 18)} plain onPress={() => void $.state.set(CAL_SCOPE, scope === 'team' ? 'mine' : 'team')} />
-            <Button key="wk-load" label="⟳" plain onPress={() => void loadCalendar($)} />
-          </Box>
+      <Box flexDirection="column" backgroundColor={FILL ? C.surface : undefined} minHeight={e.props.scroll.bodyRows}>
+        {tabBar}
+        <Box flexDirection="column" paddingX={1} flexGrow={1}>
+          {body}
+          <Box flexGrow={1} />
         </Box>
-        {turn.length ? <Box marginTop={1}><Text color={tone.turn}>ТАНЫ ЭЭЛЖ · {turn.length}</Text></Box> : null}
-        {turn.map(x => {
-          const meta = `${x.date ? x.date.slice(5) : 'огноогүй'} · ${x.status}`
-          return (
-            <Box key={`turn-${x.file}`} flexDirection="row" gap={1}>
-              <Text color={x.status === 'in-progress' ? tone.prog : tone.turn}>{x.status === 'in-progress' ? '▶' : '▌'}</Text>
-              <Box flexGrow={1} flexShrink={1}><Button key={`tn-${x.file}`} label={fit(x.title, Math.max(8, cols - cellWidth(meta) - 4))} plain onPress={() => void openInObsidian($, x.file)} /></Box>
-              <Box flexShrink={0}><Text dimColor>{meta}</Text></Box>
-            </Box>
-          )
-        })}
-        {agents.length ? <Box marginTop={1}><Text color={tone.ok}>АГЕНТУУД ОДОО · {agents.length}</Text></Box> : null}
-        {agents.map(g => (
-          <Box key={`ag-${g.id}`} flexDirection="row" gap={1}>
-            <Text color={g.status === 'failed' ? tone.late : tone.ok}>{g.status === 'running' ? '●' : '○'}</Text>
-            <Box flexGrow={1} flexShrink={1}><Text wrap="truncate-end">{g.description}</Text></Box>
-            <Box flexShrink={0}><Text dimColor>{narrow ? g.status : `${g.type} · ${g.status}`}</Text></Box>
-          </Box>
-        ))}
-        {strip('d', 'pick')}
-        {dayGrid(day)}
-        {overdue.length ? <Box marginTop={1}><Text color={tone.late}>ХУГАЦАА ХЭТЭРСЭН · {overdue.length}</Text></Box> : null}
-        {overdue.slice(0, 6).map(x => card(x, true))}
-        <Box marginTop={1}><Text dimColor wrap="truncate-end">ОГНООГҮЙ ТАВИУР · {cal.filter(x => x.kind === 'task' && !x.date).length}{scope === 'mine' ? ` · ${scopeLabel}` : ' · баг'}</Text></Box>
-        {shelf.map(x => card(x, false))}
-        {goals.length ? <Box marginTop={1}><Text dimColor>MILESTONE · ЗОРИЛГО</Text></Box> : null}
-        {goals.slice(0, 5).map(g => {
-          const [pct = '0', name = ''] = g.split('|')
-          const barW = narrow ? 6 : 12
-          const filled = Math.max(0, Math.min(barW, Math.round((Number(pct) / 100) * barW)))
-          return (
-            <Box key={`ms-${name}`} flexDirection="row" gap={1}>
-              <Text color={tone.event}>◆</Text>
-              <Box flexGrow={1} flexShrink={1}><Text wrap="truncate-end">{fit(name, Math.max(8, cols - barW - 9))}</Text></Box>
-              <Box flexShrink={0} flexDirection="row" gap={1}>
-                <Text><Text color={tone.ok}>{'▓'.repeat(filled)}</Text><Text color={tone.line}>{'░'.repeat(barW - filled)}</Text></Text>
-                <Text dimColor>{pct}%</Text>
-              </Box>
-            </Box>
-          )
-        })}
-        <Box marginTop={1} borderStyle="round" borderColor={tone.line} paddingX={1}>
-          <Input key="capture" label="＋ " placeholder="Барих — бодол, ажил, уулзалт… Enter → Inbox" submitLabel="барих"
-            onSubmit={value => void captureToInbox($, value)} />
-        </Box>
+        {tab === 'kanban' && board4 ? <Box key="kb-hint" paddingX={1}><Text color={C.muted} wrap="truncate-end">{LBL_KANBAN_HINT}</Text></Box> : null}
+        {tab === 'cal' ? captureBar('cal', 'Барих — бодол, ажил, уулзалт…') : null}
+        {tab === 'inbox' ? captureBar('inbox', 'Барих — бодол, линк, уулзалт…') : null}
       </Box>
     )
   })
@@ -1213,7 +2869,9 @@ export const register: Register = (on, options) => {
     const { value: list = [] } = await $.state.get(TASKS)
     const { value: hidden = false } = await $.state.get(HIDDEN)
     if (e.props.hasSurvey || list.length === 0 || hidden) return next(e)
-    const { Box, Button, Input, Text } = $.ui.resolve(e)
+    const els = $.ui.resolve(e)
+    const { Box, Button, Text } = els
+    const Input = 'Input' in els ? els.Input : undefined
     const { value: collapsed = false } = await $.state.get(COLLAPSED)
     const { value: commenting = '' } = await $.state.get(COMMENTING)
     const { value: confirming = '' } = await $.state.get(CONFIRMING)
@@ -1265,7 +2923,7 @@ export const register: Register = (on, options) => {
                   </Box>
                 )}
               </Box>
-              {commenting === t.title && t.file ? (
+              {commenting === t.title && t.file && Input ? (
                 <Box paddingLeft={2}>
                   <Input key={`input-${t.title}`} label="💬 " placeholder="Коммент бичээд Enter (Esc — болих)" submitLabel="хадгалах" autoFocus
                     onSubmit={value => void addComment($, t, value, member)} />
@@ -1290,7 +2948,9 @@ export const register: Register = (on, options) => {
     const { value: goals = [] } = await $.state.get(GOALS)
     const { value: health = '' } = await $.state.get(HEALTH)
     const { value: target = 'gtd' } = await $.state.get(TARGET)
-    const { Box, Button, Input, Text } = $.ui.resolve(e)
+    const els = $.ui.resolve(e)
+    const { Box, Button, Text } = els
+    const Input = 'Input' in els ? els.Input : undefined
     const today = localNow(await $.clock.now()).toISOString().slice(0, 10)
     const tone: Record<string, string> = { 'next-action': '#7AA2F7', 'in-progress': IN_PROGRESS, waiting: '#E0AF68', inbox: '#737AA2', completed: '#9ECE6A', done: '#9ECE6A' }
     const label: Record<string, string> = { 'next-action': 'хийх', 'in-progress': 'хийж буй', waiting: 'хүлээж буй', inbox: 'inbox', completed: 'дууссан', done: 'дууссан' }
@@ -1330,7 +2990,7 @@ export const register: Register = (on, options) => {
               </Box>
             )}
           </Box>
-          {commenting === t.title && t.file ? (
+          {commenting === t.title && t.file && Input ? (
             <Input key={`input-${t.title}`} label="💬 " placeholder="Коммент бичээд Enter" submitLabel="хадгалах" autoFocus
               onSubmit={value => void addComment($, t, value, member)} />
           ) : null}
@@ -1365,7 +3025,7 @@ export const register: Register = (on, options) => {
         <Box marginTop={1}><Text dimColor>МЕССЕЖ</Text></Box>
         <Box flexDirection="row" gap={1}>
           <Box flexShrink={0}><Button key="msg-target" label={`#${target} ⇄`} plain onPress={() => void $.state.set(TARGET, TARGETS[(TARGETS.indexOf(target) + 1) % TARGETS.length] ?? 'gtd')} /></Box>
-          <Input key="msg-input" placeholder="Agent руу мессеж бичээд Enter" submitLabel="илгээх" onSubmit={value => void sendToAgent($, target, value)} />
+          {Input ? <Input key="msg-input" placeholder="Agent руу мессеж бичээд Enter" submitLabel="илгээх" onSubmit={value => void sendToAgent($, target, value)} /> : null}
         </Box>
         {watching || feed.length ? (
           <Box flexDirection="column" marginTop={1}>

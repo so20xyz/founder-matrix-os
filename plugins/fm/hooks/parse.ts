@@ -300,3 +300,189 @@ export function parseRelease(stdout: string): 'released' | 'missing' | 'private'
   const why = line.replace(/^RELEASE\s*/, '').trim()
   return why === 'missing' || why === 'private' ? why : 'error'
 }
+
+// ── Цаглабар v2 (pane tabs): pure helpers, no `$` ──
+
+const SUP_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹'
+
+/** A count as superscript digits for the day strip ('' for 0): 7 → «⁷», 12 → «¹²». */
+export function sup(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return ''
+  return String(Math.floor(n)).split('').map(d => SUP_DIGITS[Number(d)] ?? '').join('')
+}
+
+/** Lit segments of a 10-segment bar: any progress lights at least one, 15% → 2, 10% → 1, 5% → 1, 100% → 10. */
+export function segLit(pct: number): number {
+  return pct > 0 ? Math.min(10, Math.max(1, Math.round(pct / 10))) : 0
+}
+
+/** A local "YYYY-MM-DD HH:MM" (or "…THH:MM") stamp as ms on the shifted clock localNow() reads; NaN without a time. */
+export function stampMs(stamp: string): number {
+  const m = (stamp ?? '').match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})/)
+  if (!m) return NaN
+  return Date.parse(`${m[1]}T${(m[2] ?? '0').padStart(2, '0')}:${m[3]}:00Z`)
+}
+
+/** Time since a local stamp: «11m», «2h 5m», «3d»; '' without a time (a stamp up to 2 min ahead reads «0m»). */
+export function fmtAgo(stamp: string, nowLocalMs: number): string {
+  const at = stampMs(stamp)
+  if (Number.isNaN(at) || nowLocalMs < at - 120000) return ''
+  const mins = Math.max(0, Math.floor((nowLocalMs - at) / 60000))
+  if (mins < 60) return `${mins}m`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ${mins % 60}m`
+  return `${Math.floor(hrs / 24)}d`
+}
+
+/**
+ * The registry role an owner string stands for: creative | developer | resource | area | project | finance | person | ''.
+ * Device words and «Agent» go (core); 💼/📁/📐 owners are project; itge.e / bd / me (and `people`) are a person.
+ */
+export function roleOf(owner: string, devices: string[] = [], people: string[] = []): string {
+  let raw = unquote(owner ?? '')
+  if (raw.startsWith('[[') && raw.endsWith(']]')) raw = (raw.slice(2, -2).split('|')[0] ?? '').split('/').pop() ?? ''
+  if (!raw) return ''
+  if (/^\s*(💼|📁|📐)/u.test(raw)) return 'project'
+  const c = core(raw, devices)
+  const w = c.split(' ').filter(Boolean)
+  if (['itge.e', 'bd', 'me', ...people.map(p => p.trim().toLowerCase()).filter(Boolean)].includes(c)) return 'person'
+  const has = (...keys: string[]) => keys.some(k => w.includes(k))
+  if (has('finance', 'санхүү')) return 'finance'
+  if (has('creative', 'design', 'designer')) return 'creative'
+  if (has('architect', 'developer', 'dev')) return 'developer'
+  if (has('wiki', 'resource', 'research')) return 'resource'
+  if (has('gtd', 'area')) return 'area'
+  if (has('project')) return 'project'
+  return ''
+}
+
+/**
+ * The Claude task-list steps that belong to a vault task this session started at `from` (local-shifted ms, the planFile
+ * marker): noted at or after `from`, and, when `until` (the task's completed stamp) has a time, not after that minute.
+ */
+export function planWindow<T extends { at: number }>(steps: T[], from: number, until: string): T[] {
+  const end = stampMs(until)
+  return steps.filter(s => s.at >= (from || 0) && (Number.isNaN(end) || s.at < end + 60000))
+}
+
+export const PLAN_OPEN = '<!-- fm:plan -->'
+export const PLAN_CLOSE = '<!-- /fm:plan -->'
+
+/**
+ * A task note with its managed «## Явц» block (`- [x]` / `- [ ]` per step between PLAN_OPEN and PLAN_CLOSE) rewritten in
+ * place: an existing block is replaced, else the block goes right under a «## Явц» heading, else a new heading + block is
+ * appended. Nothing outside the block changes; the note's line breaks (CRLF / LF) are kept.
+ */
+export function planBlock(text: string, steps: { subject: string; done: boolean }[]): string {
+  const eol = text.includes('\r\n') ? '\r\n' : '\n'
+  const block = [PLAN_OPEN, ...steps.map(s => `- [${s.done ? 'x' : ' '}] ${s.subject.replace(/\s+/g, ' ').trim()}`), PLAN_CLOSE].join(eol)
+  const a = text.indexOf(PLAN_OPEN)
+  const b = a < 0 ? -1 : text.indexOf(PLAN_CLOSE, a)
+  if (a >= 0 && b >= 0) return text.slice(0, a) + block + text.slice(b + PLAN_CLOSE.length)
+  const head = text.match(/^## Явц[ \t]*(?=\r?\n|$)/m)
+  if (head && head.index !== undefined) {
+    const at = head.index + head[0].length
+    return text.slice(0, at) + eol + block + text.slice(at)
+  }
+  return `${text.replace(/\s*$/, '')}${eol}${eol}## Явц${eol}${block}${eol}`
+}
+
+/** A duration as the elapsed labels read: «38m», «1h 12m», «3d»; '' when negative or not a number. */
+export function fmtSpan(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return ''
+  const mins = Math.floor(ms / 60000)
+  if (mins < 60) return `${mins}m`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ${mins % 60}m`
+  return `${Math.floor(hrs / 24)}d`
+}
+
+// 🔒 money in a description: «1,500,000₮», «(1сая₮)», «3 сая төгрөг», «$1,200»
+const MONEY = /\(?\s*[\d.,]+\s*(сая|мянга|тэрбум)?\s*(₮|төг(рөг)?)\s*\)?|\$\s?[\d.,]+|\(\s*\d+\s*сая₮\s*\)/gi
+
+/** A project description safe to show: money amounts dropped (🔒), spaces and the punctuation left dangling tidied. */
+export function sanitizeDesc(text: string): string {
+  return (text ?? '').replace(MONEY, ' ').replace(/\(\s*\)/g, ' ').replace(/\s+([,.;:)])/g, '$1').replace(/\s{2,}/g, ' ').trim()
+    .replace(/[\s,;:—–-]+$/, '').trim()
+}
+
+/**
+ * The last history line of an agent state note (`_system/fm/state/<role>.md`): the last «- YYYY-MM-DD HH:MM · dev · role · text»
+ * under «## ТҮҮХ», prefix stripped (only the date when the line has no dev / role parts); '' when there is none.
+ */
+export function lastHistoryLine(md: string): string {
+  const lines = (md ?? '').split(/\r?\n/)
+  const at = lines.findIndex(l => /^##\s+ТҮҮХ\s*$/.test(l))
+  if (at < 0) return ''
+  let last = ''
+  for (const l of lines.slice(at + 1)) {
+    if (/^#{1,2}\s/.test(l)) break
+    if (/^-\s+\d{4}-\d{2}-\d{2}/.test(l)) last = l
+  }
+  if (!last) return ''
+  const full = last.match(/^-\s+\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}\s+·\s+[^·]*·\s+[^·]*·\s+(.*)$/)
+  return (full ? full[1] ?? '' : last.replace(/^-\s+\d{4}-\d{2}-\d{2}(\s+\d{1,2}:\d{2})?\s*(·\s*)?/, '')).trim()
+}
+
+/** A skill for the V3 footer: every plugin prefix dropped except fm: («superpowers:brainstorming» → «brainstorming», «fm:relay» stays). */
+export function stripSkill(s: string): string {
+  const t = (s ?? '').trim()
+  return t.startsWith('fm:') ? t : t.replace(/^[^:\s]+:/, '')
+}
+
+const WEEKDAYS = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба']
+
+/** The date (YYYY-MM-DD) of the named weekday on or after `today`: «Пүрэв» on Fri 2026-10-09 → 2026-10-15; '' for no weekday name. */
+export function nextWeekday(today: string, wdName: string): string {
+  const want = WEEKDAYS.findIndex(w => w.toLowerCase() === (wdName ?? '').trim().toLowerCase())
+  const d = new Date(`${today}T00:00:00Z`)
+  if (want < 0 || Number.isNaN(d.getTime())) return ''
+  d.setUTCDate(d.getUTCDate() + ((want - d.getUTCDay() + 7) % 7))
+  return d.toISOString().slice(0, 10)
+}
+
+/** What V5 suggests for a capture: its kind (glyph), the route (task | note | agent | project, '' when masked) and the details. */
+export type CaptureGuess = { kind: string; route: string; agent?: string; project?: string; due?: string; masked: boolean }
+
+// 🔒 a finance word together with a digit masks the capture (shown as «хувийн санхүү», routed only through /fm:inbox)
+const FINANCE_RE = /₮|төгрөг|төлбөр|зээл|санхүү/i
+const URL_RE = /https?:\/\/\S+|(^|[^\w.@-])[\w-]+(\.[\w-]+)*\.(com|io|org|net|mn|app|dev|co|me|ai|so|site)(\/\S*)?(?![\w.])/i
+const CREATIVE_RE = /cover|moodboard|баннер|дизайн|лого|carousel|зураг|figma/i
+const RESEARCH_RE = /судал|судл|research|fact/i
+const CODE_RE = /код|plugin|bug|deploy/i
+// a size («1200×628») makes a creative word a concrete spec to do: a task, not a hand-off
+const SIZE_RE = /\d{2,5}\s*[×xх]\s*\d{2,5}/
+// a weekday name, with the locative «-т / -д» allowed («Пүрэвт»)
+const WD_RE = new RegExp(`(^|[^\\p{L}])(${WEEKDAYS.join('|')})[тд]?(?![\\p{L}])`, 'iu')
+const HHMM_RE = /(?<![\d:])([01]?\d|2[0-3]):([0-5]\d)(?![\d:])/
+
+/**
+ * V5's suggestion for one capture (frontmatter `route:` wins in the caller): a URL → Note; creative / research / code words →
+ * Агент (🎨 Creative / 📚 Wiki / 🏛️ Architect); a 02-Projects folder name or үнэ / студи / төсөл → Төсөл; a weekday, «HH:MM»
+ * or уулзалт → Task due on that weekday (on or after `today`) at that time; else Task. A finance word with a digit masks it.
+ * The kind: Telegram → chat, URL → clip, creative → idea, weekday / time / уулзалт → meet, else memo.
+ */
+export function classifyCapture(c: { title: string; body: string; src?: string; today: string }, projectNames: string[]): CaptureGuess {
+  const text = `${c.title ?? ''}\n${c.body ?? ''}`
+  const url = URL_RE.test(text)
+  const creative = CREATIVE_RE.test(text)
+  const wd = text.match(WD_RE)?.[2] ?? ''
+  const tm = text.match(HHMM_RE)
+  const meet = !!wd || !!tm || /уулзалт/i.test(text)
+  const kind = /telegram/i.test(c.src ?? '') ? 'chat' : url ? 'clip' : creative ? 'idea' : meet ? 'meet' : 'memo'
+  if (FINANCE_RE.test(text) && /\d/.test(text)) return { kind, route: '', masked: true }
+  if (url) return { kind, route: 'note', masked: false }
+  if (creative && !SIZE_RE.test(text)) return { kind, route: 'agent', agent: '🎨 Creative', masked: false }
+  if (RESEARCH_RE.test(text)) return { kind, route: 'agent', agent: '📚 Wiki', masked: false }
+  if (CODE_RE.test(text)) return { kind, route: 'agent', agent: '🏛️ Architect', masked: false }
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const project = projectNames.filter(p => p.trim().length >= 3 && new RegExp(`(^|[^\\p{L}\\p{N}])${esc(p.trim())}(?![\\p{L}\\p{N}])`, 'iu').test(text))
+    .sort((a, b) => b.length - a.length)[0]
+  if (project || /үнэ|студи|төсөл/i.test(text)) return { kind, route: 'project', ...(project ? { project: project.trim() } : {}), masked: false }
+  if (meet) {
+    const day = wd ? nextWeekday(c.today, wd) : tm ? c.today : ''
+    const hhmm = tm ? `${(tm[1] ?? '').padStart(2, '0')}:${tm[2] ?? '00'}` : ''
+    return { kind, route: 'task', ...(day ? { due: hhmm ? `${day} ${hhmm}` : day } : {}), masked: false }
+  }
+  return { kind, route: 'task', masked: false }
+}

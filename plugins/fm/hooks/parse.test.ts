@@ -216,3 +216,117 @@ test('relay release lines', () => {
   expect(parseRelease('RELEASE error')).toBe('error')
   expect(parseRelease('')).toBe('error')
 })
+
+import { fmtAgo, planBlock, planWindow, roleOf, segLit, stampMs, sup } from './parse'
+
+test('sup and segLit (day strip counts, 10-segment goal bar)', () => {
+  expect(sup(0)).toBe('')
+  expect(sup(7)).toBe('⁷')
+  expect(sup(12)).toBe('¹²')
+  expect([0, 5, 10, 15, 62, 100, 140].map(segLit)).toEqual([0, 1, 1, 2, 6, 10, 10])
+})
+
+test('fmtAgo reads local stamps on the shifted clock', () => {
+  const now = stampMs('2026-10-09 10:41')
+  expect(fmtAgo('2026-10-09 10:30', now)).toBe('11m')
+  expect(fmtAgo('2026-10-09 08:36', now)).toBe('2h 5m')
+  expect(fmtAgo('2026-10-06 09:00', now)).toBe('3d')
+  expect(fmtAgo('2026-10-09T10:42', now)).toBe('0m')
+  expect(fmtAgo('2026-10-09', now)).toBe('')
+  expect(fmtAgo('', now)).toBe('')
+})
+
+test('roleOf maps owners to registry roles', () => {
+  expect(roleOf('"🎨 Creative"')).toBe('creative')
+  expect(roleOf('🏛️ Architect Agent · PC')).toBe('developer')
+  expect(roleOf('Tool Developer (PC)')).toBe('developer')
+  expect(roleOf('📚 Wiki')).toBe('resource')
+  expect(roleOf('📥 GTD')).toBe('area')
+  expect(roleOf('💼 Project')).toBe('project')
+  expect(roleOf('📁 Alpha Site')).toBe('project')
+  expect(roleOf('🔒 Finance')).toBe('finance')
+  expect(roleOf('itge.e')).toBe('person')
+  expect(roleOf('Bat', [], ['bat'])).toBe('person')
+  expect(roleOf('claude')).toBe('')
+  expect(roleOf('')).toBe('')
+})
+
+test('planWindow: the steps since this session started its task, up to the completed minute of the task', () => {
+  const steps = [{ id: '1', at: stampMs('2026-10-09 09:00') }, { id: '2', at: stampMs('2026-10-09 10:31') }, { id: '3', at: stampMs('2026-10-09 11:05') }]
+  expect(planWindow(steps, stampMs('2026-10-09 10:30'), '').map(s => s.id)).toEqual(['2', '3'])
+  expect(planWindow(steps, stampMs('2026-10-09 10:30'), '2026-10-09 10:31').map(s => s.id)).toEqual(['2'])
+  expect(planWindow(steps, 0, '2026-10-09').map(s => s.id)).toEqual(['1', '2', '3'])
+})
+
+test('planBlock rewrites only the managed «## Явц» block', () => {
+  const steps = [{ subject: 'Spec унших', done: true }, { subject: 'V1 кодлох', done: false }]
+  const block = '<!-- fm:plan -->\n- [x] Spec унших\n- [ ] V1 кодлох\n<!-- /fm:plan -->'
+  // appended with a heading when the note has none
+  expect(planBlock('---\ntype: task\n---\n\n# T\n', steps)).toBe(`---\ntype: task\n---\n\n# T\n\n## Явц\n${block}\n`)
+  // under an existing heading, the rest untouched
+  expect(planBlock('# T\n\n## Явц\n\n## Үр дүн\nx\n', steps)).toBe(`# T\n\n## Явц\n${block}\n\n## Үр дүн\nx\n`)
+  // an existing block is replaced in place
+  const old = `# T\n\n## Явц\n<!-- fm:plan -->\n- [ ] Spec унших\n<!-- /fm:plan -->\nгар бичсэн мөр\n`
+  expect(planBlock(old, steps)).toBe(`# T\n\n## Явц\n${block}\nгар бичсэн мөр\n`)
+  // CRLF notes stay CRLF
+  expect(planBlock('# T\r\n\r\n## Явц\r\n', steps)).toBe(`# T\r\n\r\n## Явц\r\n${block.replace(/\n/g, '\r\n')}\r\n`)
+})
+
+import { fmtSpan, lastHistoryLine, sanitizeDesc } from './parse'
+
+test('fmtSpan formats durations like the elapsed labels', () => {
+  expect(fmtSpan(38 * 60000)).toBe('38m')
+  expect(fmtSpan(72 * 60000)).toBe('1h 12m')
+  expect(fmtSpan(3 * 86400000 + 5)).toBe('3d')
+  expect(fmtSpan(-1)).toBe('')
+  expect(fmtSpan(NaN)).toBe('')
+})
+
+test('sanitizeDesc drops 🔒 money amounts from a project description', () => {
+  expect(sanitizeDesc('Брэндийн вэб сайт — Figma дизайн → Framer')).toBe('Брэндийн вэб сайт — Figma дизайн → Framer')
+  expect(sanitizeDesc('Сургалт зохион байгуулах (1сая₮)')).toBe('Сургалт зохион байгуулах')
+  expect(sanitizeDesc('Төсөв 1,500,000₮, хугацаа 2 сар')).toBe('Төсөв, хугацаа 2 сар')
+  expect(sanitizeDesc('Орлого 3 сая төгрөг болон $1,200 зардал')).toBe('Орлого болон зардал')
+  expect(sanitizeDesc('')).toBe('')
+})
+
+test('lastHistoryLine keeps the text of the last «## ТҮҮХ» line', () => {
+  const md = '# Creative\n\n## ОДОО · 2026-10-09\n- 2026-10-09 09:00 · PC · Creative · ОДОО мөр\n\n## ТҮҮХ\n- 2026-10-08 10:00 · PC · Creative · Хуучин\n- 2026-10-09 11:20 · Mac · Creative Director · Hero-ийн 2 хувилбар бэлэн · v2\n'
+  expect(lastHistoryLine(md)).toBe('Hero-ийн 2 хувилбар бэлэн · v2')
+  expect(lastHistoryLine('## ТҮҮХ\r\n- 2026-10-09 12:00 CMS-д 2 талбар нэмнэ\r\n\r\n## Бусад\r\n- 2026-10-10 · өөр\r\n')).toBe('CMS-д 2 талбар нэмнэ')
+  expect(lastHistoryLine('# no history\n- 2026-10-09 10:00 · PC · x · y\n')).toBe('')
+  expect(lastHistoryLine('## ТҮҮХ\n\n')).toBe('')
+})
+
+import { classifyCapture, nextWeekday, stripSkill } from './parse'
+
+test('stripSkill keeps fm: only; nextWeekday finds the weekday on or after today', () => {
+  expect(['superpowers:brainstorming', 'fm:relay', 'obsidian:json-canvas', 'plain'].map(stripSkill)).toEqual(['brainstorming', 'fm:relay', 'json-canvas', 'plain'])
+  expect(nextWeekday('2026-10-09', 'Пүрэв')).toBe('2026-10-15')
+  expect(nextWeekday('2026-10-09', 'Баасан')).toBe('2026-10-09')
+  expect(nextWeekday('2026-10-09', 'Даваа')).toBe('2026-10-12')
+  expect(nextWeekday('2026-10-09', 'x')).toBe('')
+})
+
+test('classifyCapture: the 5 design samples → Task / Note / Агент / Task / Төсөл; finance is masked', () => {
+  const projects = ['acme Website', 'Inai Website', 'Lab']
+  const c = (title: string, src = 'tsaglabar') => classifyCapture({ title, body: title, src, today: '2026-10-09' }, projects)
+  const a = c('acme-ийн баннерын хэмжээ 1200×628', 'telegram')
+  expect([a.route, a.kind, a.masked]).toEqual(['task', 'chat', false])
+  const b = c('framer.com/marketplace — portfolio template', 'clip')
+  expect([b.route, b.kind]).toEqual(['note', 'clip'])
+  const d = c('Season 2 cover-д 3 moodboard хувилбар')
+  expect([d.route, d.kind, d.agent]).toEqual(['agent', 'idea', '🎨 Creative'])
+  const e = c('Пүрэв 15:00 — Inai багтай уулзалт')
+  expect([e.route, e.kind, e.due]).toEqual(['task', 'meet', '2026-10-15 15:00'])
+  const f = c('Вэб студийн үнийн бүтцийн санаа')
+  expect([f.route, f.kind, f.project]).toEqual(['project', 'memo', undefined])
+  expect(c('acme Website hero засах').project).toBe('acme Website')
+  expect(c('Цаглабар label').route).toBe('task')
+  expect(c('Plugin bug засах').agent).toBe('🏛️ Architect')
+  expect(c('Эх сурвалж судлах').agent).toBe('📚 Wiki')
+  const m = c('Сарын төлбөр 450000₮ шилжүүлэх')
+  expect([m.masked, m.route]).toEqual([true, ''])
+  expect(c('14:30 залгах').due).toBe('2026-10-09 14:30')
+  expect(c('https://example.com/x').route).toBe('note')
+})
