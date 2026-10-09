@@ -14,7 +14,7 @@ const HIDDEN = { plugin: 'fm', key: 'isHidden' } as const
 const cache = new Map<string, { mtime: number; task: VaultTask | null }>()
 
 export const register: Register = (on, options) => {
-  const vault = String((options as Record<string, unknown>).vault_path ?? '').replace(/\\/g, '/').replace(/\/$/, '')
+  const configured = String((options as Record<string, unknown>).vault_path ?? '')
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'tasks', description: 'Энэ дүрийн vault task-ын самбарыг харуулах/нуух' })
@@ -23,6 +23,14 @@ export const register: Register = (on, options) => {
 
   // every turn end re-reads the Tasks folder (changed files only)
   on('turn.complete', async ($, e, next) => {
+    // vault: plugin option, else env FMOS_VAULT, else ~/.fmos/config.json "vault" (setup writes it)
+    let raw = configured || (await $.env.get('FMOS_VAULT')) || ''
+    if (!raw) {
+      const home = (await $.env.get('USERPROFILE')) || (await $.env.get('HOME')) || ''
+      const cfg = home ? await $.fs.read(`${home}/.fmos/config.json`).catch(() => '') : ''
+      try { raw = JSON.parse(typeof cfg === 'string' && cfg ? cfg : '{}').vault ?? '' } catch { raw = '' }
+    }
+    const vault = String(raw).replace(/\\/g, '/').replace(/\/$/, '')
     if (!vault) return next(e)
     const sid = await $.session.id()
     const regText = await $.fs.read(`${vault}/_system/fm/registry.json`).catch(() => '')
