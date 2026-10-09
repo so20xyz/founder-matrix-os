@@ -130,10 +130,80 @@ async function loadCalendar($: EngineInterface) {
       const [date = '', time = ''] = when.split(/[ T]/)
       const project = field(fm, 'project').replace(/^\[\[|\]\]$/g, '').split('|')[0].split('/').pop() ?? ''
       const activity = field(fm, 'activity').replace(/^\[\[|\]\]$/g, '').split('|')[0].split('/').pop() ?? ''
-      items.push({ kind, title: f.name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), project, activity, priority: field(fm, 'priority'), file: `${dir}/${f.name}` })
+      // research: "[[04-Resources/Research/<topic>/<hub>]]" → <topic> (the hub note may be named apart from its folder)
+      const segs = field(fm, 'research').replace(/^\[\[|\]\]$/g, '').split('|')[0].split('#')[0].replace(/\.md$/, '').split('/').filter(Boolean)
+      const ri = segs.indexOf('Research')
+      const research = (ri >= 0 && segs[ri + 1] ? segs[ri + 1] : segs.length > 1 ? segs[segs.length - 2] : segs[0] ?? '').trim()
+      items.push({ kind, title: f.name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), project, activity, priority: field(fm, 'priority'), research, file: `${dir}/${f.name}` })
     }
   }
   await $.state.set({ plugin: 'fm', key: 'cal' }, items)
+  await loadResearchHub($, vault)
+}
+
+/** Research session (folder under 04-Resources/Research/<topic>): find its hub note, keep file + status (frontmatter only). */
+async function loadResearchHub($: EngineInterface, vault: string) {
+  const { value: dir = '' } = await $.state.get({ plugin: 'fm', key: 'projDir' })
+  const topic = dir.match(/^04-Resources\/Research\/([^/]+)/)?.[1] ?? ''
+  if (!topic) {
+    await $.state.set({ plugin: 'fm', key: 'researchHub' }, { file: '', status: '', open: 0 })
+    return
+  }
+  const base = `${vault}/04-Resources/Research/${topic}`
+  const frontOf = async (file: string) => {
+    const body = await $.fs.read(file).catch(() => '')
+    const t = typeof body === 'string' ? body : ''
+    return t.startsWith('---') ? t.slice(0, Math.max(0, t.indexOf('\n---', 3))) : ''
+  }
+  // hub = <topic>.md; else the research/project note whose `project:` does not point back into Research
+  // (sub-notes link their hub, e.g. 1 хувь/3 Үйлчилгээ → project: [[…/1 хувь]]); an alias naming the topic wins
+  let file = (await $.fs.exists(`${base}/${topic}.md`)) ? `${base}/${topic}.md` : ''
+  if (!file) {
+    const entries = await $.fs.list(base).catch(() => [])
+    for (const f of entries) {
+      if (f.kind !== 'file' || !f.name.endsWith('.md') || f.name.startsWith('_')) continue
+      const fm = await frontOf(`${base}/${f.name}`)
+      if (!/^type:[ \t]*"?(research|project)"?[ \t]*$/m.test(fm) || /^project:.*04-Resources\/Research\//m.test(fm)) continue
+      if (!file) file = `${base}/${f.name}`
+      if (fm.includes(topic)) { file = `${base}/${f.name}`; break }
+    }
+  }
+  const status = file ? ((await frontOf(file)).match(/^status:[ \t]*"?([^"\r\n]*)"?/m)?.[1] ?? '').trim() : ''
+  let open = 0
+  for (const f of await $.fs.list(`${vault}/01-GTD/Tasks`).catch(() => [])) {
+    if (f.kind !== 'file' || !f.name.endsWith('.md')) continue
+    const fm = await frontOf(`${vault}/01-GTD/Tasks/${f.name}`)
+    if (!new RegExp(`^research:.*Research/${topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`, 'm').test(fm)) continue
+    if (!/^status:[ \t]*"?(completed|done|cancelled)"?[ \t]*$/m.test(fm)) open++
+  }
+  await $.state.set({ plugin: 'fm', key: 'researchHub' }, { file, status, open })
+}
+
+/** Close a research — the button press is itge.e's confirmation. Hub frontmatter only: status: done, closed: today. */
+async function closeResearch($: EngineInterface) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  const { value: dir = '' } = await $.state.get({ plugin: 'fm', key: 'projDir' })
+  const { value: hub = { file: '', status: '' } } = await $.state.get({ plugin: 'fm', key: 'researchHub' })
+  if (!vault || !dir.startsWith('04-Resources/Research/') || !hub.file.startsWith(`${vault}/04-Resources/Research/`)) {
+    $.ui.toast('⚠ Судалгааны hub note олдсонгүй')
+    return
+  }
+  const body = await $.fs.read(hub.file).catch(() => '')
+  const cur = typeof body === 'string' ? body : ''
+  const end = cur.startsWith('---') ? cur.indexOf('\n---', 3) : -1
+  if (end < 0) {
+    $.ui.toast('⚠ Hub note-д frontmatter алга')
+    return
+  }
+  const eol = cur.includes('\r\n') ? '\r\n' : '\n'
+  const day = localNow(await $.clock.now()).toISOString().slice(0, 10)
+  let fm = cur.slice(0, end)
+  fm = /^status:.*$/m.test(fm) ? fm.replace(/^status:.*$/m, 'status: done') : fm.replace(/^---/, m => `${m}${eol}status: done`)
+  fm = /^closed:.*$/m.test(fm) ? fm.replace(/^closed:.*$/m, `closed: ${day}`) : fm.replace(/^status:.*$/m, m => `${m}${eol}closed: ${day}`)
+  if (/^updated:.*$/m.test(fm)) fm = fm.replace(/^updated:.*$/m, `updated: ${day}`)
+  await $.fs.write(hub.file, fm + cur.slice(end))
+  await $.state.set({ plugin: 'fm', key: 'researchHub' }, { file: hub.file, status: 'done', open: 0 })
+  $.ui.toast(`✅ Судалгаа хаагдлаа · status: done · closed: ${day}`)
 }
 
 /** Schedule an undated / overdue task: write its `due`. */
@@ -234,6 +304,7 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
   const regText = await $.fs.read(`${vault}/_system/fm/registry.json`).catch(() => '')
   let names: string[] = []
   let project = ''
+  let folder = ''
   try {
     const reg = JSON.parse(typeof regText === 'string' ? regText : '{}')
     const s = reg.sessions?.[sid]
@@ -241,6 +312,9 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
       const role = reg.roles?.[s.role] ?? {}
       // a project session names its project folder (sessions[sid].folder); a project-specific role may too
       const where = typeof s.folder === 'string' ? s.folder : s.role === 'project' && typeof s.project === 'string' ? s.project : typeof role.project === 'string' ? role.project : ''
+      // vault-relative session folder (a research session: 04-Resources/Research/<topic>)
+      folder = where.replace(/\\/g, '/').replace(/\/$/, '')
+      if (folder.startsWith(`${vault}/`)) folder = folder.slice(vault.length + 1)
       project = where.replace(/\/$/, '').split('/').pop() ?? ''
       if (!project && s.role === 'project' && typeof s.title === 'string') project = s.title.replace(/^[^\p{L}\p{N}]+/u, '').trim()
       names = [s.title, role.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
@@ -250,6 +324,7 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
   }
   await $.state.set(NAMES, names)
   await $.state.set(PROJ, project)
+  await $.state.set({ plugin: 'fm', key: 'projDir' }, folder)
   return { vault, names, project }
 }
 
@@ -357,8 +432,12 @@ export const register: Register = (on, options) => {
     // project session → its project's tasks; agent session (not GTD) → that agent's tasks; GTD / unknown → itge.e's own
     const personal = !roleCores.length || roleCores.some(n => /gtd|area/.test(n))
     const projKey = proj.toLowerCase()
+    // research session (04-Resources/Research/<topic>): its tasks link it via `research:` (topic folder, or a bare hub-note link)
+    const { value: hub = { file: '', status: '' } } = await $.state.get({ plugin: 'fm', key: 'researchHub' })
+    const hubName = (hub.file.split('/').pop() ?? '').replace(/\.md$/, '').toLowerCase()
+    const ofResearch = (x: CalItem) => !!x.research && (x.research.toLowerCase() === projKey || x.research.toLowerCase() === hubName)
     const isMine = (x: CalItem) => projKey
-      ? x.project.toLowerCase() === projKey || (x.kind === 'event' && !x.project && x.title.toLowerCase().includes(projKey))
+      ? x.project.toLowerCase() === projKey || ofResearch(x) || (x.kind === 'event' && !x.project && x.title.toLowerCase().includes(projKey))
       : personal ? x.kind === 'event' || meRe.test(x.owner) : roleCores.some(n => coreName(x.owner).includes(n))
     const scopeLabel = projKey ? `💼 ${proj}` : personal ? '👤 миний' : (roleNames[0] || 'agent')
     const all = cal
@@ -485,6 +564,9 @@ export const register: Register = (on, options) => {
       const total = tasks.length + done.length
       const pct = total ? Math.round((done.length / total) * 100) : 0
       const fill = Math.round(pct / 5)
+      // never automatic: ≥1 task and all completed → suggest closing; the button press is itge.e's confirmation
+      const isResearch = !!hub.file
+      const canClose = isResearch && hub.status === 'active' && (hub.open ?? 0) === 0 && tasks.length === 0 && done.length > 0
       const nextEv = cal.filter(x => x.kind === 'event' && x.date >= today).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0]
       const late = tasks.filter(x => x.date && x.date < today)
       const byDate = (a: CalItem, b: CalItem) => (a.date || '9').localeCompare(b.date || '9')
@@ -511,7 +593,7 @@ export const register: Register = (on, options) => {
       return (
         <Box flexDirection="column" paddingX={1}>
           <Box flexDirection="row" justifyContent="space-between">
-            <Text><Text bold>💼 {proj}</Text><Text color={tone.ok}>  ● Active</Text></Text>
+            <Text><Text bold>{isResearch ? '🔬' : '💼'} {proj}</Text><Text color={tone.ok}>{isResearch && hub.status === 'done' ? '  ✓ Done' : '  ● Active'}</Text></Text>
             <Box flexDirection="row" gap={2}>
               <Button key="pt-prev" label="‹" plain onPress={() => void $.state.set(CAL_WEEK, week - 1)} />
               <Button key="pt-now" label="өнөөдөр" plain onPress={() => { void $.state.set(CAL_WEEK, 0); void $.state.set(CAL_DAY, '') }} />
@@ -525,6 +607,12 @@ export const register: Register = (on, options) => {
             <Text color={tone.ok}>{'▓'.repeat(fill)}</Text><Text color={tone.line}>{'░'.repeat(20 - fill)}</Text>
             <Text dimColor>{done.length}/{total} · {pct}%</Text>
           </Box>
+          {canClose ? (
+            <Box flexDirection="row" gap={1}>
+              <Text color={tone.ok}>✅ Бүх task дууссан — судалгааг хаах уу?</Text>
+              <Button key="pt-close-research" label="✓ хаах" plain onPress={() => void closeResearch($)} />
+            </Box>
+          ) : null}
           {nextEv ? <Text><Text color={tone.event}>◆ Дараагийн: </Text>{nextEv.title}<Text dimColor> · {nextEv.date.slice(5)}{nextEv.time ? ` ${nextEv.time}` : ''}</Text></Text> : null}
           <Box flexDirection="row" marginTop={1} gap={1}>
             {days.map((d, n) => {

@@ -40,11 +40,14 @@ python3 "$R/relay.py" send <суваг|@group|all> "текст"      # сува�
 python3 "$R/relay.py" send <суваг> --file <зам>             # олон мөрт тайлан (нэг мөр команд)
 printf '%s' "$TEXT" | python3 "$R/relay.py" send <суваг> -  # stdin-ээс
 python3 "$R/relay.py" next "дараагийн алхам"               # энэ дүрийн baton-д тогтоох
-python3 "$R/relay.py" task "Гарчиг" --owner "<сешний title>" [--project "<02-Projects/... note>"] [--due YYYY-MM-DD]
+python3 "$R/relay.py" task "Гарчиг" --owner "<сешний title>" [--project "<02-Projects/... note>"] [--research "<судалгаа>"] [--due YYYY-MM-DD]
+python3 "$R/relay.py" research-status                       # судалгаа бүрийн status + task тоо, «✅ хаах санал» (зөвхөн уншина)
 python3 "$R/relay.py" who                                   # бүртгэлтэй сешнүүд
 python3 "$R/relay.py" hub                                   # _system/STATUS.md-ийг baton-уудаас дахин үүсгэх
 python3 "$R/relay.py" sync-discord                          # ангилал, суваг (юу ч устгахгүй, хуучныг Archive руу)
 ```
+
+**Судалгааны task (`--research`):** судалгаа = Resource (`04-Resources/Research/<сэдэв>/`, hub = сэдэвтэй ижил нэртэй note). `--research`-д сэдэв («Мөөгний зах зээл»), hub-ийн нэр («1 хувь») эсвэл vault зам өгөхөд task-ийн frontmatter-т `research: "[[04-Resources/Research/<сэдэв>/<hub>]]"` бичигдэнэ; олдохгүй бол байгаагаар нь бичээд ⚠️ анхааруулна. `research-status` нь hub бүрийн (`type: research`) `status`, холбоотой task-уудын нээлттэй/дууссан тоог харуулна; `status: active`, ≥1 task, бүгд `completed` бол «✅ хаах санал». Хаалт автомат биш — itge.e батласны дараа л hub-д `status: done` + `closed: YYYY-MM-DD`.
 
 ### team - багийн сервер (хувийнхаас тусдаа)
 

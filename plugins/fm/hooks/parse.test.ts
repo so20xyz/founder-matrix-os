@@ -3,10 +3,11 @@ import { parseTask, rank } from './parse'
 
 const note = (fm: string) => `---\n${fm}\n---\n\n# x\n`
 
-test('open task parsed, closed and non-task skipped', () => {
+test('open and completed tasks parsed, non-task skipped', () => {
   expect(parseTask('A.md', note('type: task\nstatus: next-action\nowner: "itge.e"\ndue: 2026-10-31'))).toEqual(
     { title: 'A', status: 'next-action', due: '2026-10-31', owner: 'itge.e' })
-  expect(parseTask('B.md', note('type: task\nstatus: completed'))).toBeNull()
+  expect(parseTask('B.md', note('type: task\nstatus: completed'))).toEqual(
+    { title: 'B', status: 'completed', due: '', owner: '', updated: '' })
   expect(parseTask('C.md', note('type: note\nstatus: inbox'))).toBeNull()
   expect(parseTask('D.md', 'no frontmatter')).toBeNull()
 })

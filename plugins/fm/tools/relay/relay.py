@@ -15,6 +15,7 @@ Commands:
   relay.py send TO -                 … the message is read from stdin
   relay.py gsend TO "title" [body]   old git transport: TO = all | @<group> | <session-name>
   relay.py who                       show registry
+  relay.py research-status           read-only: each 04-Resources/Research hub's status + linked task counts, «✅ хаах санал»
 
 Data location (see fmconfig.py): ~/.fmos/config.json {"vault": ...} or env FM_VAULT → vault mode, all data in
 <vault>/_system/fm/ (registry.json, channels.json, discord.json, state/<project>.md) and NO git. Without a config the
@@ -586,26 +587,113 @@ def d_watch(sid, every=20):
                 print(f"#{n} · {who}: " + m["content"].replace("\n", " ⏎ ")[:600], flush=True)
 
 
+RESEARCH_DIR = Path("04-Resources") / "Research"  # судалгаа = Resource, төсөл биш (decision 2026-10-09)
+
+
+def _tasks_dir(vault):
+    tdir = vault / "01-GTD" / "Tasks"
+    for old in (vault / "00-GTD" / "Tasks", vault / "02-GTD" / "tasks"):  # одоогийн / хуучин layout (шилжилтийн хамгаалалт)
+        if not tdir.is_dir() and old.is_dir():
+            tdir = old
+    return tdir
+
+
+def _fm(p):
+    """Note frontmatter → {key: str | [str]}: top-level keys only, quotes stripped — type/status/project/research/
+    aliases/up-д хангалттай (yaml хамааралгүй). Уншигдахгүй / frontmatter-гүй → {}."""
+    try: t = Path(p).read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeDecodeError): return {}
+    end = t.find("\n---", 3) if t.startswith("---") else -1
+    if end < 0: return {}
+    out = {}; key = None
+    for ln in t[3:end].splitlines():
+        if key and _re.match(r"^\s*-\s", ln):
+            if not isinstance(out.get(key), list): out[key] = []
+            out[key].append(ln.split("-", 1)[1].strip().strip("\"'")); continue
+        m = _re.match(r"^([^\s#][^:]*):(?:\s+(.*))?$", ln)
+        if not m: continue
+        key, v = m.group(1).strip(), (m.group(2) or "").strip()
+        if v.startswith("[") and not v.startswith("[[") and v.endswith("]"):
+            out[key] = [x.strip().strip("\"'") for x in v[1:-1].split(",") if x.strip()]
+        else: out[key] = v.strip("\"'")
+    return out
+
+
+def _research_hub(d):
+    """04-Resources/Research/<сэдэв>/ → hub note (decision 2026-10-09): the note named like the folder, else the note
+    whose aliases list the folder name («Бизнесийн орлогоос 1 хувь төлөх/1 хувь.md»), else the one whose up is the
+    Research index. Sub-notes are type: research too, so type alone never picks the hub. None → no hub."""
+    if (d / f"{d.name}.md").is_file(): return d / f"{d.name}.md"
+    notes = [(p, _fm(p)) for p in sorted(d.glob("*.md")) if not p.name.startswith("_")]
+    for p, m in notes:
+        al = m.get("aliases") or []
+        if d.name in ([al] if isinstance(al, str) else al): return p
+    for p, m in notes:  # sub-notes point project: at their own hub — the hub does not
+        if m.get("type") in ("research", "project") and RESEARCH_DIR.as_posix() not in (m.get("project") or ""): return p
+    return None
+
+
+def _research_hubs(vault):
+    """{сэдэв: (hub path, hub frontmatter)} for every 04-Resources/Research/<сэдэв>/ that has a hub."""
+    root = vault / RESEARCH_DIR; out = {}
+    for d in (sorted(root.iterdir()) if root.is_dir() else []):
+        if not d.is_dir() or d.name.startswith((".", "_")): continue
+        h = _research_hub(d)
+        if h: out[d.name] = (h, _fm(h))
+    return out
+
+
+def _research_topic(hubs, ref):
+    """research ref → сэдэв (key of hubs) or None. ref = сэдэв («Мөөгний зах зээл»), hub-ийн нэр / alias («1 хувь»),
+    or a vault path / [[wikilink]] (absolute or 04-Resources/Research/…, .md or not) to anything inside the topic folder."""
+    s = ref.strip().strip("\"'")
+    if s.startswith("[[") and s.endswith("]]"): s = s[2:-2]
+    s = s.split("|")[0].split("#")[0].strip().replace("\\", "/")
+    if s.lower().endswith(".md"): s = s[:-3]
+    parts = [x for x in s.split("/") if x]
+    for i in range(len(parts) - 1):  # <vault>/04-Resources/Research/… эсвэл 04-Resources/Research/… → <сэдэв>/…
+        if parts[i].casefold() == "04-resources" and parts[i + 1].casefold() == "research":
+            parts = parts[i + 2:]; break
+    if not parts: return None
+    k = parts[0].casefold()
+    hit = next((t for t in hubs if t.casefold() == k), None)
+    if hit or len(parts) > 1: return hit
+    for t, (h, m) in hubs.items():
+        al = m.get("aliases") or []
+        if k == h.stem.casefold() or k in [a.casefold() for a in ([al] if isinstance(al, str) else al)]: return t
+    return None
+
+
+def _research_link(vault, ref, hubs=None):
+    """--research → ("[[04-Resources/Research/<сэдэв>/<hub>]]", True); unresolved → (ref as given in [[ ]], False)."""
+    hubs = _research_hubs(vault) if hubs is None else hubs
+    t = _research_topic(hubs, ref)
+    if t: return f"[[{(RESEARCH_DIR / t / hubs[t][0].stem).as_posix()}]]", True
+    r = ref.strip()
+    return (r if r.startswith("[[") else f"[[{r}]]"), False
+
+
 def d_task(args, sid):
     """GTD task (itge.e 2026-10-05): PARA has no tasks — a task is created on purpose, owned by a dural (session role),
     and the owner is notified in its Discord channel. Usage:
-    relay.py task "<гарчиг>" --owner "<сешний title>" [--project "<02-Projects/... note>"] [--status next-action] [--prio 🟡] [--due YYYY-MM-DD] [--body "..."]"""
+    relay.py task "<гарчиг>" --owner "<сешний title>" [--project "<02-Projects/... note>"] [--research "<судалгаа>"] [--status next-action] [--prio 🟡] [--due YYYY-MM-DD] [--body "..."]
+    --research (decision 2026-10-09): сэдэв («Мөөгний зах зээл»), hub-ийн нэр («1 хувь») эсвэл vault зам → research: "[[04-Resources/Research/<сэдэв>/<hub>]]"."""
     def opt(k, d=""):
         return args[args.index(k) + 1] if k in args else d
     title = args[0]; owner = opt("--owner", fmconfig.DEFAULT_OWNER); status = opt("--status", "next-action")
     vault = fmconfig.vault_dir()
     safe = _re.sub(r'[\\/:*?"<>|]', "-", title)[:80]
-    tdir = vault / "01-GTD" / "Tasks"
-    for old in (vault / "00-GTD" / "Tasks", vault / "02-GTD" / "tasks"):  # одоогийн / хуучин layout (шилжилтийн хамгаалалт)
-        if not tdir.is_dir() and old.is_dir():
-            tdir = old
+    tdir = _tasks_dir(vault)
     f = tdir / f"{safe}.md"; f.parent.mkdir(parents=True, exist_ok=True)
     today = datetime.date.today().isoformat()
-    proj = opt("--project")
+    proj = opt("--project"); res = opt("--research")
+    if res:
+        res, ok = _research_link(vault, res)
+        if not ok: print(f"⚠️ --research «{opt('--research')}»: {RESEARCH_DIR.as_posix()}/<сэдэв>/ hub олдсонгүй — байгаагаар нь бичив")
     f.write_text("---\n" + "\n".join([
         f"date: {today}", f"updated: {today}", "type: task", f"status: {status}", f"owner: \"{owner}\"",
         f"priority: {opt('--prio', '🟡')}", f"due: {opt('--due')}", f"project: \"[[{proj}]]\"" if proj else "project:",
-        "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
+        *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []), "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
     reg = load(REG, {"sessions": {}})["sessions"]; cm = chmap()
     ch = next((cm[s] for s, v in reg.items() if (v.get("title") or "").strip() == owner.strip() and s in cm), None)
     msg = f"📌 TASK → **{owner}** · `{status}` · [[{tdir.relative_to(vault).as_posix()}/{safe}]]\n{title}" + (f"\n{opt('--body')}" if opt("--body") else "")
@@ -615,6 +703,42 @@ def d_task(args, sid):
             if ch: break
     if ch: d_send(ch, msg, sid)
     print("task →", f, "| notified:", ch or f"(owner сувагтай биш — {fmconfig.MEMBER_LABEL})")
+
+
+def d_research_status():
+    """Судалгааны амьдралын цикл (decision 2026-10-09) — ЗӨВХӨН уншина, юу ч бичихгүй. 04-Resources/Research/<сэдэв>/
+    hub бүр (type: research) → status, 01-GTD/Tasks-ийн `research:` холбоостой task-уудын нээлттэй/дууссан тоо.
+    status: active + ≥1 task + бүгд completed → «✅ хаах санал». Хаалт автомат биш: itge.e батлахад hub-д
+    status: done + closed: YYYY-MM-DD, тэр Research сешнийг хаана."""
+    vault = fmconfig.vault_dir(); hubs = _research_hubs(vault); tdir = _tasks_dir(vault)
+    tasks = {t: [] for t in hubs}; stray = []
+    for f in (sorted(tdir.rglob("*.md")) if tdir.is_dir() else []):
+        m = _fm(f); r = m.get("research")
+        if isinstance(r, list): r = r[0] if r else ""
+        if m.get("type") != "task" or not r: continue
+        t = _research_topic(hubs, r)
+        if t: tasks[t].append((m.get("status") or "").lower())
+        else: stray.append((f.stem, r))
+    today = datetime.date.today().isoformat(); n_sug = 0
+    print(f"🔬 Судалгааны төлөв · {RESEARCH_DIR.as_posix()} · task: {tdir.relative_to(vault).as_posix()} · {today}")
+    for t, (hub, m) in hubs.items():
+        if m.get("type") != "research":
+            print(f"⚠️ {t} · hub «{hub.stem}» type: {m.get('type') or '—'} (research биш) — алгасав"); continue
+        st = (m.get("status") or "—").lower(); ss = tasks[t]
+        done = ss.count("completed"); x = ss.count("cancelled"); op = len(ss) - done - x
+        proj = (m.get("project") or "").strip("[]").split("|")[0].split("/")[-1]
+        lock = " · 🔒" if str(m.get("private")).lower() == "true" else ""
+        print(f"- {t}{lock} · {st}" + (f" ({m['closed']})" if m.get("closed") else "") + f" · {('→ ' + proj) if proj else '🌱 үр'}"
+              + f" · task {op} нээлттэй / {done} дууссан" + (f" / {x} цуцалсан" if x else ""))
+        if st == "active" and ss and done == len(ss):
+            n_sug += 1; print(f"    ✅ хаах санал — {done} task бүгд дууссан → itge.e батлавал «{hub.stem}»: status: done, closed: {today}")
+        elif st == "active" and ss and not op:
+            print(f"    🚫 {x} цуцалсан task байгаа тул хаах санал гаргасангүй — itge.e шийднэ")
+        elif st == "done" and op:
+            print(f"    ⚠️ done боловч {op} нээлттэй task")
+    for name, r in stray:
+        print(f"⚠️ «{name}» → research: {r} — судалгааны hub олдсонгүй")
+    if n_sug: print("Хаалт автомат биш: itge.e батлахаас өмнө юу ч өөрчлөхгүй.")
 
 
 def d_hub():
@@ -1059,7 +1183,7 @@ def main():
         try: return d_inbox(hook)
         except Exception as e:
             print(json.dumps({"hookSpecificOutput": {"hookEventName": hook.get("hook_event_name","UserPromptSubmit"), "additionalContext": f"[FMOS Discord] уншиж чадсангүй: {e}"}}, ensure_ascii=False)); return
-    if a[0] not in ("register", "dispatch", "hub", "status"):
+    if a[0] not in ("register", "dispatch", "hub", "status", "research-status"):
         try: sid = _rekey(_full_sid(sid))
         except Exception: pass
     if a[0] == "register":
@@ -1103,6 +1227,8 @@ def main():
         return d_task(a[1:], sid)
     if a[0] == "hub":
         return d_hub()
+    if a[0] == "research-status":
+        return d_research_status()
     if a[0] == "status":
         return d_status()
     if a[0] == "watch":
