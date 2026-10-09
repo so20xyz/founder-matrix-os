@@ -309,6 +309,7 @@ export const register: Register = (on, options) => {
     const { value: sel = '' } = await $.state.get(CAL_SEL)
     const { value: roleNames = [] } = await $.state.get(NAMES)
     const { value: proj = '' } = await $.state.get(PROJ)
+    const agents = (await $.agent.list().catch(() => [])).filter(g => g.status !== 'completed' && g.status !== 'killed')
     const { Box, Button, Input, Text } = $.ui.resolve(e)
     const now = localNow(await $.clock.now())
     const iso = (d: Date) => d.toISOString().slice(0, 10)
@@ -327,7 +328,7 @@ export const register: Register = (on, options) => {
     const isMine = (x: CalItem) => projKey
       ? x.project.toLowerCase() === projKey || (x.kind === 'event' && x.title.toLowerCase().includes(projKey.split(' ')[0]))
       : personal ? x.kind === 'event' || meRe.test(x.owner) : roleCores.some(n => coreName(x.owner).includes(n))
-    const scopeLabel = projKey ? `💼 ${proj}` : personal ? '👤 миний' : `🤖 ${roleNames[1] || roleNames[0] || 'agent'}`
+    const scopeLabel = projKey ? `💼 ${proj}` : personal ? '👤 миний' : (roleNames[0] || 'agent')
     const all = cal
     cal = scope === 'team' ? all : all.filter(isMine)
     const itemsOn = (d: string) => cal.filter(x => x.date === d)
@@ -405,6 +406,14 @@ export const register: Register = (on, options) => {
             <Text color={tone.turn}>▌</Text>
             <Button key={`tn-${x.file}`} label={x.title} plain onPress={() => void openInObsidian($, x.file)} />
             <Text dimColor>{x.date ? x.date.slice(5) : 'огноогүй'} · {x.status}</Text>
+          </Box>
+        ))}
+        {agents.length ? <Box marginTop={1}><Text color={tone.ok}>АГЕНТУУД ОДОО · {agents.length}</Text></Box> : null}
+        {agents.map(g => (
+          <Box key={`ag-${g.id}`} flexDirection="row" gap={1}>
+            <Text color={g.status === 'failed' ? tone.late : tone.ok}>{g.status === 'running' ? '●' : '○'}</Text>
+            <Text wrap="truncate-end">{g.description}</Text>
+            <Text dimColor>{g.type} · {g.status}</Text>
           </Box>
         ))}
         <Box flexDirection="row" marginTop={1} gap={1}>
