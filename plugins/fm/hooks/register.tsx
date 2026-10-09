@@ -26,6 +26,7 @@ const CAL_SEL = { plugin: 'fm', key: 'calSel' } as const
 const NAMES = { plugin: 'fm', key: 'names' } as const
 const PROJ = { plugin: 'fm', key: 'proj' } as const
 const CAL_VIEW = { plugin: 'fm', key: 'calView' } as const
+const CAL_DONE = { plugin: 'fm', key: 'calDone' } as const
 const TARGETS = ['gtd', 'wiki', 'creative', 'architect', 'development']
 const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 
@@ -85,7 +86,7 @@ async function loadGoals($: EngineInterface) {
     const body = await $.fs.read(`${dir}/${f.name}`).catch(() => '')
     const t = typeof body === 'string' ? body : ''
     if (!/^type:\s*goal/m.test(t) || /^status:\s*(done|completed|dropped)/m.test(t)) continue
-    const prog = (t.match(/^progress:\s*(\d+)/m) || [])[1] ?? '0'
+    const prog = String(Math.min(100, Number((t.match(/^progress:\s*(\d+)/m) || [])[1] ?? 0)))
     goals.push(`${prog}|${f.name.replace(/\.md$/, '')}`)
   }
   await $.state.set(GOALS, goals.sort((a, b) => Number(b.split('|')[0]) - Number(a.split('|')[0])))
@@ -121,7 +122,8 @@ async function loadCalendar($: EngineInterface) {
       if (!t.startsWith('---')) continue
       const fm = t.slice(0, Math.max(0, t.indexOf('\n---', 3)))
       if (/^private:\s*true/m.test(fm) || /^type:\s*index/m.test(fm)) continue
-      const status = field(fm, 'status')
+      const raw = field(fm, 'status')
+      const status = raw === 'done' && kind === 'task' ? 'completed' : raw
       if (kind === 'task' && !/^(inbox|next-action|waiting|completed)$/.test(status)) continue
       if (kind === 'event' && /^(done|cancelled)$/.test(status)) continue
       const when = kind === 'task' ? field(fm, 'due') : (field(fm, 'scheduled') || field(fm, 'date'))
@@ -151,15 +153,21 @@ async function setProp($: EngineInterface, item: CalItem, key: 'due' | 'status' 
   const body = await $.fs.read(item.file).catch(() => '')
   const cur = typeof body === 'string' ? body : ''
   if (!cur.startsWith('---')) return
+  const end = cur.indexOf('\n---', 3)
+  if (end < 0) return
+  let fm = cur.slice(0, end)
+  const rest = cur.slice(end)
+  const v = key === 'due' && value && item.time ? `${value} ${item.time}` : value
   const re = new RegExp(`^${key}:.*$`, 'm')
-  let out = value
-    ? (re.test(cur) ? cur.replace(re, `${key}: ${value}`) : cur.replace(/^status:.*$/m, m => `${m}\n${key}: ${value}`))
-    : cur.replace(new RegExp(`^${key}:.*\\r?\\n`, 'm'), '')
+  fm = v
+    ? (re.test(fm) ? fm.replace(re, `${key}: ${v}`) : fm.replace(/^status:.*$/m, m => `${m}\n${key}: ${v}`))
+    : fm.replace(new RegExp(`^${key}:.*\\r?\\n?`, 'm'), '')
   const day = localNow(await $.clock.now()).toISOString().slice(0, 10)
-  out = /^updated:.*$/m.test(out) ? out.replace(/^updated:.*$/m, `updated: ${day}`) : out.replace(/^status:.*$/m, m => `${m}\nupdated: ${day}`)
+  fm = /^updated:.*$/m.test(fm) ? fm.replace(/^updated:.*$/m, `updated: ${day}`) : fm.replace(/^status:.*$/m, m => `${m}\nupdated: ${day}`)
+  const out = fm + rest
   await $.fs.write(item.file, out)
   const { value: cal = [] } = await $.state.get({ plugin: 'fm', key: 'cal' })
-  const patch = (x: CalItem): CalItem => (key === 'due' ? { ...x, date: value } : key === 'status' ? { ...x, status: value } : { ...x, priority: value })
+  const patch = (x: CalItem): CalItem => (key === 'due' ? { ...x, date: value, time: value ? x.time : '' } : key === 'status' ? { ...x, status: value } : { ...x, priority: value })
   await $.state.set({ plugin: 'fm', key: 'cal' }, cal.map(x => (x.file === item.file ? patch(x) : x)))
   $.ui.toast(key === 'due' ? (value ? `📅 ${value}` : '📅 огноо арилгалаа') : `${key} → ${value || '—'}`)
 }
@@ -232,7 +240,7 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
     if (s) {
       const role = reg.roles?.[s.role] ?? {}
       // a project session names its project folder (sessions[sid].folder); a project-specific role may too
-      const where = typeof s.folder === 'string' ? s.folder : typeof s.project === 'string' ? s.project : typeof role.project === 'string' ? role.project : ''
+      const where = typeof s.folder === 'string' ? s.folder : s.role === 'project' && typeof s.project === 'string' ? s.project : typeof role.project === 'string' ? role.project : ''
       project = where.replace(/\/$/, '').split('/').pop() ?? ''
       if (!project && s.role === 'project' && typeof s.title === 'string') project = s.title.replace(/^[^\p{L}\p{N}]+/u, '').trim()
       names = [s.title, role.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
@@ -241,6 +249,7 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
     names = []
   }
   await $.state.set(NAMES, names)
+  await $.state.set(PROJ, project)
   return { vault, names, project }
 }
 
@@ -261,6 +270,8 @@ async function setStatus($: EngineInterface, t: VaultTask, status: string) {
   await $.fs.write(t.file, out)
   const { value: now = [] } = await $.state.get(TASKS)
   await $.state.set(TASKS, now.map(x => (x.title === t.title ? { ...x, status, updated: day } : x)))
+  const { value: calNow = [] } = await $.state.get({ plugin: 'fm', key: 'cal' })
+  await $.state.set({ plugin: 'fm', key: 'cal' }, calNow.map(x => (x.file === t.file ? { ...x, status } : x)))
   await $.state.set(CONFIRMING, '')
   $.ui.toast(`Төлөв → ${status}`)
 }
@@ -329,6 +340,7 @@ export const register: Register = (on, options) => {
     const { value: roleNames = [] } = await $.state.get(NAMES)
     const { value: proj = '' } = await $.state.get(PROJ)
     const { value: view = 'board' } = await $.state.get(CAL_VIEW)
+    const { value: showDone = false } = await $.state.get(CAL_DONE)
     const agents = (await $.agent.list().catch(() => [])).filter(g => g.status !== 'completed' && g.status !== 'killed')
     const { Box, Button, Input, Text } = $.ui.resolve(e)
     const now = localNow(await $.clock.now())
@@ -339,26 +351,25 @@ export const register: Register = (on, options) => {
     const monday = new Date(now); monday.setUTCDate(now.getUTCDate() - ((now.getUTCDay() + 6) % 7) + week * 7)
     const days = Array.from({ length: 7 }, (_, n) => { const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + n); return iso(d) })
     const names = ['Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя', 'Ня']
-    const meRe = new RegExp(`(^|\\W)(${[member, 'itge\\.e', 'bd', 'me'].filter(Boolean).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(\\W|$)`, 'i')
+    const meRe = new RegExp(`(^|\\W)(${[member, 'itge.e', 'bd', 'me'].filter(Boolean).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(\\W|$)`, 'i')
     const coreName = (n: string) => n.replace(/[^\p{L}\p{N}.\s-]/gu, ' ').replace(/\bagent\b/gi, ' ').replace(/\s+/g, ' ').trim().toLowerCase()
     const roleCores = roleNames.map(coreName).filter(n => n.length > 1)
     // project session → its project's tasks; agent session (not GTD) → that agent's tasks; GTD / unknown → itge.e's own
     const personal = !roleCores.length || roleCores.some(n => /gtd|area/.test(n))
     const projKey = proj.toLowerCase()
     const isMine = (x: CalItem) => projKey
-      ? x.project.toLowerCase() === projKey || (x.kind === 'event' && x.title.toLowerCase().includes(projKey.split(' ')[0]))
+      ? x.project.toLowerCase() === projKey || (x.kind === 'event' && !x.project && x.title.toLowerCase().includes(projKey))
       : personal ? x.kind === 'event' || meRe.test(x.owner) : roleCores.some(n => coreName(x.owner).includes(n))
     const scopeLabel = projKey ? `💼 ${proj}` : personal ? '👤 миний' : (roleNames[0] || 'agent')
     const all = cal
     cal = scope === 'team' ? all : all.filter(isMine)
-    const done = cal.filter(x => x.status === 'completed')
-    cal = cal.filter(x => x.status !== 'completed')
+    const done = cal.filter(x => x.kind === 'task' && x.status === 'completed')
+    cal = cal.filter(x => !done.includes(x))
     const itemsOn = (d: string) => cal.filter(x => x.date === d)
     const ofDay = itemsOn(day).sort((a, b) => (a.time || '99').localeCompare(b.time || '99'))
     const overdue = cal.filter(x => x.kind === 'task' && x.date && x.date < today)
     const shelf = cal.filter(x => x.kind === 'task' && !x.date).slice(0, 8)
-    const mine = new RegExp(`(^|\\W)(${[member, 'itge\\.e', 'bd', 'me'].filter(Boolean).join('|')})(\\W|$)`, 'i')
-    const turn = cal.filter(x => x.kind === 'task' && (scope === 'team' ? mine.test(x.owner) : true)).sort((a, b) => (a.date || '9').localeCompare(b.date || '9')).slice(0, 4)
+    const turn = cal.filter(x => x.kind === 'task' && (scope === 'team' ? meRe.test(x.owner) : true)).sort((a, b) => (a.date || '9').localeCompare(b.date || '9')).slice(0, 4)
     const tomorrow = (() => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + 1); return iso(d) })()
     const hhmm = now.toISOString().slice(11, 16)
     const tone = { event: '#a78bfa', task: '#6b8aff', late: '#f87171', today: '#a78bfa', turn: '#f5b544', ok: '#5fd38a', line: '#232837', muted: '#5a6275' }
@@ -408,11 +419,12 @@ export const register: Register = (on, options) => {
     // Google-Calendar-like day grid: untimed first, then hour rows with items, red now-line on today
     const dayGrid = (d: string) => {
       const its = itemsOn(d)
-      const untimed = its.filter(x => !x.time)
-      const timed = its.filter(x => x.time).sort((a, b) => a.time.localeCompare(b.time))
-      const hours = timed.map(x => Number(x.time.slice(0, 2)))
-      const from = Math.min(9, ...hours), to = Math.max(18, ...hours)
+      const hourOf = (x: CalItem) => parseInt(x.time, 10)
+      const timed = its.filter(x => x.time && hourOf(x) >= 0 && hourOf(x) < 24).sort((a, b) => a.time.localeCompare(b.time))
+      const untimed = its.filter(x => !timed.includes(x))
       const nowH = d === today ? Number(hhmm.slice(0, 2)) : -1
+      const hours = [...timed.map(hourOf), ...(nowH >= 0 ? [nowH] : [])]
+      const from = Math.min(9, ...hours), to = Math.max(18, ...hours)
       return (
         <Box key={`grid-${d}`} flexDirection="column" marginTop={1}>
           <Text dimColor>{wdName(d)} {d.slice(5)} · ӨДРИЙН ХУВААРЬ · {its.length}</Text>
@@ -422,18 +434,22 @@ export const register: Register = (on, options) => {
               {detail(x)}
             </Box>
           ))}
-          {Array.from({ length: to - from + 1 }, (_, k) => from + k).map(h => {
-            const hs = String(h).padStart(2, '0')
-            const at = timed.filter(x => x.time.slice(0, 2) === hs)
-            return (
-              <Box key={`gh-${d}-${hs}`} flexDirection="column">
-                {h === nowH ? <Text color={tone.late}>{hhmm} ●─────────────── одоо</Text> : null}
-                {at.length ? at.map(x => (
+          {Array.from({ length: to - from + 1 }, (_, k) => from + k).map(hr => {
+            const hs = String(hr).padStart(2, '0')
+            const at = timed.filter(x => hourOf(x) === hr)
+            const nowLine = hr === nowH ? <Text key={`now-${d}`} color={tone.late}>{hhmm} ●─────────────── одоо</Text> : null
+            const atRow = (x: CalItem) => (
                   <Box key={`gt-${x.file}`} flexDirection="column">
                     <Box flexDirection="row" gap={1}><Text color={tone.muted}>{x.time.padEnd(5)}   │</Text><Text color={x.kind === 'event' ? tone.event : tone.task} backgroundColor={x.kind === 'event' ? '#2a2342' : '#1c2440'}>{` ${shortTitle(x.title, x.project)} `}</Text><Button key={`gtb-${x.file}`} label="›" plain onPress={() => void $.state.set(CAL_SEL, sel === x.file ? '' : x.file)} /></Box>
                     {detail(x)}
                   </Box>
-                )) : <Text color={tone.line}>{`${hs}:00   │`}</Text>}
+            )
+            return (
+              <Box key={`gh-${d}-${hs}`} flexDirection="column">
+                {at.filter(x => x.time <= hhmm || hr !== nowH).map(atRow)}
+                {nowLine}
+                {hr === nowH ? at.filter(x => x.time > hhmm).map(atRow) : null}
+                {at.length ? null : <Text color={tone.line}>{`${hs}:00   │`}</Text>}
               </Box>
             )
           })}
@@ -460,7 +476,7 @@ export const register: Register = (on, options) => {
           {x.owner ? <Text key={`co-${x.file}`} dimColor>👤 {x.owner.replace(/^"|"$/g, '')}</Text> : null}
           {x.priority ? <Text key={`cr-${x.file}`}>{x.priority}</Text> : null}
         </Box>
-        {detail(x)}
+        {x.date === day ? null : detail(x)}
       </Box>
     )
     // Project Tracker (Figma «04 Төсөл · A — board by status»): a project session sees its project as a board
@@ -473,7 +489,6 @@ export const register: Register = (on, options) => {
       const late = tasks.filter(x => x.date && x.date < today)
       const byDate = (a: CalItem, b: CalItem) => (a.date || '9').localeCompare(b.date || '9')
       const group = (st: string) => tasks.filter(x => x.status === st && !(x.date && x.date < today)).sort(byDate)
-      const showDone = sel === '__done'
       const row = (x: CalItem, color: string, mark: string) => (
         <Box key={`pt-${x.file}`} flexDirection="column">
           <Box flexDirection="row" gap={1}>
@@ -484,7 +499,7 @@ export const register: Register = (on, options) => {
             {x.priority ? <Text>{x.priority}</Text> : null}
             {x.date ? <Text color={x.date < today ? tone.late : tone.muted}>{x.date.slice(5)}</Text> : null}
           </Box>
-          {detail(x)}
+          {x.date === day ? null : detail(x)}
         </Box>
       )
       const section = (key: string, title: string, color: string, list: CalItem[], mark: string) => list.length ? (
@@ -546,13 +561,14 @@ export const register: Register = (on, options) => {
                             <Button key={`tlb-${x.file}`} label={shortTitle(x.title, x.project)} plain onPress={() => void $.state.set(CAL_SEL, sel === x.file ? '' : x.file)} />
                             {x.owner ? <Text dimColor>👤 {x.owner.replace(/^"|"$/g, '')}</Text> : null}
                           </Box>
-                          {detail(x)}
+                          {x.date === day ? null : detail(x)}
                         </Box>
                       )
                     })}
                   </Box>
                 )
               })}
+              {section('later', 'ДАРАА', tone.muted, tasks.filter(x => x.date && x.date >= today && !days.includes(x.date)).sort(byDate), '○')}
               {section('nodate', 'ОГНООГҮЙ', tone.muted, tasks.filter(x => !x.date), '○')}
             </Box>
           ) : (
@@ -565,7 +581,7 @@ export const register: Register = (on, options) => {
           )}
           {done.length ? (
             <Box flexDirection="column" marginTop={1}>
-              <Button key="pt-done" label={`${showDone ? '▾' : '▸'} DONE · ${done.length}`} plain onPress={() => void $.state.set(CAL_SEL, showDone ? '' : '__done')} />
+              <Button key="pt-done" label={`${showDone ? '▾' : '▸'} DONE · ${done.length}`} plain onPress={() => void $.state.set(CAL_DONE, !showDone)} />
               {showDone ? done.slice(0, 12).map(x => <Text key={`ptx-${x.file}`} dimColor strikethrough>  ✓ {shortTitle(x.title, x.project)}</Text>) : null}
             </Box>
           ) : null}
@@ -628,7 +644,7 @@ export const register: Register = (on, options) => {
         {goals.length ? <Box marginTop={1}><Text dimColor>MILESTONE · ЗОРИЛГО</Text></Box> : null}
         {goals.slice(0, 5).map(g => {
           const [pct, name] = g.split('|')
-          const filled = Math.round((Number(pct) / 100) * 12)
+          const filled = Math.max(0, Math.min(12, Math.round((Number(pct) / 100) * 12)))
           return (
             <Box key={`ms-${name}`} flexDirection="row" gap={1}>
               <Text color={tone.event}>◆</Text>
@@ -923,7 +939,7 @@ updated: ${day}`)
             <Text dimColor>ЗОРИЛГО · {goals.length}</Text>
             {goals.slice(0, 6).map(g => {
               const [pct, name] = g.split('|')
-              const filled = Math.round((Number(pct) / 100) * 20)
+              const filled = Math.max(0, Math.min(20, Math.round((Number(pct) / 100) * 20)))
               return (
                 <Box key={`goal-${name}`} flexDirection="row" gap={1}>
                   <Text color="#9ECE6A">{'█'.repeat(filled)}</Text>
