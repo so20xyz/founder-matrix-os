@@ -41,7 +41,9 @@ export const register: Register = (on, options) => {
       const s = reg.sessions?.[sid]
       if (s) {
         const role = reg.roles?.[s.role] ?? {}
-        project = typeof role.project === 'string' ? role.project.split('/').pop() ?? '' : ''
+        // a project session names its project folder (sessions[sid].folder); a project-specific role may too
+        const where = typeof s.folder === 'string' ? s.folder : typeof role.project === 'string' ? role.project : ''
+        project = where.replace(/\/$/, '').split('/').pop() ?? ''
         names = [s.title, role.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
       }
     } catch {
