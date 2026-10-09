@@ -1,6 +1,6 @@
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { VaultTask } from '../types'
+import type { CalItem, VaultTask } from '../types'
 import { matchesSession, parseTask, rank, shortTitle } from './parse'
 
 // Task band (itge.e 2026-10-09): above the prompt, the open vault tasks this session's role owns.
@@ -18,6 +18,10 @@ const WATCHING = { plugin: 'fm', key: 'watching' } as const
 const GOALS = { plugin: 'fm', key: 'goals' } as const
 const HEALTH = { plugin: 'fm', key: 'health' } as const
 const TARGET = { plugin: 'fm', key: 'target' } as const
+const TSAG = 'fm-tsaglabar'
+const CAL = { plugin: 'fm', key: 'cal' } as const
+const CAL_DAY = { plugin: 'fm', key: 'calDay' } as const
+const CAL_WEEK = { plugin: 'fm', key: 'calWeek' } as const
 const TARGETS = ['gtd', 'wiki', 'creative', 'architect', 'development']
 const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 
@@ -98,6 +102,67 @@ async function runBrainCheck($: EngineInterface) {
   }
 }
 
+/** Цаглабар data: every open team task (not private) + every event, as dated/undated items. */
+async function loadCalendar($: EngineInterface) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  if (!vault) return
+  const items: CalItem[] = []
+  const field = (fm: string, k: string) => (fm.match(new RegExp(`^${k}:[ \\t]*"?([^"\\r\\n]*)"?`, 'm'))?.[1] ?? '').trim()
+  for (const [dir, kind] of [[`${vault}/01-GTD/Tasks`, 'task'], [`${vault}/01-GTD/Events`, 'event']] as const) {
+    const entries = await $.fs.list(dir).catch(() => [])
+    for (const f of entries) {
+      if (f.kind !== 'file' || !f.name.endsWith('.md')) continue
+      const body = await $.fs.read(`${dir}/${f.name}`).catch(() => '')
+      const t = typeof body === 'string' ? body : ''
+      if (!t.startsWith('---')) continue
+      const fm = t.slice(0, Math.max(0, t.indexOf('\n---', 3)))
+      if (/^private:\s*true/m.test(fm) || /^type:\s*index/m.test(fm)) continue
+      const status = field(fm, 'status')
+      if (kind === 'task' && !/^(inbox|next-action|waiting)$/.test(status)) continue
+      if (kind === 'event' && /^(done|cancelled)$/.test(status)) continue
+      const when = kind === 'task' ? field(fm, 'due') : (field(fm, 'scheduled') || field(fm, 'date'))
+      const [date = '', time = ''] = when.split(/[ T]/)
+      const project = field(fm, 'project').replace(/^\[\[|\]\]$/g, '').split('|')[0].split('/').pop() ?? ''
+      items.push({ kind, title: f.name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), project, file: `${dir}/${f.name}` })
+    }
+  }
+  await $.state.set(CAL, items)
+}
+
+/** Schedule an undated / overdue task: write its `due`. */
+async function setDue($: EngineInterface, item: CalItem, day: string) {
+  const body = await $.fs.read(item.file).catch(() => '')
+  const cur = typeof body === 'string' ? body : ''
+  if (!cur.startsWith('---')) return
+  const out = /^due:.*$/m.test(cur) ? cur.replace(/^due:.*$/m, `due: ${day}`) : cur.replace(/^status:.*$/m, m => `${m}\ndue: ${day}`)
+  await $.fs.write(item.file, out)
+  const { value: cal = [] } = await $.state.get(CAL)
+  await $.state.set(CAL, cal.map(x => (x.file === item.file ? { ...x, date: day } : x)))
+  $.ui.toast(`📅 ${day} руу товлолоо`)
+}
+
+/** ISO week number of a YYYY-MM-DD day. */
+function isoWeek(day: string): number {
+  const d = new Date(`${day}T00:00:00Z`)
+  const th = new Date(d); th.setUTCDate(d.getUTCDate() + 3 - ((d.getUTCDay() + 6) % 7))
+  const y0 = new Date(Date.UTC(th.getUTCFullYear(), 0, 4))
+  return 1 + Math.round(((th.getTime() - y0.getTime()) / 86400000 - 3 + ((y0.getUTCDay() + 6) % 7)) / 7)
+}
+
+/** Барих: one line → a capture note in 01-GTD/Inbox (GTD clarifies it later). */
+async function captureToInbox($: EngineInterface, value: string) {
+  const text = value.trim()
+  const { value: vault = '' } = await $.state.get(VAULT)
+  if (!text || !vault) return
+  const now = new Date(await $.clock.now())
+  const day = now.toISOString().slice(0, 10)
+  const stamp = now.toISOString().slice(11, 16).replace(':', '')
+  const safe = text.replace(/[\\/:*?"<>|#^[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60)
+  const file = `${vault}/01-GTD/Inbox/${day} ${stamp} - ${safe}.md`
+  await $.fs.write(file, `---\ndate: ${day}\ntype: capture\ntags: [capture]\nstatus: inbox\nsource: tsaglabar\nai-first: true\nup: "[[01-GTD/Inbox/Inbox]]"\n---\n\n# ${safe}\n\n${text}\n`)
+  $.ui.toast('📥 Inbox-д барьлаа')
+}
+
 const OPEN_ORDER = ['inbox', 'next-action', 'waiting']
 function nextOpenStatus(status: string): string {
   return OPEN_ORDER[(OPEN_ORDER.indexOf(status) + 1) % OPEN_ORDER.length]
@@ -138,6 +203,7 @@ export const register: Register = (on, options) => {
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'tasks', description: 'Энэ дүрийн vault task-ын самбарыг харуулах/нуух' })
+    await $.command.register({ name: 'tsaglabar', description: 'Цаглабар — долоо хоног, өдрийн timeline, огноогүй тавиур (хажуугийн самбар)' })
     await $.command.register({ name: 'tasks-pane', description: 'Vault task-уудыг хажуугийн самбарт нээх (хэмжээг чирж өөрчилнө)' })
     return next(e)
   })
@@ -190,6 +256,124 @@ export const register: Register = (on, options) => {
       .filter((t): t is VaultTask => !!t && matchesSession(t, names, project))
     await $.state.set(TASKS, rank(mine, today))
     return next(e)
+  })
+
+  on('command.run', { command: 'tsaglabar' }, async ($) => {
+    await loadCalendar($)
+    await loadGoals($)
+    await $.ui.open({ id: TSAG, title: '📅 Цаглабар' })
+    return { text: 'Цаглабар нээгдлээ' }
+  })
+
+  on('ui.render', { component: 'Pane', requestId: TSAG }, async ($, e) => {
+    const { value: cal = [] } = await $.state.get(CAL)
+    const { value: week = 0 } = await $.state.get(CAL_WEEK)
+    const { value: goals = [] } = await $.state.get(GOALS)
+    const { Box, Button, Input, Text } = $.ui.resolve(e)
+    const now = new Date(await $.clock.now())
+    const iso = (d: Date) => d.toISOString().slice(0, 10)
+    const today = iso(now)
+    const { value: picked = '' } = await $.state.get(CAL_DAY)
+    const day = picked || today
+    const monday = new Date(now); monday.setUTCDate(now.getUTCDate() - ((now.getUTCDay() + 6) % 7) + week * 7)
+    const days = Array.from({ length: 7 }, (_, n) => { const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + n); return iso(d) })
+    const names = ['Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя', 'Ня']
+    const itemsOn = (d: string) => cal.filter(x => x.date === d)
+    const ofDay = itemsOn(day).sort((a, b) => (a.time || '99').localeCompare(b.time || '99'))
+    const overdue = cal.filter(x => x.kind === 'task' && x.date && x.date < today)
+    const shelf = cal.filter(x => x.kind === 'task' && !x.date).slice(0, 8)
+    const mine = new RegExp(`(^|\\W)(${[member, 'itge\\.e', 'bd', 'me'].filter(Boolean).join('|')})(\\W|$)`, 'i')
+    const turn = cal.filter(x => x.kind === 'task' && mine.test(x.owner)).sort((a, b) => (a.date || '9').localeCompare(b.date || '9')).slice(0, 4)
+    const tomorrow = (() => { const d = new Date(now); d.setUTCDate(now.getUTCDate() + 1); return iso(d) })()
+    const hhmm = now.toISOString().slice(11, 16)
+    const tone = { event: '#a78bfa', task: '#6b8aff', late: '#f87171', today: '#a78bfa', turn: '#f5b544', ok: '#5fd38a', line: '#232837', muted: '#5a6275' }
+    const line = (x: CalItem) => (
+      <Box key={x.file} flexDirection="row" gap={1}>
+        <Text color={x.kind === 'event' ? tone.event : tone.task}>{x.time || (x.kind === 'event' ? '··:··' : ' task')}</Text>
+        <Text color={x.kind === 'event' ? tone.event : tone.task}>{x.kind === 'event' ? '◆' : '●'}</Text>
+        <Text wrap="truncate-end">{x.title}</Text>
+        {x.project ? <Text dimColor wrap="truncate-end">· {x.project}</Text> : null}
+      </Box>
+    )
+    return (
+      <Box flexDirection="column" paddingX={1}>
+        <Box flexDirection="row" justifyContent="space-between">
+          <Text><Text bold>{['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'][new Date(day).getUTCDay()]} {day.slice(5).replace('-', '/')}</Text><Text dimColor> · W{isoWeek(day)}{day === today ? ' · өнөөдөр' : ''}</Text></Text>
+          <Box flexDirection="row" gap={2}>
+            <Button key="wk-prev" label="‹" plain onPress={() => void $.state.set(CAL_WEEK, week - 1)} />
+            <Button key="wk-now" label="өнөөдөр" plain onPress={() => { void $.state.set(CAL_WEEK, 0); void $.state.set(CAL_DAY, '') }} />
+            <Button key="wk-next" label="›" plain onPress={() => void $.state.set(CAL_WEEK, week + 1)} />
+            <Button key="wk-load" label="⟳" plain onPress={() => void loadCalendar($)} />
+          </Box>
+        </Box>
+        {turn.length ? <Box marginTop={1}><Text color={tone.turn}>ТАНЫ ЭЭЛЖ · {turn.length}</Text></Box> : null}
+        {turn.map(x => (
+          <Box key={`turn-${x.file}`} flexDirection="row" gap={1}>
+            <Text color={tone.turn}>▌</Text>
+            <Text wrap="truncate-end">{x.title}</Text>
+            <Text dimColor>{x.date ? x.date.slice(5) : 'огноогүй'} · {x.status}</Text>
+          </Box>
+        ))}
+        <Box flexDirection="row" marginTop={1} gap={1}>
+          {days.map((d, n) => {
+            const items = itemsOn(d)
+            const ev = items.filter(x => x.kind === 'event').length
+            const tk = items.length - ev
+            return (
+              <Box key={`d-${d}`} flexDirection="column" alignItems="center" flexGrow={1} borderStyle="round"
+                borderColor={d === day ? tone.today : d === today ? tone.task : tone.line}>
+                <Button key={`pick-${d}`} label={`${names[n]} ${d.slice(8)}`} plain onPress={() => void $.state.set(CAL_DAY, d)} />
+                <Text><Text color={tone.event}>{'◆'.repeat(Math.min(ev, 3))}</Text><Text color={tone.task}>{'●'.repeat(Math.min(tk, 3))}</Text>{ev + tk ? '' : '·'}</Text>
+              </Box>
+            )
+          })}
+        </Box>
+        <Box marginTop={1}><Text dimColor>ӨДРИЙН ДАРААЛАЛ · {ofDay.length}</Text></Box>
+        {ofDay.length === 0 ? <Text dimColor>Энэ өдөр товлосон зүйл алга.</Text> : null}
+        {ofDay.map((x, n) => (
+          <Box key={`row-${x.file}`} flexDirection="column">
+            {day === today && x.time && x.time > hhmm && (n === 0 || (ofDay[n - 1].time || '') <= hhmm)
+              ? <Text color={tone.late}>── {hhmm} одоо ──────────</Text> : null}
+            {line(x)}
+          </Box>
+        ))}
+        {overdue.length ? <Box marginTop={1}><Text color={tone.late}>ХУГАЦАА ХЭТЭРСЭН · {overdue.length}</Text></Box> : null}
+        {overdue.slice(0, 6).map(x => (
+          <Box key={`late-${x.file}`} flexDirection="row" justifyContent="space-between" gap={1}>
+            <Text wrap="truncate-end"><Text color={tone.late}>⚠ {x.date.slice(5)}</Text> {x.title}</Text>
+            <Button key={`late-today-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} />
+          </Box>
+        ))}
+        <Box marginTop={1}><Text dimColor>ОГНООГҮЙ ТАВИУР · {cal.filter(x => x.kind === 'task' && !x.date).length}</Text></Box>
+        {shelf.map(x => (
+          <Box key={`shelf-${x.file}`} flexDirection="row" justifyContent="space-between" gap={1}>
+            <Text wrap="truncate-end"><Text color="#737AA2">○</Text> {x.title}{x.owner ? <Text dimColor> · {x.owner}</Text> : null}</Text>
+            <Box flexDirection="row" gap={2} flexShrink={0}>
+              <Button key={`sh-today-${x.file}`} label="→ өнөөдөр" plain onPress={() => void setDue($, x, today)} />
+              <Button key={`sh-tmr-${x.file}`} label="→ маргааш" plain onPress={() => void setDue($, x, tomorrow)} />
+              <Button key={`sh-day-${x.file}`} label={`→ ${day.slice(5)}`} plain onPress={() => void setDue($, x, day)} />
+            </Box>
+          </Box>
+        ))}
+        {goals.length ? <Box marginTop={1}><Text dimColor>MILESTONE · ЗОРИЛГО</Text></Box> : null}
+        {goals.slice(0, 5).map(g => {
+          const [pct, name] = g.split('|')
+          const filled = Math.round((Number(pct) / 100) * 12)
+          return (
+            <Box key={`ms-${name}`} flexDirection="row" gap={1}>
+              <Text color={tone.event}>◆</Text>
+              <Text wrap="truncate-end">{name}</Text>
+              <Text color={tone.ok}>{'▓'.repeat(filled)}</Text><Text color={tone.line}>{'░'.repeat(12 - filled)}</Text>
+              <Text dimColor>{pct}%</Text>
+            </Box>
+          )
+        })}
+        <Box marginTop={1} borderStyle="round" borderColor={tone.line} paddingX={1}>
+          <Input key="capture" label="＋ " placeholder="Барих — бодол, ажил, уулзалт… Enter → Inbox" submitLabel="барих"
+            onSubmit={value => void captureToInbox($, value)} />
+        </Box>
+      </Box>
+    )
   })
 
   on('command.run', { command: 'tasks-pane' }, async ($) => {
