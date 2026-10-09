@@ -308,6 +308,7 @@ export const register: Register = (on, options) => {
     const { value: scope = 'mine' } = await $.state.get(CAL_SCOPE)
     const { value: sel = '' } = await $.state.get(CAL_SEL)
     const { value: roleNames = [] } = await $.state.get(NAMES)
+    const { value: proj = '' } = await $.state.get(PROJ)
     const { Box, Button, Input, Text } = $.ui.resolve(e)
     const now = localNow(await $.clock.now())
     const iso = (d: Date) => d.toISOString().slice(0, 10)
