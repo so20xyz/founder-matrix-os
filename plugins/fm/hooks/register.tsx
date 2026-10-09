@@ -1,6 +1,6 @@
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
-import type { CalItem, InboxItem, RoleInfo, ToolStatus, VaultTask } from '../types'
+import type { CalItem, InboxItem, RoleInfo, SkillPin, ToolStatus, VaultTask } from '../types'
 import type { ClaimVerdict } from './parse'
 import { agentsReport, applyStatus, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planWindow, privateKeys, privateNote, privateOwner, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
 
@@ -131,6 +131,9 @@ const inboxCache = new Map<string, { mtime: number; item: InboxItem | null }>()
 // loadResearchHub's frontmatter reads (every turn end in a research session), by file mtime like calCache
 const frontCache = new Map<string, { mtime: number; fm: string }>()
 const noteSkills = new Map<string, string[]>()
+// ⚡ Skill quick-run (itge.e 2026-10-09): the catalog notes marked `pane: true`, frontmatter only, by file mtime like calCache
+const SKILL_DIR = '03-Areas/AI Team/skills/catalog'
+const skillCache = new Map<string, { mtime: number; pin: SkillPin | null }>()
 // one claim at a time; the watcher loop of the latest start (an older loop must not reset WATCHING)
 let draining = false
 let watchGen = 0
@@ -757,12 +760,85 @@ async function openInObsidian($: EngineInterface, file: string) {
   $.ui.toast('↗ Obsidian-д нээлээ')
 }
 
+/**
+ * One catalog note → its ⚡ Skill pin: only `pane: true` with a slash `command`; label / icon / description / when / roles
+ * (lowercased; none = every role) / pane_order (missing → last) read from the frontmatter by key.
+ */
+function skillPinOf(text: string, file: string): SkillPin | null {
+  if (!text.startsWith('---')) return null
+  const end = text.indexOf('\n---', 3)
+  if (end < 0) return null
+  const fm = text.slice(0, end)
+  if (fmGet(fm, 'pane').toLowerCase() !== 'true') return null
+  const command = fmGet(fm, 'command').replace(/\s+/g, ' ')
+  if (!/^\/[\w:.-]+( .*)?$/.test(command)) return null
+  const id = (file.split('/').pop() ?? '').replace(/\.md$/, '')
+  const order = Number.parseFloat(fmGet(fm, 'pane_order'))
+  return {
+    id, file, command, icon: fmGet(fm, 'icon'), label: fmGet(fm, 'label') || id.replace(/^Skill - /, ''),
+    description: fmGet(fm, 'description'), when: fmGet(fm, 'when'),
+    roles: fmList(fm, 'roles').map(r => r.toLowerCase()), order: Number.isFinite(order) ? order : 999,
+  }
+}
+
+/** ⚡ Skill data: every `pane: true` catalog note (unchanged notes from skillCache), by pane_order then label; set only on change. */
+async function loadSkills($: EngineInterface) {
+  const { value: vault = '' } = await $.state.get(VAULT)
+  if (!vault) return
+  const dir = `${vault}/${SKILL_DIR}`
+  const pins: SkillPin[] = []
+  const seen = new Set<string>()
+  for (const f of await $.fs.list(dir).catch(() => [])) {
+    if (f.kind !== 'file' || !f.name.endsWith('.md')) continue
+    const path = `${dir}/${f.name}`
+    seen.add(path)
+    const hit = skillCache.get(path)
+    let pin = hit && hit.mtime === f.mtimeMs ? hit.pin : undefined
+    if (pin === undefined) {
+      const body = await $.fs.read(path).catch(() => '')
+      pin = skillPinOf(typeof body === 'string' ? body : '', path)
+      skillCache.set(path, { mtime: f.mtimeMs, pin })
+    }
+    if (pin) pins.push(pin)
+  }
+  for (const k of [...skillCache.keys()]) if (!seen.has(k)) skillCache.delete(k)
+  pins.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label))
+  const { value: cur, version } = await $.state.get({ plugin: 'fm', key: 'skills' })
+  if (version > 0 && JSON.stringify(cur ?? []) === JSON.stringify(pins)) return
+  await $.state.set({ plugin: 'fm', key: 'skills' }, pins)
+}
+
+/** A ⚡ Skill button: select it (its card opens under the row), a second press closes the card. Never runs anything. */
+async function toggleSkillSel($: EngineInterface, id: string) {
+  const { value: cur = '' } = await $.state.get({ plugin: 'fm', key: 'skillSel' })
+  await $.state.set({ plugin: 'fm', key: 'skillSel' }, cur === id ? '' : id)
+}
+
+/** «▶ Ажиллуулах»: the pin's slash command as if typed («/fm:save --checkpoint» → fm:save + «--checkpoint»), queued till idle. */
+async function runSkillPin($: EngineInterface, id: string) {
+  const { value: pins = [] } = await $.state.get({ plugin: 'fm', key: 'skills' })
+  const pin = pins.find(p => p.id === id)
+  if (!pin) return
+  const [name = '', ...rest] = pin.command.replace(/^\//, '').split(' ')
+  if (!name) return
+  $.ui.toast(`▶ ${pin.command}`)
+  runSlash($, name, rest.join(' '))
+}
+
+/** «✎ vault-д засах»: the pin's catalog note in Obsidian (its description lives there). */
+async function editSkillPin($: EngineInterface, id: string) {
+  const { value: pins = [] } = await $.state.get({ plugin: 'fm', key: 'skills' })
+  const pin = pins.find(p => p.id === id)
+  if (pin) await openInObsidian($, pin.file)
+}
+
 /** Open the Цаглабар pane (from anywhere: command, 📅 button). */
 async function openTsaglabar($: EngineInterface, configured = '') {
   await resolveContext($, configured)
   await loadCalendar($)
   await loadGoals($)
   await loadProject($)
+  await loadSkills($)
   // the tab it reopens on reads its own data too (Inbox / Хэрэгсэл)
   const { value: tab = '' } = await $.state.get({ plugin: 'fm', key: 'tsagTab' })
   if (tab === 'inbox' || tab === 'tools') await loadTab($, tab)
@@ -953,9 +1029,15 @@ async function selectTab($: EngineInterface, tab: string) {
 /** What a tab reads, refreshed: Inbox its captures, Хэрэгсэл the live checks, the rest the tasks (+ goals / the project note). */
 async function loadTab($: EngineInterface, tab: string) {
   if (tab === 'inbox') return loadInbox($)
-  if (tab === 'tools') return loadTools($, false)
+  if (tab === 'tools') {
+    await loadSkills($)
+    return loadTools($, false)
+  }
   await loadCalendar($)
-  if (tab === 'cal') await loadGoals($)
+  if (tab === 'cal') {
+    await loadGoals($)
+    await loadSkills($)
+  }
   if (tab === 'project') await loadProject($)
 }
 
@@ -997,6 +1079,7 @@ async function goToday($: EngineInterface) {
 async function reloadCal($: EngineInterface) {
   await loadCalendar($)
   await loadGoals($)
+  await loadSkills($)
   $.ui.toast(G.reload)
 }
 
@@ -1733,6 +1816,8 @@ export const register: Register = (on, options) => {
       // Цаглабар follows the turn's writes once it has been opened (unchanged notes come from the mtime caches)
       const { version: calVersion } = await $.state.get({ plugin: 'fm', key: 'cal' })
       if (calVersion > 0) await loadCalendar($)
+      // ⚡ Skill follows catalog edits too (unchanged notes from skillCache)
+      if (calVersion > 0) await loadSkills($)
       const { value: tabNow = '' } = await $.state.get({ plugin: 'fm', key: 'tsagTab' })
       if (tabNow === 'inbox') await loadInbox($)
       // a ▷ /fm:inbox hand-off whose turn has ended with the capture still open gets its route buttons back
@@ -1821,6 +1906,9 @@ export const register: Register = (on, options) => {
     const { value: inboxBusy = {} } = await $.state.get({ plugin: 'fm', key: 'inboxBusy' })
     const { value: reviewAt = '' } = await $.state.get({ plugin: 'fm', key: 'reviewAt' })
     const { value: busy = { since: 0, turn: false } } = await $.state.get(BUSY)
+    // ⚡ Skill quick-run (V1 / V3): the pane: true catalog pins and the selected one
+    const { value: skillPins = [], version: skillsVersion } = await $.state.get({ plugin: 'fm', key: 'skills' })
+    const { value: skillSel = '' } = await $.state.get({ plugin: 'fm', key: 'skillSel' })
     const agents = (await $.agent.list().catch(() => [])).filter(g => g.status !== 'completed' && g.status !== 'killed')
     // mobile has no Input: capture bars and inline inputs are left out there
     const els = $.ui.resolve(e)
@@ -2195,8 +2283,9 @@ export const register: Register = (on, options) => {
           {goPad}
         </Box>
       )
+      const skillsV1 = skillBlock('cal:skills', '⚡ Skill', acts.length > 0)
       const todayPhase = phase('cal:today', day === today ? 'Өнөөдөр' : `${wdName(day)} ${mmdd(day)}`, {
-        dflt: true, mt: acts.length > 0,
+        dflt: true, mt: openOf('cal:skills', true),
         count: loading ? undefined : `${dn}/${rows.length}`,
         dots: loading ? [0, 0, 5] : rows.length ? [dn, rn, rows.length - dn - rn] : undefined,
       })
@@ -2285,6 +2374,7 @@ export const register: Register = (on, options) => {
           {hdr}
           {strip}
           {acts}
+          {skillsV1}
           {todayPhase}
           {todayBody}
           {latePhase}
@@ -2299,6 +2389,36 @@ export const register: Register = (on, options) => {
     const wdFullOf = (d: string) => ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'][new Date(d).getUTCDay()] ?? ''
     const yesterday = (() => { const d = new Date(now); d.setUTCDate(now.getUTCDate() - 1); return iso(d) })()
     const mutedRow = (key: string, text: string) => <Box key={key} paddingLeft={2}><Text color={C.muted} wrap="truncate-end">{text}</Text></Box>
+    // ── ⚡ Skill quick-run (V1 under the activity row, V3 «⚡ Хурдан skill» first): one Button per pane: true catalog note
+    // for this session's role (roles: its slug or `all`), wrapping; a press only selects (the card: description, «Хэзээ»,
+    // ▶ / ✎), and only «▶ Ажиллуулах» runs the command — nothing ever runs by itself
+    const myPins = skillPins.filter(p => !p.roles.length || p.roles.includes('all') || (!!sessRole && p.roles.includes(sessRole.toLowerCase())))
+    const skillBlock = (id: string, title: string, mt: boolean) => {
+      const head = phase(id, title, { dflt: true, count: skillsVersion === 0 ? undefined : String(myPins.length), mt })
+      if (!openOf(id, true)) return [head]
+      const selPin = myPins.find(p => p.id === skillSel)
+      const body = skillsVersion === 0 ? mutedRow(`${id}-load`, 'Ачаалж байна…')
+        : !myPins.length ? mutedRow(`${id}-empty`, '03-Areas/AI Team/skills/catalog-д pane: true гэж тэмдэглэ')
+        : (
+          <Box key={`${id}-body`} flexDirection="column" paddingLeft={2}>
+            <Box key={`${id}-row`} flexDirection="row" flexWrap="wrap" columnGap={2}>
+              {myPins.map(p => <Button key={`skb-${p.id}`} plain dimColor={p.id !== skillSel} label={`${p.icon ? `${p.icon} ` : ''}${p.label}`} onPress={() => void toggleSkillSel($, p.id)} />)}
+            </Box>
+            {selPin ? (
+              <Box key={`skc-${selPin.id}`} flexDirection="column" paddingX={1} borderStyle="round" borderColor={C.accent}>
+                <Text color={C.text} wrap="wrap">{selPin.description || '—'}</Text>
+                {selPin.when ? <Text color={C.muted} wrap="truncate-end">{`Хэзээ: ${selPin.when}`}</Text> : null}
+                <Box flexDirection="row" columnGap={2} flexWrap="wrap">
+                  <Button key={`skrun-${selPin.id}`} plain label="▶ Ажиллуулах" onPress={() => void runSkillPin($, selPin.id)} />
+                  <Button key={`skedit-${selPin.id}`} plain dimColor label="✎ vault-д засах" onPress={() => void editSkillPin($, selPin.id)} />
+                  <Box flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">{selPin.command}</Text></Box>
+                </Box>
+              </Box>
+            ) : null}
+          </Box>
+        )
+      return [head, body]
+    }
     // ── V6 «☼ Тойм» (§3 V6): today's top 3, overdue, yesterday's done, every agent's state ──
     const reviewTab = () => {
       const hdr = header('Өглөөний тойм', [
@@ -2634,7 +2754,7 @@ export const register: Register = (on, options) => {
         )
       }
       let headShown = false
-      let prevOpen = false
+      let prevOpen = openOf('tools:skills', true)
       const sections = GROUPS.map(g => ({ g, its: mine.filter(t => t.group === g) })).filter(x => x.its.length).flatMap(({ g, its }, gi) => {
         const id = `tools:${g}`
         // a group holding one of the role's own skills / services opens by default (Дизайн and Контент for Creative)
@@ -2667,6 +2787,7 @@ export const register: Register = (on, options) => {
       return (
         <Box key="v3" flexDirection="column">
           {hdr}
+          {skillBlock('tools:skills', '⚡ Хурдан skill', false)}
           {mine.length ? sections : mutedRow('tl-none', 'Энэ дүрд хэрэгсэл бүртгэгдээгүй')}
           {footer}
         </Box>

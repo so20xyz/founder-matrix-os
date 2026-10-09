@@ -897,3 +897,115 @@ test('scope: a half-synced registry keeps the Architect scope (never falls back 
     done()
   }
 })
+
+// ⚡ Skill quick-run (itge.e 2026-10-09): catalog notes with `pane: true` (frontmatter only) as one Button each, sorted by
+// pane_order, filtered by the session's role slug or `all`; a press selects (card), only «▶ Ажиллуулах» runs the command
+const CAT = `${V}/03-Areas/AI Team/skills/catalog`
+const pin = (order: number, command: string, icon: string, label: string, roles: string) =>
+  `---\ntype: skill\npane: true\npane_order: ${order}\ncommand: "${command}"\nicon: "${icon}"\nlabel: "${label}"\ndescription: "${label} — тайлбар."\nwhen: "${label} хэрэгтэй үед."\nroles: [${roles}]\nai-first: true\n---\n\n# ${label}\n`
+const SKILL_FILES: Record<string, string> = {
+  [`${CAT}/Skill - fm-update-weekly.md`]: pin(7, '/fm:update weekly', '🗓', 'Долоо хоногийн тойм', 'area'),
+  [`${CAT}/Skill - fm-save-checkpoint.md`]: pin(2, '/fm:save --checkpoint', '📝', 'Лог · checkpoint', 'all'),
+  [`${CAT}/Skill - fm-inbox.md`]: pin(4, '/fm:inbox', '📥', 'Inbox ангилах', 'area, developer'),
+  [`${CAT}/Skill - fm-update.md`]: pin(1, '/fm:update', '🔄', 'Update', 'all'),
+  // not on the pane: no `pane: true`
+  [`${CAT}/Skill - research.md`]: '---\ntype: skill\ncommand: "/research"\nlabel: "Research"\nroles: [all]\n---\n',
+}
+const withSkills = () => {
+  Object.assign(FILES, SKILL_FILES)
+  return () => { for (const f of Object.keys(SKILL_FILES)) { delete FILES[f]; delete WRITES[f] } }
+}
+type Finder = { findAll: (q: { type: string }) => Promise<{ key: string | undefined; props: Record<string, unknown> }[]> }
+const skillLabels = async (ui: Finder) =>
+  (await ui.findAll({ type: 'Button' })).filter(b => (b.key ?? '').startsWith('skb-')).map(b => String(b.props.label))
+
+test('⚡ Skill: pane: true pins sorted by pane_order, filtered by the session role (or all), on V1 and V3', async ($, on) => {
+  const done = withSkills()
+  try {
+    let reg = ARCH_REG
+    vault(on, true, () => reg)
+    await openOwn($)
+    for (const surface of ['terminal', 'desktop'] as const) {
+      const ui = await $.ui.mount({ plugin: 'fm', surface, component: 'Pane', requestId: 'fm-tsaglabar', props: pane(surface === 'terminal' ? 98 : 52) })
+      expect(await ui.find({ type: 'Text', text: '⚡ Skill' })).toBeDefined()
+      // the Architect (developer) session: the `all` pins + Inbox (area, developer); not the area-only weekly, not the unpinned note
+      expect(await skillLabels(ui)).toEqual(['🔄 Update', '📝 Лог · checkpoint', '📥 Inbox ангилах'])
+      expect((await ui.find({ key: 'skb-Skill - fm-update' }))?.props.label).toBe('🔄 Update')
+      await ui.unmount()
+    }
+    // the row wraps (never overflows the pane)
+    const narrow = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(40) })
+    expect((await narrow.find({ key: 'cal:skills-row' }))?.props.flexWrap).toBe('wrap')
+    // collapsible: the phase chevron folds the row
+    await narrow.press({ key: 'phb-cal:skills' })
+    expect(await skillLabels(narrow)).toEqual([])
+    await narrow.press({ key: 'phb-cal:skills' })
+    // V3 «⊟ Хэрэгсэл»: the same pins as its first group
+    await narrow.press({ key: 'tab-tools' })
+    expect(await narrow.find({ type: 'Text', text: '⚡ Хурдан skill' })).toBeDefined()
+    expect(await skillLabels(narrow)).toEqual(['🔄 Update', '📝 Лог · checkpoint', '📥 Inbox ангилах'])
+    await narrow.unmount()
+    // a GTD (area) session: the weekly pin joins, last by pane_order
+    reg = JSON.stringify({ sessions: { 'sid-test': { role: 'area', title: '📥 GTD · PC', device: 'PC' } }, roles: { area: { agent: '📥 GTD Agent' } } })
+    await $.turn.complete(turnEnd('t1'))
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    await ui.press({ key: 'tab-cal' })
+    expect(await skillLabels(ui)).toEqual(['🔄 Update', '📝 Лог · checkpoint', '📥 Inbox ангилах', '🗓 Долоо хоногийн тойм'])
+    await ui.unmount()
+  } finally {
+    done()
+  }
+})
+
+test('⚡ Skill: a press only selects (description + «Хэзээ»); ▶ Ажиллуулах runs the command, ✎ opens the note', async ($, on) => {
+  const done = withSkills()
+  try {
+    vault(on, true, ARCH_REG)
+    const answer = <T,>(value: T) => ({ value }) as never
+    const ran: string[] = []
+    const toasts: string[] = []
+    const opened: string[] = []
+    on('command.run', async ($, e) => { ran.push(`${e.command} ${e.args ?? ''}`.trim()); return { text: '' } as never })
+    on('ui.toast', async ($, e) => { toasts.push(e.text); return answer(undefined) })
+    on('process.run', async ($, e) => { opened.push(e.argv.join(' ')); return answer({ stdout: '', stderr: '', exitCode: 0 }) })
+    await openOwn($)
+    const ui = await $.ui.mount({ plugin: 'fm', surface: 'desktop', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+    expect(await ui.find({ type: 'Text', text: 'Лог · checkpoint — тайлбар.' })).toBeUndefined()
+    await ui.press({ key: 'skb-Skill - fm-save-checkpoint' })
+    expect(await ui.find({ type: 'Text', text: 'Лог · checkpoint — тайлбар.' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: 'Хэзээ: Лог · checkpoint хэрэгтэй үед.' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: '/fm:save --checkpoint' })).toBeDefined()
+    expect((await ui.find({ key: 'skb-Skill - fm-save-checkpoint' }))?.props.dimColor).toBe(false)
+    // selecting never runs anything
+    await new Promise(r => setTimeout(r, 20))
+    expect(ran).toEqual([])
+    // ▶: the slash command as typed (name + args), queued, with a toast
+    await ui.press({ key: 'skrun-Skill - fm-save-checkpoint' })
+    for (let i = 0; i < 40 && !ran.length; i++) await new Promise(r => setTimeout(r, 5))
+    expect(ran).toEqual(['fm:save --checkpoint'])
+    expect(toasts).toContain('▶ /fm:save --checkpoint')
+    // ✎: the catalog note in Obsidian
+    await ui.press({ key: 'skedit-Skill - fm-save-checkpoint' })
+    for (let i = 0; i < 40 && !opened.some(o => o.includes('obsidian://')); i++) await new Promise(r => setTimeout(r, 5))
+    expect(opened.some(o => o.includes(`obsidian://open?vault=vault&file=${encodeURIComponent('03-Areas/AI Team/skills/catalog/Skill - fm-save-checkpoint')}`))).toBe(true)
+    // another pin switches the card; a second press closes it
+    await ui.press({ key: 'skb-Skill - fm-update' })
+    expect(await ui.find({ type: 'Text', text: 'Update — тайлбар.' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: 'Лог · checkpoint — тайлбар.' })).toBeUndefined()
+    await ui.press({ key: 'skb-Skill - fm-update' })
+    expect(await ui.find({ key: 'skc-Skill - fm-update' })).toBeUndefined()
+    expect(ran).toEqual(['fm:save --checkpoint'])
+    await ui.unmount()
+  } finally {
+    done()
+  }
+})
+
+test('⚡ Skill: no pane: true notes → the muted hint', async ($, on) => {
+  vault(on, true, ARCH_REG)
+  await openOwn($)
+  const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
+  expect(await ui.find({ type: 'Text', text: '03-Areas/AI Team/skills/catalog-д pane: true гэж тэмдэглэ' })).toBeDefined()
+  expect(await skillLabels(ui)).toEqual([])
+  await ui.unmount()
+})
