@@ -26,6 +26,7 @@ const CAL_SCOPE = { plugin: 'fm', key: 'calScope' } as const
 const CAL_SEL = { plugin: 'fm', key: 'calSel' } as const
 const NAMES = { plugin: 'fm', key: 'names' } as const
 const PROJ = { plugin: 'fm', key: 'proj' } as const
+const CAL_VIEW = { plugin: 'fm', key: 'calView' } as const
 const TARGETS = ['gtd', 'wiki', 'creative', 'architect', 'development']
 const CONFIRMING = { plugin: 'fm', key: 'confirming' } as const
 
@@ -122,7 +123,7 @@ async function loadCalendar($: EngineInterface) {
       const fm = t.slice(0, Math.max(0, t.indexOf('\n---', 3)))
       if (/^private:\s*true/m.test(fm) || /^type:\s*index/m.test(fm)) continue
       const status = field(fm, 'status')
-      if (kind === 'task' && !/^(inbox|next-action|waiting)$/.test(status)) continue
+      if (kind === 'task' && !/^(inbox|next-action|waiting|completed)$/.test(status)) continue
       if (kind === 'event' && /^(done|cancelled)$/.test(status)) continue
       const when = kind === 'task' ? field(fm, 'due') : (field(fm, 'scheduled') || field(fm, 'date'))
       const [date = '', time = ''] = when.split(/[ T]/)
@@ -309,6 +310,7 @@ export const register: Register = (on, options) => {
     const { value: sel = '' } = await $.state.get(CAL_SEL)
     const { value: roleNames = [] } = await $.state.get(NAMES)
     const { value: proj = '' } = await $.state.get(PROJ)
+    const { value: view = 'board' } = await $.state.get(CAL_VIEW)
     const agents = (await $.agent.list().catch(() => [])).filter(g => g.status !== 'completed' && g.status !== 'killed')
     const { Box, Button, Input, Text } = $.ui.resolve(e)
     const now = localNow(await $.clock.now())
@@ -331,6 +333,8 @@ export const register: Register = (on, options) => {
     const scopeLabel = projKey ? `💼 ${proj}` : personal ? '👤 миний' : (roleNames[0] || 'agent')
     const all = cal
     cal = scope === 'team' ? all : all.filter(isMine)
+    const done = cal.filter(x => x.status === 'completed')
+    cal = cal.filter(x => x.status !== 'completed')
     const itemsOn = (d: string) => cal.filter(x => x.date === d)
     const ofDay = itemsOn(day).sort((a, b) => (a.time || '99').localeCompare(b.time || '99'))
     const overdue = cal.filter(x => x.kind === 'task' && x.date && x.date < today)
@@ -388,6 +392,121 @@ export const register: Register = (on, options) => {
         {detail(x)}
       </Box>
     )
+    // Project Tracker (Figma «04 Төсөл · A — board by status»): a project session sees its project as a board
+    if (projKey && scope !== 'team') {
+      const tasks = cal.filter(x => x.kind === 'task')
+      const total = tasks.length + done.length
+      const pct = total ? Math.round((done.length / total) * 100) : 0
+      const fill = Math.round(pct / 5)
+      const nextEv = cal.filter(x => x.kind === 'event' && x.date >= today).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0]
+      const late = tasks.filter(x => x.date && x.date < today)
+      const byDate = (a: CalItem, b: CalItem) => (a.date || '9').localeCompare(b.date || '9')
+      const group = (st: string) => tasks.filter(x => x.status === st && !(x.date && x.date < today)).sort(byDate)
+      const showDone = sel === '__done'
+      const row = (x: CalItem, color: string, mark: string) => (
+        <Box key={`pt-${x.file}`} flexDirection="column">
+          <Box flexDirection="row" gap={1}>
+            <Text color={color}>{mark}</Text>
+            <Button key={`ptb-${x.file}`} label={shortTitle(x.title, x.project)} plain onPress={() => void $.state.set(CAL_SEL, sel === x.file ? '' : x.file)} />
+            {x.activity ? <Text color="#2dd4bf">{x.activity}</Text> : null}
+            {x.owner ? <Text dimColor>👤 {x.owner.replace(/^"|"$/g, '')}</Text> : null}
+            {x.priority ? <Text>{x.priority}</Text> : null}
+            {x.date ? <Text color={x.date < today ? tone.late : tone.muted}>{x.date.slice(5)}</Text> : null}
+          </Box>
+          {detail(x)}
+        </Box>
+      )
+      const section = (key: string, title: string, color: string, list: CalItem[], mark: string) => list.length ? (
+        <Box key={`sec-${key}`} flexDirection="column" marginTop={1}>
+          <Text color={color}>{title} · {list.length}</Text>
+          {list.map(x => row(x, color, mark))}
+        </Box>
+      ) : null
+      return (
+        <Box flexDirection="column" paddingX={1}>
+          <Box flexDirection="row" justifyContent="space-between">
+            <Text><Text bold>💼 {proj}</Text><Text color={tone.ok}>  ● Active</Text></Text>
+            <Box flexDirection="row" gap={2}>
+              <Button key="pt-prev" label="‹" plain onPress={() => void $.state.set(CAL_WEEK, week - 1)} />
+              <Button key="pt-now" label="өнөөдөр" plain onPress={() => { void $.state.set(CAL_WEEK, 0); void $.state.set(CAL_DAY, '') }} />
+              <Button key="pt-next" label="›" plain onPress={() => void $.state.set(CAL_WEEK, week + 1)} />
+              <Button key="pt-view" label={view === 'timeline' ? '▦ самбар' : '☰ шугам'} plain onPress={() => void $.state.set(CAL_VIEW, view === 'timeline' ? 'board' : 'timeline')} />
+              <Button key="pt-scope" label="👥 баг" plain onPress={() => void $.state.set(CAL_SCOPE, 'team')} />
+              <Button key="pt-load" label="⟳" plain onPress={() => void loadCalendar($)} />
+            </Box>
+          </Box>
+          <Box flexDirection="row" gap={1}>
+            <Text color={tone.ok}>{'▓'.repeat(fill)}</Text><Text color={tone.line}>{'░'.repeat(20 - fill)}</Text>
+            <Text dimColor>{done.length}/{total} · {pct}%</Text>
+          </Box>
+          {nextEv ? <Text><Text color={tone.event}>◆ Дараагийн: </Text>{nextEv.title}<Text dimColor> · {nextEv.date.slice(5)}{nextEv.time ? ` ${nextEv.time}` : ''}</Text></Text> : null}
+          <Box flexDirection="row" marginTop={1} gap={1}>
+            {days.map((d, n) => {
+              const its = itemsOn(d)
+              const marks = `${its.some(x => x.kind === 'event') ? '◆' : ''}${its.some(x => x.kind === 'task') ? '●' : ''}` || '·'
+              return (
+                <Box key={`ptd-${d}`} flexDirection="column" alignItems="center" paddingX={1} borderStyle="round" borderColor={d === day ? tone.today : d === today ? tone.task : tone.line}>
+                  <Button key={`ptdb-${d}`} label={`${names[n]} ${d.slice(8)}`} plain onPress={() => void $.state.set(CAL_DAY, d)} />
+                  <Text color={its.some(x => x.kind === 'task' && x.date < today) ? tone.late : its.some(x => x.kind === 'event') ? tone.event : tone.task}>{marks}</Text>
+                </Box>
+              )
+            })}
+          </Box>
+          {itemsOn(day).length ? <Box flexDirection="column" marginTop={1}><Text dimColor>{day.slice(5)} · {itemsOn(day).length}</Text>{itemsOn(day).map(x => <Box key={`ptl-${x.file}`} flexDirection="column">{line(x)}{detail(x)}</Box>)}</Box> : null}
+          <Box marginTop={1}><Text><Text color={tone.late}>Хоцорсон {late.length}</Text><Text dimColor> · </Text><Text color={tone.muted}>Огноогүй {tasks.filter(x => !x.date).length}</Text><Text dimColor> · </Text><Text color={tone.ok}>Дууссан {done.length}</Text></Text></Box>
+          {view === 'timeline' ? (
+            <Box flexDirection="column">
+              {section('late', '⚠ ХОЦОРСОН', tone.late, late.sort(byDate), '⚠')}
+              {days.filter(d => d >= today).map(d => {
+                const its = itemsOn(d).sort((a, b) => (a.time || '99').localeCompare(b.time || '99'))
+                if (!its.length) return null
+                const wd = ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'][new Date(d).getUTCDay()]
+                return (
+                  <Box key={`tl-${d}`} flexDirection="column" marginTop={1}>
+                    <Text color={d === today ? tone.today : tone.muted}>{wd} {d.slice(5)}{d === today ? ' · өнөөдөр' : d === tomorrow ? ' · маргааш' : ''}</Text>
+                    {its.map(x => {
+                      const mk = x.kind === 'event' ? '◆' : x.status === 'waiting' ? '⏸' : x.status === 'inbox' ? '○' : '◐'
+                      const c = x.kind === 'event' ? tone.event : x.status === 'waiting' ? tone.turn : tone.task
+                      return (
+                        <Box key={`tlr-${x.file}`} flexDirection="column">
+                          <Box flexDirection="row" gap={1}>
+                            <Text color={tone.muted}>{x.time || '     '} │</Text>
+                            <Text color={c}>{mk}</Text>
+                            <Button key={`tlb-${x.file}`} label={shortTitle(x.title, x.project)} plain onPress={() => void $.state.set(CAL_SEL, sel === x.file ? '' : x.file)} />
+                            {x.owner ? <Text dimColor>👤 {x.owner.replace(/^"|"$/g, '')}</Text> : null}
+                          </Box>
+                          {detail(x)}
+                        </Box>
+                      )
+                    })}
+                  </Box>
+                )
+              })}
+              {section('nodate', 'ОГНООГҮЙ', tone.muted, tasks.filter(x => !x.date), '○')}
+            </Box>
+          ) : (
+            <Box flexDirection="column">
+              {section('late', '⚠ ХОЦОРСОН', tone.late, late.sort(byDate), '⚠')}
+              {section('next', 'NEXT ACTION', tone.task, group('next-action'), '◐')}
+              {section('wait', 'WAITING', tone.turn, group('waiting'), '⏸')}
+              {section('inbox', 'INBOX', '#8790a3', group('inbox'), '○')}
+            </Box>
+          )}
+          {done.length ? (
+            <Box flexDirection="column" marginTop={1}>
+              <Button key="pt-done" label={`${showDone ? '▾' : '▸'} DONE · ${done.length}`} plain onPress={() => void $.state.set(CAL_SEL, showDone ? '' : '__done')} />
+              {showDone ? done.slice(0, 12).map(x => <Text key={`ptx-${x.file}`} dimColor strikethrough>  ✓ {shortTitle(x.title, x.project)}</Text>) : null}
+            </Box>
+          ) : null}
+          {agents.length ? <Box marginTop={1}><Text color={tone.ok}>АГЕНТУУД ОДОО · {agents.length}</Text></Box> : null}
+          {agents.map(g => <Text key={`pta-${g.id}`}><Text color={tone.ok}>{g.status === 'running' ? '●' : '○'} </Text>{g.description}<Text dimColor> · {g.status}</Text></Text>)}
+          <Box marginTop={1} borderStyle="round" borderColor={tone.line} paddingX={1}>
+            <Input key="pt-capture" label="＋ " placeholder={`Барих — ${proj}… Enter → Inbox`} submitLabel="барих" onSubmit={value => void captureToInbox($, value)} />
+          </Box>
+          <Text dimColor>сонгосон мөр дээр: → өнөөдөр · → маргааш · ↗ Obsidian · ▶ Claude</Text>
+        </Box>
+      )
+    }
     return (
       <Box flexDirection="column" paddingX={1}>
         <Box flexDirection="row" justifyContent="space-between">
