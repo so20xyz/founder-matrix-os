@@ -1136,7 +1136,20 @@ def _claim(ref, sid):
     if first != mine and not same: return f"LOSE {claims[first][0]}"
     try: _fm_set(f, {"status": "in-progress", "started": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "claimed": DEVICE})
     except Exception as e: sys.stderr.write(f"relay claim: frontmatter бичигдсэнгүй ({e!r}) — claim хожсон хэвээр\n")
+    if not secret: _active_task_set(sid, rel)   # fm_changelog.py: this session's edits go to this task's «Өөрчлөлтийн түүх»
     return "WIN"
+
+
+ACTIVE_DIR = Path.home() / ".fmos" / "active-task"
+
+
+def _active_task_set(sid, rel):
+    """~/.fmos/active-task/<sid> = the task path this session works on (local only; 🔒 tasks are never written)."""
+    if not sid: return
+    try:
+        ACTIVE_DIR.mkdir(parents=True, exist_ok=True)
+        (ACTIVE_DIR / re.sub(r"[^A-Za-z0-9_-]", "_", str(sid))).write_text(rel or "", encoding="utf-8")
+    except OSError as e: sys.stderr.write(f"relay: active-task бичигдсэнгүй ({e!r})" + chr(10))
 
 
 def d_release(ref, sid):
@@ -1166,6 +1179,7 @@ def _release_task(ref, sid):
     # 🔒 task: an opaque release, so its opaque claims stop counting exactly like a path claim's do
     _dispatch_post({"op": "release", "task": _opaque_id(rel) if secret else rel, "device": DEVICE, "sid": sid,
                     "ts": round(time.time(), 3)})
+    _active_task_set(sid, "")
     upd = {"claimed": None, "started": None}
     if str(m.get("status") or "").strip().lower() == "in-progress": upd.update(status="inbox", completed=None)
     if not _fm_set(f, upd):
