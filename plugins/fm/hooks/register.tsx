@@ -2909,7 +2909,8 @@ export const register: Register = (on, options) => {
                 {goCell(`kbt-${x.file}`, press)}
               </Box>
               <Box flexDirection="row" justifyContent="space-between" gap={1}>
-                <Box flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">{x.project || '—'}</Text></Box>
+                {/* one project's board: the project line says nothing — show whose card it is (agent / itge.e) */}
+                <Box flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">{(scopeProj || projKey) ? ownerShort(x) : (x.project || '—')}</Text></Box>
                 <Box flexShrink={0}>{right}</Box>
               </Box>
             </Box>

@@ -8,6 +8,7 @@
 
 ## Unreleased
 
+- **0.9.11 · Өөрчилсөн:** Цаглабар Kanban — нэг төслийн самбар дээр картын доод мөр төслийн нэрийн оронд эзнийг (agent / гишүүн) харуулна; өөр agent-ийн task төслийн самбарт яагаад байгаа нь шууд харагдана.
 - **0.9.10 · Нэмсэн:** Figma bridge panel — comment бүрийн доор амьд төлөв (🕐 дараалалд / ⏳ ажиллаж байна · текст · цаг; `fig.py progress <id> queued|working|done|clear`), хэрэглэгчийн нэр «Та»-гийн оронд `~/.fmos/config.json`-ийн `member` (`GET /member`); `fm:figma` skill-д олон коммент-ийг туслах agent-аар зэрэг хийх журам (нэг frame = нэг бичигч).
 - **0.9.9 · Нэмсэн:** `tools/autostart/install.py` — Figma (3055) ба Premiere (3056) bridge-ийн серверийг нэвтрэх бүрт цонхгүй асаана: Windows = Startup `FM_Bridges.vbs`, macOS = `~/Library/LaunchAgents/com.foundermatrix.*-bridge.plist`; `--remove` арилгана.
 - **0.9.7 · Нэмсэн:** Цаглабар «⊟ Хэрэгсэл»-д «Видео» бүлэг — OBS студи (`tools/obs/obs_status.py`: obs-websocket асаалттай эсэх) ба Premiere bridge (`pr.py status`: FM Bridge panel холбогдсон эсэх); Architect, Creative, Project дүрд харагдана, «Сүүлд» багана pr.py / obs.cjs ашиглалтыг тэмдэглэнэ.
