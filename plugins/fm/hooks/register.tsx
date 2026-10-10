@@ -2,7 +2,7 @@ import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { CalItem, InboxItem, RoleInfo, SkillPin, ToolStatus, VaultTask } from '../types'
 import type { ClaimVerdict } from './parse'
-import { agentsReport, applyStatus, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planWindow, privateKeys, privateNote, privateOwner, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
+import { agentsReport, applyStatus, canonRole, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planWindow, privateKeys, privateNote, privateOwner, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
 
 // Task band (itge.e 2026-10-09): above the prompt, the open vault tasks this session's role owns.
 // Area agents match `owner`/`responsible` against their role's names, device-agnostic ("📚 Wiki" is every Wiki session, PC or Mac);
@@ -80,10 +80,11 @@ const KB_COLS = [
 // V4 project phases = the INAI activities (a task's `activity:`), in work order; a task without one falls under «Бусад»
 const PHASES = ['Brief', 'Бэлтгэл', 'Дизайн', 'Хөгжүүлэлт', 'Контент']
 // V4 agent table: role slug → display name, and the agent state note whose «## ТҮҮХ» gives «Сүүлийн мессеж»
-const AGENT_NAME: Record<string, string> = { creative: 'Creative', developer: 'Architect', resource: 'Wiki', project: 'Project', area: 'GTD', finance: 'Finance' }
-const STATE_NOTE: Record<string, string> = { creative: 'creative', developer: 'developer', resource: 'wiki', area: 'area', project: 'project' }
+const AGENT_NAME: Record<string, string> = { creative: 'Creative', architect: 'Architect', wiki: 'Wiki', project: 'Project', gtd: 'GTD', finance: 'Finance' }
+// baton file names under _system/fm/state/: the current slug first, then the pre-2026-10-10 one (fm_roles_migrate renames them)
+const STATE_NOTE: Record<string, string[]> = { creative: ['creative'], architect: ['architect', 'developer'], wiki: ['wiki', 'resource'], gtd: ['gtd', 'area'], project: ['project'] }
 // V6 «Агентууд»: the fixed rows, in design order (Finance always «хаалттай», never its tasks)
-const REVIEW_ROLES = ['creative', 'developer', 'resource', 'project', 'area', 'finance']
+const REVIEW_ROLES = ['creative', 'architect', 'wiki', 'project', 'gtd', 'finance']
 // V3 Higgsfield: the MCP server in its tool-name spelling ($.mcp.call accepts it); only the credits are ever shown (🔒)
 const HIGGS_SERVER = '5a008e26-266c-4e5b-88f7-171a0f359578'
 // V3 tool manifest (the data source until tool notes carry group: / roles:). check: process = a bridge CLI's `status`,
@@ -96,15 +97,15 @@ const TOOLS: ToolDef[] = [
     cmds: ['$ fig.py run -f pane.js -t 120', '$ fig.py export 12:345 --scale 2', '/ fm:figma  icon sheet зур'],
     check: { kind: 'process', script: 'tools/figma/fig.py', args: ['status'] } },
   { id: 'higgsfield', group: 'Дизайн', glyph: G.sparkle, name: 'Higgsfield', roles: ['creative'], check: { kind: 'mcp', tool: 'balance' } },
-  { id: 'framer', group: 'Дизайн', glyph: G.frame, name: 'Framer bridge', roles: ['creative', 'developer'], skill: 'fm:framer',
+  { id: 'framer', group: 'Дизайн', glyph: G.frame, name: 'Framer bridge', roles: ['creative', 'architect'], skill: 'fm:framer',
     cmds: ['$ fr.py status', '$ fr.py pages', '/ fm:framer'],
     check: { kind: 'process', script: 'tools/framer/fr.py', args: ['status'] } },
   { id: 'post', group: 'Контент', glyph: G.image, name: 'Post · carousel', roles: ['creative'], skill: 'fm:post', check: { kind: 'skill' } },
   { id: 'moodboard', group: 'Контент', glyph: G.grid, name: 'Moodboard', roles: ['creative'], check: { kind: 'skill' } },
   { id: 'relay', group: 'Холбоо', glyph: G.chat, name: 'Discord relay', roles: ['*'], skill: 'fm:relay', check: { kind: 'watching' } },
-  { id: 'notion', group: 'Холбоо', glyph: G.wiki, name: 'Notion', roles: ['project', 'area'], skill: 'fm:notion', check: { kind: 'skill' } },
+  { id: 'notion', group: 'Холбоо', glyph: G.wiki, name: 'Notion', roles: ['project', 'gtd'], skill: 'fm:notion', check: { kind: 'skill' } },
   { id: 'save', group: 'Vault', glyph: G.memo, name: 'fm:save', roles: ['*'], cmds: ['/ fm:save'], check: { kind: 'skill' } },
-  { id: 'watch', group: 'Vault', glyph: G.reload, name: 'fm:watch', roles: ['creative', 'resource'], cmds: ['/ fm:watch'], check: { kind: 'skill' } },
+  { id: 'watch', group: 'Vault', glyph: G.reload, name: 'fm:watch', roles: ['creative', 'wiki'], cmds: ['/ fm:watch'], check: { kind: 'skill' } },
   { id: 'brain', group: 'Vault', glyph: G.done, name: 'Brain check', roles: ['*'], check: { kind: 'health' } },
 ]
 const GROUPS = ['Дизайн', 'Контент', 'Холбоо', 'Vault']
@@ -777,7 +778,7 @@ function skillPinOf(text: string, file: string): SkillPin | null {
   return {
     id, file, command, icon: fmGet(fm, 'icon'), label: fmGet(fm, 'label') || id.replace(/^Skill - /, ''),
     description: fmGet(fm, 'description'), when: fmGet(fm, 'when'),
-    roles: fmList(fm, 'roles').map(r => r.toLowerCase()), order: Number.isFinite(order) ? order : 999,
+    roles: fmList(fm, 'roles').map(canonRole), order: Number.isFinite(order) ? order : 999,
   }
 }
 
@@ -898,7 +899,7 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
       const note = str(raw.note)
       const own = Array.isArray(raw.skills) ? raw.skills.filter((x): x is string => typeof x === 'string') : []
       const skills = [...new Set([...own, ...(await noteSkillsOf($, vault, note))])]
-      roles.push({ slug, label: agent.replace(/^[^\p{L}\p{N}]+/u, '').replace(/\s+Agent$/i, '').trim() || slug, agent, skills, note, channel: str(raw.channel), private: raw.private === true })
+      roles.push({ slug: canonRole(slug), label: agent.replace(/^[^\p{L}\p{N}]+/u, '').replace(/\s+Agent$/i, '').trim() || slug, agent, skills, note, channel: str(raw.channel), private: raw.private === true })
     }
   } catch {
     names = []
@@ -920,7 +921,7 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
   }
   await $.state.set(PRIV, priv)
   await $.state.set(SECRET, secret)
-  await $.state.set({ plugin: 'fm', key: 'role' }, roleSlug)
+  await $.state.set({ plugin: 'fm', key: 'role' }, canonRole(roleSlug))
   if (regOk) await $.state.set({ plugin: 'fm', key: 'roles' }, roles)
   await $.state.set(NAMES, names)
   await $.state.set(PROJ, project)
@@ -996,8 +997,8 @@ async function addComment($: EngineInterface, t: VaultTask, value: string, membe
 
 /** A registry role slug → its one-cell glyph (V1 Эзэн column, V6 agent rows). */
 function glyphOfRole(slug: string): string {
-  return slug === 'creative' ? G.creative : slug === 'developer' ? G.architect : slug === 'resource' ? G.wiki
-    : slug === 'project' ? G.project : slug === 'area' ? G.gtd : slug === 'finance' ? G.finance : slug === 'person' ? G.person : G.unknown
+  return slug === 'creative' ? G.creative : slug === 'architect' ? G.architect : slug === 'wiki' ? G.wiki
+    : slug === 'project' ? G.project : slug === 'gtd' ? G.gtd : slug === 'finance' ? G.finance : slug === 'person' ? G.person : G.unknown
 }
 
 /** Weeks between the Monday of `today` and the Monday of `day` (the day strip's calWeek). */
@@ -1282,9 +1283,13 @@ async function loadProject($: EngineInterface) {
   }
   const due = fmGet(fm, 'due')
   const lastMsg: Record<string, string> = {}
-  for (const [slug, note] of Object.entries(STATE_NOTE)) {
-    const md = await $.fs.read(`${vault}/_system/fm/state/${note}.md`).catch(() => '')
-    const line = lastHistoryLine(typeof md === 'string' ? md : '')
+  for (const [slug, notes] of Object.entries(STATE_NOTE)) {
+    let line = ''
+    for (const note of notes) {
+      const md = await $.fs.read(`${vault}/_system/fm/state/${note}.md`).catch(() => '')
+      line = lastHistoryLine(typeof md === 'string' ? md : '')
+      if (line) break
+    }
     const safe = sanitizeDesc(line)
     if (safe) lastMsg[slug] = safe
   }

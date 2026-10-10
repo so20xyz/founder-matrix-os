@@ -187,12 +187,11 @@ Vault-д `00-GTD`, `02-GTD`, `00-Inbox`, `01-Soul`, `03-Projects` (`1-Active`…
 
 | Slug | Agent | Юу хийдэг | Санал |
 |---|---|---|---|
-| `area` | Area | Inbox/GTD, өдөр, хүмүүс, хүрээ, систем | ✅ заавал |
+| `gtd` | GTD | Inbox/GTD, өдөр, хүмүүс, хүрээ, архив | ✅ заавал |
 | `project` | Project | Төсөл бүрт нэг тогтмол сешн; task-ууд тэр сешн дотор; мэргэжлийн ажлыг subagent-аар | ✅ |
-| `resource` | Resource | Лавлагаа, атом, fact-check | ✅ |
+| `wiki` | Wiki | Лавлагаа, атом, fact-check, гүн судалгаа (built-in Research / exa) | ✅ |
 | `finance` 🔒 | Finance advisor | Хувийн санхүү + бизнесийн тайлан (CSV); хөрөнгө оруулалтын зөвлөгөө, төлбөр хийхгүй | 3.6 бөглөсөн бол ✅ |
-| `research` | Research | Гүн судалгаа (built-in Research / exa) | хэрэгтэй бол |
-| `developer` | Developer | Код, хэрэгсэл (superpowers) | хэрэгтэй бол |
+| `architect` | Architect | Код, хэрэгсэл (superpowers), vault-ийн бүтэц (BOOT, template, base, registry) | хэрэгтэй бол |
 | `creative` | Creative | Moodboard (Pinterest → Soulcatcher), Figma, пост, бичвэр | хэрэгтэй бол |
 
 Мөн **Active төсөл бүрт нэг Project агентын дүр** санал болго: slug = англи kebab (жишээ `narny-site`), нэр = кирилл. Гишүүн батална. Тэр төслийн бүх ажил нэг сешнд.
@@ -253,7 +252,7 @@ Vault-д `00-GTD`, `02-GTD`, `00-Inbox`, `01-Soul`, `03-Projects` (`1-Active`…
                   "areas": ["Нарны Студи"], "projects": ["Нарны вэбсайт"]}],
   "goals": {"year": 2026, "why": "...",
             "items": [{"title": "...", "measure": "...", "area": "Нарны Студи", "projects": ["Нарны вэбсайт"]}]},
-  "roles": {"activate": ["project", "area", "resource", "finance"],
+  "roles": {"activate": ["project", "gtd", "wiki", "finance"],
             "work": [{"project": "Нарны вэбсайт", "slug": "narny-site", "name": "Нарны сайт"}]},
   "daily": true
 }

@@ -9,7 +9,7 @@ Getting Things Done: Урсгал: **Inbox → Task → Events** (+ Daily = өд
 | `Inbox/` | Хураалт, ангилаагүй (`type: capture`) | Capture |
 | `Events/` | Уулзалт ба бусад үйл явдал (`type: meeting` / `event`) | Meeting |
 
-- **Эзэн дүр:** [[02 Area]]
+- **Эзэн дүр:** [[GTD]]
 - Task-ийн `status`: `inbox → in-progress → completed` (+ `next-action`, `waiting`, `someday`, `cancelled`; хуучин `done` = `completed`). Нээлттэй = `inbox · next-action · in-progress · waiting`.
 - Эхлэхэд `started: YYYY-MM-DD HH:MM` + `claimed: PC|Mac`, дуусахад `completed: YYYY-MM-DD HH:MM`; самбарын «▶ Яг одоо» = одоо хийгдэж буй task.
 - Бүх task: `01-GTD/Tasks.base`.

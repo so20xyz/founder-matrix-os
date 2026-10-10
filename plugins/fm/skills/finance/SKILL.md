@@ -19,7 +19,7 @@ private/
 
 ## ⛔ Хатуу дүрэм (ямар ч нөхцөлд)
 
-1. **Зөвхөн Finance дүрийн сешн** (`finance`, тэмдэглэл `07 Finance`) энэ skill-ийг ажиллуулна. Эхлээд шалга:
+1. **Зөвхөн Finance дүрийн сешн** (`finance`, тэмдэглэл `Finance`) энэ skill-ийг ажиллуулна. Эхлээд шалга:
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/role/scripts/fm_role.py" show "${user_config.vault_path}" --sid "${CLAUDE_SESSION_ID}"
    ```

@@ -182,7 +182,7 @@ def test_ctx_role_from_registry(v):
 
 
 def test_ctx_role_scan_fallback(v):
-    v.write("03-Areas/AI Team/ai-workers/02 Area.md",
+    v.write("03-Areas/AI Team/ai-workers/GTD.md",
             "---\ntype: agent-role\nrole: area\n---\n\n## Rules\n\narea-rule-marker\n")
     v.registry({"sessions": {"sess-9": {"role": "area"}}})
     code, out, _ = run(CTX, ctx_payload(v.root, "sess-9"), {"FM_VAULT": str(v.root)})

@@ -4,9 +4,9 @@
 Role notes live in <vault>/03-Areas/AI Team/ai-workers/*.md (one note = one role).
 The session -> role map lives in <vault>/_system/fm/registry.json:
 
-    {"sessions": {"<sid>": {"role": "area", "project": "area", "group": "areas", "device": "Mac",
+    {"sessions": {"<sid>": {"role": "gtd", "project": "gtd", "group": "areas", "device": "Mac",
                             "title": "Area · Mac", "since": "YYYY-MM-DD"}},
-     "roles":    {"area": {"note": "03-Areas/AI Team/ai-workers/GTD.md", "group": "areas"}}}
+     "roles":    {"gtd": {"note": "03-Areas/AI Team/ai-workers/GTD.md", "group": "areas"}}}
 
 A bound session gets project = <role slug> (and the role's group), so the relay groups the same role on every
 device into ONE Discord channel and ONE baton (state/<slug>.md); the " · <device>" title suffix is display only.
@@ -52,12 +52,15 @@ REGISTRY = Path("_system") / "fm" / "registry.json"
 ROLE_TYPES = {"agent-role", "ai-worker"}
 # 2026-10-05 consolidation: old role slugs/names -> current role slug (role: frontmatter of the new notes).
 LEGACY_ROLE_ALIASES = {
-    "gtd": "area", "inbox": "area", "inbox-admin": "area", "area-admin": "area",
-    "sys-admin": "developer", "session-admin": "developer", "tool-developer": "developer", "architect": "developer",
-    "wiki": "resource", "wiki-admin": "resource", "research": "resource",
+    "area": "gtd", "inbox": "gtd", "inbox-admin": "gtd", "area-admin": "gtd",
+    "developer": "architect", "sys-admin": "architect", "session-admin": "architect", "tool-developer": "architect",
+    "resource": "wiki", "wiki-admin": "wiki", "research": "wiki",
     "project-admin": "project", "creative-director": "creative",
     "content-writer": "content", "social-admin": "content", "dispatcher": "operator",
 }
+# 2026-10-10 rename (developer→architect, area→gtd, resource/research→wiki): a vault not yet migrated keeps the old slug,
+# so each current slug also falls back to its old one.
+ROLE_FALLBACK = {"architect": ["developer"], "gtd": ["area"], "wiki": ["resource", "research"]}
 
 
 def _out(text: str) -> None:
@@ -165,10 +168,11 @@ def find_role(roles: List[Dict[str, object]], query: str) -> Optional[Dict[str, 
     hits = [r for r in roles if q in str(r["slug"]).lower() or q in str(r["name"]).lower()]
     if len(hits) == 1:
         return hits[0]
-    alias = LEGACY_ROLE_ALIASES.get(slugify(re.sub(r"^\d+\s*", "", q)))
-    if alias:
+    key = slugify(re.sub(r"^\d+\s*", "", q))
+    alias = LEGACY_ROLE_ALIASES.get(key, key)
+    for cand in [alias] + ROLE_FALLBACK.get(alias, []):
         for r in roles:
-            if str(r["slug"]).lower() == alias:
+            if str(r["slug"]).lower() == cand:
                 return r
     return None
 

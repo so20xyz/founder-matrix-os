@@ -44,7 +44,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Дүрэм: `<V>/_system/BO
 **Эзэн (owner)** нь task-д заавал байна. Гурван утгын нэг:
 - `me`: гишүүн өөрөө;
 - `"@Нэр"`: багийн өөр гишүүн;
-- дүрийн slug: `area`, `project`, `resource`, `research`, `creative`, төслийн slug гэх мэт. Энэ тохиолдолд Agent хийнэ.
+- дүрийн slug: `gtd`, `project`, `wiki`, `architect`, `creative`, төслийн slug гэх мэт. Энэ тохиолдолд Agent хийнэ.
 
 Байгаа дүрүүдийг `<V>/03-Areas/AI Team/ai-workers/` доторх note-уудын `role:` талбараас хар.
 

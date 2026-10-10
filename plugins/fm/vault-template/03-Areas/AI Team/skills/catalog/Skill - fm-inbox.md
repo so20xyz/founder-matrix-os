@@ -12,7 +12,7 @@ icon: "📥"
 label: "Inbox ангилах"
 description: "01-GTD/Inbox-ийн зүйлсийг ангилж төлөвлөгөөний хүснэгт гаргана — баталсны дараа л зөөнө."
 when: "Inbox-д 5+ зүйл хуримтлагдахад."
-roles: [area,developer,all]
+roles: [gtd,architect,all]
 tags:
   - skill
 ai-first: true

@@ -37,7 +37,7 @@
     },
     {
       "order": 4,
-      "role": "developer",
+      "role": "architect",
       "title": "🏛️ Architect",
       "group": "Areas",
       "cwd": "",
@@ -46,7 +46,7 @@
     },
     {
       "order": 5,
-      "role": "area",
+      "role": "gtd",
       "title": "📥 GTD",
       "group": "Areas",
       "cwd": "",
@@ -55,7 +55,7 @@
     },
     {
       "order": 6,
-      "role": "resource",
+      "role": "wiki",
       "title": "📚 Wiki",
       "group": "Resources",
       "cwd": "04-Resources",
@@ -64,7 +64,7 @@
     },
     {
       "order": 7,
-      "role": "resource",
+      "role": "wiki",
       "title": "📖 Library",
       "group": "Resources",
       "cwd": "04-Resources/library",
@@ -73,7 +73,7 @@
     },
     {
       "order": 8,
-      "role": "research",
+      "role": "wiki",
       "title": "🔍 Research · <сэдэв>",
       "group": "Resources",
       "cwd": "04-Resources/Research",
@@ -111,7 +111,7 @@
   "routines": [
     {
       "title": "🧠 Matrix Harvester — чат → атом",
-      "role": "resource",
+      "role": "wiki",
       "schedule": "2 цаг тутам",
       "note": "Сешнүүдийн ярианаас шинэ баримт/шийдвэрийг атом болгоно (harvest.py)."
     }

@@ -10,23 +10,23 @@ ai-first: true
 
 ## For future agent
 
-Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт хийхээсээ өмнө үүнийг унш — хямд, хурдан. Хавтас нэмэх, хасах бүрд шинэчил (эзэн: [[02 Area]]). Хоосон хавтсыг зориудаар жагсаасан: шинэ note-оо хаана байрлуулахаа эндээс сонго.
+Vault-ийн хавтасны бүтэц ба гол файлууд. Хайлт хийхээсээ өмнө үүнийг унш — хямд, хурдан. Хавтас нэмэх, хасах бүрд шинэчил (эзэн: [[GTD]]). Хоосон хавтсыг зориудаар жагсаасан: шинэ note-оо хаана байрлуулахаа эндээс сонго.
 
 ## Хавтасны бүтэц
 
 | Хавтас | Юу | Эзэн дүр |
 |---|---|---|
-| `01-GTD/Inbox/` | Хураалт, ангилаагүй | [[02 Area]] |
-| `00-Soul/` | [[SOUL]], үнэт зүйл, хэв маяг | [[02 Area]] |
-| `01-GTD/` | `Inbox/` · `Daily/` · `Tasks/` · `Events/` | [[02 Area]] |
-| `02-Projects/` | `<Нэр>/` (хавтгай, төлөв = `status:`) | [[01 Project]] |
-| `03-Areas/` | `Business/` (companies · finances · tools) · `people/` · `AI Team/` · `Life/` | [[02 Area]] |
-| `03-Areas/Business/finances/private/` | 🔒 Хувийн санхүү | [[07 Finance]] |
-| `04-Resources/` | `references/` · `glossary/` · `sources/` · `library/` | [[03 Resource]] |
-| `04-Resources/Atomic/` | `decisions/` · `knowledge/` | [[03 Resource]] |
-| `03-Areas/Goals/` | Зорилго | [[02 Area]] |
-| `99-Archive/` | Архив | [[02 Area]] |
-| `_system/` | BOOT · STATUS · templates · bases · logs · fm | [[02 Area]] |
+| `01-GTD/Inbox/` | Хураалт, ангилаагүй | [[GTD]] |
+| `00-Soul/` | [[SOUL]], үнэт зүйл, хэв маяг | [[GTD]] |
+| `01-GTD/` | `Inbox/` · `Daily/` · `Tasks/` · `Events/` | [[GTD]] |
+| `02-Projects/` | `<Нэр>/` (хавтгай, төлөв = `status:`) | [[Project]] |
+| `03-Areas/` | `Business/` (companies · finances · tools) · `people/` · `AI Team/` · `Life/` | [[GTD]] |
+| `03-Areas/Business/finances/private/` | 🔒 Хувийн санхүү | [[Finance]] |
+| `04-Resources/` | `references/` · `glossary/` · `sources/` · `library/` | [[Wiki]] |
+| `04-Resources/Atomic/` | `decisions/` · `knowledge/` | [[Wiki]] |
+| `03-Areas/Goals/` | Зорилго | [[GTD]] |
+| `99-Archive/` | Архив | [[GTD]] |
+| `_system/` | BOOT · STATUS · templates · bases · logs · fm | [[GTD]] |
 
 ## Гол файлууд
 

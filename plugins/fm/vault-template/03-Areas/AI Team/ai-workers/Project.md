@@ -32,7 +32,7 @@ aliases:
   - "📁 Portfolio"
 ---
 
-# 01 Project
+# Project
 
 ## For future agent
 
@@ -72,9 +72,9 @@ Project агент — `02-Projects/`-ийн эзэн. **Төсөл бүрт н�
 
 | Юу | Хэнд |
 |---|---|
-| Inbox, хуваарь, хүмүүс | [[02 Area]] |
-| Лавлагаа, атом, fact-check | [[03 Resource]] |
-| Гүн судалгаа | [[04 Research]] |
-| Код, хэрэгсэл, plugin | [[05 Developer]] |
-| Дизайн, пост, moodboard | [[06 Creative]] |
-| Бизнес санхүү (тайлан, мөнгөн урсгал) | [[07 Finance]] |
+| Inbox, хуваарь, хүмүүс | [[GTD]] |
+| Лавлагаа, атом, fact-check | [[Wiki]] |
+| Гүн судалгаа | [[Wiki]] |
+| Код, хэрэгсэл, plugin | [[Architect]] |
+| Дизайн, пост, moodboard | [[Creative Director]] |
+| Бизнес санхүү (тайлан, мөнгөн урсгал) | [[Finance]] |

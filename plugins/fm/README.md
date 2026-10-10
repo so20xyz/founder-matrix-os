@@ -14,7 +14,7 @@
 |---|---|
 | Үндсэн skill (10) | `update` (ганц команд), `save`, `inbox`, `task`, `project`, `people`, `role`, `finance` 🔒, `vault`, `setup` |
 | Хэрэгслийн skill (6) | `relay` (Discord), `figma`, `framer`, `notion`, `post` (пост/carousel/poster), `watch` (бичлэг → транскрипт) |
-| Agent (7) | `project`, `area`, `resource`, `research`, `developer`, `creative`, `finance` — vault дахь дүрийн тэмдэглэл рүү заадаг нимгэн заагч |
+| Agent (6) | `project`, `gtd`, `wiki`, `architect`, `creative`, `finance` (хуучин `area`/`resource`/`research`/`developer` slug alias хэвээр) — vault дахь дүрийн тэмдэглэл рүү заадаг нимгэн заагч |
 | Hook | SessionStart: `_system/BOOT.md` + дүрийн дүрэм (≤10 KB). PostToolUse: тэмдэглэлийн lint; token болон хувийн санхүүг буруу газар бичихийг **блоклоно** |
 | Script | `fm_doctor.py` (компьютерын шаардлага, албан ёсны суулгагч), `fm_setup.py`, `fm_onboard.py`, `fm_context.py`, `fm_lint.py` |
 | Tools | `tools/relay`, `tools/figma`, `tools/framer`, `tools/notion`, `tools/watch` — хэрэгслийн skill-үүдийн код (`${CLAUDE_PLUGIN_ROOT}/tools/...`) |

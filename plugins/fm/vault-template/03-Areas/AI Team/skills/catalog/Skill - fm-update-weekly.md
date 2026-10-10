@@ -12,7 +12,7 @@ icon: "🗓"
 label: "Долоо хоногийн тойм"
 description: "Хуучирсан task, хөдлөөгүй төсөл, hot list, тархины шалгалт, дараагийн долоо хоногийн гол 3."
 when: "Баасан/Ням гарагт."
-roles: [area,all]
+roles: [gtd,all]
 tags:
   - skill
 ai-first: true

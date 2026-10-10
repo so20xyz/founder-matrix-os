@@ -83,7 +83,7 @@ def test_boot_and_role_rules_fit_session_context():
         assert r.returncode == 0, r.stderr
         regp = vault / "_system" / "fm" / "registry.json"
         reg = json.loads(regp.read_text(encoding="utf-8"))
-        assert set(reg["roles"]) == {"project", "area", "resource", "research", "developer", "creative", "finance"}
+        assert set(reg["roles"]) == {"project", "gtd", "wiki", "architect", "creative", "finance"}
         notes = [vault / "_system" / "BOOT.md"] + sorted((vault / "03-Areas" / "AI Team" / "ai-workers").glob("*.md"))
         for eol in ("LF", "CRLF"):   # a Windows checkout (core.autocrlf) gives the templates CRLF
             if eol == "CRLF":
@@ -165,7 +165,7 @@ def test_relay_one_channel_per_role_across_devices():
     try:
         vault = tmp / "vault"
         (vault / "_system" / "fm").mkdir(parents=True)
-        reg = {"version": 1, "roles": {"area": {"note": "03-Areas/AI Team/ai-workers/02 Area.md", "group": "areas"},
+        reg = {"version": 1, "roles": {"area": {"note": "03-Areas/AI Team/ai-workers/GTD.md", "group": "areas"},
                                        "finance": {"note": "x", "private": True}},
                "sessions": {"s-mac": {"role": "area", "device": "Mac", "title": "Area · Mac", "project": "area"},
                             "s-pc": {"role": "area", "device": "PC", "title": "Area · PC", "project": "area"},
@@ -295,9 +295,8 @@ def test_sidebar_layout_matches_concept():
     orders = [x["order"] for x in lay["sessions"]]
     assert orders == sorted(orders) and orders[0] == 1
     gtd = [x for x in lay["sessions"] if x["title"] == "📥 GTD"]
-    assert gtd and gtd[0]["role"] == "area" and gtd[0]["required"]  # setup-ийн сешн өөрөө GTD болно; order = sidebar дээрх дараалал
+    assert gtd and gtd[0]["role"] == "gtd" and gtd[0]["required"]  # setup-ийн сешн өөрөө GTD болно; order = sidebar дээрх дараалал
     roles = {a.stem for a in (PLUGIN / "agents").glob("*.md")}
-    roles |= {"area", "developer", "resource", "research"}  # engine role keys behind agents gtd / architect / wiki (2026-10-09)
     for x in lay["sessions"]:
         assert x["group"] in lay["groups"], x
         assert x["role"] in roles or x["role"].startswith("<"), x

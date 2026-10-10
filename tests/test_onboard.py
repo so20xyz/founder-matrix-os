@@ -174,7 +174,7 @@ def test_setup_creates_fm_registry_not_relay(c):
     assert not (c.vault / "_system/relay").exists(), "template must not ship _system/relay"
     reg = json.loads(c.read("_system/fm/registry.json"))
     assert reg["sessions"] == {} and reg.get("version") == 1
-    want = {"project", "area", "resource", "research", "developer", "creative", "finance"}
+    want = {"project", "gtd", "wiki", "architect", "creative", "finance"}
     assert set(reg["roles"]) == want, reg["roles"].keys()
     for slug, info in reg["roles"].items():
         assert (c.vault / info["note"]).is_file(), (slug, info)
@@ -353,9 +353,9 @@ def test_roles_and_registry(c):
     assert roles["narny-site"]["note"] == "03-Areas/AI Team/ai-workers/10 Нарны сайт.md"
     assert roles["narny-site"]["folders"] == ["02-Projects/Нарны вэбсайт/"]
     assert roles["marafon-beltgel"]["active"] is True
-    for slug in ("project", "area", "resource", "finance"):
-        assert roles[slug]["active"] is True, slug       # "gtd" in the answers maps to "area"
-    for slug in ("research", "developer", "creative"):
+    for slug in ("project", "gtd", "wiki", "finance"):
+        assert roles[slug]["active"] is True, slug
+    for slug in ("architect", "creative"):
         assert roles[slug]["active"] is False, slug
     note = c.fm("03-Areas/AI Team/ai-workers/10 Нарны сайт.md")
     assert note["role"] == "narny-site" and note["owns"] == ["02-Projects/Нарны вэбсайт/"]
@@ -379,20 +379,20 @@ def test_sessions_are_preserved(c):
 
 def test_role_bind_groups_sessions_by_role(c):
     """fm_role bind: project = role slug + role group (one Discord channel / baton per role on every device);
-    old slug "gtd" resolves to the Area agent via its aliases; private finance stays private; unbind clears it."""
+    old slug "area" resolves to the GTD role; private finance stays private; unbind clears it."""
     c.setup()
     role = PLUGIN / "skills/role/scripts/fm_role.py"
     code, out, err = run(role, "bind", c.vault, "gtd", "--sid", "sid-mac", "--device", "Mac")
     assert code == 0, (out, err)
     res = json.loads(out)
-    assert res["role"] == "area" and res["title"] == "Area · Mac", res
+    assert res["role"] == "gtd" and res["title"] == "GTD · Mac", res
     code, out, err = run(role, "bind", c.vault, "area", "--sid", "sid-pc", "--device", "PC")
     assert code == 0, (out, err)
     code, out, err = run(role, "bind", c.vault, "finance", "--sid", "sid-fin", "--device", "Mac")
     assert code == 0 and json.loads(out)["private"] is True, (out, err)
     reg = json.loads(c.read("_system/fm/registry.json"))
     s = reg["sessions"]
-    assert s["sid-mac"]["project"] == s["sid-pc"]["project"] == "area", s
+    assert s["sid-mac"]["project"] == s["sid-pc"]["project"] == "gtd", s
     assert s["sid-mac"]["group"] == "areas", s
     assert s["sid-fin"]["private"] is True and s["sid-fin"]["project"] == "finance", s
     code, out, err = run(role, "unbind", c.vault, "--sid", "sid-pc")
@@ -529,14 +529,14 @@ def test_registry_writes_go_through_regstore(c):
     regp = c.vault / "_system/fm/registry.json"
     bak = regp.with_name("registry.json.bak")
     reg = json.loads(regp.read_text(encoding="utf-8"))
-    reg["sessions"]["live"] = {"role": "area", "device": "PC"}
-    dropped = reg["roles"].pop("research")
+    reg["sessions"]["live"] = {"role": "gtd", "device": "PC"}
+    dropped = reg["roles"].pop("wiki")
     regp.write_text(json.dumps(reg, ensure_ascii=False), encoding="utf-8")
     code, out, err = run(SETUP, c.vault, "--member", "TBD", "--merge-registry")
     assert code == 0, (code, out, err)
     reg = json.loads(regp.read_text(encoding="utf-8"))
-    assert reg["roles"]["research"] == dropped and reg["sessions"]["live"]["device"] == "PC", reg
-    assert bak.is_file() and "research" not in json.loads(bak.read_text(encoding="utf-8"))["roles"], "setup: no .bak"
+    assert reg["roles"]["wiki"] == dropped and reg["sessions"]["live"]["device"] == "PC", reg
+    assert bak.is_file() and "wiki" not in json.loads(bak.read_text(encoding="utf-8"))["roles"], "setup: no .bak"
     bak.unlink()
     code, out, err = c.onboard()
     assert code == 0, (code, out, err)

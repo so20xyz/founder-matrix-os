@@ -3,7 +3,7 @@
   "sessions": {},
   "roles": {
     "project": {
-      "note": "03-Areas/AI Team/ai-workers/01 Project.md",
+      "note": "03-Areas/AI Team/ai-workers/Project.md",
       "channel": "01-project",
       "group": "projects",
       "folders": [
@@ -19,11 +19,12 @@
         "superpowers:writing-plans"
       ],
       "private": false,
-      "active": true
+      "active": true,
+      "agent": "fm:project"
     },
-    "area": {
-      "note": "03-Areas/AI Team/ai-workers/02 Area.md",
-      "channel": "02-area",
+    "gtd": {
+      "note": "03-Areas/AI Team/ai-workers/GTD.md",
+      "channel": "02-gtd",
       "group": "areas",
       "folders": [
         "01-GTD/",
@@ -31,7 +32,6 @@
         "00-Soul/",
         "03-Areas/Goals/",
         "99-Archive/",
-        "_system/",
         "Home.md"
       ],
       "skills": [
@@ -40,70 +40,59 @@
         "fm:update",
         "fm:people",
         "fm:save",
-        "fm:setup",
-        "fm:role",
-        "fm:vault",
-        "fm:relay",
-        "fm:notion",
-        "obsidian:obsidian-bases"
+        "fm:notion"
       ],
       "private": false,
-      "active": true
+      "active": true,
+      "agent": "fm:gtd"
     },
-    "resource": {
-      "note": "03-Areas/AI Team/ai-workers/03 Resource.md",
-      "channel": "03-resource",
+    "wiki": {
+      "note": "03-Areas/AI Team/ai-workers/Wiki.md",
+      "channel": "03-wiki",
       "group": "resources",
       "folders": [
         "04-Resources/",
-        "04-Resources/Atomic/"
+        "04-Resources/Atomic/",
+        "04-Resources/sources/"
       ],
       "skills": [
         "fm:save",
         "fm:vault",
         "fm:watch",
         "obsidian:defuddle",
-        "obsidian:json-canvas"
-      ],
-      "private": false,
-      "active": true
-    },
-    "research": {
-      "note": "03-Areas/AI Team/ai-workers/04 Research.md",
-      "channel": "04-research",
-      "group": "research",
-      "folders": [
-        "04-Resources/sources/"
-      ],
-      "skills": [
-        "fm:save",
-        "fm:watch",
+        "obsidian:json-canvas",
         "exa"
       ],
       "private": false,
-      "active": true
+      "active": true,
+      "agent": "fm:wiki"
     },
-    "developer": {
-      "note": "03-Areas/AI Team/ai-workers/05 Developer.md",
-      "channel": "05-developer",
+    "architect": {
+      "note": "03-Areas/AI Team/ai-workers/Architect.md",
+      "channel": "04-architect",
       "group": "development",
       "folders": [
-        "03-Areas/AI Team/skills/"
+        "03-Areas/AI Team/",
+        "_system/"
       ],
       "skills": [
+        "fm:setup",
+        "fm:role",
         "fm:vault",
         "fm:relay",
+        "obsidian:obsidian-bases",
         "superpowers:subagent-driven-development",
         "superpowers:systematic-debugging",
         "superpowers:writing-skills",
         "skill-creator"
       ],
       "private": false,
-      "active": true
+      "active": true,
+      "agent": "fm:architect"
     },
     "creative": {
-      "note": "03-Areas/AI Team/ai-workers/06 Creative.md",
-      "channel": "06-creative",
+      "note": "03-Areas/AI Team/ai-workers/Creative Director.md",
+      "channel": "05-creative",
       "group": "development",
       "folders": [],
       "skills": [
@@ -114,10 +103,11 @@
         "fm:save"
       ],
       "private": false,
-      "active": true
+      "active": true,
+      "agent": "fm:creative"
     },
     "finance": {
-      "note": "03-Areas/AI Team/ai-workers/07 Finance.md",
+      "note": "03-Areas/AI Team/ai-workers/Finance.md",
       "channel": "",
       "group": "areas",
       "folders": [
@@ -130,7 +120,8 @@
         "finance:variance-analysis"
       ],
       "private": true,
-      "active": true
+      "active": true,
+      "agent": "fm:finance"
     }
   }
 }

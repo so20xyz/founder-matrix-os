@@ -19,7 +19,7 @@ Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
 |---|---|
 | `type` | `task` |
 | `status` | `inbox` · `someday` · `next-action` · `in-progress` · `waiting` · `completed` · `cancelled` (`done` биш — `completed`; хуучин `done`-ийг скрипт `completed` гэж уншина) |
-| `owner` | **дүрийн slug** (`area`, `project`, `creative`, төслийн slug …) — тэр Agent хийнэ · `me` — гишүүн өөрөө · `"@Нэр"` — багийн гишүүн. Скрипт дүрийн нэрийг (`"Content Writer"`) slug болгож хувиргана. **Дүр, төхөөрөмж биш** — «Wiki · PC» гэж бүү бич |
+| `owner` | **дүрийн slug** (`gtd`, `project`, `wiki`, `architect`, `creative`, төслийн slug …) — тэр Agent хийнэ · `me` — гишүүн өөрөө · `"@Нэр"` — багийн гишүүн. Скрипт дүрийн нэрийг (`"Content Writer"`) slug болгож хувиргана. **Дүр, төхөөрөмж биш** — «Wiki · PC» гэж бүү бич |
 | `started` | `YYYY-MM-DD HH:MM` (локал цаг) — `in-progress` болоход бичигдэнэ; аль хэдийн `in-progress` бол дарж бичихгүй |
 | `completed` | `YYYY-MM-DD HH:MM` — `completed` **болох** үед шинээр (өмнө нь `completed`/хуучин `done` биш байсан бол хуучин утгыг дарна); аль хэдийн `completed` бол хөндөхгүй |
 | `claimed` | `PC` · `Mac` — аль төхөөрөмж авсан (`started`-тай хамт), **хашилтгүй** (`claimed: PC`). Хоосон = хэн ч аваагүй. **Requeue** = `inbox` · `next-action` · `waiting` · `someday` · `cancelled` руу шилжих (буцаах, шилжүүлэх, түр зогсоох) → `claimed`, `started`, `completed` гурвуулаа хоосорно |

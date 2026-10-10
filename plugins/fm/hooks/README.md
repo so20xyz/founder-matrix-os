@@ -17,8 +17,8 @@ Both scripts handle all of their own errors. A bug in a hook exits 0, so it neve
 - **Registry:** `<vault>/_system/fm/registry.json`. Expected shape:
   ```json
   {
-    "roles":    { "area": { "note": "02 Area", "private": false } },
-    "sessions": { "<session-id>": { "role": "area", "project": "area", "device": "Mac", "private": false } }
+    "roles":    { "gtd": { "note": "GTD", "private": false } },
+    "sessions": { "<session-id>": { "role": "gtd", "project": "gtd", "device": "Mac", "private": false } }
   }
   ```
   - The `note` value can be a note name (looked up in `03-Areas/AI Team/ai-workers/`), a path relative to the vault, or a `[[wikilink]]`. Paths that point outside the vault are ignored.

@@ -24,7 +24,7 @@ status: active
 
 ## For future agent
 
-🔒 Сар бүр давтагддаг нэг төлбөр (`type: bill`). Зөвхөн [[07 Finance]] дүр уншиж/бичнэ; агуулга нь vault-аас гарахгүй. `due_day` = сарын хэдэнд төлөх, `last_paid` = сүүлд төлсөн огноо. Сарын тойм: [[Сарын төлбөр]].
+🔒 Сар бүр давтагддаг нэг төлбөр (`type: bill`). Зөвхөн [[Finance]] дүр уншиж/бичнэ; агуулга нь vault-аас гарахгүй. `due_day` = сарын хэдэнд төлөх, `last_paid` = сүүлд төлсөн огноо. Сарын тойм: [[Сарын төлбөр]].
 
 - `category`: housing | utilities | telecom | loan | insurance | subscription | education | other
 - `status`: active | paused | closed

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { parseTask, rank } from './parse'
+import { parseTask, rank, canonRole } from './parse'
 
 const note = (fm: string) => `---\n${fm}\n---\n\n# x\n`
 
@@ -238,10 +238,12 @@ test('fmtAgo reads local stamps on the shifted clock', () => {
 
 test('roleOf maps owners to registry roles', () => {
   expect(roleOf('"🎨 Creative"')).toBe('creative')
-  expect(roleOf('🏛️ Architect Agent · PC')).toBe('developer')
-  expect(roleOf('Tool Developer (PC)')).toBe('developer')
-  expect(roleOf('📚 Wiki')).toBe('resource')
-  expect(roleOf('📥 GTD')).toBe('area')
+  expect(roleOf('🏛️ Architect Agent · PC')).toBe('architect')
+  expect(roleOf('Tool Developer (PC)')).toBe('architect')
+  expect(roleOf('📚 Wiki')).toBe('wiki')
+  expect(roleOf('📥 GTD')).toBe('gtd')
+  // legacy registry slugs read as the current ones
+  expect(['developer', 'area', 'resource', 'research', 'project', 'Architect'].map(canonRole)).toEqual(['architect', 'gtd', 'wiki', 'wiki', 'project', 'architect'])
   expect(roleOf('💼 Project')).toBe('project')
   expect(roleOf('📁 Alpha Site')).toBe('project')
   expect(roleOf('🔒 Finance')).toBe('finance')

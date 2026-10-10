@@ -10,4 +10,4 @@
 - Нэр: `YYYY-MM-DD - <ascii-slug>.md`; гарчиг, бие монголоор.
 - Атом бүр ≥1 PARA гэртэй (`projects:` эсвэл `areas:` талбарт холбоос).
 - Шийдвэрийг дарж бичихгүй: эргэлт гарвал шинэ атом + хуучных нь `supersededby`.
-- **Эзэн дүр:** [[03 Resource]]. Харах: `04-Resources/Decisions.base`, `04-Resources/Atoms.base`.
+- **Эзэн дүр:** [[Wiki]]. Харах: `04-Resources/Decisions.base`, `04-Resources/Atoms.base`.

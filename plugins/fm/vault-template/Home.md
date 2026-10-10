@@ -46,13 +46,12 @@ aliases:
 
 | Slug | Agent | Юу хийдэг |
 |---|---|---|
-| `project` | [[01 Project]] | Төслүүд; төсөл бүр өөрийн ажлын дүртэй (`10+`) |
-| `area` | [[02 Area]] | Inbox, task, өдөр, хүмүүс, хүрээ, систем |
-| `resource` | [[03 Resource]] | Лавлагаа, атом, fact-check |
-| `research` | [[04 Research]] | Гүн судалгаа → `/fm:save` |
-| `developer` | [[05 Developer]] | Код, хэрэгсэл, plugin |
-| `creative` | [[06 Creative]] | Moodboard, Figma, пост, бичвэр |
-| `finance` | [[07 Finance]] 🔒 | Хувийн санхүү + бизнесийн тайлан |
+| `project` | [[Project]] | Төслүүд; төсөл бүр өөрийн ажлын дүртэй (`10+`) |
+| `gtd` | [[GTD]] | Inbox, task, өдөр, хүмүүс, хүрээ, архив |
+| `wiki` | [[Wiki]] | Лавлагаа, атом, fact-check, гүн судалгаа |
+| `architect` | [[Architect]] | Код, хэрэгсэл, plugin, vault-ийн бүтэц |
+| `creative` | [[Creative Director]] | Moodboard, Figma, пост, бичвэр |
+| `finance` | [[Finance]] 🔒 | Хувийн санхүү + бизнесийн тайлан |
 
 ![[03-Areas/Agents.base#Ростер]]
 

@@ -55,7 +55,7 @@ def current_layout():
     w(v, "05-Resources/Atomic/knowledge/Cur.md", "---\ntype: atomic\nprojects:\n  - \"[[03-Projects/1-Active/Beta/Beta]]\"\n---\ncur atom\n")
     w(v, "05-Resources/Atomic/knowledge/Alone.md", "---\ntype: atomic\n---\nno home\n")
     w(v, "04-Areas/Business/finances/private/Secret.md", "---\ntype: finance-record\n---\nSECRET\n")
-    w(v, "04-Areas/AI Team/ai-workers/02 Area.md", "---\ntype: agent-role\nrole: area\n---\nrole\n")
+    w(v, "04-Areas/AI Team/ai-workers/GTD.md", "---\ntype: agent-role\nrole: area\n---\nrole\n")
     w(v, "01-Soul/SOUL.md", "---\ntype: soul\n---\nsoul\n")
     w(v, "00-GTD/Tasks/Run it.md", "---\ntype: task\nproject: \"[[03-Projects/1-Active/Beta/Beta]]\"\n---\nt\n")
     rep = json.loads(subprocess.run([sys.executable, str(BRAIN), str(v), "--json"], capture_output=True, text=True, encoding="utf-8").stdout)

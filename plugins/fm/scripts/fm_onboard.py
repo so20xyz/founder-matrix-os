@@ -48,7 +48,7 @@ Answers schema (every section is optional; "quick mode" = soul, projects, roles)
                   "why": "...", "areas": ["..."], "projects": ["..."]}],   # kind "tool" -> 03-Areas/Business/tools/
   "goals": {"year": 2026, "why": "...",
             "items": [{"title": "...", "measure": "...", "area": "...", "projects": ["..."]}]},
-  "roles": {"activate": ["project", "area", "resource", "finance"],
+  "roles": {"activate": ["project", "gtd", "wiki", "finance"],
             "work": [{"project": "<project name>", "slug": "english-kebab", "name": "...", "focus": "..."}]
                     # or "work": "auto" = one work role per active project
            },
@@ -156,10 +156,10 @@ def apply_layout(vault):
         globals()[k] = _remap(vault, v)
 
 
-CORE_ROLES = ["project", "area", "resource", "research", "developer", "creative", "finance"]
+CORE_ROLES = ["project", "gtd", "wiki", "architect", "creative", "finance"]
 # v0.2 slugs → v0.3 agents (old answers.json files keep working)
-ROLE_ALIASES = {"gtd": "area", "architect": "developer", "wiki": "resource", "content-writer": "creative", "creative-director": "creative",
-                "tool-developer": "developer"}
+ROLE_ALIASES = {"area": "gtd", "developer": "architect", "resource": "wiki", "research": "wiki", "content-writer": "creative",
+                "creative-director": "creative", "tool-developer": "architect"}
 
 SOUL_PLACEHOLDER = "<Нэг догол мөр: юу хийдэг, юуны төлөө>"
 INDEX_PLACEHOLDER = "_(одоогоор байхгүй — `/fm:project`-оор нэм)_"
@@ -811,7 +811,7 @@ class Onboard(object):
                 brain.set_section("Яагаад", ["**Амлалт:** %s" % text(p.get("why"))])
             if text(p.get("done_when")):
                 brain.set_section("Дууссан", [text(p.get("done_when"))])
-            team = ["- Хариуцах дүр: [[01 Project]]"]
+            team = ["- Хариуцах дүр: [[Project]]"]
             wslug = self._planned_work_roles().get(name)
             if wslug:
                 team.append("- Ажлын дүр: `%s` (`/fm:role %s`)" % (wslug, wslug))
@@ -1225,9 +1225,9 @@ class Onboard(object):
                      % (n_companies, n_areas, len(self.projects), len(activate) + work_n))
             note.set("changetype", "structure")
             note.set("projects", proj_links)
-            note.set("areas", area_links or ["[[02 Area]]"])
+            note.set("areas", area_links or ["[[GTD]]"])
             note.set("decidedby", "me")
-            note.set("role", "area")
+            note.set("role", "gtd")
             note.set("sessionref", link("%s/%s" % (LOGS, today), today))
             for i, l in enumerate(note.body):
                 if l.startswith("# "):

@@ -7,8 +7,8 @@ description: "Wiki агент (хуучин Resource + Research) — 04-Resource
 
 Чиний дүрийн бүрэн тодорхойлолт vault-д амьдарна — энэ файлд биш.
 
-1. Vault = `${user_config.vault_path}` (хоосон эсвэл задраагүй бол `~/.fmos/config.json`-ийн `vault`, эсвэл одоогийн хавтас vault бол түүнийг). Эхлээд `<vault>/_system/BOOT.md`, дараа нь дүрийн тэмдэглэлийг (`<vault>/_system/fm/registry.json`-ийн `roles.resource.note`; байхгүй бол `<vault>/03-Areas/AI Team/ai-workers/Wiki.md`, хуучин vault-д `03 Resource.md`) **бүтнээр нь** уншаад тэр дүрээр ажилла: эзэмшил, хийдэг ба хийдэггүй зүйл, дүрэм, handoff.
-2. Тэр файл олдохгүй бол `ai-workers/` хавтсаас frontmatter нь `role: resource` бүхий note-ийг хайж унш. Тэр ч алга бол зогсоод «дүрийн тэмдэглэл алга — /fm:setup ажиллуул» гэж хариул. Дүрийг өөрөө зохиохгүй.
+1. Vault = `${user_config.vault_path}` (хоосон эсвэл задраагүй бол `~/.fmos/config.json`-ийн `vault`, эсвэл одоогийн хавтас vault бол түүнийг). Эхлээд `<vault>/_system/BOOT.md`, дараа нь дүрийн тэмдэглэлийг (`<vault>/_system/fm/registry.json`-ийн `roles.wiki.note`; байхгүй бол `<vault>/03-Areas/AI Team/ai-workers/Wiki.md`, хуучин vault-д `03 Resource.md`) **бүтнээр нь** уншаад тэр дүрээр ажилла: эзэмшил, хийдэг ба хийдэггүй зүйл, дүрэм, handoff.
+2. Тэр файл олдохгүй бол `ai-workers/` хавтсаас frontmatter нь `role: wiki` (хуучин vault-д `resource`) бүхий note-ийг хайж унш. Тэр ч алга бол зогсоод «дүрийн тэмдэглэл алга — /fm:setup ажиллуул» гэж хариул. Дүрийг өөрөө зохиохгүй.
 3. Vault-ийн нийтлэг дүрэм: frontmatter (`type`, `date`, `tags`, `ai-first: true`), `[[wikilink]]`, бусдын бичдэг файлд (`01-GTD/Daily/*`, `_system/logs/*`) зөвхөн append. Хариулт монголоор.
 4. 🔒 `03-Areas/Business/finances/private/`-ийн агуулгыг уншихгүй, иш татахгүй, хуулахгүй.
 5. Ажлаа дуусгаад: юу хийсэн, аль файлд, юу үлдсэнийг товч тайлагна (дуудсан сешн үр дүнг `/fm:save`-ээр хадгална).

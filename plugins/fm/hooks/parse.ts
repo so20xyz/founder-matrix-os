@@ -414,6 +414,13 @@ export function fmtAgo(stamp: string, nowLocalMs: number): string {
  * The registry role an owner string stands for: creative | developer | resource | area | project | finance | person | ''.
  * Device words and «Agent» go (core); 💼/📁/📐 owners are project; itge.e / bd / me (and `people`) are a person.
  */
+/** Role slug → the current one (2026-10-10: developer→architect, area→gtd, resource/research→wiki); others as they are. */
+const LEGACY_SLUG: Record<string, string> = { developer: 'architect', 'tool-developer': 'architect', area: 'gtd', resource: 'wiki', research: 'wiki', 'creative-director': 'creative' }
+export function canonRole(slug: string): string {
+  const s = (slug || '').trim().toLowerCase()
+  return LEGACY_SLUG[s] ?? s
+}
+
 export function roleOf(owner: string, devices: string[] = [], people: string[] = []): string {
   let raw = unquote(owner ?? '')
   if (raw.startsWith('[[') && raw.endsWith(']]')) raw = (raw.slice(2, -2).split('|')[0] ?? '').split('/').pop() ?? ''
@@ -425,9 +432,9 @@ export function roleOf(owner: string, devices: string[] = [], people: string[] =
   const has = (...keys: string[]) => keys.some(k => w.includes(k))
   if (has('finance', 'санхүү')) return 'finance'
   if (has('creative', 'design', 'designer')) return 'creative'
-  if (has('architect', 'developer', 'dev')) return 'developer'
-  if (has('wiki', 'resource', 'research')) return 'resource'
-  if (has('gtd', 'area')) return 'area'
+  if (has('architect', 'developer', 'dev')) return 'architect'
+  if (has('wiki', 'resource', 'research')) return 'wiki'
+  if (has('gtd', 'area')) return 'gtd'
   if (has('project')) return 'project'
   return ''
 }
