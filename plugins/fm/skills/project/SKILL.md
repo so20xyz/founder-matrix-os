@@ -42,6 +42,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" list "${use
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" new "${user_config.vault_path}" "<Нэр>" --state planning --area Business --context work --goal "<нэг мөр>"
    ```
    `_system/templates/Project.md` байвал түүний нэмэлт хэсгүүдийг (Bases харагдац г.м.) шинэ нот руу нэм.
+   - **Дуусдаггүй ажил** (ажлын байр, холбоо, зөвлөлийн суудал, байнгын үйлчлүүлэгч) = `--state ongoing`. Тусдаа сешн хэрэгтэй бол **`03-Areas/`-д шинэ хавтас, гар аргаар «assistant» дүр бүү үүсгэ** — энэ төслийн загвар хангалттай.
+   - Төсөлд **тогтмол сешн** хэрэгтэй бол `--role <english-kebab-slug>` нэм: `_system/templates/Agent Role.md`-ээс нимгэн дүр (`project:`, `owns:` = зөвхөн энэ хавтас, `group: projects`) үүсгэнэ. Дүрэм, хэв маяг, мэдлэг — `_BRAIN.md`-д, дүрийн note-д биш. Дараа нь `/fm:role <slug>`.
 5. Яриан дахь мэдээллээр бөглө: тойм, `goal`, `due`, `milestones`, `anti-goal`, холбогдох хүмүүс (`[[wikilink]]`). Мэдэхгүй зүйлийг `TBD`. **`goal`-ыг өөрөө зохиохгүй** — гишүүний үг.
 6. `_BRAIN.md`: «яагаад байдаг», «дууссан гэж юу вэ», «юу хамаарахгүй» — гишүүнээс асууж бөглө.
 7. Өдрийн тэмдэглэл байвал (`01-GTD/Daily/<өнөөдөр>.md`) нэг мөр **append**: `- 🆕 [[<төслийн зам>|<Нэр>]] төсөл нээгдэв`.

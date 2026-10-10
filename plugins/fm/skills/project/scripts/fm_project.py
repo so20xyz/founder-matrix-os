@@ -13,7 +13,9 @@ Settings -> Appearance -> CSS snippets.
 
 Usage:
     fm_project.py list  <vault>                                   status table + scope-contract check
-    fm_project.py new   <vault> "<Name>" [--state planning] [--area Business] [--context work] [--goal "..."]
+    fm_project.py new   <vault> "<Name>" [--state planning|ongoing] [--role <slug>] [--area Business] [--context work] [--goal "..."]
+                     --state ongoing: never-ending work (job, association, board seat) - a project that does not close
+                     --role: also its one thin role note from _system/templates/Agent Role.md (project:, owns, group)
     fm_project.py move  <vault> "<Name>" <active|planning|on-hold|waiting|archive> [--status completed|cancelled] [--apply]
     fm_project.py status-css <vault>                              only regenerate the status CSS snippet
     fm_project.py board <vault> [<board name>] [--stale-days 14]  legacy kanban hygiene report (read-only; boards archived, Tasks.base replaces them)
@@ -34,12 +36,15 @@ STATES = {  # target -> (folder for new / un-archived projects, status)
     "planning": ("02-Projects", "planning"),
     "on-hold": ("02-Projects", "on-hold"),
     "waiting": ("02-Projects", "waiting"),
+    # issue #5: never-ending work (a job, an association, a board seat) = a project that does not close:
+    # same one session + thin role + _BRAIN.md, kept in 02-Projects/ (Project agent owns it)
+    "ongoing": ("02-Projects", "ongoing"),
     "archive": ("99-Archive/Projects", "completed"),
 }
 ARCHIVE = "99-Archive/Projects"
 LEGACY_DIRS = {"1-Active": "active", "2-Planning": "planning", "3-On-hold": "on-hold"}  # хуучин vault (fallback)
 CSS_REL = ".obsidian/snippets/fm-project-status.css"
-STATUS_COLORS = {"active": "#3A7BF0", "planning": "#8FB8FF", "on-hold": "#E0962E", "waiting": "#E0962E"}
+STATUS_COLORS = {"active": "#3A7BF0", "ongoing": "#2FA36B", "planning": "#8FB8FF", "on-hold": "#E0962E", "waiting": "#E0962E"}
 OTHER_COLOR = "#6E6E6E"  # completed / cancelled / unknown
 OPEN_TASK = {"inbox", "next-action", "in-progress", "waiting"}
 LINK_EXT = {".md", ".base", ".canvas"}
@@ -84,7 +89,7 @@ def _opt(args: List[str], key: str, default: str = "") -> str:
 
 
 def _positional(args: List[str]) -> List[str]:
-    with_value = {"--state", "--area", "--context", "--goal", "--status", "--stale-days"}
+    with_value = {"--state", "--area", "--context", "--goal", "--status", "--stale-days", "--role"}
     out, skip = [], False
     for a in args:
         if skip:
@@ -281,8 +286,11 @@ def cmd_new(vault: Path, args: List[str]) -> None:
     if re.search(r'[\\/:*?"<>|#^\[\]]', name):
         _die("Нэрэнд хориотой тэмдэгт байна: \\ / : * ? \" < > | # ^ [ ]")
     state = _opt(args, "--state", "planning")
-    if state not in ("active", "planning", "on-hold", "waiting"):
-        _die("--state: active | planning | on-hold | waiting")
+    if state not in ("active", "planning", "on-hold", "waiting", "ongoing"):
+        _die("--state: active | planning | on-hold | waiting | ongoing")
+    role = _opt(args, "--role").strip().lower()
+    if role and not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", role):
+        _die("--role: англи kebab slug (жишээ narny-site)")
     for note, _ in find_projects(vault):
         if note.stem.lower() == name.lower():
             _die("Ийм төсөл байна: %s — шинэ бүү үүсгэ, түүнийг шинэчил." % note.relative_to(vault).as_posix(), 2)
@@ -325,9 +333,34 @@ def cmd_new(vault: Path, args: List[str]) -> None:
         _write_note(path, f, b + [""])
     _out("project → %s" % rel)
     _out("brain   → %s" % brain.relative_to(vault).as_posix())
+    if role:
+        _out("role    → %s" % new_role_note(vault, role, name, rel, folder.relative_to(vault).as_posix()))
     _out("css     → %s" % status_css(vault).relative_to(vault).as_posix())
     if len(rel) > MAX_REL_PATH:
         _out("⚠️ Зам %d тэмдэгт (> %d). Богино нэр + aliases-ийг санал болго." % (len(rel), MAX_REL_PATH))
+
+
+def new_role_note(vault: Path, slug: str, name: str, proj_note_rel: str, folder_rel: str) -> str:
+    """The project's one thin role note, always from _system/templates/Agent Role.md (issue #5):
+    role, project:, owns = the project folder only, group projects. Rules live in _BRAIN.md, not here."""
+    roles_dir = vault / "03-Areas" / "AI Team" / "ai-workers"
+    if not roles_dir.is_dir() and (vault / "04-Areas" / "AI Team" / "ai-workers").is_dir():
+        roles_dir = vault / "04-Areas" / "AI Team" / "ai-workers"
+    for p in roles_dir.glob("*.md") if roles_dir.is_dir() else []:
+        if re.search(r"^role:[ \t]*[\"']?%s[\"']?[ \t]*$" % re.escape(slug), read_text(p), re.M):
+            _die("Дүр `%s` аль хэдийн байна: %s" % (slug, p.relative_to(vault).as_posix()), 2)
+    fm, body = from_template(vault, "Agent Role", name)
+    if not fm:
+        _die("_system/templates/Agent Role.md алга - /fm:setup ажиллуулаад дахин оролд.")
+    for key, val in (("role", slug), ("group", "projects"), ("project", '"[[%s]]"' % proj_note_rel[:-3]),
+                     ("owns", '["%s/"]' % folder_rel)):
+        fm = fm_set(fm, key, val)
+    path = roles_dir / (name + ".md")
+    if path.exists():
+        _die("Файл байна: %s" % path.relative_to(vault).as_posix(), 2)
+    roles_dir.mkdir(parents=True, exist_ok=True)
+    _write_note(path, fm, body + [""])
+    return path.relative_to(vault).as_posix() + " (/fm:role %s)" % slug
 
 
 def locate(vault: Path, name: str) -> Path:

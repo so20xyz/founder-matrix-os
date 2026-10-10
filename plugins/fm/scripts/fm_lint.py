@@ -26,6 +26,7 @@ Python 3.9+, standard library only, Windows-safe. Алдаа гарвал hook e
 """
 
 import datetime
+from pathlib import Path
 import os
 import re
 import sys
@@ -131,7 +132,7 @@ def _written_has_key(written, key, value):
     return bool(rx.search(written or ""))
 
 
-def analyze(rel, file_name, file_text, written_text, tool, today=None):
+def analyze(rel, file_name, file_text, written_text, tool, today=None, vault=None):
     """Lint one note.
 
     rel          vault-relative posix path, or None when the vault is unknown
@@ -140,6 +141,7 @@ def analyze(rel, file_name, file_text, written_text, tool, today=None):
     written_text text the tool wrote (Write content / Edit new_string ...);
                  for CLI use the whole file
     tool         "Write" | "Edit" | "MultiEdit" | None (CLI)
+    vault        vault root (Path) when known: role-note checks look up `project:` / `_BRAIN.md` there
     Returns (blocks, warnings) - two lists of Mongolian messages.
     """
     from fm_common import rel_startswith, split_frontmatter
@@ -191,7 +193,53 @@ def analyze(rel, file_name, file_text, written_text, tool, today=None):
             if key == "date" and d == yesterday:
                 warnings.append("`date: %s` өчигдрийн огноо (өнөөдөр %s). Шөнө дунд давсан "
                                 "сешн бол засна уу; зориудын back-fill бол үл тоо." % (raw, today.isoformat()))
+    if has_fm and str(fields.get("type") or "").strip() == "agent-role":
+        warnings += role_warnings(fields, file_text, vault)
     return blocks, warnings
+
+
+# Core agents own whole PARA folders; a project / ongoing role owns only its own folder (issue #5).
+CORE_ROLE_SLUGS = {"project", "gtd", "wiki", "architect", "creative", "finance",
+                   "area", "resource", "research", "developer"}
+WIDE_OWNS = {"02-projects", "03-areas", "04-resources", "01-gtd", "_system"}
+ROLE_BODY_MAX_LINES = 90   # a thin role note: rules point to _BRAIN.md, not domain knowledge
+
+
+def _as_list(v):
+    if isinstance(v, list):
+        return [str(x).strip().strip("\"'") for x in v]
+    s = str(v or "").strip()
+    if s.startswith("[") and s.endswith("]"):
+        return [x.strip().strip("\"'") for x in s[1:-1].split(",") if x.strip()]
+    return [s.strip("\"'")] if s else []
+
+
+def role_warnings(fields, text, vault):
+    """Project-pattern guard for an agent-role note: project:, its _BRAIN.md, owns, thin body."""
+    slug = str(fields.get("role") or "").strip().lower()
+    group = str(fields.get("group") or "").strip().lower()
+    if not slug or slug in CORE_ROLE_SLUGS or group not in ("projects", "areas"):
+        return []
+    out = []
+    proj = str(fields.get("project") or "").strip().strip("\"'")
+    target = proj[2:-2].split("|")[0].strip() if proj.startswith("[[") and proj.endswith("]]") else proj
+    if not target:
+        out.append("Дүр `%s` (`group: %s`) `project:`-гүй. Төсөл/байнгын ажил бүр нэг дүр + `_BRAIN.md`: "
+                   "`fm_project.py new <vault> \"<Нэр>\" --role <slug>` (дуусдаггүй ажил бол `--state ongoing`)." % (slug, group))
+    elif vault is not None:
+        note = Path(vault) / (target if target.endswith(".md") else target + ".md")
+        if not note.is_file():
+            out.append("Дүр `%s`-ийн `project: [[%s]]` файл олдсонгүй." % (slug, target))
+        elif not (note.parent / "_BRAIN.md").is_file():
+            out.append("Дүр `%s`-ийн төсөлд `_BRAIN.md` алга (%s/). Төслийн дүрэм, мэдлэг тэнд." % (slug, note.parent.name))
+    wide = [o for o in _as_list(fields.get("owns")) if o.strip("/").lower() in WIDE_OWNS]
+    if wide:
+        out.append("Дүр `%s` бүхэл хавтас эзэмшиж байна (%s) - үндсэн agent-ын хавтастай давхцана. "
+                   "Зөвхөн өөрийн төслийн хавтсыг `owns:`-д." % (slug, ", ".join(wide)))
+    body_lines = [l for l in text.split("\n---", 1)[-1].splitlines() if l.strip()]
+    if len(body_lines) > ROLE_BODY_MAX_LINES:
+        out.append("Дүр `%s`-ийн note %d мөр (> %d). Дүрийн note нимгэн: дүрэм, хэв маяг, мэдлэгийг `_BRAIN.md` руу." % (slug, len(body_lines), ROLE_BODY_MAX_LINES))
+    return out
 
 
 # -------------------------------------------------------------------- hook
@@ -236,7 +284,7 @@ def run_hook():
     rel = rel_posix(path, vault)
     written = _written_from_tool(tool, tool_input)
     file_text = read_text(path) if path.is_file() else written
-    blocks, warnings = analyze(rel, path.name, file_text, written, tool or None)
+    blocks, warnings = analyze(rel, path.name, file_text, written, tool or None, vault=vault)
     if blocks:
         msg = "fm_lint БЛОК: %s\n" % rel + "\n".join("- " + b for b in blocks + warnings) + "\n"
         write_bytes(sys.stderr, msg)
@@ -308,7 +356,7 @@ def run_cli(argv):
             vault = _find_vault_for(f, explicit)
             rel = rel_posix(f, vault) if (vault is not None and is_inside(f, vault)) else None
             text = read_text(f)
-            blocks, warnings = analyze(rel, f.name, text, text, None)
+            blocks, warnings = analyze(rel, f.name, text, text, None, vault=vault)
             if blocks or warnings:
                 out.append("%s" % (rel or str(f)))
                 out.extend("  БЛОК: " + b for b in blocks)
