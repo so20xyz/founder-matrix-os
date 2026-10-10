@@ -1633,6 +1633,13 @@ async function noteToolUse($: EngineInterface, id: string) {
   used[id] = at
   await $.store.set('toolLastUsed', used)
   await $.state.set({ plugin: 'fm', key: 'toolUsed' }, used)
+  // who used it (this session's role) — a tool used in the last minutes shows «▶ <дүр>» to every agent
+  const { value: role = '' } = await $.state.get({ plugin: 'fm', key: 'role' })
+  const sb = await $.store.get('toolLastBy')
+  const by: Record<string, string> = sb && typeof sb === 'object' && !Array.isArray(sb) ? { ...(sb as Record<string, string>) } : {}
+  by[id] = String(role || 'itge.e')
+  await $.store.set('toolLastBy', by)
+  await $.state.set({ plugin: 'fm', key: 'toolBy' }, by)
 }
 
 /** The tool id a tool call stands for («Сүүлд»): fig.py / fr.py in Bash, a Higgsfield MCP tool, the post / figma / framer skills. */
@@ -1829,6 +1836,8 @@ export const register: Register = (on, options) => {
     }
     const used = await $.store.get('toolLastUsed').catch(() => undefined)
     if (used && typeof used === 'object' && !Array.isArray(used)) await $.state.set({ plugin: 'fm', key: 'toolUsed' }, used as Record<string, number>)
+    const usedBy = await $.store.get('toolLastBy').catch(() => undefined)
+    if (usedBy && typeof usedBy === 'object' && !Array.isArray(usedBy)) await $.state.set({ plugin: 'fm', key: 'toolBy' }, usedBy as Record<string, string>)
     return started
   })
 
@@ -1936,6 +1945,7 @@ export const register: Register = (on, options) => {
     const { value: toolOpen = '' } = await $.state.get({ plugin: 'fm', key: 'toolOpen' })
     const { value: toolStatus = {} } = await $.state.get({ plugin: 'fm', key: 'toolStatus' })
     const { value: toolUsed = {} } = await $.state.get({ plugin: 'fm', key: 'toolUsed' })
+    const { value: toolBy = {} } = await $.state.get({ plugin: 'fm', key: 'toolBy' })
     const { value: watching = false } = await $.state.get(WATCHING)
     const { value: health = '' } = await $.state.get(HEALTH)
     const { value: inboxList = [], version: inboxVersion } = await $.state.get({ plugin: 'fm', key: 'inbox' })
@@ -2752,9 +2762,12 @@ export const register: Register = (on, options) => {
       ], info ? info.label : 'дүр тодорхойгүй', [`${mine.length} хэрэгсэл`, `${okN} холбогдсон`], 'Энэ дүрийн хэрэгсэл, skill — мөр дээр дарж дэлгэнэ')
       const stLbl: Record<string, string> = { ok: 'холбогдсон', off: 'унтарсан', checking: 'шалгаж…', error: `${G.alert} алдаа` }
       const credits = (n: number) => String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      // in use = used within the last 3 minutes → «▶ <дүр>» (the signal itge.e asked for); otherwise the last time
+      const inUse = (id: string) => !!toolUsed[id] && nowLocal - localNow(toolUsed[id]).getTime() < 3 * 60000
       const lastLbl = (id: string) => {
         const ms = toolUsed[id]
         if (!ms) return '—'
+        if (inUse(id)) return `${G.run} ${toolBy[id] || ''}`.trim()
         const d = localNow(ms)
         const dd = iso(d)
         const at = d.toISOString().slice(11, 16)
@@ -2809,7 +2822,7 @@ export const register: Register = (on, options) => {
               <Box width={2} flexShrink={0} overflow="hidden"><Text color={C.muted}>{t.glyph}</Text></Box>
               <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`tlb-${t.id}`, name, off ? C.done : cr !== undefined && s !== 'ok' ? C.muted : C.text, off, press, nameW)}</Box>
               <Box width={wide ? 15 : 12} flexShrink={0} overflow="hidden" justifyContent={wide ? 'flex-start' : 'flex-end'}><Text color={off ? C.done : C.muted} wrap="truncate-end">{stLbl[s] ?? s}</Text></Box>
-              {wide ? <Box width={10} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={off ? C.done : C.text}>{lastLbl(t.id)}</Text></Box> : null}
+              {wide ? <Box width={10} flexShrink={0} overflow="hidden" justifyContent="flex-end"><Text color={inUse(t.id) ? C.accent : off ? C.done : C.text} bold={inUse(t.id)}>{lastLbl(t.id)}</Text></Box> : null}
               {goCell(`tlb-${t.id}`, press)}
             </Box>
             {toolOpen === t.id ? toolDetail(t, off) : null}
