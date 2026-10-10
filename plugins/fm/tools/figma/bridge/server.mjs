@@ -22,6 +22,16 @@ let claude = { state: "idle", since: Date.now(), tools: 0 };   // Claude Code-и
 // ---- comments (хэрэглэгч ↔ Claude, plugin panel) ----
 // State (comments, scraped stash) lives outside the plugin folder: env FIGMA_BRIDGE_STATE or ~/.fmos/figma
 const STATE_DIR = process.env.FIGMA_BRIDGE_STATE || (await import("node:path")).join((await import("node:os")).homedir(), ".fmos", "figma");
+// Figma loads the dev plugin from ~/.fmos/figma/plugin (the imported manifest); keep that copy in step with this repo's
+// plugin/ on every server start, so a UI fix reaches Figma after a plugin reopen (no manual copy)
+try {
+  const pth = await import("node:path"), here = pth.dirname((await import("node:url")).fileURLToPath(import.meta.url));
+  const live = pth.join(STATE_DIR, "plugin");
+  if (fs.existsSync(pth.join(live, "manifest.json"))) for (const f of ["code.js", "ui.html"]) {
+    const src = pth.join(here, "plugin", f), dst = pth.join(live, f);
+    if (fs.existsSync(src) && (!fs.existsSync(dst) || fs.readFileSync(src, "utf8") !== fs.readFileSync(dst, "utf8"))) fs.copyFileSync(src, dst);
+  }
+} catch {}
 const STASH = (await import("node:url")).pathToFileURL(STATE_DIR.replace(/[\\/]?$/, "/") + "stash/");
 const CFILE = new URL("./comments.json", STASH);
 let comments = []; try { comments = JSON.parse(fs.readFileSync(CFILE, "utf8")); } catch {}
