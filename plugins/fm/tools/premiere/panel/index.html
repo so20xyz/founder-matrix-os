@@ -1,0 +1,145 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>FM Bridge</title>
+<style>
+  body { margin: 0; padding: 10px; background: #232323; color: #ddd; font: 12px "Segoe UI", sans-serif; }
+  #dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c33; margin-right: 6px; }
+  #dot.on { background: #3c6; }
+  .row { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+  input { flex: 1; min-width: 0; background: #1a1a1a; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 5px 6px; }
+  button { flex: 1; background: #2d2d2d; color: #ddd; border: 1px solid #4a4a4a; border-radius: 6px; padding: 7px 4px; cursor: pointer; font-size: 11.5px; }
+  button:hover { background: #3a3a3a; border-color: #2d8ceb; }
+  button:disabled { opacity: .5; cursor: default; }
+  #log { margin-top: 8px; color: #999; font-size: 11px; white-space: pre-wrap; max-height: 120px; overflow: auto; }
+  .lbl { color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; margin-top: 10px; }
+</style></head>
+<body>
+<div><span id="dot"></span><b>FM Bridge</b> · <span id="state">холбогдож байна…</span></div>
+<div class="lbl">OBS бичлэг · <span id="obsst">холбогдоогүй</span></div>
+<div class="row">
+  <button id="rec" title="OBS бичлэг эхлүүлэх / зогсоох (төслийн хавтас руу бичнэ)">● Бичих</button>
+</div>
+<div class="lbl">Төсөл · E:/OBS Recordings/&lt;төсөл&gt;</div>
+<div class="row"><input id="project" value="Second Brain Season 2"></div>
+<div class="row">
+  <button id="latest" title="Хамгийн сүүлийн бичлэгийг төслийн bin руу">⬇ Сүүлийн бичлэг</button>
+  <button id="new" title="Хавтаст байгаа, оруулаагүй бүх бичлэг">⬇ Бүх шинэ</button>
+</div>
+<div class="row">
+  <button id="reels" title="Сүүлийн бичлэгээс 1080×1920 sequence">＋ Reels sequence</button>
+  <button id="export" title="Нээлттэй sequence-ийг H.264 (sequence-тэй ижил 1080×1920, өндөр bitrate) → E:/OBS Recordings/<төсөл>/Export">⬆ Reels export</button>
+</div>
+<div class="row">
+  <button id="join" title="Төслийн хавтасны бүх бичлэг цагийн дарааллаар нэг sequence-д; дахин дарахад зөвхөн шинэ бичлэгийг төгсгөлд нэмнэ">⇢ Бүгдийг нэг sequence-д</button>
+</div>
+<div id="log"></div>
+<script>
+// Polls the local bridge (tools/premiere/bridge/server.mjs) and runs each job as ExtendScript in Premiere;
+// the buttons run the same FM.* helpers directly (no terminal needed).
+var BRIDGE = "http://127.0.0.1:3056";
+function log(t) { var el = document.getElementById("log"); el.textContent = (new Date().toTimeString().slice(0, 8) + " " + t + "\n" + el.textContent).slice(0, 3000); }
+function state(t, on) { document.getElementById("state").textContent = t; document.getElementById("dot").className = on ? "on" : ""; }
+function evalJsx(src) { return new Promise(function (r) { window.__adobe_cep__.evalScript(src, r); }); }
+
+// fm.jsx (FM.* helpers + JSON for ExtendScript) is (re)loaded on demand: a fixed helper file needs no Premiere restart
+var EXT = decodeURIComponent((window.__adobe_cep__.getSystemPath("extension") || "").replace(/^file:\/+/, ""));
+// read fm.jsx as UTF-8 ($.evalFile uses the system code page and garbles the Cyrillic messages)
+var LOAD = "(function(){var f=new File(" + JSON.stringify(EXT + "/jsx/fm.jsx") + ");f.encoding='UTF-8';f.open('r');var s=f.read();f.close();eval(s);})();";
+function wrap(script, reload) {
+  return "(function(){try{" + (reload ? LOAD : "") + "if(typeof FM==='undefined'||typeof JSON==='undefined'){" + LOAD + "}" +
+    "var __r=(function(){" + script + "\n})();return JSON.stringify({result:__r===undefined?null:__r});}" +
+    "catch(e){var m=String(e)+(e.line?' (line '+e.line+')':'');m=m.replace(/\\\\/g,'/').replace(/\"/g,\"'\");return '{\"error\":\"'+m+'\"}';}})()";
+}
+function runJsx(script, reload) {
+  return evalJsx(wrap(script, reload)).then(function (out) { try { return JSON.parse(out); } catch (e) { return { error: "bad result: " + String(out).slice(0, 300) }; } });
+}
+runJsx("return typeof FM", true).then(function (r) { log("fm.jsx " + (r.error ? "✗ " + r.error : "ачаалагдлаа")); });
+
+// ---- buttons
+function project() { return document.getElementById("project").value.trim(); }
+try { var saved = localStorage.getItem("fm-project"); if (saved) document.getElementById("project").value = saved; } catch (e) {}
+document.getElementById("project").onchange = function () { try { localStorage.setItem("fm-project", project()); } catch (e) {} };
+function button(id, script, fmt) {
+  var b = document.getElementById(id);
+  b.onclick = function () {
+    b.disabled = true;
+    runJsx(script(project()), true).then(function (r) {
+      b.disabled = false;
+      log(r.error ? "✗ " + r.error : fmt(r.result));
+    });
+  };
+}
+button("latest", function (p) { return "return FM.importProject(" + JSON.stringify(p) + ", 'latest')"; },
+  function (r) { return r.imported.length ? "⬇ " + r.imported.join(", ") : "• " + r.note; });
+button("new", function (p) { return "return FM.importProject(" + JSON.stringify(p) + ", 'new')"; },
+  function (r) { return r.imported.length ? "⬇ " + r.imported.length + " бичлэг: " + r.imported.join(", ") : "• " + r.note; });
+button("reels", function (p) { return "return FM.reelsFromLatest(" + JSON.stringify(p) + ")"; },
+  function (r) { return "＋ " + r.sequence + " (" + r.w + "×" + r.h + ")"; });
+button("join", function (p) { return "return FM.joinAll(" + JSON.stringify(p) + ")"; },
+  function (r) { return "⇢ " + r.sequence + ": " + (r.added.length ? "+" + r.added.length + " бичлэг" : "шинэ бичлэг алга") + " · нийт " + r.total + " · " + r.sec + " сек"; });
+
+button("export", function (p) { return "return FM.reelsExport(" + JSON.stringify(p) + ")"; },
+  function (r) { return r.ok ? "⬆ " + r.out + " · " + r.w + "×" + r.h + " · " + r.mb + " MB" : "✗ export бүтсэнгүй: " + r.msg; });
+
+// ---- OBS recording over obs-websocket (password from OBS's own config); records into E:/OBS Recordings/<project>
+var obs = null, obsPend = {}, obsSeq = 0, recOn = false, recT0 = 0;
+function obsCall(type, data) {
+  return new Promise(function (r) { var id = String(++obsSeq); obsPend[id] = r; obs.send(JSON.stringify({ op: 6, d: { requestType: type, requestId: id, requestData: data || {} } })); });
+}
+function sha(s) { return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function (b) { return btoa(String.fromCharCode.apply(null, new Uint8Array(b))); }); }
+function recUi(on, t0) {
+  recOn = on; recT0 = t0 || 0;
+  var b = document.getElementById("rec");
+  b.textContent = on ? "■ Зогсоох" : "● Бичих"; b.style.background = on ? "#8a1f1f" : ""; b.style.borderColor = on ? "#d33" : "";
+}
+setInterval(function () {
+  if (!obs || obs.readyState !== 1) return;
+  if (!recOn) { document.getElementById("obsst").textContent = "бэлэн"; return; }
+  var s = Math.floor((Date.now() - recT0) / 1000);
+  document.getElementById("obsst").textContent = "🔴 бичиж байна " + Math.floor(s / 60) + ":" + ("0" + s % 60).slice(-2);
+}, 500);
+function obsConnect() {
+  var cfg;
+  try { cfg = JSON.parse(window.cep.fs.readFile(window.__adobe_cep__.getSystemPath("userData") + "/obs-studio/plugin_config/obs-websocket/config.json").data); }
+  catch (e) { document.getElementById("obsst").textContent = "OBS тохиргоо олдсонгүй"; return; }
+  obs = new WebSocket("ws://127.0.0.1:" + cfg.server_port);
+  obs.onmessage = function (ev) {
+    var m = JSON.parse(ev.data);
+    if (m.op === 0) {
+      var a = m.d.authentication;
+      (a ? sha(cfg.server_password + a.salt).then(function (h) { return sha(h + a.challenge); }) : Promise.resolve(undefined)).then(function (auth) {
+        obs.send(JSON.stringify({ op: 1, d: { rpcVersion: 1, authentication: auth, eventSubscriptions: 64 } }));
+      });
+    } else if (m.op === 2) {
+      obsCall("GetRecordStatus").then(function (r) { var d = r.responseData || {}; recUi(d.outputActive, Date.now() - (d.outputDuration || 0)); });
+    } else if (m.op === 7) { if (obsPend[m.d.requestId]) { obsPend[m.d.requestId](m.d); delete obsPend[m.d.requestId]; } }
+    else if (m.op === 5 && m.d.eventType === "RecordStateChanged") {
+      var st = m.d.eventData.outputState;
+      if (st === "OBS_WEBSOCKET_OUTPUT_STARTED") { recUi(true, Date.now()); log("● бичлэг эхэллээ"); }
+      if (st === "OBS_WEBSOCKET_OUTPUT_STOPPED") { recUi(false); log("■ хадгалав: " + String(m.d.eventData.outputPath || "").split("/").pop()); }
+    }
+  };
+  obs.onclose = function () { obs = null; recUi(false); document.getElementById("obsst").textContent = "OBS асаагүй"; setTimeout(obsConnect, 3000); };
+}
+obsConnect();
+document.getElementById("rec").onclick = function () {
+  if (!obs || obs.readyState !== 1) return log("✗ OBS-тэй холбогдоогүй");
+  if (recOn) return obsCall("StopRecord");
+  obsCall("SetRecordDirectory", { recordDirectory: "E:/OBS Recordings/" + project() }).then(function () { return obsCall("StartRecord"); })
+    .then(function (r) { if (!r.requestStatus.result) log("✗ " + (r.requestStatus.comment || "бичлэг эхэлсэнгүй")); });
+};
+
+// ---- bridge jobs from the terminal (pr.py)
+function tick() {
+  fetch(BRIDGE + "/next").then(function (r) { return r.json(); }).then(function (job) {
+    state("холбогдсон", true);
+    if (!job.id) return setTimeout(tick, 400);
+    return runJsx(job.script, job.reload).then(function (parsed) {
+      parsed.id = job.id;
+      log("#" + job.id + (parsed.error ? " ✗ " + parsed.error : " ✓"));
+      return fetch(BRIDGE + "/result", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(parsed) });
+    }).then(function () { setTimeout(tick, 50); });
+  }).catch(function () { state("bridge сервер ажиллахгүй (кнопууд ажиллана)", false); setTimeout(tick, 1500); });
+}
+tick();
+</script>
+</body></html>
