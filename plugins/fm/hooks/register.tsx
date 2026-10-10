@@ -91,13 +91,14 @@ const HIGGS_SERVER = '5a008e26-266c-4e5b-88f7-171a0f359578'
 // mcp = the server's balance, skill = always there, watching = the Discord watcher, health = the brain check summary
 type ToolCheck = { kind: 'process'; script: string; args: string[] } | { kind: 'mcp'; tool: string } | { kind: 'skill' } | { kind: 'watching' } | { kind: 'health' }
 type ToolDef = { id: string; group: string; glyph: string; name: string; roles: string[]; skill?: string; caps?: string; cmds?: string[]; check: ToolCheck }
+// every tool is every agent's ability (itge.e 2026-10-11, tools-shared-matrix): roles = ['*'] for all
 const TOOLS: ToolDef[] = [
-  { id: 'figma', group: 'Дизайн', glyph: G.pen, name: 'Figma bridge', roles: ['creative'], skill: 'fm:figma',
+  { id: 'figma', group: 'Дизайн', glyph: G.pen, name: 'Figma bridge', roles: ['*'], skill: 'fm:figma',
     caps: 'зурах · засах · PNG/SVG export · contrast · давхцал · Smart Animate · коммент',
     cmds: ['$ fig.py run -f pane.js -t 120', '$ fig.py export 12:345 --scale 2', '/ fm:figma  icon sheet зур'],
     check: { kind: 'process', script: 'tools/figma/fig.py', args: ['status'] } },
-  { id: 'higgsfield', group: 'Дизайн', glyph: G.sparkle, name: 'Higgsfield', roles: ['creative'], check: { kind: 'mcp', tool: 'balance' } },
-  { id: 'framer', group: 'Дизайн', glyph: G.frame, name: 'Framer bridge', roles: ['creative', 'architect'], skill: 'fm:framer',
+  { id: 'higgsfield', group: 'Дизайн', glyph: G.sparkle, name: 'Higgsfield', roles: ['*'], check: { kind: 'mcp', tool: 'balance' } },
+  { id: 'framer', group: 'Дизайн', glyph: G.frame, name: 'Framer bridge', roles: ['*'], skill: 'fm:framer',
     cmds: ['$ fr.py status', '$ fr.py pages', '/ fm:framer'],
     check: { kind: 'process', script: 'tools/framer/fr.py', args: ['status'] } },
   { id: 'obs', group: 'Видео', glyph: G.run, name: 'OBS студи', roles: ['*'],
@@ -108,12 +109,12 @@ const TOOLS: ToolDef[] = [
     caps: 'бичлэг импорт · Reels sequence · бүгдийг нэг sequence-д · marker · audio dB · Reels export · ● OBS бичих',
     cmds: ['panel: Premiere → Window → Extensions → FM Bridge', '$ pr.py status', '$ pr.py serve'],
     check: { kind: 'process', script: 'tools/premiere/pr.py', args: ['status'] } },
-  { id: 'post', group: 'Контент', glyph: G.image, name: 'Post · carousel', roles: ['creative'], skill: 'fm:post', check: { kind: 'skill' } },
-  { id: 'moodboard', group: 'Контент', glyph: G.grid, name: 'Moodboard', roles: ['creative'], check: { kind: 'skill' } },
+  { id: 'post', group: 'Контент', glyph: G.image, name: 'Post · carousel', roles: ['*'], skill: 'fm:post', check: { kind: 'skill' } },
+  { id: 'moodboard', group: 'Контент', glyph: G.grid, name: 'Moodboard', roles: ['*'], check: { kind: 'skill' } },
   { id: 'relay', group: 'Холбоо', glyph: G.chat, name: 'Discord relay', roles: ['*'], skill: 'fm:relay', check: { kind: 'watching' } },
-  { id: 'notion', group: 'Холбоо', glyph: G.wiki, name: 'Notion', roles: ['project', 'gtd'], skill: 'fm:notion', check: { kind: 'skill' } },
+  { id: 'notion', group: 'Холбоо', glyph: G.wiki, name: 'Notion', roles: ['*'], skill: 'fm:notion', check: { kind: 'skill' } },
   { id: 'save', group: 'Vault', glyph: G.memo, name: 'fm:save', roles: ['*'], cmds: ['/ fm:save'], check: { kind: 'skill' } },
-  { id: 'watch', group: 'Vault', glyph: G.reload, name: 'fm:watch', roles: ['creative', 'wiki'], cmds: ['/ fm:watch'], check: { kind: 'skill' } },
+  { id: 'watch', group: 'Vault', glyph: G.reload, name: 'fm:watch', roles: ['*'], cmds: ['/ fm:watch'], check: { kind: 'skill' } },
   { id: 'brain', group: 'Vault', glyph: G.done, name: 'Brain check', roles: ['*'], check: { kind: 'health' } },
 ]
 const GROUPS = ['Дизайн', 'Видео', 'Контент', 'Холбоо', 'Vault']
