@@ -100,6 +100,14 @@ const TOOLS: ToolDef[] = [
   { id: 'framer', group: 'Дизайн', glyph: G.frame, name: 'Framer bridge', roles: ['creative', 'architect'], skill: 'fm:framer',
     cmds: ['$ fr.py status', '$ fr.py pages', '/ fm:framer'],
     check: { kind: 'process', script: 'tools/framer/fr.py', args: ['status'] } },
+  { id: 'obs', group: 'Видео', glyph: G.run, name: 'OBS студи', roles: ['architect', 'creative', 'project'],
+    caps: 'босоо 1080×1920 · Reels-safe layout · апп/📷 камер дэлгэц рүү · zoom · ● бичих (dock)',
+    cmds: ['dock: OBS → Docks → Апп-ууд', 'hotkey: Alt+F1/F2/F3/F6 scene · Alt+Shift+1/2/3 zoom'],
+    check: { kind: 'process', script: 'tools/obs/obs_status.py', args: [] } },
+  { id: 'premiere', group: 'Видео', glyph: G.image, name: 'Premiere bridge', roles: ['architect', 'creative', 'project'],
+    caps: 'бичлэг импорт · Reels sequence · бүгдийг нэг sequence-д · marker · audio dB · Reels export · ● OBS бичих',
+    cmds: ['panel: Premiere → Window → Extensions → FM Bridge', '$ pr.py status', '$ pr.py serve'],
+    check: { kind: 'process', script: 'tools/premiere/pr.py', args: ['status'] } },
   { id: 'post', group: 'Контент', glyph: G.image, name: 'Post · carousel', roles: ['creative'], skill: 'fm:post', check: { kind: 'skill' } },
   { id: 'moodboard', group: 'Контент', glyph: G.grid, name: 'Moodboard', roles: ['creative'], check: { kind: 'skill' } },
   { id: 'relay', group: 'Холбоо', glyph: G.chat, name: 'Discord relay', roles: ['*'], skill: 'fm:relay', check: { kind: 'watching' } },
@@ -108,7 +116,7 @@ const TOOLS: ToolDef[] = [
   { id: 'watch', group: 'Vault', glyph: G.reload, name: 'fm:watch', roles: ['creative', 'wiki'], cmds: ['/ fm:watch'], check: { kind: 'skill' } },
   { id: 'brain', group: 'Vault', glyph: G.done, name: 'Brain check', roles: ['*'], check: { kind: 'health' } },
 ]
-const GROUPS = ['Дизайн', 'Контент', 'Холбоо', 'Vault']
+const GROUPS = ['Дизайн', 'Видео', 'Контент', 'Холбоо', 'Vault']
 // V5 routes (one square each), the capture kinds' glyphs and the source labels
 const ROUTES = [
   { id: 'task', glyph: G.done, name: 'Task' }, { id: 'note', glyph: G.note, name: 'Note' },
@@ -1575,7 +1583,13 @@ async function checkTool($: EngineInterface, t: ToolDef): Promise<ToolStatus> {
     const win = (await $.env.get('OS')) === 'Windows_NT'
     const r = await $.process.run([win ? 'python' : 'python3', `${$.plugin.root}/${t.check.script}`, ...t.check.args], { timeoutMs: 8000 }).catch(() => null)
     const out = r?.stdout ?? ''
-    const ok = !!r && r.exitCode === 0 && (t.id === 'figma' ? /['"]plugin['"]\s*:\s*(True|true)/.test(out) : /"projects"\s*:\s*\[\s*"/.test(out))
+    const OK: Record<string, RegExp> = {
+      figma: /['"]plugin['"]\s*:\s*(True|true)/,      // fig.py: the Figma plugin is connected
+      framer: /"projects"\s*:\s*\[\s*"/,            // fr.py: a project seen
+      obs: /"obs"\s*:\s*true/,                        // obs_status.py: obs-websocket answers
+      premiere: /['"]panel['"]\s*:\s*(True|true)/,   // pr.py status: the FM Bridge panel polls the bridge
+    }
+    const ok = !!r && r.exitCode === 0 && !!OK[t.id]?.test(out)
     return { state: ok ? 'ok' : 'off', at: await $.clock.now() }
   }
   if (t.check.kind === 'mcp') {
@@ -1623,7 +1637,7 @@ async function noteToolUse($: EngineInterface, id: string) {
 
 /** The tool id a tool call stands for («Сүүлд»): fig.py / fr.py in Bash, a Higgsfield MCP tool, the post / figma / framer skills. */
 function toolOfCall(tool: string, command: string, skill: string): string {
-  if (tool === 'Bash') return /\bfig\.py\b/.test(command) ? 'figma' : /\bfr\.py\b/.test(command) ? 'framer' : ''
+  if (tool === 'Bash') return /\bfig\.py\b/.test(command) ? 'figma' : /\bfr\.py\b/.test(command) ? 'framer' : /\bpr\.py\b/.test(command) ? 'premiere' : /\bobs(\.cjs|_status\.py)\b/.test(command) ? 'obs' : ''
   if (tool === 'Skill') return ({ 'fm:post': 'post', 'fm:figma': 'figma', 'fm:framer': 'framer' } as Record<string, string>)[skill.trim()] ?? ''
   return tool.startsWith(`mcp__${HIGGS_SERVER}__`) ? 'higgsfield' : ''
 }
