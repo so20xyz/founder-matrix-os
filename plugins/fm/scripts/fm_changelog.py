@@ -21,6 +21,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools" / "relay
 HEAD = "## Өөрчлөлтийн түүх"
 TABLE = "| Цаг | Юу | Хаана |\n|---|---|---|"
 SKIP = ("/_system/logs/", "/.obsidian/", "/_trash/")
+# command descriptions that only look (read, list, check …) — they leave nothing to record
+READ_ONLY = re.compile(
+    r"(read|inspect|check|list|find|show|locate|view|search|look|count|verify|preview|debug|probe|"
+    r"унш|шалга|харах|хар |жагсаа|хай|тоол)", re.I)
 
 
 def active_task(sid):
@@ -49,7 +53,9 @@ def row_for(ev, vault):
         return "засвар", short_path(path, vault), path
     if tool in ("Bash", "PowerShell"):
         what = ti.get("description") or ""   # only described commands: raw command lines are noise
-        return (cell(what), short_path(ev.get("cwd", ""), vault), "") if what else None
+        if not what or READ_ONLY.match(what.strip()):   # reading/checking changes nothing: not history
+            return None
+        return cell(what), short_path(ev.get("cwd", ""), vault), ""
     return None
 
 

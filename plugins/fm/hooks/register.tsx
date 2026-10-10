@@ -2295,13 +2295,22 @@ export const register: Register = (on, options) => {
           </Box>
         )
       }
-      // change log under a task (fm:log / fm_changelog.py): the latest few, dim, «HH:MM юу»
+      // change log under a task (fm:log / fm_changelog.py): folded to one «› N өөрчлөлт» line (a running
+      // task starts open); open = the latest few, dim, «HH:MM юу»
       const logRows = (x: CalItem) => {
         const lg = x.log ?? []
         if (!lg.length) return null
+        const lid = `log:${x.file}`
+        const lOpen = openOf(lid, isRun(x))
+        const fold = (
+          <Button key={`t1lt-${x.file}`} plain dimColor label={`${lOpen ? G.open : G.closed} ${lg.length} өөрчлөлт`}
+            onPress={() => void togglePhase($, lid, isRun(x))} />
+        )
+        if (!lOpen) return <Box key={`t1l-${x.file}`} flexDirection="row" paddingLeft={4}>{fold}</Box>
         const shownLog = lg.slice(-6)
         return (
           <Box key={`t1l-${x.file}`} flexDirection="column" paddingLeft={4}>
+            {fold}
             {lg.length > shownLog.length ? <Text key={`t1lm-${x.file}`} color={C.muted}>{`… +${lg.length - shownLog.length}`}</Text> : null}
             {shownLog.map((e, i) => (
               <Box key={`t1le-${x.file}-${i}`} flexDirection="row" gap={1}>
