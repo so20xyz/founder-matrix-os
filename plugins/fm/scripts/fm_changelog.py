@@ -5,7 +5,7 @@ fm_changelog.py - PostToolUse hook: нэг урсгал = нэг task (itge.e 20
 Сешн `relay.py claim`-ээр task авсан бол (~/.fmos/active-task/<sid>) засвар бүрийг тэр task-ийн
 «## Өөрчлөлтийн түүх» хүснэгтэд `| HH:MM | юу | хаана |` мөр болгон нэмнэ:
   - Write / Edit / MultiEdit → «засвар» · файлын зам
-  - Bash → командын тайлбар (description) · `cwd`
+  - Bash → командын тайлбар (description) · `cwd`; тайлбаргүй команд бичигдэхгүй
 Алгасна: task нь in-progress биш, task файл өөрөө, өмнөх мөртэй ижил (юу+хаана), _system/logs, .obsidian.
 Ямар ч алдаа гарсан чимээгүй гарна (hook ажлыг хэзээ ч зогсоохгүй).
 """
@@ -48,9 +48,8 @@ def row_for(ev, vault):
         path = ti.get("file_path") or ti.get("notebook_path") or ""
         return "засвар", short_path(path, vault), path
     if tool in ("Bash", "PowerShell"):
-        what = ti.get("description") or (ti.get("command") or "").splitlines()[0:1]
-        what = what if isinstance(what, str) else (what[0] if what else "")
-        return cell(what), short_path(ev.get("cwd", ""), vault), ""
+        what = ti.get("description") or ""   # only described commands: raw command lines are noise
+        return (cell(what), short_path(ev.get("cwd", ""), vault), "") if what else None
     return None
 
 
