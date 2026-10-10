@@ -22,13 +22,13 @@ argument-hint: "[status | run -f <script.js> | export <nodeId> | comments]"
 
 ## Код ажиллуулах
 
-`python3 "$F/fig.py" --doc "<файл>" run -f script.js -t 120` - код нь async функцийн бие; `figma` (Plugin API), `store` бэлэн; `return` утга JSON болж буцна. **Файлыг заавал `-f`-ээр** (замыг шууд өгвөл JS болж задлагдана). Том скрипт, кирилл текстийг түр `.js` файлд бич.
+`python3 "$F/fig.py" --doc "<файл>" run -f script.js -t 120` - код нь async функцийн бие; `figma` (Plugin API), `store` бэлэн; `return` утга JSON болж буцна. **Файлыг заавал `-f`-ээр** (замыг шууд өгвөл JS болж задлагдана). Том скрипт, кирилл текстийг түр `.js` файлд бич — **Write tool-оор**, Bash heredoc-оор биш (кирилл + хашилт heredoc-д «unexpected EOF» өгдөг).
 
 Дүрэм (алдаанаас сурсан):
 - Текст засахаас өмнө фонт ачаал: `await figma.loadFontAsync({family:'Inter',style:'Regular'})`; `fontName`-ийг `characters`-аас өмнө.
 - Async getter: `await figma.getNodeByIdAsync(id)`, өөр хуудсанд `await page.loadAsync()`.
 - `fills`/`strokes` массивыг бүхэлд нь соль; өнгө 0-1 RGB.
-- Зураг: `await figma.createImageAsync(url)` (нийтийн URL); sandbox сүлжээгүй тул шаардвал base64.
+- Зураг: plugin sandbox URL-ээс татаж чаддаггүй (`createImageAsync` бүтэлгүйтдэг) — **base64-ээр залга**: `python3 -c "import base64,json,sys;print(json.dumps(base64.b64encode(open(sys.argv[1],'rb').read()).decode()))" img.png > img.json` → `fig.py run -f s.js --inject IMG=img.json`, JS-д `const h = figma.createImage(figma.base64Decode(IMG)).hash; node.fills = [{type:'IMAGE', imageHash:h, scaleMode:'FILL'}]`. Нэг зураг ≤ ~4 MB.
 - Нэг frame, нэг текстэд ижил нэр бүү өг (`findOne` frame-ийг түрүүлж олно).
 - **Холбоос шугам (diagram):** шугамыг хайрцгийн ТӨВӨӨС биш, хамгийн ойр ИРМЭГИЙН дундаас ирмэг рүү; шугам доод давхаргад, хайрцаг дүүргэлттэй (тунгалаг биш) — шугам текстийг огтолж болохгүй. Placeholder (диагональ X) хоосон хайрцаг үлдээхгүй — жишээ агуулга оруул. Сонголтын (selection) stroke үлдээхгүй. (itge.e 2026-10-07: FIG.06/08 «муухай»)
 - Байрлуулахдаа хэмж: богино шошгод `textAutoResize='WIDTH_AND_HEIGHT'`, дараагийнх `y = өмнөх y + өндөр + зай`.

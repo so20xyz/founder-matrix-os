@@ -190,7 +190,9 @@ def analyze(rel, file_name, file_text, written_text, tool, today=None, vault=Non
             if key == "updated" and d != today:
                 warnings.append("`updated: %s` - өнөөдөр %s. Зориудын back-fill биш бол "
                                 "огноогоо системээс авч засна уу." % (raw, today.isoformat()))
-            if key == "date" and d == yesterday:
+            # a note named after its own date ("YYYY-MM-DD - ..."), e.g. a subagent's atom written just past midnight
+            # for the day it belongs to, is dated on purpose (Season 2 QA 2026-10-10)
+            if key == "date" and d == yesterday and not file_name.startswith(d.isoformat()):
                 warnings.append("`date: %s` өчигдрийн огноо (өнөөдөр %s). Шөнө дунд давсан "
                                 "сешн бол засна уу; зориудын back-fill бол үл тоо." % (raw, today.isoformat()))
     if has_fm and str(fields.get("type") or "").strip() == "agent-role":

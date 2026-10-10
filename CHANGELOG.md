@@ -8,6 +8,7 @@
 
 ## Unreleased
 
+- **0.9.8 · Засварласан (Season 2 QA, 2026-10-10):** `check_layout.js` текстийн хайрцаг биш бодит зурагдсан хүрээгээр (`absoluteRenderBounds`) харьцуулна, нуугдсан эцэгтэй текстийг алгасаж clip хийсэн frame-ээр тасална — nested карт/compound панелд худал давхцал гарахгүй. `fm:figma`: sandbox URL-ээс зураг татдаггүй тул base64 + `figma.createImage` жор (`--inject`); кирилл JS-ийг Bash heredoc биш Write-аар файлд. `fm_lint`: өөрийн огноогоор нэрлэгдсэн note (`YYYY-MM-DD - …`, шөнө дунд давсан subagent атом) өчигдрийн `date:`-д сануулахгүй.
 - **0.9.7 · Нэмсэн:** Цаглабар «⊟ Хэрэгсэл»-д «Видео» бүлэг — OBS студи (`tools/obs/obs_status.py`: obs-websocket асаалттай эсэх) ба Premiere bridge (`pr.py status`: FM Bridge panel холбогдсон эсэх); Architect, Creative, Project дүрд харагдана, «Сүүлд» багана pr.py / obs.cjs ашиглалтыг тэмдэглэнэ.
 - **0.9.6 · Өөрчилсөн:** Цаглабар — task-ийн өөрчлөлтийн түүх «› N өөрчлөлт» мөрөөр хураагдана (дарж задлана; ажиллаж буй task нээлттэй). `fm_changelog.py` зөвхөн уншдаг/шалгадаг командын тайлбарыг (read, check, list, шалга …) түүхэд бичихгүй.
 - **0.9.5 · Нэмсэн:** Premiere FM Bridge (`tools/premiere`), `/fm:log` → Google Calendar шинэчлэх алхам, `/fm:project new` ба harvester-т судалгаа хайх/холбох, долоо хоногийн тоймд холбоос шалгалт (`scripts/fm_orphans.py`), өглөөний тоймд calendar нөхөлт, vault template BOOT-д connecting dots, редакцийн бичвэр, туслах agent-ийн дүрэм.
