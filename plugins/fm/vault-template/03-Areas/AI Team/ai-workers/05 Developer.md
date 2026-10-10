@@ -27,6 +27,8 @@ aliases:
   - "Developer"
   - "Хөгжүүлэгч"
   - "Tool Developer"
+  - "Architect"
+  - "Архитектор"
 ---
 
 # 05 Developer

@@ -147,12 +147,22 @@ def load_roles(vault: Path) -> List[Dict[str, object]]:
 
 
 def find_role(roles: List[Dict[str, object]], query: str) -> Optional[Dict[str, object]]:
+    """Exact slug > exact name > alias (across ALL roles, not file order) > unique substring > legacy alias.
+    Two notes sharing the alias is reported, never silently picked (issue #4)."""
     q = query.strip().lower()
-    for r in roles:  # exact slug / name / alias first
-        names = [str(r["slug"]).lower(), str(r["name"]).lower()] + [str(a).lower() for a in r["aliases"]]
-        if q in names:
-            return r
-    hits = [r for r in roles if q and (q in str(r["slug"]).lower() or q in str(r["name"]).lower())]
+    if not q:
+        return None
+    for key in (lambda r: [str(r["slug"]).lower()], lambda r: [str(r["name"]).lower()]):
+        for r in roles:
+            if q in key(r):
+                return r
+    by_alias = [r for r in roles if q in [str(a).lower() for a in r["aliases"]]]
+    if len(by_alias) > 1:
+        _die("«%s» alias олон дүрд байна: %s - slug-аар нь сонго (/fm:role <slug>)."
+             % (query, ", ".join(str(r["slug"]) for r in by_alias)))
+    if by_alias:
+        return by_alias[0]
+    hits = [r for r in roles if q in str(r["slug"]).lower() or q in str(r["name"]).lower()]
     if len(hits) == 1:
         return hits[0]
     alias = LEGACY_ROLE_ALIASES.get(slugify(re.sub(r"^\d+\s*", "", q)))

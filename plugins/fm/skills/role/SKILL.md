@@ -11,7 +11,7 @@ argument-hint: "[slug]"
 Vault: `${user_config.vault_path}` (хоосон бол гишүүнээс асуу)
 Аргумент: `$ARGUMENTS`
 
-Доорх командуудад `python3`; Windows дээр байхгүй бол `python` эсвэл `py -3`. Зам хоосон зайтай тул хашилтыг бүү хас.
+Доорх командуудад `python3`; Windows дээр `py -3` (`python` нь ихэвчлэн Microsoft Store-ийн хоосон stub). Зам хоосон зайтай тул хашилтыг бүү хас.
 
 ## A. Аргументгүй → жагсаалт
 

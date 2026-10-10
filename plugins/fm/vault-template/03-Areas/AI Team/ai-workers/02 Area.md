@@ -38,8 +38,6 @@ aliases:
   - "gtd"
   - "Inbox"
   - "Диспетчер"
-  - "Architect"
-  - "Архитектор"
 ---
 
 # 02 Area
