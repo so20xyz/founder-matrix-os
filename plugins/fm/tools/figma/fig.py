@@ -7,6 +7,7 @@
   fig.py run "<js>"             - JS кодыг Figma дотор ажиллуулах (async body, `figma`, `store`)
   fig.py run -f script.js       - файлаас ажиллуулах
   fig.py comments [--wait 600] [--all]  - plugin-ий 💬 самбараас хэрэглэгчийн хариулаагүй коммент
+  fig.py progress <id> queued|working|done|clear ["текст"] - comment-ийн доор амьд төлөв (олон comment-ийг subagent-аар зэрэг хийхэд)
   fig.py reply <id> "текст" [--play nodeId] - хариулах; текстэд @[нэр](nodeId) = дарвал тэр screen рүү очно
   fig.py resolve <id>            - thread-ийг шийдсэн болгох
   fig.py delete <id>             - хариулт (эсвэл бүх thread) устгах
@@ -55,6 +56,7 @@ def main():
     c = s.add_parser("comments"); c.add_argument("--wait", type=int, default=0, help="шинэ коммент ирэх хүртэл хүлээх (сек)"); c.add_argument("--all", action="store_true")
     rp = s.add_parser("reply"); rp.add_argument("id"); rp.add_argument("text"); rp.add_argument("--play", help="▶ харах товчны node id")
     rs = s.add_parser("resolve"); rs.add_argument("id")
+    pg = s.add_parser("progress"); pg.add_argument("id"); pg.add_argument("state", choices=["queued", "working", "done", "clear"]); pg.add_argument("text", nargs="?", default="")
     dl = s.add_parser("delete"); dl.add_argument("id")
     ic = s.add_parser("icons"); ic.add_argument("prefix", nargs="?"); ic.add_argument("--sets", nargs="?", const="", help="icon set хайх")
     ic.add_argument("--filter", help="нэрийн төгсгөл: solid, line...  (ж: -solid)"); ic.add_argument("--search"); ic.add_argument("--names")
@@ -70,7 +72,7 @@ def main():
         except Exception:
             print({"server": False})
         return
-    if a.cmd in ("comments", "reply", "resolve", "delete"):
+    if a.cmd in ("comments", "reply", "resolve", "delete", "progress"):
         def req(path, body=None, t=10):
             r = urllib.request.Request(URL + path, data=json.dumps(body).encode() if body else None, headers={"content-type": "application/json"})
             try:
@@ -97,6 +99,8 @@ def main():
             print(json.dumps(req("/comments", {"parent": pid, "text": a.text, "from": "claude", "play": a.play}), ensure_ascii=False))
         elif a.cmd == "delete":
             print(json.dumps(req("/comments", {"delete": a.id})))
+        elif a.cmd == "progress":
+            print(json.dumps(req("/comments", {"status": a.id, "state": "" if a.state == "clear" else a.state, "text": a.text}), ensure_ascii=False))
         else:
             print(json.dumps(req("/comments", {"resolve": a.id})))
         return

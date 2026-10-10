@@ -94,6 +94,8 @@
   #gg .gi span{position:absolute;left:0;right:0;bottom:0;padding:3px 5px;font-size:9.5px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.75));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ghint{color:#6a6a6a;font-size:10.5px;text-align:center;margin:10px 0 4px}
   body.collapsed #st,body.collapsed #pl,body.collapsed .pane,body.collapsed #box,body.collapsed #grip{display:none!important}
+  .st { font-size: 11px; margin: 4px 0 2px; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,.05); color: #aaa; }
+  .st.working { color: #e8c547; background: rgba(232,197,71,.10); }
 </style>
 <div id="h"><div id="dot"></div><div>Claude · <b id="s">холбогдож байна…</b></div>
   <div id="tabs" style="margin-left:auto"><button data-p="c" class="on">💬 <span id="n"></span></button><button data-p="g">🖼</button><button data-p="l">Лог</button></div><button id="col" title="Хураах / дэлгэх (header дээр 2 дарах)">▾</button></div>
@@ -110,6 +112,7 @@
 </div>
 <script>
 let ws, info = { file: '?', editor: 'figma' }, sel = null, all = [], replyTo = null;
+let ME = 'Би'; fetch('http://localhost:3055/member').then(r => r.json()).then(j => { if (j.member) { ME = j.member; render(); } }).catch(() => {});
 const $ = (id) => document.getElementById(id);
 const s = $('s'), dot = $('dot'), L = $('l'), C = $('c');
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
@@ -193,7 +196,7 @@ function msgHtml(m, isReply) {
   if (long && !open) { let cut = t.slice(0, 180); cut = cut.slice(0, Math.max(cut.lastIndexOf(' '), 120)); body = fmt(cut) + '…';
     meta = '<div class="mt" data-m="' + m.id + '">▸ ' + metrics(t) + ' · <u data-m="' + m.id + '">Цааш унших</u></div>'; }
   else if (long) meta = '<div class="mt" data-m="' + m.id + '">▴ <u data-m="' + m.id + '">Хураах</u></div>';
-  return '<div class="msg ' + m.from + (isReply ? ' re' : '') + (long && !open ? ' clp' : '') + '"><span class="who">' + (m.from === 'user' ? 'Та' : 'Claude') +
+  return '<div class="msg ' + m.from + (isReply ? ' re' : '') + (long && !open ? ' clp' : '') + '"><span class="who">' + (m.from === 'user' ? esc(ME) : 'Claude') +
     '</span>' + body + '<span class="tm">' + hhmm(m.at) + '</span>' + meta + '</div>';
 }
 function render() {
@@ -213,6 +216,7 @@ function render() {
       msgHtml(r, false) +
       (hidden > 0 ? '<div class="more" data-e="' + r.id + '">↕ өмнөх ' + hidden + ' мессежийг харах</div>' : '') +
       shown.map(m => msgHtml(m, true)).join('') +
+      (r.status && r.status.state && r.status.state !== 'done' && !r.resolved ? '<div class="st ' + r.status.state + '">' + (r.status.state === 'working' ? '⏳ ажиллаж байна' : '🕐 дараалалд') + (r.status.text ? ' · ' + esc(r.status.text) : '') + ' · ' + hhmm(r.status.at) + '</div>' : '') +
       (work ? '<div class="msg re claude live"><span class="who">Claude</span><span class="wsp">✳</span> <b class="lvt"></b> <span class="lvd"></span><div class="lvm"></div></div>' : '') +
       '<div class="acts"><a data-r="' + r.id + '">↩ хариулах</a>' + (r.resolved ? '' : '<a data-x="' + r.id + '">✓ шийдсэн</a>') + '</div></div>';
   }).join('');

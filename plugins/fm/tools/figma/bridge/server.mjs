@@ -93,6 +93,12 @@ const server = http.createServer(async (req, res) => {
     fs.writeFileSync(new URL(`${name}.json`, dir), body);
     return json(200, { saved: name, bytes: body.length });
   }
+  // the member's display name for the panel (~/.fmos/config.json "member"), instead of a generic «Та»
+  if (req.method === "GET" && req.url.startsWith("/member")) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    let member = ""; try { member = JSON.parse(fs.readFileSync((await import("node:path")).join((await import("node:os")).homedir(), ".fmos", "config.json"), "utf8")).member || ""; } catch {}
+    return json(200, { member });
+  }
   if (req.url.startsWith("/comments")) {
     res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "content-type");
     if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
@@ -111,6 +117,8 @@ const server = http.createServer(async (req, res) => {
       const b = JSON.parse(body || "{}");
       if (b.delete) { const n = comments.length; comments = comments.filter(c => c.id !== b.delete && c.parent !== b.delete); saveComments();
         for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments })); return json(200, { deleted: n - comments.length }); }
+      // per-thread live status: {status: id, state: "queued"|"working"|"done"|"", text} → shown under the thread
+      if (b.status) { const t = comments.find(c => c.id === b.status); if (t) { t.status = b.state ? { state: b.state, text: b.text || "", at: Date.now() } : null; saveComments(); for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments })); } return json(200, { ok: !!t }); }
       if (b.resolve) { const t = comments.find(c => c.id === b.resolve); if (t) { t.resolved = true; saveComments(); for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments })); } return json(200, { ok: !!t }); }
       const parent = b.parent && comments.find(c => c.id === b.parent);
       return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null }));
