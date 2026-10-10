@@ -592,7 +592,24 @@ function calItemOf(t: string, dir: string, name: string, kind: 'task' | 'event',
   const research = ((ri >= 0 && segs[ri + 1] ? segs[ri + 1] : segs.length > 1 ? segs[segs.length - 2] : segs[0]) ?? '').trim()
   // live activity: started / claimed while in-progress, completed (else updated) once done
   const times = kind === 'task' ? { started: field(fm, 'started'), completed: field(fm, 'completed'), claimed: field(fm, 'claimed'), updated: field(fm, 'updated') } : {}
-  return { kind, title: name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), owners: ownersOf(fm), project, activity, priority: field(fm, 'priority'), research, file: `${dir}/${name}`, ...times, ...(secret ? { private: true } : {}) }
+  // «## Өөрчлөлтийн түүх» (one stream = one task, itge.e 2026-10-10): | HH:MM | what | where | rows → shown under the task
+  const log = kind === 'task' && !secret ? changeLogOf(t) : []
+  return { kind, title: name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), owners: ownersOf(fm), project, activity, priority: field(fm, 'priority'), research, file: `${dir}/${name}`, ...times, ...(log.length ? { log } : {}), ...(secret ? { private: true } : {}) }
+}
+
+/** A task note's «## Өөрчлөлтийн түүх» table → [{ at: 'HH:MM', what }] in note order (header / separator rows skipped). */
+function changeLogOf(t: string): Array<{ at: string; what: string }> {
+  const i = t.indexOf('## Өөрчлөлтийн түүх')
+  if (i < 0) return []
+  const rest = t.slice(i)
+  const end = rest.slice(3).search(/\n## /)
+  const block = end < 0 ? rest : rest.slice(0, end + 3)
+  const out: Array<{ at: string; what: string }> = []
+  for (const line of block.split(/\r?\n/)) {
+    const m = line.match(/^\|\s*(\d{1,2}:\d{2})[^|]*\|\s*([^|]*?)\s*\|/)
+    if (m && m[1] && m[2]) out.push({ at: m[1].padStart(5, '0'), what: m[2].replace(/\*\*/g, '').replace(/`/g, '') })
+  }
+  return out
 }
 
 /** Research session (folder under 04-Resources/Research/<topic>): find its hub note, keep file + status (frontmatter only). */
@@ -2273,7 +2290,25 @@ export const register: Register = (on, options) => {
               {col(wide ? 18 : 9, <Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v1Status(x)}</Text>, true)}
               {goCell(`t1b-${x.file}`, press)}
             </Box>
+            {logRows(x)}
             {detail(x)}
+          </Box>
+        )
+      }
+      // change log under a task (fm:log / fm_changelog.py): the latest few, dim, «HH:MM юу»
+      const logRows = (x: CalItem) => {
+        const lg = x.log ?? []
+        if (!lg.length) return null
+        const shownLog = lg.slice(-6)
+        return (
+          <Box key={`t1l-${x.file}`} flexDirection="column" paddingLeft={4}>
+            {lg.length > shownLog.length ? <Text key={`t1lm-${x.file}`} color={C.muted}>{`… +${lg.length - shownLog.length}`}</Text> : null}
+            {shownLog.map((e, i) => (
+              <Box key={`t1le-${x.file}-${i}`} flexDirection="row" gap={1}>
+                {col(6, <Text color={C.muted}>{e.at}</Text>)}
+                <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden"><Text color={C.muted} wrap="truncate-end">{e.what}</Text></Box>
+              </Box>
+            ))}
           </Box>
         )
       }

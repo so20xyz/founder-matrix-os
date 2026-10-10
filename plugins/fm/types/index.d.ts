@@ -1,5 +1,5 @@
 /** `private` = a 🔒 task / event (private: true, a private owner, a finances/ path): listed only in a private session. */
-export type CalItem = { kind: 'task' | 'event'; title: string; date: string; time: string; status: string; owner: string; owners?: string[]; project: string; activity?: string; priority?: string; research?: string; file: string; started?: string; completed?: string; claimed?: string; updated?: string; private?: boolean }
+export type CalItem = { kind: 'task' | 'event'; title: string; date: string; time: string; status: string; owner: string; owners?: string[]; project: string; activity?: string; priority?: string; research?: string; file: string; started?: string; completed?: string; claimed?: string; updated?: string; log?: Array<{ at: string; what: string }>; private?: boolean }
 
 export type VaultTask = { title: string; status: string; due: string; owner: string; owners?: string[]; project?: string; updated?: string; file?: string; started?: string; completed?: string; claimed?: string; private?: boolean }
 
