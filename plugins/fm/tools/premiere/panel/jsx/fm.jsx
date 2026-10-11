@@ -57,9 +57,31 @@ FM.info = function () {
 };
 
 // --- import files (array of absolute paths) into a bin
+// --- mono → stereo: дуу зөвхөн нэг сувагт (Ch.1) байгаа клипийг L, R хоёуланд нь L-ээс авна (импорт бүрт автоматаар)
+FM.stereo = function (root) {
+  var done = [];
+  function walk(b) {
+    for (var i = 0; i < b.children.numItems; i++) {
+      var c = b.children[i];
+      if (c.type === 2) { walk(c); continue; }
+      if (c.type !== 1 || (c.isSequence && c.isSequence())) continue;
+      try {
+        var m = c.getAudioChannelMapping;
+        if (!m || m.audioChannelsType !== 0) continue;
+        m.audioChannelsType = 1; m.audioClipsNumber = 1;
+        m.setMappingForChannel(0, 0); m.setMappingForChannel(1, 0);
+        c.setAudioChannelMapping(m); done.push(c.name);
+      } catch (e) {}
+    }
+  }
+  walk(root || app.project.rootItem);
+  return done;
+};
+
 FM.importFiles = function (paths, binName) {
   var bin = FM.bin(binName || 'OBS Recordings');
   var ok = app.project.importFiles(paths, true, bin, false);
+  FM.stereo(bin);
   var names = []; for (var i = 0; i < bin.children.numItems; i++) names.push(bin.children[i].name);
   return { ok: ok, bin: bin.name, items: names };
 };
@@ -181,6 +203,7 @@ FM.importProject = function (project, mode) {
   }
   if (!paths.length) return { imported: [], note: recs.length ? 'бүгд аль хэдийн орсон' : 'хавтас хоосон: ' + FM.REC_ROOT + '/' + project };
   app.project.importFiles(paths, true, bin, false);
+  FM.stereo(bin);
   var names = []; for (var k = 0; k < paths.length; k++) names.push(paths[k].split('/').pop());
   return { imported: names, bin: bin.name };
 };

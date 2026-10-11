@@ -10,6 +10,7 @@ pr.py - drive Adobe Premiere Pro from the terminal through the FM Bridge (bridge
   python pr.py recordings [--dir D] [--n N]   newest OBS recordings (E:/OBS Recordings/<project>; --project P, default Second Brain Season 2)
   python pr.py import FILE... [--bin B]       import into a bin (default «OBS Recordings»)
   python pr.py import-latest [--n N]          import the N newest recordings
+  python pr.py stereo                         mono (Ch.1) клипүүдийг stereo болгоно (L+R = L); импорт бүрт автоматаар
   python pr.py newseq NAME ITEM...            sequence from clips (keeps the clips' 1080x1920)
   python pr.py markers FILE.json [--seq S]    story markers: [{"t":0,"name":"Hook","comment":"...","dur":3,"color":1}]
   python pr.py volume TRACK CLIP DB [--seq S] set an audio clip's level (dB); DB '-' just reads it
@@ -105,6 +106,8 @@ def main(argv):
         files = recordings(n=int(opt(a, "--n", "1")))
         if not files: sys.exit("no recordings in " + REC_DIR)
         print(js(run(f"return FM.importFiles({js(files)}, {js(PROJECT)})", 300)))
+    elif cmd == "stereo":
+        print(js(run("return FM.stereo()", 300)))
     elif cmd == "newseq":
         print(js(run(f"return FM.newSequence({js(a[0])}, {js(a[1:])})")))
     elif cmd == "markers":
