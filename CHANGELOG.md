@@ -8,6 +8,7 @@
 
 ## Unreleased
 
+- **0.9.16 · Нэмсэн:** `tools/obs/obs.mjs` — OBS-ийг CLI-ээс (obs-websocket, хамааралгүй): status · scenes · scene · record · mic · shot · raw; Цаглабар «Видео → OBS студи»-д командууд, «Сүүлд» дохио obs.mjs-ийг танина.
 - **0.9.15 · Засварласан:** Figma panel-ийн шинэчлэл Figma-д хүрдэггүй байсан — Figma dev plugin-ийг `~/.fmos/figma/plugin` хуулбараас ачаалдаг; bridge сервер эхлэх бүрт `code.js`, `ui.html`-ийг тэр хуулбарт синк хийнэ.
 - **0.9.14 · Өөрчилсөн:** Цаглабар «⊟ Хэрэгсэл» — бүх 12 хэрэгсэл (Figma, Higgsfield, Framer, OBS, Premiere, Post, Moodboard, Discord, Notion, fm:save, fm:watch, Brain check) бүх agent-д харагдана (хэрэгсэл = бүх agent-ийн чадвар).
 - **0.9.13 · Нэмсэн:** Цаглабар «⊟ Хэрэгсэл» — сүүлийн 3 минутад ашигласан хэрэгслийн «Сүүлд» багана «▷ <дүр>» гэж тодоор харагдана (хэн ашиглаж байгаа дохио; `toolLastBy`).

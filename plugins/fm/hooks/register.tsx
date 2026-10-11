@@ -103,7 +103,7 @@ const TOOLS: ToolDef[] = [
     check: { kind: 'process', script: 'tools/framer/fr.py', args: ['status'] } },
   { id: 'obs', group: 'Видео', glyph: G.run, name: 'OBS студи', roles: ['*'],
     caps: 'босоо 1080×1920 · Reels-safe layout · апп/📷 камер дэлгэц рүү · zoom · ● бичих (dock)',
-    cmds: ['dock: OBS → Docks → Апп-ууд', 'hotkey: Alt+F1/F2/F3/F6 scene · Alt+Shift+1/2/3 zoom'],
+    cmds: ['$ obs.mjs status', '$ obs.mjs scene "V3 · Сүүлийн 2"', '$ obs.mjs record toggle', '$ obs.mjs mic', 'dock: Docks → Апп-ууд · hotkey Alt+F1/F2/F3/F6, Alt+Shift+1/2/3'],
     check: { kind: 'process', script: 'tools/obs/obs_status.py', args: [] } },
   { id: 'premiere', group: 'Видео', glyph: G.image, name: 'Premiere bridge', roles: ['*'],
     caps: 'бичлэг импорт · Reels sequence · бүгдийг нэг sequence-д · marker · audio dB · Reels export · ● OBS бичих',
