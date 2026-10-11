@@ -1645,7 +1645,7 @@ async function noteToolUse($: EngineInterface, id: string) {
 
 /** The tool id a tool call stands for («Сүүлд»): fig.py / fr.py in Bash, a Higgsfield MCP tool, the post / figma / framer skills. */
 function toolOfCall(tool: string, command: string, skill: string): string {
-  if (tool === 'Bash') return /\bfig\.py\b/.test(command) ? 'figma' : /\bfr\.py\b/.test(command) ? 'framer' : /\bpr\.py\b/.test(command) ? 'premiere' : /\bobs(\.cjs|_status\.py)\b/.test(command) ? 'obs' : ''
+  if (tool === 'Bash') return /\bfig\.py\b/.test(command) ? 'figma' : /\bfr\.py\b/.test(command) ? 'framer' : /\bpr\.py\b/.test(command) ? 'premiere' : /\bobs(\.cjs|\.mjs|_status\.py)\b/.test(command) ? 'obs' : ''
   if (tool === 'Skill') return ({ 'fm:post': 'post', 'fm:figma': 'figma', 'fm:framer': 'framer' } as Record<string, string>)[skill.trim()] ?? ''
   return tool.startsWith(`mcp__${HIGGS_SERVER}__`) ? 'higgsfield' : ''
 }
