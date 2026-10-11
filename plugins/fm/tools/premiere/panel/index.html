@@ -69,9 +69,9 @@ function button(id, script, fmt) {
   };
 }
 button("latest", function (p) { return "return FM.importProject(" + JSON.stringify(p) + ", 'latest')"; },
-  function (r) { return r.imported.length ? "⬇ " + r.imported.join(", ") : "• " + r.note; });
+  function (r) { return r.added.length ? "⬇ timeline-д: " + r.added.join(", ") : "• " + r.note; });
 button("new", function (p) { return "return FM.importProject(" + JSON.stringify(p) + ", 'new')"; },
-  function (r) { return r.imported.length ? "⬇ " + r.imported.length + " бичлэг: " + r.imported.join(", ") : "• " + r.note; });
+  function (r) { return r.added.length ? "⬇ " + r.added.length + " бичлэг timeline-д: " + r.added.join(", ") : "• " + r.note; });
 button("reels", function (p) { return "return FM.reelsFromLatest(" + JSON.stringify(p) + ")"; },
   function (r) { return "＋ " + r.sequence + " (" + r.w + "×" + r.h + ")"; });
 button("join", function (p) { return "return FM.joinAll(" + JSON.stringify(p) + ")"; },

@@ -58,13 +58,13 @@ FM.info = function () {
 
 // --- import files (array of absolute paths) into a bin
 // --- mono → stereo: дуу зөвхөн нэг сувагт (Ch.1) байгаа клипийг L, R хоёуланд нь L-ээс авна (импорт бүрт автоматаар)
-FM.stereo = function (root) {
+FM.stereo = function (root, only) {      // only = {нэр: true} — зөвхөн шинээр импортолсон клип (бүх project-ийг гүйлгэхгүй)
   var done = [];
   function walk(b) {
     for (var i = 0; i < b.children.numItems; i++) {
       var c = b.children[i];
       if (c.type === 2) { walk(c); continue; }
-      if (c.type !== 1 || (c.isSequence && c.isSequence())) continue;
+      if (c.type !== 1 || (only && !only[c.name]) || (c.isSequence && c.isSequence())) continue;
       try {
         var m = c.getAudioChannelMapping;
         if (!m || m.audioChannelsType !== 0) continue;
@@ -81,7 +81,8 @@ FM.stereo = function (root) {
 FM.importFiles = function (paths, binName) {
   var bin = FM.bin(binName || 'OBS Recordings');
   var ok = app.project.importFiles(paths, true, bin, false);
-  FM.stereo(bin);
+  var fresh = {}; for (var f = 0; f < paths.length; f++) fresh[String(paths[f]).split(/[\/]/).pop()] = true;
+  FM.stereo(bin, fresh);
   var names = []; for (var i = 0; i < bin.children.numItems; i++) names.push(bin.children[i].name);
   return { ok: ok, bin: bin.name, items: names };
 };
@@ -206,8 +207,12 @@ FM.importProject = function (project, mode) {
   todo.reverse();                                   // хуучнаас нь эхэлж дараалуулна
   for (var i = 0; i < bin.children.numItems; i++) inBin[bin.children[i].name] = bin.children[i];
   var paths = []; for (var k = 0; k < todo.length; k++) if (!inBin[todo[k].name]) paths.push(todo[k].path);
-  if (paths.length) { app.project.importFiles(paths, true, bin, false); for (var i2 = 0; i2 < bin.children.numItems; i2++) inBin[bin.children[i2].name] = bin.children[i2]; }
-  FM.stereo(bin);
+  if (paths.length) {
+    app.project.importFiles(paths, true, bin, false);
+    for (var i2 = 0; i2 < bin.children.numItems; i2++) inBin[bin.children[i2].name] = bin.children[i2];
+    var fresh = {}; for (var f = 0; f < paths.length; f++) fresh[paths[f].split('/').pop()] = true;
+    FM.stereo(bin, fresh);
+  }
   for (var m = 0; m < todo.length; m++) {
     var it = inBin[todo[m].name]; if (!it) continue;
     if (!seq) { seq = app.project.createNewSequenceFromClips(project + ' · Бүгд', [it], FM.bin('Sequences')); }
