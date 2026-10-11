@@ -194,18 +194,27 @@ FM.recordings = function (project) {
 };
 // import: 'latest' = the newest one, 'new' = every recording not yet in the project's bin
 FM.importProject = function (project, mode) {
-  var recs = FM.recordings(project), bin = FM.bin(project), have = {}, paths = [];
-  for (var i = 0; i < bin.children.numItems; i++) have[bin.children[i].name] = true;
+  // «орсон» = идэвхтэй sequence-ийн timeline дээр байгаа (bin-д байх нь хангалтгүй — timeline-аас устгасан бол дахин нэмнэ)
+  var recs = FM.recordings(project), bin = FM.bin(project), seq = app.project.activeSequence || FM.seq(project + ' · Бүгд');
+  var onTl = {}, inBin = {}, todo = [], added = [];
+  if (seq) for (var t = 0; t < seq.videoTracks.numTracks; t++) { var cl = seq.videoTracks[t].clips; for (var c = 0; c < cl.numItems; c++) onTl[cl[c].name] = true; }
   for (var j = 0; j < recs.length; j++) {
-    if (have[recs[j].name]) { if (mode === 'latest') break; continue; }
-    paths.push(recs[j].path);
+    if (!onTl[recs[j].name]) todo.push(recs[j]);
     if (mode === 'latest') break;
   }
-  if (!paths.length) return { imported: [], note: recs.length ? 'бүгд аль хэдийн орсон' : 'хавтас хоосон: ' + FM.REC_ROOT + '/' + project };
-  app.project.importFiles(paths, true, bin, false);
+  if (!todo.length) return { added: [], sequence: seq && seq.name, note: recs.length ? 'бүгд timeline дээр байна' : 'хавтас хоосон: ' + FM.REC_ROOT + '/' + project };
+  todo.reverse();                                   // хуучнаас нь эхэлж дараалуулна
+  for (var i = 0; i < bin.children.numItems; i++) inBin[bin.children[i].name] = bin.children[i];
+  var paths = []; for (var k = 0; k < todo.length; k++) if (!inBin[todo[k].name]) paths.push(todo[k].path);
+  if (paths.length) { app.project.importFiles(paths, true, bin, false); for (var i2 = 0; i2 < bin.children.numItems; i2++) inBin[bin.children[i2].name] = bin.children[i2]; }
   FM.stereo(bin);
-  var names = []; for (var k = 0; k < paths.length; k++) names.push(paths[k].split('/').pop());
-  return { imported: names, bin: bin.name };
+  for (var m = 0; m < todo.length; m++) {
+    var it = inBin[todo[m].name]; if (!it) continue;
+    if (!seq) { seq = app.project.createNewSequenceFromClips(project + ' · Бүгд', [it], FM.bin('Sequences')); }
+    else seq.videoTracks[0].overwriteClip(it, Number(seq.end) / FM.TICKS);
+    added.push(todo[m].name);
+  }
+  return { added: added, imported: paths.length, sequence: seq && seq.name };
 };
 // Reels sequence from the newest item in the project's bin (1080x1920 like the recording)
 FM.reelsFromLatest = function (project) {
