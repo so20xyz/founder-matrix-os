@@ -200,7 +200,7 @@ def test_ctx_unknown_session_lists_roles(v):
 
 def test_ctx_boot_truncated_to_10kb(v):
     big = "# BOOT\n" + "".join("Мөр %04d: монгол кирилл текст урт урт урт.\n" % i for i in range(1500))
-    assert len(big.encode("utf-8")) > 30000
+    assert len(big.encode("utf-8")) > 40000
     v.write("_system/BOOT.md", big)
     v.write("03-Areas/AI Team/ai-workers/00 GTD.md",
             "---\nrole: gtd\n---\n\n## Дүрэм\n\n" + ("дүрмийн мөр\n" * 800))
@@ -209,7 +209,7 @@ def test_ctx_boot_truncated_to_10kb(v):
     code, out, _ = run(CTX, ctx_payload(v.root), {"FM_VAULT": str(v.root)})
     ctx = context_of(out)
     size = len(ctx.encode("utf-8"))
-    assert size <= 10 * 1024, size
+    assert size <= 28 * 1024, size   # budget 28 KB since 2026-10-12 (the maintainer BOOT travels whole)
     assert "BOOT.md таслав" in ctx and "дүрмийн мөр" in ctx and "Дүр: gtd" in ctx, ctx[-500:]
     assert "�" not in ctx, "broken UTF-8 at cut"
 

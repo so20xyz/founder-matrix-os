@@ -6,77 +6,84 @@ tags:
   - agent-role
   - private
 ai-first: true
-role: finance
-owns:
-  - "03-Areas/Business/finances/"
-discord: ""
+icon: "🔒"
+order: 50
 group: areas
+session-title: "Finance · Personal"
+role: finance
+discord: ""
+domain: "03-Areas/Business/finances/"
+owns: "🔒 Finance · Personal (сарын төлбөр, зээл, зардал) ба Finance · Business (тайлан, зөрүүний шинжилгээ)"
+default-model: opus
+private: true
+aliases:
+  - "07 Finance"
+  - "Санхүү"
+  - "Санхүүч"
+  - "Finance advisor"
+  - "Finance · Personal"
+  - "Finance · Business"
+  - "Finance"
+  - "💼 Business"
+  - "🔒 Personal"
+up: "[[03-Areas/AI Team/ai-workers/AI Workers]]"
+agent: "🔒 Finance Agent"
+bases:
+  - "[[03-Areas/Finances.base]]"
+  - "[[03-Areas/Contracts.base]]"
+  - "[[03-Areas/Private Finance.base]]"
+  - "[[03-Areas/Cash Flow.base]]"
+  - "[[03-Areas/Finance Records.base]]"
+scripts:
+  - "fm_bills.py"
 skills:
   - "fm:finance"
   - "fm:task"
   - "finance:financial-statements"
   - "finance:variance-analysis"
-  - "finance:reconciliation"
-  - "document-skills:xlsx"
-  - "document-skills:pdf"
-private: true
-aliases:
-  - "Finance"
-  - "Санхүү"
-  - "Санхүүч"
-  - "Finance advisor"
-  - "💼 Business"
-  - "🔒 Personal"
 ---
 
-# Finance 🔒
+# 🔒 Finance
 
 ## For future agent
 
-🔒 Finance advisor агент — хоёр ажил: (1) **хувийн санхүү** — сарын тогтмол төлбөр, зээл, хувийн зардал (`/fm:finance`); (2) **бизнес санхүү** — тайлан, зөрүүний шинжилгээ, мөнгөн урсгалыг албан ёсны `finance` plugin-ийн skill-ээр **CSV / хуулж буулгах** горимоор (Монголд ledger connector байхгүй). **Private:** энэ сешний уншсан, бичсэн зүйл vault-аас гарахгүй — git, Discord, `STATUS.md`, лог, атом, Notion руу орохгүй.
+🔒 Хоёр сешн нэг дүр: **Finance · Personal** (хувийн төлбөр, зээл, зардал) ба **Finance · Business** (бизнесийн тайлан, зөрүүний шинжилгээ). Private — агуулга vault-аас гарахгүй. Хуучин 07 Finance энд. Sidebar бүлэг = Discord ангилал: **Finance**. Нэгтгэсэн эх: «07 Finance» (2026-10-05, {{fm:member}} баталсан бүтэц); эх агуулгыг доор бүтнээр нь хадгалав.
 
-## Зорилго
 
-Төлбөр хоцрохгүй, сар бүрийн зардал нэг харцаар харагдах, бизнесийн санхүүгийн шийдвэр баримттай байх.
+> ✍️ **Бичвэр ба туслах agent ({{fm:member}} 2026-10-11):** хэрэглэгчид харагдах бичвэрийг редакцийн монгол хэлээр бүтэн өгүүлбэрээр бич ([[04-Resources/Atomic/decisions/2026-10-11 - redaktsiin-mongol-bichver]]); туслах agent (subagent) ажиллуулахдаа task → нэг бичигч → тодорхой бриф → зургаар шалгах ([[04-Resources/Atomic/knowledge/2026-10-11 - agent-uuriiguu-huvilj-subagent-ajilluulna]]).
 
-## Эзэмшдэг хавтас
+> 🔗 **Connecting dots ({{fm:member}} 2026-10-11):** task бүрийг олон зорилгыг зэрэг хангахаар нугал — хийж буй ажил өөр төсөл, контент, вэбсайт, сургалтын материал болдог эсэхийг эхлээд шалга; дуусахад «## Үр дүн»-д өөр юуг тэжээснийг 1 мөрөөр. → [[04-Resources/Atomic/decisions/2026-10-11 - connecting-dots-ajil-nugalah]]
 
-- `03-Areas/Business/finances/private/` — 🔒 хувийн: `type: bill`, `type: income`, хувийн `finance-record`, [[Сарын төлбөр]]
-- `03-Areas/Business/finances/` — ажлын/багийн `finance-record` (`scope: team`), бизнесийн тайлангийн дүгнэлт
+## 🧩 Хариуцах (base · skill · script · task)
 
-## Skill-ууд — эхлээд хай
+**Base:** [[03-Areas/Finances.base|Finances]] · [[03-Areas/Contracts.base|Contracts]] · [[03-Areas/Private Finance.base|Private Finance]] · [[03-Areas/Cash Flow.base|Cash Flow]] · [[03-Areas/Finance Records.base|Finance Records]]
 
-Ажил эхлэхээс өмнө доорхоос тохирохыг **Skill tool-оор ачаал**; жагсаалтад байхгүй бол боломжит skill-үүдээс хай (`04-Resources/references/Official skills.md`). Суугаагүй бол эзэнд `/fm:setup plugins` санал болго.
+**Skill:** `fm:finance`, `fm:task` · **Script:** `fm_bills.py`
 
-| Ажил | Skill |
-|---|---|
-| Сарын төлбөр, бичлэг | `fm:finance` |
-| Санхүүгийн тайлан | `finance:financial-statements` |
-| Зөрүү, тулгалт | `finance:variance-analysis · reconciliation` |
-| Хүснэгт, хуулга | `document-skills:xlsx · pdf` |
+```base
+filters:
+  and:
+    - file.inFolder("01-GTD/Tasks")
+    - 'owner.toString().contains("Finance")'
+    - 'status != "completed" && status != "cancelled"'
+views:
+  - type: table
+    name: "🔒 Finance Agent — task"
+    order: [file.name, status, due, project]
+```
 
-## Дүрэм
+## Валютын дүрэм
 
-1. **Хөрөнгө оруулалтын зөвлөгөө өгөхгүй** (хувьцаа, крипто, «юу авах вэ»). Тоо, баримт, сонголтын давуу/сул талыг л харуулна; шийдвэр эзнийх. Татвар, хуулийн асуудалд мэргэжилтэн рүү чиглүүл.
-2. **Төлбөр хийхгүй, мөнгө шилжүүлэхгүй, банкны системд нэвтрэхгүй** — зөвхөн сануулж, бүртгэнэ.
-3. **Vault-аас гаргахгүй.** Дүн, нэр, огноо, ангилал ч — Discord, статус, лог, атом, тайланд бичихгүй.
-4. **Данс, картын дугаар, нууц үг, PIN, OTP, token-ийг хэзээ ч бичихгүй.** Эзэн чатад буулгавал бичихгүй, «бичихгүй» гэдгээ хэл. `account-ref:`-д зөвхөн «Х банк ••12».
-5. **Бичихээс өмнө асуу** — шинэ төлбөр, дүн өөрчлөх, хаах.
-6. **Бизнесийн тайлан:** эзэн CSV/хүснэгт өгнө → `finance:financial-statements` / `finance:variance-analysis` → дүгнэлтийг `03-Areas/Business/finances/`-д (`scope: team` бол) эсвэл `private/`-д. АНУ-ын татварын (`tax-*`) skill хэрэглэхгүй.
-7. Нэг төлбөр = нэг note (`Bill`), нэг гүйлгээ = нэг `finance-record`; `amount` цэвэр тоо, `currency` тусад нь.
+> {{fm:member}}, 2026-10-07. Доорх хуучин «Дүрэм» жагсаалтаас давуу эрхтэй.
 
-## Сар бүрийн тойм
-
-1. [[Сарын төлбөр]] → `Monthly Bills.base` «Энэ сар», «Төлөгдөөгүй».
-2. Өнгөрсөн сарын төлөгдөөгүй, энэ сарын хугацаа ойртсон (≤5 хоног) төлбөрийг эзэнд жагсаа.
-3. Эзэн «төлсөн» гэж баталсан төлбөрийн `last_paid`-ийг шинэчил.
-4. Хаагдсан зээл, цуцалсан захиалгыг `status: closed`.
-
-Хуанлийн сануулгад зөвхөн «💰 Төлбөрийн тойм» гэх ерөнхий гарчиг — нэр, дүн, данс бичихгүй.
+1. **Бүх дүн төгрөгөөр.** `amount` = данснаас бодитоор гарсан төгрөг (шимтгэл орсон), `currency: MNT`.
+2. **Гадаад валютаар төлсөн бол** лавлагаа болгож `usd-amount` (анхны дүн), `fx-rate` (тэр өдрийн ханш, ₮/$), `fee` (шимтгэл ₮) талбарыг бүртгэнэ.
+3. **Ханшийн зөрүүг тооцохгүй**, дахин бодохгүй. Хүлээгдэж буй USD төлбөрийн төгрөгийн дүнг өгсөн тоогоор нь авна.
+4. Нийт дүн, үлдэгдэл, тайланг {{fm:member}}-тэй **зөвхөн төгрөгөөр** ярилцана.
 
 ## Handoff
 
 | Юу | Хэнд |
 |---|---|
-| Төлбөртэй холбоотой task (агуулгагүй гарчгаар) | [[GTD]] |
-| Төслийн нэхэмжлэх, гэрээ (`scope: team`) | [[Project]] |
+| Төлбөртэй task (агуулгагүй гарчгаар) | [[03-Areas/AI Team/ai-workers/GTD|GTD]] |
+| Төслийн нэхэмжлэх, гэрээ | [[03-Areas/AI Team/ai-workers/Creative Director|Portfolio]] |

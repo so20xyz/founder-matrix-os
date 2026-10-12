@@ -3,7 +3,7 @@
 
 Хийх зүйл:
   Сешн vault дотор (cwd эсвэл CLAUDE_PROJECT_DIR) нээгдсэн бол
-    1. <vault>/_system/BOOT.md-г inject хийнэ (нийт context <= 10 KB);
+    1. <vault>/_system/BOOT.md-г inject хийнэ (нийт context <= 28 KB);
     2. сешний дүрийг <vault>/_system/fm/registry.json-оос олно:
          sessions[<session_id>].role -> roles[<role>].note
        олдвол дүрийн тэмдэглэлийн дүрмийн хэсгийг (## ...дүрэм / Rules /
@@ -22,8 +22,8 @@ import os
 import re
 import sys
 
-ROLE_MAX_BYTES = 3 * 1024      # role rules budget
-TOTAL_MAX_BYTES = 10 * 1024    # whole additionalContext budget
+ROLE_MAX_BYTES = 8 * 1024      # role rules budget
+TOTAL_MAX_BYTES = 28 * 1024    # whole additionalContext budget (2026-10-12: the maintainer BOOT ~16 KB travels whole)
 
 DECISIONS_MAX = 5              # recent decision atoms shown at session start
 DECISIONS_MAX_BYTES = 1400

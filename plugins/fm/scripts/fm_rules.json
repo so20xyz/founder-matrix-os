@@ -1,0 +1,12 @@
+{
+  "_doc": "fm_rules.py export: maintainer's own names -> {{fm:member}} (member_names + ~/.fmos/config.json member); rewrite = one company/project name -> a generic placeholder.",
+  "member_names": ["itge.e", "BD"],
+  "rewrite": {
+    "03-Areas/Business/INAI/": "03-Areas/Business/",
+    "[[03-Areas/INAI.base]]": "[[03-Areas/Companies.base]]",
+    "Inai Website": "<вэб төсөл>",
+    "INAI": "<байгууллага>",
+    "Inai": "<байгууллага>",
+    "02-Projects/Lab/Lab.md": "02-Projects/<төсөл>/<төсөл>.md"
+  }
+}

@@ -167,4 +167,12 @@ python3 plugins/fm/scripts/fm_bases.py export "<maintainer vault>"          # dr
 python3 plugins/fm/scripts/fm_bases.py export "<maintainer vault>" --apply
 ```
 
+Claude-ийн ажлын урсгал (BOOT + 6 үндсэн дүрийн note-ийн бүтэц) мөн адил:
+
+```
+python3 plugins/fm/scripts/fm_rules.py export "<maintainer vault>" [--apply]
+```
+
+`fm_rules.json`: `member_names` → `{{fm:member}}`, `rewrite` — байгууллага/төслийн нэр → ерөнхий. Дүрийн note-ийн төлөвийн түлхүүр (`last-done`, `next-action`, `session-id` …) болон «Нэгтгэсэн түүх»-ээс доош хэсэг экспортлогдохгүй; template-д л байгаа fm бүтээгдэхүүний хэсэг (BOOT «Ганц команд», «Agent-ууд», «Ажиллах ёс», «Албан ёсны skill») хадгалагдана.
+
 `fm_bases.json`: `exclude` — нэг байгууллагын өөрийн base, `rewrite` — байгууллагын хавтсыг ерөнхий хавтас болгох. Төсөл, хүн, байгууллагын нэр, URL орсон base-ийг скрипт хүлээж авахгүй (REFUSED). Гишүүд `/fm:setup`-ийн 2-р алхам (`fm_bases.py update`)-аар авна.

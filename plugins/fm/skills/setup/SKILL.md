@@ -37,6 +37,7 @@ Vault: `${user_config.vault_path}` (хоосон эсвэл `${...}` хэвээ�
 | 4 | Дүрийн slug (developer→architect, area→gtd, resource/research→wiki; registry, baton) | `python3 "$S/fm_roles_migrate.py" "<vault>"` |
 | 5 | Дутуу загварын файл (дүрийн note, skill каталог, template) — байгаа файлд хүрэхгүй | `python3 "$S/fm_setup.py" "<vault>" --member "<нэр>" --merge-registry --dry-run` |
 | 6 | Base-ууд = анхдагч (хуучныг `_trash/bases-<огноо>/`) | `python3 "$S/fm_bases.py" update "<vault>"` |
+| 6б | Claude-ийн ажлын урсгал = анхдагч: BOOT + 6 үндсэн дүрийн note-ийн бүтэц (дүрэм, хариуцлага, skill, base, handoff); гишүүний «Нэгтгэсэн түүх», `last-done`/`next-action` хэвээр, хуучныг `_trash/rules-<огноо>/` | `python3 "$S/fm_rules.py" update "<vault>"` |
 | 7 | Төсөл/хүрээний тусдаа дүр (assistant, 10+ дугаартай) — хэрэггүй | `python3 "$S/fm_lint.py" "<vault>/03-Areas/AI Team/ai-workers"` → тус бүрийн дүрэм, skill-ийг тэр төслийн `_BRAIN.md` руу зөөж (`_BRAIN` байхгүй бол `fm_project.py new … --state ongoing`), дүрийн note-ийг `_trash/`, сешнийг `/fm:role project --project <slug> --folder <хавтас>` (гишүүнтэй хамт) |
 | 8 | Sidebar: «📁 Portfolio» сешний нэрийг «📁 Project» болго; restart → `/fm:role <slug>` → `/tsaglabar` | — |
 
