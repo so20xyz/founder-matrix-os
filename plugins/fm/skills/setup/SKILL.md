@@ -1,7 +1,7 @@
 ---
 name: setup
-description: Шинэ гишүүнийг эхнээс нь бүрэн тохируулна - (0) компьютерын шаардлагыг шалгаж (fm_doctor) дутууг албан ёсны суулгагчаар санал болгох, (1) албан ёсны plugin-уудыг (superpowers, obsidian, document-skills, finance, exa) эх сурвалжаас нь суулгах, (2) vault-ийн араг яс, (3) амьдралын онбординг ярилцлага (SOUL, бизнес ба хувийн хүрээ, төсөл, хүмүүс, хувийн санхүү, лавлагаа, зорилго), (4) Agent-уудыг идэвхжүүлэх, (5) нэмэлт хэрэгсэл (Discord relay, Figma, Notion, watch), (7) sidebar-ийн бүлэг ба сешнүүдийг Second Brain-ийн дарааллаар, (8) routine-ууд. «setup», «fm setup», «суулга», «тохируул», «шинэ vault», «эхлүүлье», «onboarding», «онбординг», «анх удаа», «компьютераа бэлд», «юу суулгах вэ», «амьдралаа цэгцэлье» гэвэл энэ skill-ийг ашигла.
-argument-hint: "[хурдан | doctor | plugins | tools | sidebar | routines]"
+description: Шинэ гишүүнийг эхнээс нь бүрэн тохируулна - (0) компьютерын шаардлагыг шалгаж (fm_doctor) дутууг албан ёсны суулгагчаар санал болгох, (1) албан ёсны plugin-уудыг (superpowers, obsidian, document-skills, finance, exa) эх сурвалжаас нь суулгах, (2) vault-ийн араг яс, (3) амьдралын онбординг ярилцлага (SOUL, бизнес ба хувийн хүрээ, төсөл, хүмүүс, хувийн санхүү, лавлагаа, зорилго), (4) Agent-уудыг идэвхжүүлэх, (5) нэмэлт хэрэгсэл (Discord relay, Figma, Notion, watch), (7) sidebar-ийн бүлэг ба сешнүүдийг Second Brain-ийн дарааллаар, (8) routine-ууд. «setup», «fm setup», «суулга», «тохируул», «шинэ vault», «эхлүүлье», «onboarding», «онбординг», «анх удаа», «компьютераа бэлд», «юу суулгах вэ», «амьдралаа цэгцэлье» гэвэл энэ skill-ийг ашигла. Байгаа гишүүний fm шинэчлэлт (repo / plugin update-ийн дараа vault-ийг шинэ хувилбарт тааруулах) — «upgrade», «шинэчлэл орлоо», «repo update хийсэн», «plugin шинэчилсэн», «шинэ хувилбар».
+argument-hint: "[хурдан | upgrade | doctor | plugins | tools | sidebar | routines]"
 ---
 
 # /fm:setup — гишүүнийг бүрэн тохируулах
@@ -22,8 +22,25 @@ argument-hint: "[хурдан | doctor | plugins | tools | sidebar | routines]"
 | 8 | Routine-ууд | 2 мин |
 
 Vault: `${user_config.vault_path}` (хоосон эсвэл `${...}` хэвээр бол бүтэн замыг асуу).
-Аргумент `$ARGUMENTS`: «хурдан» = хурдан ярилцлага · «doctor» = зөвхөн 0-р алхам · «plugins» = зөвхөн 1 · «tools» = зөвхөн 5 · «sidebar» = зөвхөн 7 · «routines» = зөвхөн 8.
+Аргумент `$ARGUMENTS`: «хурдан» = хурдан ярилцлага · «upgrade» = зөвхөн доорх «Upgrade» хэсэг (байгаа гишүүн) · «doctor» = зөвхөн 0-р алхам · «plugins» = зөвхөн 1 · «tools» = зөвхөн 5 · «sidebar» = зөвхөн 7 · «routines» = зөвхөн 8.
 Скриптүүд: `python3` (Windows дээр `python` эсвэл `py -3`). Зам хоосон зайтай тул **заавал хашилтад**. Доор `S=${CLAUDE_PLUGIN_ROOT}/scripts`.
+
+## Upgrade — байгаа гишүүн fm шинэчилсний дараа
+
+`upgrade` аргумент, эсвэл vault аль хэдийн байгаа (`_system/fm/registry.json` бий) гишүүн «шинэчиллээ / repo update» гэвэл ярилцлага, шинэ setup **хийхгүй** — энэ дарааллыг алхам бүрт **dry run → тайлан → зөвшөөрөл → `--apply`** хэлбэрээр:
+
+| # | Юу | Команд (`S=${CLAUDE_PLUGIN_ROOT}/scripts`) |
+|---|---|---|
+| 1 | Plugin шинэ эсэх (`plugin.json`-ийн `version`; marketplace local repo-г заадаг бол эхлээд тэр clone-д `git pull`) | `claude plugin marketplace update founder-matrix && claude plugin update fm@founder-matrix` → restart |
+| 2 | Компьютер | `python3 "$S/fm_doctor.py"` |
+| 3 | Хуучин хавтасны бүтэц (00-GTD, 03-Projects, 04-Areas …) | `python3 "$S/fm_migrate.py" "<vault>"` (байвал, 2.1) |
+| 4 | Дүрийн slug (developer→architect, area→gtd, resource/research→wiki; registry, baton) | `python3 "$S/fm_roles_migrate.py" "<vault>"` |
+| 5 | Дутуу загварын файл (дүрийн note, skill каталог, template) — байгаа файлд хүрэхгүй | `python3 "$S/fm_setup.py" "<vault>" --member "<нэр>" --merge-registry --dry-run` |
+| 6 | Base-ууд = анхдагч (хуучныг `_trash/bases-<огноо>/`) | `python3 "$S/fm_bases.py" update "<vault>"` |
+| 7 | Гараар үүссэн «assistant» дүр (`project:`-гүй, `_BRAIN.md`-гүй, бүхэл хавтас эзэмшсэн, бүдүүн) | `python3 "$S/fm_lint.py" "<vault>/03-Areas/AI Team/ai-workers"` → тус бүрийг `fm_project.py new "<Нэр>" --state ongoing --role <slug>` болгож дүрмийг нь `_BRAIN.md` руу зөө (гишүүнтэй хамт; хуучныг `_trash/`) |
+| 8 | Restart → `/fm:role <slug>` → `/tsaglabar` | — |
+
+Алхам бүрийн дараа нэг мөр тайлан. Өөрчлөх зүйлгүй алхмыг чимээгүй алгас. Obsidian-ийг 3–4-р алхмын үед хаалга. Хоёр төхөөрөмжтэй бол нэг дээр нь л apply хийнэ (registry Drive-аар sync).
 
 ## Танилцах — хамгийн эхэнд
 

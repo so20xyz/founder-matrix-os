@@ -15,12 +15,14 @@ def main():
     w(v, A + "Architect.md", '---\ntype: agent-role\nrole: developer\naliases:\n  - "Architect"\n---\n# A\nrole: developer in body\n')
     w(v, A + "GTD.md", "---\ntype: agent-role\nrole: area\n---\n# G\n")
     w(v, A + "Wiki.md", '---\ntype: agent-role\nrole: resource\naliases:\n  - "Wiki"\n  - "resource"\n---\n# W\n')
-    w(v, A + "Project.md", "---\ntype: agent-role\nrole: project\n---\n# P\n")
+    w(v, A + "01 Project.md", "---\ntype: agent-role\nrole: project\n---\n# 01 Project\n")
+    w(v, A + "04 Research.md", "---\ntype: agent-role\nrole: research\n---\n# 04 Research\n")
+    w(v, "Home.md", "---\ntype: home\n---\n[[01 Project]] · [[04 Research|R]]\n")
     reg = {"sessions": {"s1": {"role": "developer", "project": "developer"}, "s2": {"role": "research", "project": "Мөөг"}},
            "roles": {"developer": {"note": A + "Architect.md", "channel": "05-developer", "skills": ["a"]},
                      "resource": {"note": A + "Wiki.md", "skills": ["x"], "folders": ["04-Resources/"]},
                      "research": {"note": A + "Wiki.md", "skills": ["x", "exa"], "folders": ["04-Resources/sources/"]},
-                     "project": {"note": A + "Project.md"}}}
+                     "project": {"note": A + "01 Project.md"}}}
     w(v, "_system/fm/registry.json", json.dumps(reg, ensure_ascii=False))
     w(v, "_system/fm/state/developer.md", "dev baton")
     w(v, "_system/fm/state/resource.md", "res baton")
@@ -44,6 +46,10 @@ def main():
               ("sessions renamed", r["sessions"]["s1"] == {"role": "architect", "project": "architect"} and r["sessions"]["s2"]["role"] == "wiki" and r["sessions"]["s2"]["project"] == "Мөөг"),
               ("baton moved", (v / "_system/fm/state/architect.md").read_text() == "dev baton"),
               ("existing baton never merged", (v / "_system/fm/state/resource.md").is_file() and (v / "_system/fm/state/wiki.md").read_text() == "wiki baton"),
+              ("numbered note renamed, H1 follows", (v / A / "Project.md").read_text(encoding="utf-8").endswith("# Project\n") and not (v / A / "01 Project.md").exists()),
+              ("duplicate numbered note to _trash", not (v / A / "04 Research.md").exists() and any((v / "_trash").glob("ai-workers-*/04 Research.md"))),
+              ("links follow", (v / "Home.md").read_text(encoding="utf-8").endswith("[[Project]] · [[Wiki|R]]\n")),
+              ("registry note path follows", r["roles"]["project"]["note"] == A + "Project.md"),
               ("second run only reports the kept baton", "1 change" in again)]
     bad = [n for n, ok in checks if not ok]
     for n, ok in checks: print(("PASS  " if ok else "FAIL  ") + n)
