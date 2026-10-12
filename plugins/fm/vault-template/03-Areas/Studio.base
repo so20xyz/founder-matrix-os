@@ -1,0 +1,11 @@
+filters:
+  and:
+    - file.inFolder("03-Areas/Studio")
+    - file.ext == "md"
+views:
+  - type: table
+    name: Studio
+    order: [file.name, type, status, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC

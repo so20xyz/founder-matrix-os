@@ -1,0 +1,35 @@
+filters:
+  and:
+    - note.type == "sop"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+properties:
+  cadence:
+    displayName: Давтамж
+  area:
+    displayName: Хэсэг
+  owner:
+    displayName: Хариуцагч
+  next-run:
+    displayName: Дараагийн
+views:
+  - type: table
+    name: All
+    groupBy:
+      property: cadence
+      direction: ASC
+    order:
+      - file.basename
+      - area
+      - owner
+      - next-run
+    columnSize:
+      file.basename: 260
+  - type: table
+    name: Дараагийн ажиллах
+    order:
+      - file.basename
+      - next-run
+      - owner
+      - cadence

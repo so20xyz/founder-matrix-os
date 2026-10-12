@@ -1,0 +1,90 @@
+filters:
+  and:
+    - type == "finance-record"
+    - scope == "personal"
+    - file.inFolder("03-Areas/Business/finances/private/records")
+formulas:
+  icon: if(state == "actual", "✅", if(state == "saved", "🟡", "🔮"))
+  low: if(variable, net * 1.1, net)
+  high: if(variable, net * 0.9, net)
+  days_left: (date(note["txn-date"]) - today()).days
+properties:
+  net:
+    displayName: Цэвэр
+  month:
+    displayName: Сар
+  state:
+    displayName: Төлөв
+  formula.low:
+    displayName: Муу хувилбар (+10%)
+  formula.high:
+    displayName: Сайн хувилбар (−10%)
+  formula.days_left:
+    displayName: Хоног үлдсэн
+views:
+  - type: table
+    name: Сар бүрийн урсгал
+    groupBy:
+      property: month
+      direction: ASC
+    order:
+      - formula.icon
+      - file.name
+      - txn-date
+      - net
+      - formula.low
+      - formula.high
+      - bill
+    sort:
+      - property: txn-date
+        direction: ASC
+    summaries:
+      net: Sum
+      formula.low: Sum
+      formula.high: Sum
+  - type: table
+    name: Ирэх 30 хоног
+    filters:
+      and:
+        - state != "actual"
+        - date(note["txn-date"]) >= today()
+        - date(note["txn-date"]) <= today() + "30d"
+    order:
+      - formula.icon
+      - file.name
+      - txn-date
+      - formula.days_left
+      - net
+    sort:
+      - property: txn-date
+        direction: ASC
+    summaries:
+      net: Sum
+  - type: table
+    name: Бодит (төлсөн/орсон)
+    filters:
+      and:
+        - state == "actual"
+    groupBy:
+      property: flow
+      direction: ASC
+    order:
+      - file.name
+      - txn-date
+      - net
+      - doc
+    summaries:
+      net: Sum
+  - type: table
+    name: Зээлүүд
+    filters:
+      and:
+        - kind == "payment"
+        - bill.toString().contains("зээл")
+    order:
+      - formula.icon
+      - file.name
+      - txn-date
+      - net
+    summaries:
+      net: Sum

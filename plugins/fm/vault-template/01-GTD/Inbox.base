@@ -1,0 +1,14 @@
+filters:
+  and:
+    - file.inFolder("01-GTD/Inbox")
+    - file.ext == "md"
+views:
+  - type: table
+    name: Хураалт
+    order:
+      - file.name
+      - file.ctime
+      - type
+    sort:
+      - property: file.ctime
+        direction: DESC

@@ -1,0 +1,31 @@
+filters:
+  and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - projects.contains(this.file.name)
+properties:
+  cover:
+    displayName: Cover
+  reftype:
+    displayName: Төрөл
+  tags:
+    displayName: Шошго
+  url:
+    displayName: Холбоос
+views:
+  - type: cards
+    name: References
+    order:
+      - file.name
+      - reftype
+      - tags
+    image: cover
+  - type: table
+    name: Table
+    order:
+      - status
+      - file.name
+      - reftype
+      - url

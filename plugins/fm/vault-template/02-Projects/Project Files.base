@@ -1,0 +1,18 @@
+filters:
+  and:
+    - file.inFolder("02-Projects")
+    - file.ext == "md"
+views:
+  - type: table
+    name: Төслийн бүх файл
+    groupBy:
+      property: file.folder
+      direction: ASC
+    order:
+      - file.name
+      - type
+      - status
+      - file.mtime
+    sort:
+      - property: file.mtime
+        direction: DESC

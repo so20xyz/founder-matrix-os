@@ -602,7 +602,7 @@ def test_bases_are_consistent(c):
     for f in sorted(TEMPLATE.rglob("*.base")):
         raw = f.read_text(encoding="utf-8")
         assert "\t" not in raw, f.name
-        defined = set(re.findall(r"^  ([A-Za-z_][A-Za-z0-9_]*):\s*'", raw, re.MULTILINE))
+        defined = set(re.findall(r"^  ([A-Za-z_][A-Za-z0-9_]*):[ \t]*\S", raw, re.MULTILINE))  # quoted or bare formula
         used = set(re.findall(r"formula\.([A-Za-z_][A-Za-z0-9_]*)", raw))
         assert used <= defined, (f.name, used - defined)
         assert raw.count("'") % 2 == 0, f.name
@@ -613,7 +613,7 @@ def test_bases_are_consistent(c):
         data = yaml.safe_load(raw)
         assert isinstance(data.get("views"), list) and data["views"], f.name
         for v in data["views"]:
-            assert v.get("type") in ("table", "cards", "list", "map") and v.get("name"), (f.name, v)
+            assert v.get("type") in ("table", "cards", "list", "map", "calendar") and v.get("name"), (f.name, v)
 
 
 def test_no_relay_or_personal_data_in_plugin(c):

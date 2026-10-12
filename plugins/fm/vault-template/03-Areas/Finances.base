@@ -1,0 +1,83 @@
+filters:
+  and:
+    - note.type == "finance-record"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+formulas:
+  month: txn-date.format("YYYY-MM")
+properties:
+  kind:
+    displayName: Төрөл
+  amount:
+    displayName: Дүн
+  currency:
+    displayName: Валют
+  txn-date:
+    displayName: Огноо
+  due:
+    displayName: Дуусах
+  status:
+    displayName: Төлөв
+  project:
+    displayName: Төсөл
+  company:
+    displayName: Компани
+  formula.month:
+    displayName: Сар
+views:
+  - type: table
+    name: All
+    order:
+      - file.basename
+      - kind
+      - amount
+      - currency
+      - status
+      - project
+      - company
+      - txn-date
+    columnSize:
+      file.basename: 260
+  - type: table
+    name: Сар бүр
+    groupBy:
+      property: formula.month
+      direction: DESC
+    order:
+      - file.basename
+      - kind
+      - amount
+      - status
+  - type: table
+    name: Орлого
+    filters:
+      and:
+        - kind == "invoice"
+    order:
+      - file.basename
+      - amount
+      - status
+      - due
+      - company
+  - type: table
+    name: Зарлага
+    filters:
+      and:
+        - kind != "invoice"
+    order:
+      - file.basename
+      - kind
+      - amount
+      - status
+      - due
+  - type: table
+    name: Хугацаа хэтэрсэн
+    filters:
+      and:
+        - status == "overdue"
+    order:
+      - file.basename
+      - amount
+      - due
+      - company

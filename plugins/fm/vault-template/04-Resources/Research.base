@@ -1,0 +1,63 @@
+filters:
+  and:
+    - file.inFolder("04-Resources/Research")
+    - file.ext == "md"
+views:
+  - type: table
+    name: Судалгаа
+    order:
+      - file.name
+      - file.folder
+      - date
+      - confidence
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: 🌱 Төсөлгүй (үр)
+    filters:
+      and:
+        - type == "research"
+        - research.isEmpty()
+        - project.isEmpty()
+    order:
+      - file.basename
+      - project
+      - status
+      - closed
+      - date
+    sort:
+      - property: date
+        direction: DESC
+  - type: table
+    name: 🟢 Идэвхтэй
+    filters:
+      and:
+        - type == "research"
+        - research.isEmpty()
+        - status == "active"
+    order:
+      - file.basename
+      - project
+      - status
+      - closed
+      - date
+    sort:
+      - property: date
+        direction: DESC
+  - type: table
+    name: ✅ Дууссан
+    filters:
+      and:
+        - type == "research"
+        - research.isEmpty()
+        - status == "done"
+    order:
+      - file.basename
+      - project
+      - status
+      - closed
+      - date
+    sort:
+      - property: closed
+        direction: DESC

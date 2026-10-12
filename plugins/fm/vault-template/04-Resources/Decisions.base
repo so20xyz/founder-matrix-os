@@ -1,9 +1,9 @@
 filters:
   and:
-    - file.ext == "md"
-    - type == "session-decision"
-    - file.inFolder("04-Resources/Atomic/decisions")
     - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - file.inFolder("04-Resources/Atomic/decisions")
 properties:
   decision:
     displayName: Шийдвэр
@@ -17,22 +17,11 @@ properties:
     displayName: Огноо
   projects:
     displayName: Төсөл
-  areas:
-    displayName: Area
+  tags:
+    displayName: Tags
 views:
   - type: table
-    name: Хүчинтэй
-    filters:
-      and:
-        - status == "accepted"
-    order:
-      - date
-      - decision
-      - changetype
-      - decidedby
-      - projects
-  - type: table
-    name: Төрлөөр
+    name: By Change-Type
     groupBy:
       property: changetype
       direction: ASC
@@ -41,23 +30,53 @@ views:
       - status
       - decidedby
       - date
+    sort: []
+    columnSize:
+      decision: 420
+      status: 100
+      decidedby: 70
+      date: 110
+  - type: calendar
+    name: Calendar
   - type: table
-    name: Хүчингүй болсон
-    filters:
-      or:
-        - status == "superseded"
-        - status == "reverted"
-    order:
-      - date
-      - decision
-      - status
-      - supersededby
-  - type: table
-    name: ⚠️ Гэргүй
+    name: Live Only
     filters:
       and:
-        - '!projects || projects.length == 0'
-        - '!areas || areas.length == 0'
+        - status == "accepted"
     order:
-      - file.basename
       - date
+      - changetype
+      - decision
+    direction: DESC
+    columnSize:
+      decision: 440
+  - type: table
+    name: Pivotal
+    filters:
+      or:
+        - changetype == "decision"
+        - changetype == "structure"
+        - changetype == "skill"
+        - changetype == "schema"
+        - changetype == "tool"
+    order:
+      - date
+      - changetype
+      - decision
+      - status
+    direction: DESC
+    columnSize:
+      decision: 420
+  - type: table
+    name: 🌉 Гүүр шийдвэрүүд
+    filters:
+      and:
+        - bridge >= 3
+    order:
+      - file.name
+      - bridge
+      - projects
+      - from
+    sort:
+      - property: bridge
+        direction: DESC

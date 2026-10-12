@@ -1,0 +1,15 @@
+filters:
+  and:
+    - file.inFolder("00-Soul")
+    - file.ext == "md"
+views:
+  - type: table
+    name: Soul
+    order:
+      - file.name
+      - type
+      - status
+      - file.mtime
+    sort:
+      - property: file.mtime
+        direction: DESC

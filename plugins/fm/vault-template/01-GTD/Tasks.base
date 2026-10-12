@@ -1,35 +1,39 @@
 filters:
   and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
     - file.ext == "md"
     - type == "task"
-    - file.inFolder("01-GTD/Tasks")
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("99-Archive")'
 formulas:
-  days_until_due: 'if(due, (date(due) - today()).days, "")'
-  overdue: 'if(due, date(due) < today() && status != "completed" && status != "done" && status != "cancelled", false)'
-  owner_icon: 'if(owner == "me", "👤", if(owner && owner.toString().startsWith("@"), "👥", if(owner, "🤖", "❔")))'
-  status_icon: 'if(status == "inbox", "📥", if(status == "next-action", "⏭️", if(status == "in-progress", "▶️", if(status == "waiting", "⏳", if(status == "someday", "💭", if(status == "completed" || status == "done", "✅", if(status == "cancelled", "🚫", "❔")))))))'
-  priority_icon: 'if(priority == "high", "🔴", if(priority == "medium", "🟡", if(priority == "low", "🟢", "")))'
+  days_until_due: if(due, (date(due) - today()).days, "")
+  overdue: if(due, (today() - date(due)).days > 0, false)
+  owner_icon: if(owner == "bd", "👤", if(owner == "claude", "🤖", "❔"))
+  status_icon: if(status == "inbox", "📥", if(status == "next-action", "⏭️", if(status == "in-progress", "▶️", if(status == "waiting", "⏳", if(status == "someday", "💭", if(status == "completed" || status == "done", "✅", if(status == "cancelled", "🚫", "❔")))))))
 properties:
   formula.days_until_due:
-    displayName: "Хоног үлдсэн"
+    displayName: Due in (days)
   formula.overdue:
-    displayName: "Хэтэрсэн"
+    displayName: Overdue
   formula.owner_icon:
     displayName: " "
   formula.status_icon:
     displayName: "  "
-  formula.priority_icon:
-    displayName: "!"
   status:
-    displayName: Төлөв
+    displayName: Status
   owner:
-    displayName: Эзэн
+    displayName: Owner
+  owner-note:
+    displayName: Эзний тайлбар
+  priority:
+    displayName: Priority
   due:
-    displayName: Хугацаа
+    displayName: Due
   project:
-    displayName: Төсөл
+    displayName: Project
+  research:
+    displayName: Судалгаа
+  area:
+    displayName: Area
   context:
     displayName: Контекст
   started:
@@ -38,6 +42,8 @@ properties:
     displayName: Дууссан
   claimed:
     displayName: Төхөөрөмж
+  tags:
+    displayName: Tags
 views:
   - type: table
     name: Inbox
@@ -47,8 +53,11 @@ views:
     order:
       - formula.owner_icon
       - file.basename
-      - formula.priority_icon
+      - priority
       - project
+    columnSize:
+      formula.owner_icon: 40
+      file.basename: 500
   - type: table
     name: ▶ Яг одоо
     filters:
@@ -59,56 +68,8 @@ views:
       - owner
       - claimed
       - started
-  - type: table
-    name: Next Action
-    filters:
-      and:
-        - status == "next-action"
-    groupBy:
-      property: owner
-      direction: ASC
-    order:
-      - formula.owner_icon
-      - file.basename
-      - formula.priority_icon
-      - due
-      - formula.days_until_due
-      - project
-  - type: table
-    name: Миний
-    filters:
-      and:
-        - owner == "me"
-        - status != "completed"
-        - status != "done"
-        - status != "cancelled"
-    groupBy:
-      property: status
-      direction: ASC
-    order:
-      - formula.status_icon
-      - file.basename
-      - formula.priority_icon
-      - due
-      - project
-  - type: table
-    name: Agent
-    filters:
-      and:
-        - owner != "me"
-        - '!owner.toString().startsWith("@")'
-        - status != "completed"
-        - status != "done"
-        - status != "cancelled"
-    groupBy:
-      property: owner
-      direction: ASC
-    order:
-      - formula.status_icon
-      - file.basename
-      - formula.priority_icon
-      - due
-      - project
+    columnSize:
+      file.basename: 260
   - type: table
     name: 🏠 Home
     filters:
@@ -123,8 +84,12 @@ views:
     order:
       - formula.status_icon
       - file.basename
-      - formula.priority_icon
+      - priority
       - due
+      - project
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 260
   - type: table
     name: 💼 Work
     filters:
@@ -139,12 +104,32 @@ views:
     order:
       - formula.status_icon
       - file.basename
-      - formula.priority_icon
-      - owner
+      - priority
       - due
       - project
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 260
   - type: table
-    name: Waiting
+    name: Next Action
+    filters:
+      and:
+        - status == "next-action"
+    groupBy:
+      property: owner
+      direction: ASC
+    order:
+      - formula.owner_icon
+      - file.basename
+      - priority
+      - due
+      - formula.overdue
+      - project
+    columnSize:
+      formula.owner_icon: 40
+      file.basename: 260
+  - type: table
+    name: Waiting On
     filters:
       and:
         - status == "waiting"
@@ -160,39 +145,166 @@ views:
       and:
         - status == "someday"
     order:
+      - formula.owner_icon
       - file.basename
+      - priority
       - project
   - type: table
-    name: Дууссан
+    name: Log Book
     filters:
-      or:
-        - status == "completed"
-        - status == "done"
-        - status == "cancelled"
+      and:
+        - status == "completed" || status == "done"
     order:
-      - formula.status_icon
+      - formula.owner_icon
       - file.basename
       - completed
       - updated
       - project
+      - status
   - type: table
-    name: ⚠️ Схемийн зөрчил
+    name: Cancelled
     filters:
-      or:
-        - '!status'
-        - '!owner'
-        - '!context'
-        - and:
-            - status != "inbox"
-            - status != "next-action"
-            - status != "in-progress"
-            - status != "waiting"
-            - status != "someday"
-            - status != "completed"
-            - status != "done"
-            - status != "cancelled"
+      and:
+        - status == "cancelled"
+    order:
+      - formula.owner_icon
+      - file.basename
+      - priority
+      - project
+  - type: table
+    name: Minii
+    filters:
+      and:
+        - owner == "bd"
+        - status != "completed"
+        - status != "done"
+        - status != "cancelled"
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - formula.status_icon
+      - file.basename
+      - priority
+      - due
+      - project
+      - owner-note
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 260
+  - type: table
+    name: Claude
+    filters:
+      and:
+        - owner == "claude"
+        - status != "completed"
+        - status != "done"
+        - status != "cancelled"
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - formula.status_icon
+      - file.basename
+      - priority
+      - due
+      - project
+      - owner-note
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 260
+  - type: table
+    name: All
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - formula.status_icon
+      - formula.owner_icon
+      - file.basename
+      - owner
+      - priority
+      - due
+      - project
+      - area
+      - tags
+      - status
+    columnSize:
+      formula.status_icon: 40
+      formula.owner_icon: 40
+      file.basename: 240
+  - type: table
+    name: ⚠️ Бусад
+    filters:
+      and:
+        - status != "inbox"
+        - status != "next-action"
+        - status != "in-progress"
+        - status != "waiting"
+        - status != "someday"
+        - status != "completed"
+        - status != "done"
+        - status != "cancelled"
     order:
       - file.basename
       - status
+  - type: table
+    name: 🧠 Синапс (task → resource → шийдвэр)
+    filters:
+      and:
+        - status != "cancelled"
+    order:
+      - file.name
+      - status
+      - project
+      - resources
+      - file.backlinks
+  - type: table
+    name: 🤖 Agent бүрээр
+    filters:
+      and:
+        - file.inFolder("01-GTD/Tasks")
+        - status != "completed" && status != "done" && status != "cancelled"
+    groupBy:
+      property: owner
+      direction: ASC
+    order:
+      - file.name
+      - status
+      - due
+      - project
+      - delegated_from
+  - type: table
+    name: 💼 Төсөл бүрээр
+    filters:
+      and:
+        - file.inFolder("01-GTD/Tasks")
+        - status != "completed" && status != "done" && status != "cancelled"
+        - project
+    groupBy:
+      property: project
+      direction: ASC
+    order:
+      - file.name
       - owner
-      - context
+      - status
+      - due
+  - type: table
+    name: 🔬 Судалгаагаар
+    filters:
+      and:
+        - file.inFolder("01-GTD/Tasks")
+        - research
+    groupBy:
+      property: research
+      direction: ASC
+    order:
+      - formula.status_icon
+      - file.name
+      - owner
+      - status
+      - due
+      - project
+    columnSize:
+      formula.status_icon: 40
+      file.name: 260

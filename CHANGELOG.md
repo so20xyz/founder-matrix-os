@@ -8,6 +8,7 @@
 
 ## Unreleased
 
+- **0.9.18 · Өөрчилсөн (itge.e 2026-10-12 — «миний vault-ийн base = default»):** загварын base-ууд одоо maintainer-ийн амьд vault-аас: 34 base (11 → 34; Daily, Events, Habits, Inbox, Goals, Activities, Tools, SOP, Skills, Research, Topics, «Судалгаа ба нөөц» …). `scripts/fm_bases.py export <vault> [--apply]` — maintainer vault → template (`fm_bases.json`: `exclude` нэг байгууллагын base, `rewrite` байгууллагын хавтас → ерөнхий; төсөл/хүн/байгууллагын нэр, URL орсон base-ийг REFUSED). `fm_bases.py update <vault> [--apply]` — гишүүний vault-д нэмэх/солих, хуучныг `_trash/bases-<огноо>/`-д; гишүүний өөрийн base-д хүрэхгүй. `/fm:setup` 2-р алхамд, шинэчлэл бүрт. `tests/test_bases_sync.py`; base тест calendar харагдац, хашилтгүй formula-г зөвшөөрнө.
 - **0.9.17 · Засварласан:** «Сүүлд» дохио obs.mjs-ийг танина.
 - **0.9.16 · Нэмсэн:** `tools/obs/obs.mjs` — OBS-ийг CLI-ээс (obs-websocket, хамааралгүй): status · scenes · scene · record · mic · shot · raw; Цаглабар «Видео → OBS студи»-д командууд, «Сүүлд» дохио obs.mjs-ийг танина.
 - **0.9.15 · Засварласан:** Figma panel-ийн шинэчлэл Figma-д хүрдэггүй байсан — Figma dev plugin-ийг `~/.fmos/figma/plugin` хуулбараас ачаалдаг; bridge сервер эхлэх бүрт `code.js`, `ui.html`-ийг тэр хуулбарт синк хийнэ.

@@ -1,0 +1,173 @@
+filters:
+  and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - note.type == "ai-worker"
+formulas:
+  name_ok: if(note["session-title"] && note["session-title"].replace(" · ", " ").contains(file.basename), "✅", "⚠️")
+  domain_set: if(note.domain, "✅", "🔴")
+  skill_count: if(note.skills, note.skills.length, 0)
+  level_badge: '"Lv " + if(note.level, note.level, 0)'
+  xp_bar: if(note.xp, note.xp, 0) + " XP"
+  quest_status: if(note["current-quest"], "🎯 " + note["current-quest"], "— idle —")
+  win_rate: if(if(note["quest-count-total"], note["quest-count-total"], 0) > 0, (if(note["quest-count-done"], note["quest-count-done"], 0) * 100 / note["quest-count-total"]) + "%", "—")
+properties:
+  formula.name_ok:
+    displayName: Нэр ✓
+  formula.domain_set:
+    displayName: Домэйн
+  formula.skill_count:
+    displayName: Skill
+  session-title:
+    displayName: Сешний нэр
+  group:
+    displayName: Бүлэг
+  domain:
+    displayName: Домэйн (зам)
+  owns:
+    displayName: Эзэмшил
+  skills:
+    displayName: Skills
+  default-model:
+    displayName: Model
+  done-today:
+    displayName: Өдрийн амжилт
+  last-done:
+    displayName: Сүүлд хийсэн
+  next-action:
+    displayName: ▶️ Дараагийн
+  next-action-note:
+    displayName: ▶️ Таск
+  blocked-on:
+    displayName: ⛔ Хүлээж буй
+  order:
+    displayName: "#"
+  level:
+    displayName: Lv
+  xp:
+    displayName: XP
+  current-quest:
+    displayName: 🎯 Current quest
+  unlocked-skills:
+    displayName: 🔓 Unlocked
+  quest-count-total:
+    displayName: Quests total
+  quest-count-done:
+    displayName: Done
+  quest-count-failed:
+    displayName: Failed
+  formula.level_badge:
+    displayName: Lv
+  formula.xp_bar:
+    displayName: XP
+  formula.quest_status:
+    displayName: 🎯 Status
+  formula.win_rate:
+    displayName: Win %
+views:
+  - type: table
+    name: Ростер
+    order:
+      - order
+      - group
+      - file.basename
+      - session-title
+      - formula.name_ok
+      - domain
+      - formula.skill_count
+      - last-done
+      - next-action
+      - next-action-note
+      - blocked-on
+    columnSize:
+      note.next-action: 420
+      note.last-done: 300
+      note.blocked-on: 260
+      file.basename: 190
+      note.domain: 343
+  - type: table
+    name: Бүлгээр (sidebar = Discord)
+    groupBy:
+      property: group
+      direction: ASC
+    order:
+      - order
+      - file.basename
+      - session-title
+      - formula.name_ok
+      - domain
+      - owns
+      - formula.skill_count
+    sort:
+      - property: order
+        direction: ASC
+    columnSize:
+      file.basename: 190
+      note.domain: 320
+      note.owns: 360
+  - type: table
+    name: ⚠️ Нэрийн зөрчил
+    filters:
+      and:
+        - formula.name_ok == "⚠️"
+    order:
+      - file.basename
+      - session-title
+      - order
+    columnSize:
+      file.basename: 210
+      session-title: 210
+  - type: table
+    name: Домэйн ба эзэмшил
+    order:
+      - order
+      - file.basename
+      - domain
+      - owns
+    columnSize:
+      file.basename: 180
+      domain: 320
+      owns: 320
+  - type: table
+    name: Skills relation
+    order:
+      - order
+      - file.basename
+      - skills
+      - formula.skill_count
+    columnSize:
+      file.basename: 190
+      skills: 420
+  - type: cards
+    name: Cards
+    order:
+      - file.basename
+      - session-title
+      - owns
+      - done-today
+  - type: table
+    name: 🎮 Party (game HUD)
+    order:
+      - order
+      - file.basename
+      - formula.level_badge
+      - formula.xp_bar
+      - formula.quest_status
+      - unlocked-skills
+      - formula.win_rate
+      - quest-count-total
+      - quest-count-done
+      - quest-count-failed
+    columnSize:
+      file.basename: 190
+      formula.quest_status: 340
+      unlocked-skills: 260
+  - type: cards
+    name: 🎮 Party Cards
+    order:
+      - file.basename
+      - formula.level_badge
+      - formula.quest_status
+      - session-title
+      - done-today

@@ -1,0 +1,73 @@
+filters:
+  and:
+    - file.ext == "md"
+    - '!file.inFolder("_system")'
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+    - '!file.inFolder(".backups")'
+    - private != true
+    # судалгаа төсөлгүй ч байж болно (сан); лавлагаа, атом зөвхөн төсөл/area-тай бол
+    - or:
+        - type == "research"
+        - tags.contains("research")
+        - tags.contains("судалгаа")
+        - and:
+            - or:
+                - type == "reference"
+                - type == "atomic"
+            - or:
+                - '!project.isEmpty()'
+                - '!projects.isEmpty()'
+                - '!areas.isEmpty()'
+properties:
+  project:
+    displayName: Төсөл
+  file.folder:
+    displayName: Хавтас
+views:
+  - type: table
+    name: Бүх төслөөр
+    groupBy:
+      property: project
+      direction: ASC
+    order:
+      - file.name
+      - type
+      - projects
+      - file.folder
+      - updated
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Энэ төслийн судалгаа
+    filters:
+      or:
+        - list(project).contains(this)
+        - list(projects).contains(this)
+        - projects.contains(this.file.name)
+    order:
+      - file.name
+      - type
+      - file.folder
+      - updated
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Өөр төслөөс авч болох
+    filters:
+      and:
+        - '!list(project).contains(this)'
+        - '!list(projects).contains(this)'
+    groupBy:
+      property: project
+      direction: ASC
+    order:
+      - file.name
+      - type
+      - project
+      - updated
+    sort:
+      - property: file.mtime
+        direction: DESC

@@ -1,41 +1,59 @@
 filters:
   and:
-    - file.ext == "md"
-    - type == "company"
-    - file.inFolder("03-Areas/Business/companies")
     - '!file.inFolder("_system/templates")'
-formulas:
-  status_icon: 'if(status == "active", "🟢", if(status == "paused", "⏸️", "⚫"))'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - note.type == "company"
 properties:
-  formula.status_icon:
-    displayName: " "
-  kind:
-    displayName: Төрөл
-  my_role:
-    displayName: Миний үүрэг
+  industry:
+    displayName: Салбар
+  reach:
+    displayName: Хүрээ
+  status:
+    displayName: Төлөв
+  fit:
+    displayName: Тохироо
+  last-interaction:
+    displayName: Сүүлийн холбоо
   website:
     displayName: Вэб
-  people:
-    displayName: Хүмүүс
-  projects:
-    displayName: Төслүүд
+  tags:
+    displayName: Шошго
 views:
   - type: table
-    name: Байгууллагууд
-    order:
-      - formula.status_icon
-      - file.basename
-      - kind
-      - my_role
-      - people
-      - projects
-      - website
-  - type: table
-    name: Төрлөөр
+    name: All
     groupBy:
-      property: kind
+      property: industry
       direction: ASC
     order:
-      - file.basename
-      - my_role
+      - file.name
+      - status
+      - fit
+      - last-interaction
+      - reach
+    columnSize:
+      file.name: 200
+  - type: table
+    name: By Status
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - file.name
+      - industry
+      - fit
+  - type: table
+    name: High Fit
+    filters:
+      and:
+        - fit == "high"
+    order:
+      - file.name
+      - industry
+      - status
+  - type: cards
+    name: Cards
+    order:
+      - file.name
+      - industry
       - status

@@ -1,0 +1,95 @@
+filters:
+  and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - note.type == "skill"
+formulas:
+  vault_flag: if(note["in-vault"], "✅", "🔴")
+  orphan: if(note["used-by"], "", "⚠️")
+properties:
+  formula.vault_flag:
+    displayName: Vault
+  formula.orphan:
+    displayName: Эзэнгүй
+  description:
+    displayName: Юу хийдэг
+  category:
+    displayName: Ангилал
+  kind:
+    displayName: Төрөл
+  used-by:
+    displayName: Хэн ашигладаг
+  status:
+    displayName: Төлөв
+  source:
+    displayName: Эх файл
+views:
+  - type: table
+    name: Бүх skill
+    groupBy:
+      property: category
+      direction: ASC
+    order:
+      - formula.vault_flag
+      - file.basename
+      - kind
+      - used-by
+      - status
+    columnSize:
+      formula.vault_flag: 60
+      file.basename: 250
+      used-by: 300
+  - type: table
+    name: 🔴 Vault-д байхгүй
+    filters:
+      and:
+        - note["in-vault"] == false
+    order:
+      - file.basename
+      - kind
+      - source
+      - used-by
+    columnSize:
+      file.basename: 250
+      source: 340
+  - type: table
+    name: 🔗 Ростерт холбогдсон
+    filters:
+      and:
+        - note["used-by"]
+    order:
+      - file.basename
+      - used-by
+      - category
+    columnSize:
+      file.basename: 250
+      used-by: 380
+  - type: table
+    name: ⚠️ Хэн ч ашигладаггүй
+    filters:
+      and:
+        - '!note["used-by"]'
+    order:
+      - file.basename
+      - category
+      - status
+    columnSize:
+      file.basename: 250
+  - type: table
+    name: Ангилалаар
+    groupBy:
+      property: category
+      direction: ASC
+    order:
+      - file.basename
+      - status
+      - used-by
+    columnSize:
+      file.basename: 250
+  - type: cards
+    name: Cards
+    order:
+      - file.basename
+      - category
+      - status

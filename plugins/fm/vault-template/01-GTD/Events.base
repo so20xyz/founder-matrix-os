@@ -1,0 +1,81 @@
+filters:
+  and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - type == "meeting"
+formulas:
+  when: if(status == "upcoming", scheduled, met)
+  status_icon: if(status == "upcoming", "📅", if(status == "done", "✅", if(status == "cancelled", "🚫", "❔")))
+properties:
+  formula.when:
+    displayName: When
+  formula.status_icon:
+    displayName: " "
+  status:
+    displayName: Status
+  scheduled:
+    displayName: Scheduled
+  met:
+    displayName: Met
+  project:
+    displayName: Project
+  company:
+    displayName: Company
+  people:
+    displayName: People
+views:
+  - type: table
+    name: Upcoming
+    filters:
+      and:
+        - status == "upcoming"
+    order:
+      - formula.status_icon
+      - file.basename
+      - scheduled
+      - project
+      - company
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 300
+  - type: table
+    name: Past
+    filters:
+      and:
+        - status == "done"
+    order:
+      - formula.status_icon
+      - file.basename
+      - met
+      - project
+      - company
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 300
+  - type: table
+    name: All
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - formula.status_icon
+      - file.basename
+      - formula.when
+      - project
+      - company
+      - people
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 280
+  - type: calendar
+    name: Calendar
+  - type: table
+    name: ⚠️ Бусад
+    filters:
+      and:
+        - status != "upcoming"
+        - status != "done"
+    order:
+      - file.basename
+      - status

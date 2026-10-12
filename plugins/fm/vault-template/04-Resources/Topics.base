@@ -1,0 +1,13 @@
+filters:
+  and:
+    - file.inFolder("04-Resources/Topics")
+    - type == "topic"
+views:
+  - type: table
+    name: Сэдвүүд
+    order:
+      - file.name
+      - file.backlinks
+    sort:
+      - property: file.name
+        direction: ASC

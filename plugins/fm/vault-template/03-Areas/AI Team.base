@@ -1,0 +1,15 @@
+filters:
+  and:
+    - file.inFolder("03-Areas/AI Team")
+    - file.ext == "md"
+views:
+  - type: table
+    name: AI Team
+    order:
+      - file.name
+      - type
+      - status
+      - file.mtime
+    sort:
+      - property: file.mtime
+        direction: DESC

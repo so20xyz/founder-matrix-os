@@ -1,80 +1,48 @@
 filters:
   and:
-    - file.ext == "md"
     - type == "person"
-    - file.inFolder("03-Areas/people")
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("99-Archive")'
 formulas:
-  days_since: 'if(last_interaction, (today() - date(last_interaction)).days, "")'
-  follow_up_due: 'if(follow_up_date, date(follow_up_date) <= today(), false)'
+  group: if(relationship == "team", "1 · 🏢 Баг (Inai)", if(relationship == "client", "2 · 🤝 Харилцагч", if(relationship == "partner", "3 · 🎵 Хамтрагч", if(relationship == "network", "4 · 🔗 Сүлжээ", if(relationship == "personal", "5 · ❤️ Хувийн", "6 · ❓ Ангилаагүй")))))
 properties:
-  relationship:
-    displayName: Холбоо
+  formula.group:
+    displayName: Бүлэг
   role:
-    displayName: Үүрэг
-  companies:
+    displayName: Албан тушаал
+  company:
     displayName: Байгууллага
-  projects:
-    displayName: Төсөл
-  last_interaction:
-    displayName: Сүүлд харилцсан
-  follow_up_date:
-    displayName: Дахин холбогдох
-  hot:
-    displayName: Hot
-  formula.days_since:
-    displayName: Хоног өнгөрсөн
-  formula.follow_up_due:
-    displayName: Холбогдох цаг
+  relationship:
+    displayName: Харилцаа
 views:
   - type: table
-    name: Бүгд
+    name: Бүх хүн (бүлгээр)
     groupBy:
-      property: relationship
+      property: formula.group
       direction: ASC
     order:
-      - file.basename
+      - file.name
       - role
-      - companies
-      - projects
-      - last_interaction
+      - company
+      - relationship
+    sort:
+      - property: company
+        direction: ASC
   - type: table
-    name: Холбогдох
+    name: Харилцагч байгууллагаар
     filters:
       and:
-        - follow_up_date
-        - formula.follow_up_due == true
+        - relationship == "client"
+    groupBy:
+      property: company
+      direction: ASC
     order:
-      - file.basename
-      - follow_up_date
-      - relationship
-      - companies
-  - type: table
-    name: Hot
-    filters:
-      and:
-        - hot == true
-    order:
-      - file.basename
-      - last_interaction
-      - formula.days_since
-      - relationship
-      - companies
-      - projects
-  - type: table
+      - file.name
+      - role
+      - company
+  - type: cards
     name: Баг
     filters:
       and:
         - relationship == "team"
     order:
-      - file.basename
-      - role
-      - companies
-      - projects
-  - type: cards
-    name: Картууд
-    order:
-      - file.basename
-      - relationship
+      - file.name
       - role

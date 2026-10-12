@@ -1,0 +1,69 @@
+filters:
+  and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - note.type == "daily"
+formulas:
+  done_count: (if(habit_morning, 1, 0) + if(habit_work, 1, 0) + if(habit_learn, 1, 0) + if(habit_move, 1, 0) + if(habit_close, 1, 0))
+properties:
+  habit_morning:
+    displayName: 🌅 Өглөө
+  habit_work:
+    displayName: 💼 Ажил
+  habit_learn:
+    displayName: 📚 Сурах
+  habit_move:
+    displayName: 🚴 Хөдөлгөөн
+  habit_close:
+    displayName: 🌙 Өндөрлөлт
+  formula.done_count:
+    displayName: Дүн
+  mood:
+    displayName: Сэтгэл санаа
+  energy:
+    displayName: Эрч хүч
+  date:
+    displayName: Өдөр
+views:
+  - type: table
+    name: 5 зуршил
+    order:
+      - date
+      - habit_morning
+      - habit_work
+      - habit_learn
+      - habit_move
+      - habit_close
+      - formula.done_count
+      - mood
+      - energy
+    columnSize:
+      date: 130
+  - type: table
+    name: Бүтэн өдрүүд
+    filters:
+      and:
+        - habit_morning == true
+        - habit_work == true
+        - habit_learn == true
+        - habit_move == true
+        - habit_close == true
+    order:
+      - date
+      - formula.done_count
+  - type: table
+    name: Алгассан
+    filters:
+      or:
+        - habit_morning != true
+        - habit_learn != true
+        - habit_close != true
+    order:
+      - date
+      - habit_morning
+      - habit_learn
+      - habit_close
+      - formula.done_count
+  - type: calendar
+    name: Calendar

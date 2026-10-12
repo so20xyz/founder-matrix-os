@@ -1,0 +1,15 @@
+filters:
+  and:
+    - file.inFolder("03-Areas/Personal")
+    - file.ext == "md"
+views:
+  - type: table
+    name: Personal
+    order:
+      - file.name
+      - type
+      - status
+      - file.mtime
+    sort:
+      - property: file.mtime
+        direction: DESC

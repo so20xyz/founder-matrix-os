@@ -1,52 +1,204 @@
 filters:
   and:
-    - file.ext == "md"
-    - file.inFolder("04-Resources/references")
+    - note.type == "reference"
     - '!file.inFolder("_system/templates")'
-    - or:
-        - type == "reference"
-        - type == "tool"
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
 properties:
-  kind:
+  cover:
+    displayName: Cover
+  reftype:
     displayName: Төрөл
+  platform:
+    displayName: Платформ
+  status:
+    displayName: Төлөв
+  tags:
+    displayName: Шошго
   url:
-    displayName: Линк
-  areas:
-    displayName: Хүрээ
-  projects:
-    displayName: Төсөл
-  serves:
-    displayName: Үйлчилдэг
+    displayName: Холбоос
+  created:
+    displayName: Хадгалсан
+  favorite:
+    displayName: ★
 views:
-  - type: table
-    name: Лавлагаа
-    filters:
-      and:
-        - type == "reference"
+  - type: cards
+    name: All
     groupBy:
-      property: kind
+      property: reftype
       direction: ASC
     order:
-      - file.basename
+      - file.name
+      - reftype
+      - platform
+      - status
       - url
-      - areas
-      - projects
-      - date
-  - type: table
-    name: Хэрэгслүүд
+    image: cover
+  - type: cards
+    name: Product
     filters:
       and:
-        - type == "tool"
+        - reftype == "Product"
     order:
-      - file.basename
+      - file.name
+      - platform
+      - tags
+    image: cover
+  - type: cards
+    name: Video
+    filters:
+      and:
+        - reftype == "Video"
+    order:
+      - file.name
+      - created
+      - tags
+    image: cover
+  - type: cards
+    name: AI skill
+    filters:
+      and:
+        - reftype == "ai skill"
+    order:
+      - file.name
+      - tags
+    image: cover
+  - type: cards
+    name: My Tools
+    filters:
+      and:
+        - reftype == "My Tools"
+    order:
+      - file.name
+      - tags
+    image: cover
+  - type: cards
+    name: Template
+    filters:
+      and:
+        - reftype == "Template"
+    order:
+      - file.name
+      - tags
+    image: cover
+  - type: cards
+    name: Website
+    filters:
+      and:
+        - reftype == "Website"
+    order:
+      - file.name
+      - tags
+    image: cover
+  - type: cards
+    name: Reading
+    filters:
+      or:
+        - reftype == "Post"
+        - reftype == "Article"
+        - reftype == "Book"
+    order:
+      - file.name
+      - reftype
+    image: cover
+  - type: cards
+    name: Visual
+    filters:
+      or:
+        - reftype == "Moodboard"
+        - reftype == "Infographic"
+        - reftype == "website inspire"
+    order:
+      - file.name
+      - reftype
+    image: cover
+  - type: cards
+    name: Working
+    filters:
+      or:
+        - reftype == "design-input"
+        - reftype == "design-spec"
+        - reftype == "idea-set"
+    order:
+      - file.name
+      - reftype
+    image: cover
+  - type: cards
+    name: Research
+    filters:
+      and:
+        - reftype == "Research"
+    order:
+      - file.name
+      - reftype
+    image: cover
+  - type: cards
+    name: Other
+    filters:
+      and:
+        - reftype != "Product"
+        - reftype != "Video"
+        - reftype != "ai skill"
+        - reftype != "My Tools"
+        - reftype != "Template"
+        - reftype != "Website"
+        - reftype != "Post"
+        - reftype != "Article"
+        - reftype != "Book"
+        - reftype != "Moodboard"
+        - reftype != "Infographic"
+        - reftype != "website inspire"
+        - reftype != "design-input"
+        - reftype != "design-spec"
+        - reftype != "idea-set"
+        - reftype != "Research"
+    order:
+      - file.name
+      - reftype
+    image: cover
+  - type: cards
+    name: Favorites
+    filters:
+      and:
+        - favorite == true
+    order:
+      - file.name
+      - reftype
+    image: cover
+  - type: cards
+    name: No cover
+    filters:
+      and:
+        - "!cover"
+    order:
+      - file.name
       - url
-      - status
-      - serves
   - type: table
-    name: Сүүлд нэмсэн
-    limit: 30
+    name: Table
+    groupBy:
+      property: reftype
+      direction: ASC
     order:
-      - date
-      - file.basename
-      - type
+      - file.name
+      - reftype
+      - platform
+      - status
+      - created
       - url
+  - type: table
+    name: 🧠 Синапс (хэн ашигласан)
+    order:
+      - file.name
+      - project
+      - task
+      - file.backlinks
+  - type: table
+    name: Эх сурвалж (source)
+    filters:
+      and:
+        - type == "source"
+    order:
+      - file.name
+      - claim
+      - status
+      - source-date

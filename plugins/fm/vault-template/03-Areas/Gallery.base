@@ -1,0 +1,59 @@
+filters:
+  and:
+    - file.inFolder("03-Areas/Studio/Social saves/gallery")
+    - type == "reference"
+properties:
+  title:
+    displayName: Гарчиг
+  creator:
+    displayName: Бүтээгч
+  topic:
+    displayName: Сэдэв
+  kind:
+    displayName: Төрөл
+  importance:
+    displayName: Ач холбогдол
+  summary:
+    displayName: Товч
+  posted:
+    displayName: Огноо
+views:
+  - type: cards
+    name: Gallery
+    order:
+      - title
+      - creator
+      - topic
+    image: cover
+  - type: cards
+    name: Сэдвээр
+    groupBy:
+      property: topic
+      direction: ASC
+    order:
+      - title
+      - creator
+    image: cover
+  - type: cards
+    name: Чухал (3)
+    filters:
+      and:
+        - importance == 3
+    groupBy:
+      property: topic
+      direction: ASC
+    order:
+      - title
+      - summary
+    image: cover
+  - type: table
+    name: Хүснэгт
+    order:
+      - title
+      - topic
+      - importance
+      - creator
+      - platform
+      - kind
+      - summary
+      - posted

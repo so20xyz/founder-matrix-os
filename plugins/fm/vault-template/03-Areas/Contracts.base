@@ -1,0 +1,67 @@
+filters:
+  and:
+    - note.type == "contract"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+properties:
+  party:
+    displayName: Тал
+  project:
+    displayName: Төсөл
+  signed:
+    displayName: Гарын үсэг
+  start:
+    displayName: Эхлэх
+  end:
+    displayName: Дуусах
+  value:
+    displayName: Дүн
+  currency:
+    displayName: Валют
+  status:
+    displayName: Төлөв
+  renew-remind:
+    displayName: Сунгалт сануулах
+views:
+  - type: table
+    name: Дуусах огноогоор
+    order:
+      - file.basename
+      - party
+      - end
+      - status
+      - value
+      - currency
+    columnSize:
+      file.basename: 260
+  - type: table
+    name: Идэвхтэй
+    filters:
+      and:
+        - status == "signed"
+    order:
+      - file.basename
+      - party
+      - end
+      - renew-remind
+  - type: table
+    name: Ноорог
+    filters:
+      and:
+        - status == "draft"
+    order:
+      - file.basename
+      - party
+      - project
+  - type: table
+    name: All
+    order:
+      - file.basename
+      - party
+      - project
+      - signed
+      - start
+      - end
+      - status
+      - value

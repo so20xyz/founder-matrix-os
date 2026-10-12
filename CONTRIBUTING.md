@@ -157,3 +157,14 @@ description: Юу хийдгийг монголоор товч. «task үүсг�
 Хувь нэмэр сайн дурын, төлбөргүй (бичгээр өөрөөр тохиролцоогүй бол).
 
 *By opening a pull request or otherwise submitting a contribution you assign it to itge.e under section 4 of the Founder Matrix License (LICENSE) and confirm you have the right to submit it.*
+
+## Vault-ийн base-ууд (maintainer)
+
+Загварын base-ууд (`plugins/fm/vault-template/**/*.base`) нь maintainer-ийн амьд vault-аас гарна:
+
+```
+python3 plugins/fm/scripts/fm_bases.py export "<maintainer vault>"          # dry run
+python3 plugins/fm/scripts/fm_bases.py export "<maintainer vault>" --apply
+```
+
+`fm_bases.json`: `exclude` — нэг байгууллагын өөрийн base, `rewrite` — байгууллагын хавтсыг ерөнхий хавтас болгох. Төсөл, хүн, байгууллагын нэр, URL орсон base-ийг скрипт хүлээж авахгүй (REFUSED). Гишүүд `/fm:setup`-ийн 2-р алхам (`fm_bases.py update`)-аар авна.

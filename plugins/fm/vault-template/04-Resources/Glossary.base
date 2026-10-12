@@ -1,0 +1,82 @@
+filters:
+  and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - note.type == "glossary"
+properties:
+  file.name:
+    displayName: Нэр
+  term_en:
+    displayName: English
+  term_mn:
+    displayName: Монгол
+  abbrev:
+    displayName: Товч
+  domain:
+    displayName: Домэйн
+  related-projects:
+    displayName: Төсөл
+  tags:
+    displayName: Tags
+views:
+  - type: table
+    name: Домэйнээр
+    groupBy:
+      property: domain
+      direction: ASC
+    order:
+      - file.name
+      - term_mn
+      - term_en
+      - related-projects
+    columnSize:
+      file.name: 160
+      term_mn: 220
+      term_en: 260
+  - type: table
+    name: Artist Platform IR
+    filters:
+      and:
+        - file.hasLink("Artist Platform IR")
+    groupBy:
+      property: domain
+      direction: ASC
+    order:
+      - file.name
+      - term_mn
+      - domain
+  - type: table
+    name: Mining LLM IR
+    filters:
+      and:
+        - file.hasLink("Mining LLM IR")
+    groupBy:
+      property: domain
+      direction: ASC
+    order:
+      - file.name
+      - term_mn
+      - domain
+  - type: table
+    name: Founder Matrix
+    filters:
+      and:
+        - file.hasLink("Founder Matrix")
+    order:
+      - file.name
+      - term_mn
+      - domain
+  - type: table
+    name: Бүгд
+    order:
+      - file.name
+      - term_mn
+      - term_en
+      - domain
+      - abbrev
+      - related-projects
+    columnSize:
+      file.name: 150
+      term_mn: 200
+      term_en: 240

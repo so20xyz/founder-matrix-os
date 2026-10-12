@@ -1,61 +1,55 @@
 filters:
   and:
+    - file.inFolder("04-Resources/Atomic/knowledge")
     - file.ext == "md"
-    - file.inFolder("04-Resources/Atomic")
-    - '!file.inFolder("_system/templates")'
-formulas:
-  kind: 'if(type == "session-decision", "🔑 шийдвэр", if(type == "atomic", "🧩 мэдлэг", "❔ " + type))'
-  has_home: 'if((projects && projects.length > 0) || (areas && areas.length > 0), "✅", "🔴")'
-  age_days: '(now() - file.ctime).days'
-properties:
-  formula.kind:
-    displayName: Төрөл
-  formula.has_home:
-    displayName: PARA гэр
-  formula.age_days:
-    displayName: Нас (хоног)
-  confidence:
-    displayName: Итгэлцэл
 views:
   - type: table
-    name: Сүүлийн атомууд
-    limit: 50
+    name: Бүгд
     order:
+      - file.name
       - date
-      - file.basename
-      - formula.kind
       - confidence
-      - formula.has_home
+      - projects
+    sort:
+      - property: file.mtime
+        direction: DESC
   - type: table
-    name: Мэдлэг
+    name: Өнөөдөр (бодлын сешн)
     filters:
       and:
-        - type == "atomic"
+        - date == today()
+    order:
+      - file.name
+      - confidence
+      - projects
+    sort:
+      - property: file.mtime
+        direction: DESC
+    columnSize:
+      file.name: 356
+  - type: table
+    name: Төслөөр
     groupBy:
-      property: confidence
+      property: projects
       direction: ASC
     order:
-      - file.basename
+      - file.name
       - date
       - projects
-      - areas
+    sort:
+      - property: file.mtime
+        direction: DESC
   - type: table
-    name: ⚠️ PARA гэргүй
+    name: 🌉 Гүүр ойлголтууд
     filters:
       and:
-        - '!projects || projects.length == 0'
-        - '!areas || areas.length == 0'
+        - bridge >= 3
     order:
-      - file.basename
-      - formula.kind
-      - date
-  - type: table
-    name: ⚠️ Буруу төрөл
-    filters:
-      and:
-        - type != "atomic"
-        - type != "session-decision"
-    order:
-      - file.basename
-      - type
-      - file.folder
+      - file.name
+      - bridge
+      - projects
+      - from
+      - topics
+    sort:
+      - property: bridge
+        direction: DESC

@@ -1,0 +1,14 @@
+filters:
+  and:
+    - file.inFolder("03-Areas/Business/tools")
+    - file.ext == "md"
+views:
+  - type: table
+    name: Хэрэгсэл
+    order:
+      - file.name
+      - type
+      - status
+    sort:
+      - property: file.mtime
+        direction: DESC

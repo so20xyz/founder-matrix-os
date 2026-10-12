@@ -1,0 +1,16 @@
+filters:
+  and:
+    - type == "bill"
+views:
+  - type: table
+    name: Сарын төлбөр
+    order:
+      - file.name
+      - category
+      - amount
+      - due_day
+      - status
+      - last_paid
+    sort:
+      - property: status
+        direction: DESC

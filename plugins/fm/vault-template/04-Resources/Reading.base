@@ -1,18 +1,100 @@
 filters:
   and:
-    - file.ext == "md"
-    - file.inFolder("04-Resources/library")
-    - file.name != "README"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - note.type == "reading"
+formulas:
+  status_icon: if(status == "read", "✅", if(status == "reading", "📖", if(status == "to-read", "⏭️", if(status == "reference", "📚", "❔"))))
+  age_days: if(added, (today() - date(added)).days, "")
 properties:
+  formula.status_icon:
+    displayName: " "
+  title:
+    displayName: Гарчиг
   author:
     displayName: Зохиогч
   status:
     displayName: Төлөв
+  priority:
+    displayName: Урьд.
+  format:
+    displayName: Хэлбэр
+  framework:
+    displayName: Framework
+  rating:
+    displayName: Үнэлгээ
+  added:
+    displayName: Нэмсэн
+  started:
+    displayName: Эхэлсэн
+  finished:
+    displayName: Дууссан
+  formula.age_days:
+    displayName: Хэдэн хоног
 views:
   - type: table
-    name: Бүгд
+    name: 📚 Бүх ном
     order:
+      - formula.status_icon
       - file.basename
       - author
       - status
-      - date
+      - priority
+      - framework
+      - formula.age_days
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 260
+      author: 150
+  - type: table
+    name: 📖 Уншиж байгаа
+    filters:
+      and:
+        - status == "reading"
+    order:
+      - formula.status_icon
+      - file.basename
+      - author
+      - framework
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 260
+  - type: table
+    name: ⏭️ Дараагийнх
+    filters:
+      and:
+        - status == "to-read"
+    order:
+      - priority
+      - file.basename
+      - author
+      - framework
+    columnSize:
+      file.basename: 260
+  - type: table
+    name: ✅ Уншсан
+    filters:
+      and:
+        - status == "read"
+    order:
+      - formula.status_icon
+      - file.basename
+      - author
+      - rating
+      - finished
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 260
+  - type: table
+    name: 🧭 Framework-аар
+    groupBy:
+      property: framework
+      direction: ASC
+    order:
+      - formula.status_icon
+      - file.basename
+      - author
+      - status
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 260

@@ -1,0 +1,13 @@
+filters:
+  and:
+    - file.inFolder("03-Areas/Business/activities")
+    - file.ext == "md"
+views:
+  - type: table
+    name: Key Activities
+    order:
+      - file.name
+      - kind
+    sort:
+      - property: file.name
+        direction: DESC

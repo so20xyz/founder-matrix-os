@@ -104,6 +104,11 @@ fm нь албан ёсны skill-ийг өөртөө хуулдаггүй — �
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_setup.py" "${user_config.vault_path}" --member "<нэр>" --config --device "${user_config.device}"
    ```
    Хуучин vault-д шинэ дүр нэмэх бол `--merge-registry` (сешнүүдийг хөндөхгүй).
+4. **Base-ууд = Founder Matrix-ийн анхдагч** (fm шинэчлэл бүрийн дараа ч): `fm_setup` байгаа файлыг дардаггүй тул base-уудыг тусад нь:
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_bases.py" update "${user_config.vault_path}"
+   ```
+   Dry run-ийн жагсаалтыг (add / replace) гишүүнд хэлж зөвшөөрвөл `--apply`. Солигдох хуучин base `_trash/bases-<огноо>/`-д хадгалагдана; гишүүний өөрийн (загварт байхгүй) base-д хүрэхгүй. Agent-ууд эдгээр base-ийн харагдацаар ажилладаг тул шинэчлэл бүрт хийнэ.
 
 ### 2.1 Хуучин бүтэцтэй vault-ийг шилжүүлэх — fm_migrate
 

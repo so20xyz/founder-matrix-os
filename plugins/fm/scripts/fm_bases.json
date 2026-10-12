@@ -1,0 +1,5 @@
+{
+  "_doc": "fm_bases.py export: maintainer vault bases -> vault-template. exclude = one company's own base; rewrite = company folder -> generic folder.",
+  "exclude": ["03-Areas/INAI.base"],
+  "rewrite": {"03-Areas/Business/INAI/": "03-Areas/Business/"}
+}

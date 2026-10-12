@@ -1,0 +1,14 @@
+filters:
+  and:
+    - file.inFolder("03-Areas/Goals")
+    - file.ext == "md"
+views:
+  - type: table
+    name: Зорилго
+    order:
+      - file.name
+      - status
+      - due
+    sort:
+      - property: file.mtime
+        direction: DESC
