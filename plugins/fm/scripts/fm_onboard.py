@@ -49,8 +49,7 @@ Answers schema (every section is optional; "quick mode" = soul, projects, roles)
   "goals": {"year": 2026, "why": "...",
             "items": [{"title": "...", "measure": "...", "area": "...", "projects": ["..."]}]},
   "roles": {"activate": ["project", "gtd", "wiki", "finance"],
-            "work": [{"project": "<project name>", "slug": "english-kebab", "name": "...", "focus": "..."}]
-                    # or "work": "auto" = one work role per active project
+            "work": []   # deprecated 2026-10-12: no role per project (Project agent + _BRAIN.md)
            },
   "daily": true                          # first daily note (default true)
 }
@@ -1059,11 +1058,12 @@ class Onboard(object):
                 m = re.match(r"^(\d+)\s", f.name)
                 if m:
                     taken.add(int(m.group(1)))
-        work = roles.get("work") or []
-        if work == "auto":
-            work = [{"project": n} for n, s in self.project_state.items() if s == "active"]
-        if not isinstance(work, list):
-            raise InputError("roles.work нь жагсаалт эсвэл \"auto\"")
+        # itge.e 2026-10-12 (issue #7): no role per project - every project session is the Project agent
+        # (`/fm:role project --project <slug>`), each project's rules and skills live in its _BRAIN.md
+        if roles.get("work"):
+            self.warnings.append("roles.work алгасав: төсөл бүрт тусдаа дүр үүсгэхгүй — сешн нь Project agent "
+                                 "(`/fm:role project --project <slug>`), дүрэм нь төслийн _BRAIN.md-д")
+        work = []
         new_entries = {}  # type: Dict[str, Dict[str, object]]
         for i, w in enumerate(work):
             if isinstance(w, str):
@@ -1214,7 +1214,7 @@ class Onboard(object):
         roles = self.a.get("roles") if isinstance(self.a.get("roles"), dict) else {}
         activate = as_list(roles.get("activate")) if roles else []
         work = roles.get("work") if roles else []
-        work_n = len(work) if isinstance(work, list) else len(
+        work_n = 0 and len(
             [n for n, s in self.project_state.items() if s == "active"])
         area_links = [link(r, n) for n, r in self.companies.items()] + \
                      [link(r, n) for n, r in self.areas.items()]

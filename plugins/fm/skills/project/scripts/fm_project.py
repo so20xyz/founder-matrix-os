@@ -15,7 +15,7 @@ Usage:
     fm_project.py list  <vault>                                   status table + scope-contract check
     fm_project.py new   <vault> "<Name>" [--state planning|ongoing] [--role <slug>] [--area Business] [--context work] [--goal "..."]
                      --state ongoing: never-ending work (job, association, board seat) - a project that does not close
-                     --role: also its one thin role note from _system/templates/Agent Role.md (project:, owns, group)
+                     (no role per project: its session is /fm:role project --project <slug> --folder <folder>)
     fm_project.py move  <vault> "<Name>" <active|planning|on-hold|waiting|archive> [--status completed|cancelled] [--apply]
     fm_project.py status-css <vault>                              only regenerate the status CSS snippet
     fm_project.py board <vault> [<board name>] [--stale-days 14]  legacy kanban hygiene report (read-only; boards archived, Tasks.base replaces them)
@@ -288,9 +288,10 @@ def cmd_new(vault: Path, args: List[str]) -> None:
     state = _opt(args, "--state", "planning")
     if state not in ("active", "planning", "on-hold", "waiting", "ongoing"):
         _die("--state: active | planning | on-hold | waiting | ongoing")
-    role = _opt(args, "--role").strip().lower()
-    if role and not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", role):
-        _die("--role: англи kebab slug (жишээ narny-site)")
+    if _opt(args, "--role"):
+        _die("--role хасагдсан (2026-10-12): төсөлд тусдаа дүр үүсгэхгүй. Сешн: /fm:role project --project <slug> "
+             "--folder 02-Projects/<Нэр>; дүрэм, skill нь төслийн _BRAIN.md-д.")
+    role = ""
     for note, _ in find_projects(vault):
         if note.stem.lower() == name.lower():
             _die("Ийм төсөл байна: %s — шинэ бүү үүсгэ, түүнийг шинэчил." % note.relative_to(vault).as_posix(), 2)

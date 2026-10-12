@@ -8,7 +8,7 @@ ai-first: true
 role: <english-kebab-slug>
 owns: []
 discord: ""
-group: projects
+group: areas
 skills:
   - "fm:project"
   - "fm:task"
@@ -23,7 +23,7 @@ aliases: []
 
 ## For future agent
 
-Нэг төслийн Project агент (`type: agent-role`). **Төсөлд нэг тогтмол сешн:** сешн энэ дүрд `/fm:role <slug>`-ээр холбогдож, төслийн бүх task-ийг тэр сешн дотор хийнэ. Сешн ↔ дүрийн зураглал зөвхөн `_system/fm/registry.json`-д. Энэ дүр зөвхөн өөрийн төслийн хавтсанд бичнэ; мэргэжлийн ажлыг subagent (`fm:creative`, `fm:architect`, `fm:wiki`) болгон дуудна. Энэ note нимгэн: дүрэм, хэв маяг, мэдлэг `_BRAIN.md`-д. Үүсгэх: `fm_project.py new … --role <slug>`.
+Нэмэлт **мэргэжлийн** agent-ийн дүр (`type: agent-role`; 6 үндсэн agent-аас гадна, жишээ нь Operator). **Төсөл, хүрээнд хэрэглэхгүй** (2026-10-12): төслийн сешн = Project agent (`/fm:role project --project <slug>`), дүрэм нь `_BRAIN.md`-д.
 
 ## Зорилго
 

@@ -42,8 +42,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" list "${use
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" new "${user_config.vault_path}" "<Нэр>" --state planning --area Business --context work --goal "<нэг мөр>"
    ```
    `_system/templates/Project.md` байвал түүний нэмэлт хэсгүүдийг (Bases харагдац г.м.) шинэ нот руу нэм.
-   - **Дуусдаггүй ажил** (ажлын байр, холбоо, зөвлөлийн суудал, байнгын үйлчлүүлэгч) = `--state ongoing`. Тусдаа сешн хэрэгтэй бол **`03-Areas/`-д шинэ хавтас, гар аргаар «assistant» дүр бүү үүсгэ** — энэ төслийн загвар хангалттай.
-   - Төсөлд **тогтмол сешн** хэрэгтэй бол `--role <english-kebab-slug>` нэм: `_system/templates/Agent Role.md`-ээс нимгэн дүр (`project:`, `owns:` = зөвхөн энэ хавтас, `group: projects`) үүсгэнэ. Дүрэм, хэв маяг, мэдлэг — `_BRAIN.md`-д, дүрийн note-д биш. Дараа нь `/fm:role <slug>`.
+   - **Төсөлд тусдаа дүр үүсгэхгүй** (itge.e 2026-10-12): дүрэм, хориг, хэрэглэх skill — тухайн `_BRAIN.md`-д. Дуусдаг төслийн тогтмол сешн = Project agent тэр хавтастай: `/fm:role project --project <slug> --folder 02-Projects/<Нэр>`.
+   - **Дуусдаггүй ажил** (ажлын байр, холбоо, зөвлөлийн суудал, байнгын үйлчлүүлэгч) = `--state ongoing`, **тусдаа сешнгүй**: «📁 Project» сешн тэр ажил руу шилжихдээ `_BRAIN.md`-ийг нь бүтэн уншиж ажиллана, ажлуудын материалыг холихгүй. `03-Areas/`-д шинэ хавтас, «assistant» дүр үүсгэхгүй.
 5. Яриан дахь мэдээллээр бөглө: тойм, `goal`, `due`, `milestones`, `anti-goal`, холбогдох хүмүүс (`[[wikilink]]`). Мэдэхгүй зүйлийг `TBD`. **`goal`-ыг өөрөө зохиохгүй** — гишүүний үг.
 6. `_BRAIN.md`: «яагаад байдаг», «дууссан гэж юу вэ», «юу хамаарахгүй» — гишүүнээс асууж бөглө.
 7. **Хамааралтай судалгаа хай (connecting dots):** `04-Resources/Судалгаа ба нөөц.base` (байвал) болон `04-Resources/Research/`, `type: research|reference|atomic` + `projects:` бүхий note-уудаас шинэ төслийн гол үгээр хайж, тохирох 3–7-г төслийн `related:` болон «🔗 Холбоос — яагаад»-д `эх` гэж холбо. Шинэ төслийн судалгааг дараа нь `type: research` + `project:`-тэй бичихийг сануул.

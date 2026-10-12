@@ -271,7 +271,7 @@ def cmd_show(vault: Path, args: List[str]) -> None:
 def cmd_bind(vault: Path, args: List[str]) -> None:
     pos = [a for i, a in enumerate(args) if not a.startswith("--") and (i == 0 or not args[i - 1].startswith("--"))]
     if not pos:
-        _die("Хэрэглээ: fm_role.py bind <vault> <slug> [--sid SID] [--device D] [--title T]")
+        _die("Хэрэглээ: fm_role.py bind <vault> <slug> [--sid SID] [--device D] [--title T] [--project <slug> --folder <хавтас>]")
     query = pos[0]
     roles = load_roles(vault)
     role = find_role(roles, query)
@@ -282,8 +282,12 @@ def cmd_bind(vault: Path, args: List[str]) -> None:
         _die("Session id олдсонгүй. Хэрэглэгчээс асууж --sid <id>-ээр дахин ажиллуул.", 3)
     device = detect_device(_opt(args, "--device"))
     title = _opt(args, "--title") or "%s · %s" % (role["name"], device)
+    # 2026-10-12: a project session = the Project agent scoped to one project (no role per project)
+    proj, folder = _opt(args, "--project").strip(), _opt(args, "--folder").strip().strip("/")
+    if folder and not (vault / folder).is_dir():
+        _die("--folder олдсонгүй: %s" % folder, 2)
     with registry_lock():
-        reg, entry, path = _bind_locked(vault, role, sid, device, title)
+        reg, entry, path = _bind_locked(vault, role, sid, device, title, proj, folder)
     sessions = reg["sessions"]
     others = [s for s, v in sessions.items() if s != sid and isinstance(v, dict)
               and v.get("role") == role["slug"] and v.get("device") == device]
@@ -294,13 +298,18 @@ def cmd_bind(vault: Path, args: List[str]) -> None:
     }, ensure_ascii=False, indent=2))
 
 
-def _bind_locked(vault: Path, role: Dict[str, object], sid: str, device: str, title: str):
-    """load -> modify -> save; the caller holds registry_lock()."""
+def _bind_locked(vault: Path, role: Dict[str, object], sid: str, device: str, title: str,
+                 proj: str = "", folder: str = ""):
+    """load -> modify -> save; the caller holds registry_lock(). proj/folder: the project scope of a Project session."""
     reg = load_registry(vault)
     sessions = reg["sessions"]
     prev = sessions.get(sid) if isinstance(sessions.get(sid), dict) else {}
     entry = dict(prev)
-    entry.update({"role": role["slug"], "device": device, "title": title, "project": role["slug"]})
+    entry.update({"role": role["slug"], "device": device, "title": title, "project": proj or role["slug"]})
+    if folder:
+        entry["folder"] = folder
+    elif not proj:
+        entry.pop("folder", None)
     group = role["group"] or str((reg["roles"].get(role["slug"]) or {}).get("group") or "")
     if group:
         entry["group"] = group

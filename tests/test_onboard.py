@@ -209,8 +209,6 @@ def test_onboard_creates_life_structure(c):
         "04-Resources/references/Obsidian Help.md", "04-Resources/references/Deep Work.md",
         "03-Areas/Business/tools/Figma.md",
         "03-Areas/Goals/2026 Goals.md",
-        "03-Areas/AI Team/ai-workers/10 Нарны сайт.md",
-        "03-Areas/AI Team/ai-workers/11 Марафон бэлтгэл.md",
         "04-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY,
         "01-GTD/Daily/%s.md" % TODAY,
         "_system/logs/%s.md" % TODAY,
@@ -232,7 +230,6 @@ def test_frontmatter_conventions(c):
         "04-Resources/references/Obsidian Help.md": "reference",
         "03-Areas/Business/tools/Figma.md": "tool",
         "03-Areas/Goals/2026 Goals.md": "goal",
-        "03-Areas/AI Team/ai-workers/10 Нарны сайт.md": "agent-role",
         "04-Resources/Atomic/decisions/%s - fm-onboarding.md" % TODAY: "session-decision",
         "01-GTD/Daily/%s.md" % TODAY: "daily",
     }
@@ -350,19 +347,15 @@ def test_roles_and_registry(c):
     reg = json.loads(c.read("_system/fm/registry.json"))
     roles = reg["roles"]
     assert reg["sessions"] == {}
-    assert roles["narny-site"]["note"] == "03-Areas/AI Team/ai-workers/10 Нарны сайт.md"
-    assert roles["narny-site"]["folders"] == ["02-Projects/Нарны вэбсайт/"]
-    assert roles["marafon-beltgel"]["active"] is True
+    # itge.e 2026-10-12: no role per project - the Project agent works every project from its _BRAIN.md
+    assert "narny-site" not in roles and "marafon-beltgel" not in roles, list(roles)
+    assert not list((c.vault / "03-Areas/AI Team/ai-workers").glob("1[0-9] *.md"))
     for slug in ("project", "gtd", "wiki", "finance"):
         assert roles[slug]["active"] is True, slug
     for slug in ("architect", "creative"):
         assert roles[slug]["active"] is False, slug
-    note = c.fm("03-Areas/AI Team/ai-workers/10 Нарны сайт.md")
-    assert note["role"] == "narny-site" and note["owns"] == ["02-Projects/Нарны вэбсайт/"]
-    assert note["private"] == "false"
-    # fm_role sees the new role
     code, out, err = run(PLUGIN / "skills/role/scripts/fm_role.py", "list", c.vault)
-    assert code == 0 and "narny-site" in out and "marafon-beltgel" in out, (out, err)
+    assert code == 0 and "project" in out and "narny-site" not in out, (out, err)
 
 
 def test_sessions_are_preserved(c):
@@ -483,7 +476,7 @@ def test_bad_input_writes_nothing(c):
     assert code == 2 and "state" in err, (code, out, err)
     assert c.snapshot() == before
     bad = copy.deepcopy(ANSWERS)
-    bad["roles"]["work"][0]["slug"] = "Нарны Сайт"
+    bad["roles"]["activate"] = ["Нарны Сайт"]
     code, out, err = c.onboard(bad)
     assert code == 2 and "slug" in err, (code, err)
     assert c.snapshot() == before
@@ -499,7 +492,7 @@ def test_quick_mode(c):
     assert code == 0, (out, err)
     assert (c.vault / "02-Projects/Хичээлийн төлөвлөгөө/Хичээлийн төлөвлөгөө.md").is_file()
     reg = json.loads(c.read("_system/fm/registry.json"))
-    assert reg["roles"]["khicheeliin-tuluvluguu"]["active"] is True, list(reg["roles"])
+    assert "khicheeliin-tuluvluguu" not in reg["roles"], list(reg["roles"])   # no role per project (2026-10-12)
     assert reg["roles"]["finance"]["active"] is False
     assert not any((c.vault / PRIVATE).glob("*/*.md"))
 

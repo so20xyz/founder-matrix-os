@@ -9,27 +9,28 @@
   "sessions": [
     {
       "order": 1,
-      "role": "<project-slug>",
+      "role": "project",
+      "project": "<project-slug>",
       "title": "📁 <Төслийн нэр>",
       "group": "Projects",
       "cwd": "02-Projects/<Төсөл>",
       "required": true,
       "per": "active-project",
-      "note": "Active төсөл бүрт нэг тогтмол сешн."
+      "note": "Active (дуусдаг) төсөл бүрт нэг тогтмол сешн = Project agent тэр төслийн хавтастай: `/fm:role project --project <slug> --folder 02-Projects/<Төсөл>`. Төсөлд тусдаа дүр байхгүй — дүрэм, skill нь `_BRAIN.md`-д. `status: ongoing` (байнгын хүрээ) төсөлд тусдаа сешн нээхгүй — «📁 Project» сешн `_BRAIN.md`-ийг нь уншиж хариуцна."
     },
     {
       "order": 2,
       "role": "project",
-      "title": "📁 Portfolio",
+      "title": "📁 Project",
       "group": "Projects",
       "cwd": "02-Projects",
       "required": true,
-      "note": "Бүх төслийн төлөв, самбар, төсөл нээх/хаах (хуучин нэр: Project Manager)."
+      "note": "Project agent: бүх төслийн төлөв, самбар, төсөл нээх/хаах + ongoing (байнгын хүрээ) ажлууд (хуучин нэр: Portfolio, Project Manager)."
     },
     {
       "order": 3,
       "role": "creative",
-      "title": "🎨 Creative",
+      "title": "🎨 Creative Director",
       "group": "Areas",
       "cwd": "",
       "required": false,
@@ -106,7 +107,7 @@
     "4 бүлэг: Projects · Areas · Resources · Finance. Нэг удаагийн сешн бүлэггүй; дууссан сешнийг апп-ын Archive руу (устгахгүй).",
     "Нэг дүр = нэг тогтмол сешн; ижил дүрийн хоёр дахь сешн нээхгүй.",
     "Finance: Business ба Personal хоёр тусдаа сешн; Discord #business/#personal зөвхөн screenshot хүлээн авна (бот: «🙋 авлаа / ✅ бүртгэлээ», тоогүй); агуулга vault-ийн private хавтсанд л.",
-    "Icon: 📁 төсөл/portfolio · 📥 GTD · 🏛️ architect · 🎨 creative · 📖 номын сан · 📚 wiki · 🔍 судалгаа · 💼 бизнес · 🔒 хувийн."
+    "Icon: 📁 төсөл/Project · 📥 GTD · 🏛️ architect · 🎨 creative · 📖 номын сан · 📚 wiki · 🔍 судалгаа · 💼 бизнес · 🔒 хувийн."
   ],
   "routines": [
     {

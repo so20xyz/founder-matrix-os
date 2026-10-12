@@ -37,8 +37,8 @@ Vault: `${user_config.vault_path}` (хоосон эсвэл `${...}` хэвээ�
 | 4 | Дүрийн slug (developer→architect, area→gtd, resource/research→wiki; registry, baton) | `python3 "$S/fm_roles_migrate.py" "<vault>"` |
 | 5 | Дутуу загварын файл (дүрийн note, skill каталог, template) — байгаа файлд хүрэхгүй | `python3 "$S/fm_setup.py" "<vault>" --member "<нэр>" --merge-registry --dry-run` |
 | 6 | Base-ууд = анхдагч (хуучныг `_trash/bases-<огноо>/`) | `python3 "$S/fm_bases.py" update "<vault>"` |
-| 7 | Гараар үүссэн «assistant» дүр (`project:`-гүй, `_BRAIN.md`-гүй, бүхэл хавтас эзэмшсэн, бүдүүн) | `python3 "$S/fm_lint.py" "<vault>/03-Areas/AI Team/ai-workers"` → тус бүрийг `fm_project.py new "<Нэр>" --state ongoing --role <slug>` болгож дүрмийг нь `_BRAIN.md` руу зөө (гишүүнтэй хамт; хуучныг `_trash/`) |
-| 8 | Restart → `/fm:role <slug>` → `/tsaglabar` | — |
+| 7 | Төсөл/хүрээний тусдаа дүр (assistant, 10+ дугаартай) — хэрэггүй | `python3 "$S/fm_lint.py" "<vault>/03-Areas/AI Team/ai-workers"` → тус бүрийн дүрэм, skill-ийг тэр төслийн `_BRAIN.md` руу зөөж (`_BRAIN` байхгүй бол `fm_project.py new … --state ongoing`), дүрийн note-ийг `_trash/`, сешнийг `/fm:role project --project <slug> --folder <хавтас>` (гишүүнтэй хамт) |
+| 8 | Sidebar: «📁 Portfolio» сешний нэрийг «📁 Project» болго; restart → `/fm:role <slug>` → `/tsaglabar` | — |
 
 Алхам бүрийн дараа нэг мөр тайлан. Өөрчлөх зүйлгүй алхмыг чимээгүй алгас. Obsidian-ийг 3–4-р алхмын үед хаалга. Хоёр төхөөрөмжтэй бол нэг дээр нь л apply хийнэ (registry Drive-аар sync).
 
@@ -216,8 +216,8 @@ Vault-д `00-GTD`, `02-GTD`, `00-Inbox`, `01-Soul`, `03-Projects` (`1-Active`…
 | `architect` | Architect | Код, хэрэгсэл (superpowers), vault-ийн бүтэц (BOOT, template, base, registry) | хэрэгтэй бол |
 | `creative` | Creative | Moodboard (Pinterest → Soulcatcher), Figma, пост, бичвэр | хэрэгтэй бол |
 
-Мөн **Active төсөл бүрт нэг Project агентын дүр** санал болго: slug = англи kebab (жишээ `narny-site`), нэр = кирилл. Гишүүн батална. Тэр төслийн бүх ажил нэг сешнд.
-→ `roles.activate[]`, `roles.work[]` (эсвэл `"auto"` = Active төсөл бүрт). Скрипт дүрийн note-ыг `03-Areas/AI Team/ai-workers/<NN Нэр>.md`-д бичиж, `_system/fm/registry.json`-ийн `roles`-д нэмнэ (сонгоогүй дүр `active: false`). Хуучин slug (`gtd`, `content-writer`, `creative-director`, `tool-developer`) автоматаар шинэ Agent руу хөрвөнө.
+**Төсөлд тусдаа дүр үүсгэхгүй** (itge.e 2026-10-12): төслийн сешн бүр **Project agent** (`role: project`) тэр төслийн хавтастай — `/fm:role project --project <slug> --folder 02-Projects/<Нэр>`; төслийн дүрэм, хориг, skill — тухайн `_BRAIN.md`-д. Төсөл бүрт «дуусдаг төсөл үү, байнгын хүрээ (ажил, холбоо, зөвлөл) үү?» гэж асуу: дуусдаг бол өөрийн сешн; байнгын бол `status: ongoing`, тусдаа сешнгүй — «📁 Project» сешн хариуцна.
+→ `roles.activate[]` (`roles.work` хуучирсан, алгасагдана). Скрипт `_system/fm/registry.json`-ийн `roles`-д нэмнэ (сонгоогүй дүр `active: false`). Хуучин slug (`gtd`, `content-writer`, `creative-director`, `tool-developer`) автоматаар шинэ Agent руу хөрвөнө.
 
 Өдрийн тэмдэглэл ба Home-д тусдаа асуулт хэрэггүй: скрипт өнөөдрийн `01-GTD/Daily/<огноо>.md`-г (Active төслүүдийг «гол 3»-д) үүсгэж, `Home.md`, `_system/index.md`-г бөглөнө.
 
@@ -320,7 +320,7 @@ Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй о
 Гишүүнд хэл:
 - Obsidian-оор vault-аа нээж **Home**-оос эхэл (`.obsidian/` тохиргоог гишүүн өөрөө удирдана: Settings → Core plugins → **Bases**, **Templates** асаа; Templates хавтас = `_system/templates`; Community plugins → **Kanban**).
 - **Base байршлын дүрэм (2026-10-09):** бүх `.base` файл PARA-ийн дээд хавтсанд шууд — `00-Soul/`, `01-GTD/`, `02-Projects/`, `03-Areas/`, `04-Resources/`, `99-Archive/` (жишээ `01-GTD/Tasks.base`, `03-Areas/People.base`); дэд хавтсанд хэзээ ч биш, төв `_system/bases/` байхгүй. Шүүлтүүр нь дэд хавтсыг бүтэн замаар заана (`file.inFolder("03-Areas/people")`); hub note дэд хавтсандаа үлдэж base-ийг бүтэн замаар embed хийнэ (`![[04-Resources/Atoms.base]]`). Хуучин vault-ийн дэд хавтсан дахь base-ийг `fm_brain_check` «дэд хавтсан дахь base» гэж мэдээлнэ.
-- Sidebar бэлэн (7-р алхам): энэ сешн **📥 GTD**; бусад сешнийг chip-ээр дээрээс доош нээ. Төсөл бүр **тусдаа нэг тогтмол сешн**, Finance тусдаа 🔒 сешн.
+- Sidebar бэлэн (7-р алхам): энэ сешн **📥 GTD**; бусад сешнийг chip-ээр дээрээс доош нээ. Дуусдаг төсөл бүр **нэг тогтмол сешн** (Project agent + төслийн хавтас), ongoing ажлууд «📁 Project» сешнд, Finance тусдаа 🔒 сешн.
 - **Ганц команд: «update».** Ажлынхаа дараа «update» гэж бичихэд Agent атом, task, хүн, төсөл, inbox, STATUS-ыг өөрөө цэгцэлнэ. Өглөө «update daily», орой «update дүгнэлт», долоо хоногт «update weekly».
 - Дутуу үлдсэн алхмууд (алгассан програм, plugin, ярилцлагын хэсэг) → дараа `/fm:setup doctor`, `/fm:setup plugins`, эсвэл `/fm:setup`-ийг дахин; байгаа note хөндөгдөхгүй.
 

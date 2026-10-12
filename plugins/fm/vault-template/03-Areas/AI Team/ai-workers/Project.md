@@ -29,7 +29,6 @@ aliases:
   - "Project Manager"
   - "Төслийн менежер"
   - "Portfolio"
-  - "📁 Portfolio"
 ---
 
 # Project

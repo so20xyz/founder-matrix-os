@@ -220,28 +220,16 @@ def role_warnings(fields, text, vault):
     """Project-pattern guard for an agent-role note: project:, its _BRAIN.md, owns, thin body."""
     slug = str(fields.get("role") or "").strip().lower()
     group = str(fields.get("group") or "").strip().lower()
-    if not slug or slug in CORE_ROLE_SLUGS or group not in ("projects", "areas"):
+    owns = [o.strip("/").lower() for o in _as_list(fields.get("owns"))]
+    scoped = (group == "projects" or str(fields.get("project") or "").strip().strip("\"'")
+              or any(o.startswith(("02-projects/", "03-areas/business/", "03-areas/life/")) or o in WIDE_OWNS for o in owns))
+    if not slug or slug in CORE_ROLE_SLUGS or not scoped:
         return []
-    out = []
-    proj = str(fields.get("project") or "").strip().strip("\"'")
-    target = proj[2:-2].split("|")[0].strip() if proj.startswith("[[") and proj.endswith("]]") else proj
-    if not target:
-        out.append("Дүр `%s` (`group: %s`) `project:`-гүй. Төсөл/байнгын ажил бүр нэг дүр + `_BRAIN.md`: "
-                   "`fm_project.py new <vault> \"<Нэр>\" --role <slug>` (дуусдаггүй ажил бол `--state ongoing`)." % (slug, group))
-    elif vault is not None:
-        note = Path(vault) / (target if target.endswith(".md") else target + ".md")
-        if not note.is_file():
-            out.append("Дүр `%s`-ийн `project: [[%s]]` файл олдсонгүй." % (slug, target))
-        elif not (note.parent / "_BRAIN.md").is_file():
-            out.append("Дүр `%s`-ийн төсөлд `_BRAIN.md` алга (%s/). Төслийн дүрэм, мэдлэг тэнд." % (slug, note.parent.name))
-    wide = [o for o in _as_list(fields.get("owns")) if o.strip("/").lower() in WIDE_OWNS]
-    if wide:
-        out.append("Дүр `%s` бүхэл хавтас эзэмшиж байна (%s) - үндсэн agent-ын хавтастай давхцана. "
-                   "Зөвхөн өөрийн төслийн хавтсыг `owns:`-д." % (slug, ", ".join(wide)))
-    body_lines = [l for l in text.split("\n---", 1)[-1].splitlines() if l.strip()]
-    if len(body_lines) > ROLE_BODY_MAX_LINES:
-        out.append("Дүр `%s`-ийн note %d мөр (> %d). Дүрийн note нимгэн: дүрэм, хэв маяг, мэдлэгийг `_BRAIN.md` руу." % (slug, len(body_lines), ROLE_BODY_MAX_LINES))
-    return out
+    # itge.e 2026-10-12: no role per project / area - the Project agent works it from its _BRAIN.md
+    return ["Дүр `%s` (`group: %s`) - төсөл/хүрээнд тусдаа дүр хэрэггүй. Дүрэм, skill-ийг төслийн `_BRAIN.md` руу "
+            "зөөж (байхгүй бол `fm_project.py new … --state ongoing`), энэ note-ийг `_trash/`, сешнийг "
+            "`/fm:role project --project <slug> --folder <хавтас>`." % (slug, group)]
+
 
 
 # -------------------------------------------------------------------- hook
