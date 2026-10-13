@@ -2,7 +2,7 @@ import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { CalItem, InboxItem, RoleInfo, SkillPin, ToolStatus, VaultTask } from '../types'
 import type { ClaimVerdict } from './parse'
-import { agentsReport, applyStatus, canonRole, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planWindow, privateKeys, privateNote, privateOwner, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
+import { agentsReport, applyStatus, canonRole, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planOf, planWindow, privateKeys, privateNote, privateOwner, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
 
 // Task band (itge.e 2026-10-09): above the prompt, the open vault tasks this session's role owns.
 // Area agents match `owner`/`responsible` against their role's names, device-agnostic ("📚 Wiki" is every Wiki session, PC or Mac);
@@ -603,7 +603,9 @@ function calItemOf(t: string, dir: string, name: string, kind: 'task' | 'event',
   const times = kind === 'task' ? { started: field(fm, 'started'), completed: field(fm, 'completed'), claimed: field(fm, 'claimed'), updated: field(fm, 'updated') } : {}
   // «## Өөрчлөлтийн түүх» (one stream = one task, itge.e 2026-10-10): | HH:MM | what | where | rows → shown under the task
   const log = kind === 'task' && !secret ? changeLogOf(t) : []
-  return { kind, title: name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), owners: ownersOf(fm), project, activity, priority: field(fm, 'priority'), research, file: `${dir}/${name}`, ...times, ...(log.length ? { log } : {}), ...(secret ? { private: true } : {}) }
+  // «## Явц» of a running task: another device's session shows its steps here once Drive syncs the note
+  const plan = kind === 'task' && !secret && status === 'in-progress' ? planOf(t) : []
+  return { kind, title: name.replace(/\.md$/, ''), date, time, status, owner: field(fm, 'owner'), owners: ownersOf(fm), project, activity, priority: field(fm, 'priority'), research, file: `${dir}/${name}`, ...times, ...(log.length ? { log } : {}), ...(plan.length ? { plan } : {}), ...(secret ? { private: true } : {}) }
 }
 
 /** A task note's «## Өөрчлөлтийн түүх» table → [{ at: 'HH:MM', what }] in note order (header / separator rows skipped). */
@@ -2256,7 +2258,8 @@ export const register: Register = (on, options) => {
         .sort((a, b) => a.own - b.own || a.n - b.n).map(o => o.x).slice(0, 3)
       const actRow = (x: CalItem | null) => {
         const isMe = !x || (!!mineItem && x.file === mineItem.file)
-        const st = isMe ? (x ? planWindow(planSteps, planMark.at, '') : planSteps) : []
+        // own row: this session's live steps; another session's (e.g. Mac) row: the «## Явц» its device mirrored into the note
+        const st = isMe ? (x ? planWindow(planSteps, planMark.at, '') : planSteps) : (x?.plan ?? [])
         const n = st.filter(s => s.done).length
         const k = isMe ? bgList.length : 0
         const key = x ? x.file : 'session'
@@ -2267,8 +2270,9 @@ export const register: Register = (on, options) => {
         // the gear is budgeted as one cell (never measured: parse.ts counts it as an emoji)
         const sufW = cellWidth(plainSuf) + (k ? (plainSuf ? 3 : 0) + 2 + String(k).length : 0)
         const ago = x ? fmtAgo(x.started ?? '', nowLocal) : ''
-        const canOpen = isMe && (st.length > 0 || k > 0)
-        const isOpen = canOpen && openOf('cal:act', false)
+        const canOpen = st.length > 0 || k > 0
+        const actKey = isMe ? 'cal:act' : `cal:act:${key}`
+        const isOpen = canOpen && openOf(actKey, false)
         const press = x ? toggleSel(x) : () => {}
         // the terminal title budget (the title is the Button there); desktop / vscode cut a Text title in its flex cell instead
         const w = cols - 4 - (suffix ? sufW + 1 : 0) - (ago ? cellWidth(ago) + 1 : 0) - (canOpen ? 2 : 0)
@@ -2279,7 +2283,7 @@ export const register: Register = (on, options) => {
               <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{x ? titleCell(`actb-${key}`, name, C.text, false, press, w) : <Text color={C.text} wrap="truncate-end">{name}</Text>}</Box>
               {suffix ? <Box flexShrink={0}><Text color={C.text}>{suffix}</Text></Box> : null}
               {ago ? <Box flexShrink={0}><Text color={C.muted}>{ago}</Text></Box> : null}
-              {canOpen ? <Box flexShrink={0}><Button key={`acto-${key}`} plain dimColor label={isOpen ? G.open : G.closed} onPress={() => void togglePhase($, 'cal:act', false)} /></Box> : null}
+              {canOpen ? <Box flexShrink={0}><Button key={`acto-${key}`} plain dimColor label={isOpen ? G.open : G.closed} onPress={() => void togglePhase($, actKey, false)} /></Box> : null}
               {x ? goCell(`actb-${key}`, press) : null}
             </Box>
             {isOpen ? (

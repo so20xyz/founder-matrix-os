@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.28: Цаглабар live rows show another device's running task with its steps — read from the task note's mirrored «## Явц» block once Drive syncs (planOf), each row expands on its own.
+
 - fm 0.9.27: task `device: PC|Mac` — only that machine can claim it (`relay.py claim` → `LOSE <device>` before touching the bus), `relay.py task --device`, the offer carries `for`, Цаглабар card shows `→ PC`; BOOT/fm:task rule: machines talk through the task note, Discord only wakes.
 
 - **0.9.26 · Нэмсэн (itge.e 2026-10-13):** «PC рүү чат хий» дүрэм — нөгөө машин дээр зөвхөн 📥 GTD Discord сонсдог тул `#gtd`-ээр «→ PC @pc · <дүр> → <хүлээн авагч>: …» гэж бичиж, тэр GTD хүлээн авагчид дамжуулна; хариуг `#gtd`-ээс. BOOT (Discord 5-р дүрэм, maintainer vault → `fm_rules.py export`) ба `fm:relay` skill.

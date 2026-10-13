@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { parseTask, rank, canonRole } from './parse'
+import { parseTask, rank, canonRole, planOf } from './parse'
 
 const note = (fm: string) => `---\n${fm}\n---\n\n# x\n`
 
@@ -398,4 +398,10 @@ test('/fm-agents: live task per role, device-agnostic, private role closed', () 
 test('device: target machine is parsed (itge.e 2026-10-14)', () => {
   expect(parseTask('E.md', note('type: task\nstatus: inbox\nowner: "🏛️ Architect"\ndevice: PC'))).toEqual(
     { title: 'E', status: 'inbox', due: '', owner: '🏛️ Architect', owners: ['🏛️ Architect'], device: 'PC' })
+})
+
+test('planOf reads the mirrored «## Явц» steps (other device live view)', () => {
+  const t = '---\ntype: task\n---\n\n## Явц\n<!-- fm:plan -->\n- [x] build\n- [ ] test\n<!-- /fm:plan -->\n'
+  expect(planOf(t)).toEqual([{ subject: 'build', done: true }, { subject: 'test', done: false }])
+  expect(planOf('no block')).toEqual([])
 })

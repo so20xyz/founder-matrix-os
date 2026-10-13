@@ -457,6 +457,15 @@ export function planWindow<T extends { at: number }>(steps: T[], from: number, u
 export const PLAN_OPEN = '<!-- fm:plan -->'
 export const PLAN_CLOSE = '<!-- /fm:plan -->'
 
+/** A task note's managed «## Явц» block → its steps (the other device's live plan, read from the synced note; itge.e 2026-10-14). */
+export function planOf(text: string): { subject: string; done: boolean }[] {
+  const a = text.indexOf(PLAN_OPEN)
+  const b = a < 0 ? -1 : text.indexOf(PLAN_CLOSE, a)
+  if (a < 0 || b < 0) return []
+  return text.slice(a + PLAN_OPEN.length, b).split(/\r?\n/).map(l => l.match(/^- \[([ xX])\] (.+)$/)).filter((m): m is RegExpMatchArray => !!m)
+    .map(m => ({ subject: (m[2] ?? '').trim(), done: (m[1] ?? ' ') !== ' ' }))
+}
+
 /**
  * A task note with its managed «## Явц» block (`- [x]` / `- [ ]` per step between PLAN_OPEN and PLAN_CLOSE) rewritten in
  * place: an existing block is replaced, else the block goes right under a «## Явц» heading, else a new heading + block is
