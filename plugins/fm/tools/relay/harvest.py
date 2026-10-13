@@ -4,6 +4,8 @@ the member's messages + each assistant turn's final text (tool noise dropped). W
 ~/.fmos_harvest/<ts>.md (NOT the vault — the vault only gets atoms + log links, written by the harvester agent).
 Usage: python harvest.py [--dry]   → prints the digest path (or "nothing")."""
 import json, os, sys, time, datetime, pathlib, re
+try: import fcntl
+except ImportError: fcntl = None   # Windows: no lock, same as before
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import fmconfig  # noqa: E402  (registry path, configured vault, member label)
@@ -22,6 +24,13 @@ REG = fmconfig.REG
 PRIVATE_PROJECTS = fmconfig.PRIVATE_PROJECTS
 WHO = fmconfig.MEMBER_LABEL   # label for the human's turns (legacy default "BD")
 PRIVATE_HINT = re.compile(r"(finances-private|санхүү|Санхүү)", re.I)
+# The harvester's own run (task renamed fmos-harvester → fm-harvester; quotes are \"-escaped inside JSONL).
+SELF_RUN = re.compile(rb'<scheduled-task name=\\?"(?:fm|fmos)-harvester')
+
+
+def is_harvester_run(f):
+    """Checked on the file HEAD, not the unread tail: a run keeps writing after harvest.py read it."""
+    with f.open("rb") as fh: return bool(SELF_RUN.search(fh.read(20000)))
 
 
 def private_sids():
@@ -45,10 +54,10 @@ def main(dry=False):
             off[str(f)] = f.stat().st_size; continue   # private: mark read, never digest
         size = f.stat().st_size; start = off.get(str(f), 0)
         if size <= start: continue
+        if is_harvester_run(f):
+            off[str(f)] = size; continue                   # harvester's own run: never digest itself
         with f.open("rb") as fh:
             fh.seek(start); raw = fh.read()
-        if b'<scheduled-task name="fmos-harvester' in raw[:20000]:
-            off[str(f)] = size; continue                   # harvester's own run: never digest itself
         title, turns, last_asst = None, [], None
         for line in raw.decode("utf-8", "ignore").splitlines():
             try: j = json.loads(line)
@@ -82,4 +91,8 @@ def main(dry=False):
 
 
 if __name__ == "__main__":
+    lock = (OUT / ".lock").open("w")
+    if fcntl:
+        try: fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError: print("nothing"); sys.exit(0)   # another harvest is mid-run; it owns the offsets
     main("--dry" in sys.argv)
