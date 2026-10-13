@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.29: Цаглабар live rows include every running task, not only the session scope (a Mac architect session saw nothing while PC ran a Project task) — in-scope first, then the other device's.
+
 - fm 0.9.28: Цаглабар live rows show another device's running task with its steps — read from the task note's mirrored «## Явц» block once Drive syncs (planOf), each row expands on its own.
 
 - fm 0.9.27: task `device: PC|Mac` — only that machine can claim it (`relay.py claim` → `LOSE <device>` before touching the bus), `relay.py task --device`, the offer carries `for`, Цаглабар card shows `→ PC`; BOOT/fm:task rule: machines talk through the task note, Discord only wakes.

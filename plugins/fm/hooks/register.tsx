@@ -2250,7 +2250,8 @@ export const register: Register = (on, options) => {
       const bgList = [...bgTasks.filter(b => /^(running|pending)$/.test(b.status)),
         ...agents.filter(g => g.status === 'running').map(g => ({ id: g.id, type: g.type, status: g.status, description: g.description }))]
         .filter((b, n, arr) => arr.findIndex(o => o.id === b.id) === n)
-      const liveAll = cal.filter(isRun)
+      // every running task, any scope (itge.e 2026-10-14: «Mac-ийнхийг ч live харах»): in-scope first, then the other device's
+      const liveAll = [...cal.filter(isRun), ...all.filter(x => isRun(x) && !cal.includes(x) && !done.includes(x))]
       // this session's task = the one it started or claimed itself (planFile), never a guess from the device or an unclaimed task
       const mineItem = planMark.file ? (liveAll.find(x => samePath(x.file, planMark.file)) ?? all.find(x => samePath(x.file, planMark.file) && isRun(x))) : undefined
       const live = (mineItem ? [mineItem, ...liveAll.filter(x => x.file !== mineItem.file)] : liveAll)
