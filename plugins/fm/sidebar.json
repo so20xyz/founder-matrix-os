@@ -15,17 +15,8 @@
       "group": "Projects",
       "cwd": "02-Projects/<Төсөл>",
       "required": true,
-      "per": "active-project",
-      "note": "Active (дуусдаг) төсөл бүрт нэг тогтмол сешн = Project agent тэр төслийн хавтастай: `/fm:role project --project <slug> --folder 02-Projects/<Төсөл>`. Төсөлд тусдаа дүр байхгүй — дүрэм, skill нь `_BRAIN.md`-д. `status: ongoing` (байнгын хүрээ) төсөлд тусдаа сешн нээхгүй — «📁 Project» сешн `_BRAIN.md`-ийг нь уншиж хариуцна."
-    },
-    {
-      "order": 2,
-      "role": "project",
-      "title": "📁 Project",
-      "group": "Projects",
-      "cwd": "02-Projects",
-      "required": true,
-      "note": "Project agent: бүх төслийн төлөв, самбар, төсөл нээх/хаах + ongoing (байнгын хүрээ) ажлууд (хуучин нэр: Portfolio, Project Manager)."
+      "per": "project",
+      "note": "Төсөл бүрт, төхөөрөмж бүрт нэг сешн: `/fm:role project` → «Ямар төслийн сешн нээх вэ?» → Projects бүлэгт «📁 <Төсөл>». Төсөлд тусдаа дүр байхгүй — дүрэм, skill нь `_BRAIN.md`-д."
     },
     {
       "order": 3,
