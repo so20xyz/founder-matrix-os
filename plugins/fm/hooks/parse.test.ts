@@ -316,9 +316,9 @@ test('stripSkill keeps fm: only; nextWeekday finds the weekday on or after today
 })
 
 test('classifyCapture: the 5 design samples → Task / Note / Агент / Task / Төсөл; finance is masked', () => {
-  const projects = ['acme Website', 'Inai Website', 'Lab']
+  const projects = ['Acme Website', 'Inai Website', 'Lab']
   const c = (title: string, src = 'tsaglabar') => classifyCapture({ title, body: title, src, today: '2026-10-09' }, projects)
-  const a = c('acme-ийн баннерын хэмжээ 1200×628', 'telegram')
+  const a = c('Acme-ийн баннерын хэмжээ 1200×628', 'telegram')
   expect([a.route, a.kind, a.masked]).toEqual(['task', 'chat', false])
   const b = c('framer.com/marketplace — portfolio template', 'clip')
   expect([b.route, b.kind]).toEqual(['note', 'clip'])
@@ -328,7 +328,7 @@ test('classifyCapture: the 5 design samples → Task / Note / Агент / Task 
   expect([e.route, e.kind, e.due]).toEqual(['task', 'meet', '2026-10-15 15:00'])
   const f = c('Вэб студийн үнийн бүтцийн санаа')
   expect([f.route, f.kind, f.project]).toEqual(['project', 'memo', undefined])
-  expect(c('acme Website hero засах').project).toBe('acme Website')
+  expect(c('Acme Website hero засах').project).toBe('Acme Website')
   expect(c('Цаглабар label').route).toBe('task')
   expect(c('Plugin bug засах').agent).toBe('🏛️ Architect')
   expect(c('Эх сурвалж судлах').agent).toBe('📚 Wiki')

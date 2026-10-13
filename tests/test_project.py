@@ -48,15 +48,15 @@ def status_of(note):
 
 def test_new_is_flat_and_writes_css():
     v = vault()
-    code, out, err = run("new", v, "acme Website", "--state", "active")
+    code, out, err = run("new", v, "Acme Website", "--state", "active")
     assert code == 0, (out, err)
-    note = v / "02-Projects/acme Website/acme Website.md"
-    assert note.is_file() and (v / "02-Projects/acme Website/_BRAIN.md").is_file()
+    note = v / "02-Projects/Acme Website/Acme Website.md"
+    assert note.is_file() and (v / "02-Projects/Acme Website/_BRAIN.md").is_file()
     assert status_of(note) == "active"
     for legacy in ("1-Active", "2-Planning", "3-On-hold"):
         assert not (v / "02-Projects" / legacy).exists(), legacy
     css = (v / CSS).read_text(encoding="utf-8")
-    assert '.nav-folder-title[data-path="02-Projects/acme Website"] .nav-folder-title-content { color: #3A7BF0; }' in css, css
+    assert '.nav-folder-title[data-path="02-Projects/Acme Website"] .nav-folder-title-content { color: #3A7BF0; }' in css, css
     assert "::before" in css
     assert (v / ".obsidian/app.json").read_text(encoding="utf-8") == '{"keep": true}'
     assert sorted(p.name for p in (v / ".obsidian").iterdir()) == ["app.json", "snippets"]

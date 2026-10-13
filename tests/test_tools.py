@@ -24,7 +24,8 @@ PLUGIN = REPO / "plugins" / "fm"
 TOOLS = PLUGIN / "tools"
 TOOL_SKILLS = ["figma", "notion", "relay", "post", "watch", "framer"]
 CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance", "log"]
-CLIENT_WORDS = re.compile(r"client-b|client b|\bbyd\b|Academy|ep", re.I)
+# client names, spelled in pieces so a history scrub (git filter-repo --replace-text) never rewrites the guard itself
+CLIENT_WORDS = re.compile("|".join(["proba" + "itsaa", "проба" + "йцаа", r"\bb" + r"yd\b", "way " + "academy", "opus" + "_ep"]), re.I)
 
 
 def load_module(name, path):

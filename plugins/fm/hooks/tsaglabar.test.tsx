@@ -17,7 +17,7 @@ const FILES: Record<string, string> = {
   [`${V}/01-GTD/Tasks/Inbox ангилах.md`]: task('completed', '📥 GTD', `${DAY} 09:15`, `completed: ${DAY} 09:25\n`),
   [`${V}/01-GTD/Tasks/Inai Website — Hero засвар.md`]: task('completed', '🎨 Creative', `${DAY} 09:30`, `completed: ${DAY} 10:28\n`),
   [`${V}/01-GTD/Tasks/Цаглабар pane — Figma.md`]: task('in-progress', '🎨 Creative', '', `started: ${DAY} 10:30\nclaimed: PC\n`),
-  [`${V}/01-GTD/Tasks/acme carousel #3 — зураг.md`]: task('next-action', '🎨 Creative', `${DAY} 11:00`),
+  [`${V}/01-GTD/Tasks/Acme carousel #3 — зураг.md`]: task('next-action', '🎨 Creative', `${DAY} 11:00`),
   [`${V}/01-GTD/Tasks/Pane код review.md`]: task('next-action', '🏛️ Architect', `${DAY} 16:00`),
   [`${V}/01-GTD/Tasks/Skool нийтлэл.md`]: task('next-action', '🎨 Creative', ''),
   [`${V}/01-GTD/Events/SB+AI Season 2 уулзалт.md`]: `---\ntype: event\nstatus: scheduled\nscheduled: ${DAY} 14:00\n---\n`,
@@ -209,7 +209,7 @@ test('day strip: weekday in the 780 layout only (no measured widths), a two-digi
 
 // V2 Kanban over the sample (team scope): Next 4 (the running card first), Done 3 (completed today), Inbox / Waiting empty
 test('V2 board: 4 columns from 84, select a card, «Энд тавих» moves its status', async ($, on) => {
-  const FILE = `${V}/01-GTD/Tasks/acme carousel #3 — зураг.md`
+  const FILE = `${V}/01-GTD/Tasks/Acme carousel #3 — зураг.md`
   delete WRITES[FILE]
   vault(on)
   await openTeam($)
@@ -408,7 +408,7 @@ test('V5 Inbox: suggestions, ✓ Task routes a capture (frontmatter only), 🔒 
   const cap = (day: string, hm: string, title: string, source = 'tsaglabar') =>
     [`${IB}/${day} ${hm.replace(':', '')} - ${title.replace(/[:/]/g, ' ')}.md`, `---\ndate: ${day}\ntype: capture\nstatus: inbox\nsource: ${source}\n---\n\n# ${title}\n\n${title}\n`] as const
   const added: Record<string, string> = Object.fromEntries([
-    cap(DAY, '09:12', 'acme-ийн баннерын хэмжээ 1200×628', 'telegram'),
+    cap(DAY, '09:12', 'Acme-ийн баннерын хэмжээ 1200×628', 'telegram'),
     cap(DAY, '09:40', 'framer.com/marketplace — portfolio template', 'clip'),
     cap(DAY, '10:05', 'Season 2 cover-д 3 moodboard хувилбар'),
     cap(DAY, '10:20', 'Пүрэв 15:00 — Inai багтай уулзалт'),
@@ -588,7 +588,7 @@ test('🔒 a non-private session never lists a private task (Цаглабар, b
     // the band's own list: the Creative-owned private: true task is not this (non-private) session's
     const side = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tasks', props: pane(60) })
     expect(await side.find({ key: 'run-Татвар тайлан' })).toBeUndefined()
-    expect(await side.find({ key: 'run-acme carousel #3 — зураг' })).toBeDefined()
+    expect(await side.find({ key: 'run-Acme carousel #3 — зураг' })).toBeDefined()
     await side.unmount()
   } finally {
     done()
@@ -717,7 +717,7 @@ test('🔒 an unreadable registry fails closed: the last good private owners sta
     await $.turn.complete(turnEnd('t1'))
     let ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
     expect(await ui.find({ text: /Банкны гэрээ/ })).toBeUndefined()
-    expect(await ui.find({ text: /acme carousel/ })).toBeDefined()
+    expect(await ui.find({ text: /Acme carousel/ })).toBeDefined()
     await ui.unmount()
     // a half-synced (Drive) registry: the last good keys are kept, never an empty list
     reg = '{"sessions": {"sid-te'
@@ -725,7 +725,7 @@ test('🔒 an unreadable registry fails closed: the last good private owners sta
     ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
     expect(await ui.find({ text: /Банкны гэрээ/ })).toBeUndefined()
     // only the owner-private task: the others stay (the last good keys, not «every owner»)
-    expect(await ui.find({ text: /acme carousel/ })).toBeDefined()
+    expect(await ui.find({ text: /Acme carousel/ })).toBeDefined()
     await ui.unmount()
   } finally {
     delete FILES[BIZ]
@@ -740,7 +740,7 @@ test('🔒 an empty registry with nothing read before hides every owned task in 
     await $.turn.complete(turnEnd('t1'))
     const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
     expect(await ui.find({ text: /Банкны гэрээ/ })).toBeUndefined()
-    expect(await ui.find({ text: /acme carousel/ })).toBeUndefined()
+    expect(await ui.find({ text: /Acme carousel/ })).toBeUndefined()
     await ui.unmount()
   } finally {
     delete FILES[BIZ]
@@ -750,13 +750,13 @@ test('🔒 an empty registry with nothing read before hides every owned task in 
 test('a non-private session keeps a LOSE error blocking (no local start)', async ($, on) => {
   vault(on, true)
   const answer = <T,>(value: T) => ({ value }) as never
-  const FILE = `${V}/01-GTD/Tasks/acme carousel #3 — зураг.md`
+  const FILE = `${V}/01-GTD/Tasks/Acme carousel #3 — зураг.md`
   delete WRITES[FILE]
   on('process.run', async () => answer({ stdout: '', stderr: '', exitCode: 1 }))
   await openTeam($)
   await $.turn.complete(turnEnd('t1'))
   const side = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tasks', props: pane(60) })
-  await side.press({ key: 'run-acme carousel #3 — зураг' })
+  await side.press({ key: 'run-Acme carousel #3 — зураг' })
   expect(WRITES[FILE]).toBeUndefined()
   await side.unmount()
 })
@@ -794,15 +794,15 @@ test('scope: an Architect session sees only its own role by default (no bd / oth
     expect((await ui.find({ key: 'scope' }))?.props.label).toBe('🏛️ Architect ▾')
     // «Өнөөдөр» (done rows too), the shelf, Kanban, Тойм: Architect's own tasks only — on any device («· Mac»)
     expect(await ui.find({ text: 'Pane код review' })).toBeDefined()
-    for (const other of [/Member/, /Season 2/, /acme carousel/, /Daily review/, /Inai Website/]) expect(await ui.find({ text: other })).toBeUndefined()
+    for (const other of [/Member/, /Season 2/, /Acme carousel/, /Daily review/, /Inai Website/]) expect(await ui.find({ text: other })).toBeUndefined()
     await ui.press({ key: 'phb-cal:shelf' })
     expect(await ui.find({ text: 'Hook цэвэрлэгээ' })).toBeDefined()
     expect(await ui.find({ text: 'Skool нийтлэл' })).toBeUndefined()
     await ui.press({ key: 'tab-kanban' })
-    expect(await ui.find({ text: /acme carousel|Member|Skool/ })).toBeUndefined()
+    expect(await ui.find({ text: /Acme carousel|Member|Skool/ })).toBeUndefined()
     expect(await ui.find({ text: 'Pane код review' })).toBeDefined()
     await ui.press({ key: 'tab-review' })
-    expect(await ui.find({ text: /Member|acme carousel/ })).toBeUndefined()
+    expect(await ui.find({ text: /Member|Acme carousel/ })).toBeUndefined()
     await ui.unmount()
   } finally {
     done()
@@ -825,18 +825,18 @@ test('scope: the picker lists roles, projects and «Бүгд»; a project shows 
     expect(await ui.find({ key: 'scope-menu' })).toBeUndefined()
     expect((await ui.find({ key: 'scope' }))?.props.label).toBe('▭ Alpha ▾')
     expect(await ui.find({ text: 'Alpha - CMS' })).toBeDefined()
-    expect(await ui.find({ text: /Pane код review|acme carousel/ })).toBeUndefined()
+    expect(await ui.find({ text: /Pane код review|Acme carousel/ })).toBeUndefined()
     await ui.press({ key: 'tab-project' })
     expect(await ui.find({ type: 'Text', text: 'Alpha' })).toBeDefined()
     await ui.press({ key: 'tab-cal' })
     await ui.press({ key: 'scope' })
     await ui.press({ key: 'scope-role:creative' })
-    expect(await ui.find({ text: 'acme carousel #3 — зураг' })).toBeDefined()
+    expect(await ui.find({ text: 'Acme carousel #3 — зураг' })).toBeDefined()
     expect(await ui.find({ text: 'Pane код review' })).toBeUndefined()
     await ui.press({ key: 'scope' })
     await ui.press({ key: 'scope-all' })
     expect((await ui.find({ key: 'scope' }))?.props.label).toBe('👥 Бүгд ▾')
-    for (const any of ['Pane код review', 'acme carousel #3 — зураг', 'Member-д хариу', 'Season 2 бэлтгэл']) expect(await ui.find({ text: any })).toBeDefined()
+    for (const any of ['Pane код review', 'Acme carousel #3 — зураг', 'Member-д хариу', 'Season 2 бэлтгэл']) expect(await ui.find({ text: any })).toBeDefined()
     // back to the session's own
     await ui.press({ key: 'scope' })
     await ui.press({ key: 'scope-own' })
@@ -855,7 +855,7 @@ test('scope: «Бүгд» in a non-private session still never lists a private t
     const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
     await ui.press({ key: 'scope' })
     await ui.press({ key: 'scope-all' })
-    expect(await ui.find({ text: 'acme carousel #3 — зураг' })).toBeDefined()
+    expect(await ui.find({ text: 'Acme carousel #3 — зураг' })).toBeDefined()
     expect(await ui.find({ text: /Зээлийн|Татвар/ })).toBeUndefined()
     await ui.press({ key: 'tab-kanban' })
     expect(await ui.find({ text: /Зээлийн|Татвар/ })).toBeUndefined()
@@ -893,7 +893,7 @@ test('scope: a half-synced registry keeps the Architect scope (never falls back 
     const ui = await $.ui.mount({ plugin: 'fm', surface: 'terminal', component: 'Pane', requestId: 'fm-tsaglabar', props: pane(98) })
     expect((await ui.find({ key: 'scope' }))?.props.label).toBe('🏛️ Architect ▾')
     expect(await ui.find({ text: 'Pane код review' })).toBeDefined()
-    expect(await ui.find({ text: /Member|Season 2|acme carousel/ })).toBeUndefined()
+    expect(await ui.find({ text: /Member|Season 2|Acme carousel/ })).toBeUndefined()
     await ui.unmount()
   } finally {
     done()
