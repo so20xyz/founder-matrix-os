@@ -11,6 +11,13 @@ context: work
 owner: me
 priority: medium
 project:
+projects: []      # олон төсөл: бүх холбогдох төсөл (project: = гол нь)
+# RACI: responsible = хийх дүр (анхдагч owner) · accountable = ганц эцсийн хариуцагч (анхдагч owner)
+# consulted = дуусгахаас өмнө асуух дүр/төсөл · informed = мэдээлэх дүр/төсөл (projects-ийн бусад төсөл автоматаар)
+responsible:
+accountable:
+consulted: []
+informed: []
 due:
 requested_by:
 # started / completed: YYYY-MM-DD HH:MM (эхлэх / дуусах үед) · claimed: PC | Mac (auto-claim бичнэ)

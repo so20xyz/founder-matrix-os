@@ -25,6 +25,9 @@ Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
 | `claimed` | `PC` · `Mac` — аль төхөөрөмж авсан (`started`-тай хамт), **хашилтгүй** (`claimed: PC`). Хоосон = хэн ч аваагүй. **Requeue** = `inbox` · `next-action` · `waiting` · `someday` · `cancelled` руу шилжих (буцаах, шилжүүлэх, түр зогсоох) → `claimed`, `started`, `completed` гурвуулаа хоосорно |
 | `priority` | `high` · `medium` · `low` (🔴 🟡 🟢 гэж өгсөн ч болно — үг болгон хадгална) |
 | `project` | `"[[02-Projects/<Нэр>/<Нэр>]]"` эсвэл хоосон |
+| `projects` | олон төсөлд хамаатай бол бүх төсөл (жагсаалт; `project:` = гол нь). Бусад төсөл нь автоматаар **Informed** |
+| `responsible` · `accountable` | RACI (2026-10-14): R = хийх дүр, A = ганц эцсийн хариуцагч — хоосон бол `owner` |
+| `consulted` · `informed` | C = `completed` болгохоос өмнө асуух дүр/хүн, I = төлөв солигдоход мэдэгдэх дүр/төсөл (жагсаалт) |
 | `research` | `"[[04-Resources/Research/<сэдэв>/<hub>]]"` эсвэл хоосон — судалгааны task (судалгаа = Resource, төсөл биш) |
 | `due` | `YYYY-MM-DD` эсвэл хоосон |
 | `context` | `home` · `work` — төслөөс өвлөнө |

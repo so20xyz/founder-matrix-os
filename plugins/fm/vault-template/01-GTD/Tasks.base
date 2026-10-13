@@ -44,6 +44,18 @@ properties:
     displayName: Төхөөрөмж
   tags:
     displayName: Tags
+  projects:
+    displayName: Төслүүд
+  responsible:
+    displayName: R · Хийх
+  accountable:
+    displayName: A · Хариуцах
+  consulted:
+    displayName: C · Зөвлөх
+  informed:
+    displayName: I · Мэдээлэх
+  device:
+    displayName: Машин
 views:
   - type: table
     name: Inbox
@@ -308,3 +320,27 @@ views:
     columnSize:
       formula.status_icon: 40
       file.name: 260
+  - type: table
+    name: 👥 RACI · олон төсөл
+    filters:
+      and:
+        - file.inFolder("01-GTD/Tasks")
+        - status != "completed"
+        - status != "cancelled"
+        - or:
+            - projects
+            - informed
+            - consulted
+    order:
+      - formula.status_icon
+      - file.basename
+      - accountable
+      - responsible
+      - consulted
+      - informed
+      - projects
+      - due
+      - device
+    columnSize:
+      formula.status_icon: 40
+      file.basename: 260
