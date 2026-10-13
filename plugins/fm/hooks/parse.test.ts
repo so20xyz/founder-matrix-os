@@ -394,3 +394,8 @@ test('/fm-agents: live task per role, device-agnostic, private role closed', () 
   expect(out).toContain('🔒 Finance — 🔒 хаалттай')
   expect(out).not.toContain('Research')
 })
+
+test('device: target machine is parsed (itge.e 2026-10-14)', () => {
+  expect(parseTask('E.md', note('type: task\nstatus: inbox\nowner: "🏛️ Architect"\ndevice: PC'))).toEqual(
+    { title: 'E', status: 'inbox', due: '', owner: '🏛️ Architect', owners: ['🏛️ Architect'], device: 'PC' })
+})

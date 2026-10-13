@@ -2311,7 +2311,7 @@ export const register: Register = (on, options) => {
               {col(6, <Text color={c} wrap="truncate-end">{time}</Text>)}
               {wide ? null : col(2, <Text color={fin ? C.done : C.muted}>{gl}</Text>)}
               <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">{titleCell(`t1b-${x.file}`, x.title, c, fin, press, titleW)}</Box>
-              {wide ? col(15, <Text color={fin ? C.done : C.muted} wrap="truncate-end">{`${ownerShort(x)}${x.claimed ? ` · ${x.claimed}` : ''}`}</Text>) : null}
+              {wide ? col(15, <Text color={fin ? C.done : C.muted} wrap="truncate-end">{`${ownerShort(x)}${x.claimed ? ` · ${x.claimed}` : x.device ? ` → ${x.device}` : ''}`}</Text>) : null}
               {col(wide ? 18 : 9, <Text color={fin ? C.done : run ? C.text : C.muted} bold={run} wrap="truncate-end">{v1Status(x)}</Text>, true)}
               {goCell(`t1b-${x.file}`, press)}
             </Box>

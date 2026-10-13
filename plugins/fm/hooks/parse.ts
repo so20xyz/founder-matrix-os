@@ -129,12 +129,13 @@ export function parseTask(name: string, text: string): VaultTask | null {
   const started = status === 'in-progress' ? field('started') : ''
   const claimed = status === 'in-progress' ? field('claimed') : ''
   const completed = done ? field('completed') : ''
+  const device = field('device')   // PC | Mac: зөвхөн тэр машин авна (itge.e 2026-10-14)
   const owners = ownersOf(fm)
   // 🔒 by the note itself (private: true / «🔒» in the name or an owner); a private role's owner is privateOwner, at filter time
   const secret = privateNote(name, fm) || owners.some(o => o.includes('🔒'))
   return { title: name.replace(/\.md$/, ''), status, due: field('due'), owner: owners.join(' '), ...(owners.length ? { owners } : {}),
     ...(project ? { project } : {}), ...(done ? { updated: field('updated') } : {}),
-    ...(started ? { started } : {}), ...(claimed ? { claimed } : {}), ...(completed ? { completed } : {}), ...(secret ? { private: true } : {}) }
+    ...(started ? { started } : {}), ...(claimed ? { claimed } : {}), ...(completed ? { completed } : {}), ...(device ? { device } : {}), ...(secret ? { private: true } : {}) }
 }
 
 /** The day a done task was finished: its `completed:` date, else its `updated:` date. */

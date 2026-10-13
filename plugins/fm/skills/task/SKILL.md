@@ -64,6 +64,8 @@ Vault: `04-Resources/Atomic/decisions/2026-10-09 - task-dispatch-discord-bus-in-
 
 Нэг таскийг хоёр сешн (жишээ нь Mac ба PC) зэрэг хийхээс сэргийлнэ.
 
+- **`device: PC|Mac` (itge.e 2026-10-14):** task-д машин заасан бол зөвхөн тэр машин авна — нөгөө машины `claim` bus-д юу ч илгээлгүй `LOSE <машин>` буцаана. Хоосон бол аль ч машин. Үүсгэхдээ `relay.py task "<гарчиг>" --owner … --device PC`; Цаглабар картан дээр `→ PC` гэж харагдана.
+
 - **Relay тохируулсан бол (анхдагч):** эхлээд bus-аар ав — Drive sync хоцордог тул vault-аар claim хийвэл хоёр машин зэрэг авч болно:
   ```bash
   python3 "<relay.py>" claim "<vault-аас харьцангуй task зам>" --sid <session id>

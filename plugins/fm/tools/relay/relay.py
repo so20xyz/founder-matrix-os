@@ -22,7 +22,7 @@ Commands:
   relay.py release "<task path>" --sid SID   requeue: {"op":"release"} on #sys-dispatch (earlier claims stop counting),
                                      clears claimed:/started: in the note, status in-progress → inbox
                                      → prints RELEASED | RELEASE missing | private | error
-  relay.py task "title" --owner ROLE [--status inbox] [--ping]   new task note (default status inbox = auto-dispatch)
+  relay.py task "title" --owner ROLE [--status inbox] [--device PC|Mac] [--ping]   new task note (default status inbox = auto-dispatch)
                                      + {"op":"offer"} on #sys-dispatch (--ping: old 📌 TASK)
 
 Task dispatch (decision 2026-10-09): a task belongs to a ROLE, not a device — owner «📚 Wiki» is offered to every Wiki
@@ -1119,6 +1119,9 @@ def _claim(ref, sid):
     if secret != is_private(me): return "LOSE private"   # 🔒 task ↔ 🔒 session only; never the bus for a mismatch
     held = str(m.get("claimed") or "").strip()
     if held and _nfc(held).casefold() != _nfc(DEVICE).casefold(): return f"LOSE {held}"
+    # device: PC|Mac (itge.e 2026-10-14) — машинд зориулсан task-ийг зөвхөн тэр машин авна; хоосон = аль ч машин (эхний claim ялна)
+    target = str(m.get("device") or "").strip()
+    if target and _nfc(target).casefold() != _nfc(DEVICE).casefold(): return f"LOSE {target}"
     # claimed: this DEVICE (a retry, a manual start, another session here) → the bus read decides: same device + sid → WIN
     key = _opaque_id(rel) if secret else rel              # 🔒: the bus never sees the path
     t0 = time.time(); me_c = (DEVICE, str(sid or ""))
@@ -1190,7 +1193,7 @@ def _release_task(ref, sid):
 def d_task(args, sid):
     """GTD task (itge.e 2026-10-05): PARA has no tasks — a task is created on purpose, owned by a dural (session role),
     and the owner is notified in its Discord channel. Usage:
-    relay.py task "<гарчиг>" --owner "<сешний title>" [--project "<02-Projects/... note>"] [--research "<судалгаа>"] [--status inbox] [--prio 🟡] [--due YYYY-MM-DD] [--body "..."] [--ping]
+    relay.py task "<гарчиг>" --owner "<сешний title>" [--project "<02-Projects/... note>"] [--research "<судалгаа>"] [--status inbox] [--prio 🟡] [--due YYYY-MM-DD] [--device PC|Mac] [--body "..."] [--ping]
     decision 2026-10-09: the owner is a ROLE (any device). The new note is announced as {"op":"offer"} on the hidden
     #sys-dispatch channel (not the owner's human channel); the role's idle session claims it (`relay.py claim`, watch
     offers status: inbox tasks — the default status, so an agent task dispatches itself; --status next-action etc.
@@ -1215,14 +1218,14 @@ def d_task(args, sid):
     f.write_text("---\n" + "\n".join([
         f"date: {today}", f"updated: {today}", "type: task", f"status: {status}", f"owner: \"{owner}\"",
         f"priority: {opt('--prio', '🟡')}", f"due: {opt('--due')}", f"project: \"[[{proj}]]\"" if proj else "project:",
-        *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []), *(["private: true"] if secret else []),
+        *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []), *([f"device: {opt('--device')}"] if opt("--device") else []), *(["private: true"] if secret else []),
         "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
     try:
         if secret:  # 🔒: the opaque id only — the private sessions' watch finds the note in the vault itself
             _dispatch_post({"op": "offer", "task": _opaque_id(rel), "device": DEVICE, "sid": sid, "ts": round(time.time(), 3)})
             offer = f"#{DISPATCH_CH} (🔒 opaque id)"
         else:
-            _dispatch_post({"op": "offer", "task": rel, "owner": owner, "status": status, "device": DEVICE, "sid": sid,
+            _dispatch_post({"op": "offer", "task": rel, "owner": owner, "status": status, "device": DEVICE, "sid": sid, "for": opt("--device"),
                             "ts": round(time.time(), 3)})
             offer = f"#{DISPATCH_CH}"
     except Exception as e:
