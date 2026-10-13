@@ -129,8 +129,10 @@ test('role keys as the relay: exact equality, generic project keys only inside t
   expect(matchesSession(t(['🎨 Creative', '📚 Wiki']), ['📚 Wiki · PC', 'wiki'], '')).toBe(true)
   expect(matchesSession(t(['📚 Wiki Research']), ['📚 Wiki · PC', 'wiki'], '')).toBe(false)
   expect(matchesSession(t(['Wiki']), ['📚 Wiki Research'], '')).toBe(false)
-  // generic «project»: never without a project scope, and only for the scope's own project
-  expect(matchesSession(t(['💼 Project'], 'Alpha Site'), ['🗂️ GTD', '💼 Project Agent', 'project'], '')).toBe(false)
+  // generic «project»: the scope-less «📁 Project» hub session sees every Project task (ongoing work lives there,
+  // itge.e 2026-10-12); a scoped session only its own project's
+  expect(matchesSession(t(['💼 Project'], 'Alpha Site'), ['📁 Project · PC', '💼 Project Agent', 'project'], '')).toBe(true)
+  expect(matchesSession(t(['💼 Project'], 'Alpha Site'), ['🗂️ GTD', 'gtd'], '')).toBe(false)
   expect(ownerMatches(['💼 Project'], 'Alpha Site', ['📁 Alpha Site', '💼 Project Agent', 'project'], 'Alpha Site')).toBe(true)
   expect(ownerMatches(['💼 Project'], 'Beta Site', ['📁 Alpha Site', '💼 Project Agent', 'project'], 'Alpha Site')).toBe(false)
   expect(ownerMatches(['📁 Alpha Site'], '', ['📁 Alpha Site', 'project'], 'Alpha Site')).toBe(true)
@@ -203,6 +205,9 @@ test('project names and session scope read like the relay (_project_key / _sessi
   expect(sessionScope({ folder: '', role: 'project', project: 'Alpha Site' }, { project: 'Other' })).toBe('Alpha Site')
   expect(sessionScope({ folder: '  ', role: 'wiki', project: 'Alpha Site' }, { project: '02-Projects/Gamma' })).toBe('02-Projects/Gamma')
   expect(sessionScope({ role: 'project', title: '💼 Alpha Site' }, undefined)).toBe('')
+  // `/fm:role project` without --project writes the role slug as project: not a scope (the pane went empty)
+  expect(sessionScope({ role: 'project', project: 'project' }, {})).toBe('')
+  expect(sessionScope({ role: 'project', project: 'Project' }, { project: '' })).toBe('')
   expect(projectOf(sessionScope({ folder: '04-Resources/Research/Мөөг/' }, null))).toBe('Мөөг')
   // a task's project matches the scope whatever form either side is written in
   expect(matchesSession({ title: 'x', status: 'inbox', due: '', owner: 'y', project: 'Alpha Site' }, [], projectOf('[[02-Projects/Alpha Site]]'))).toBe(true)
