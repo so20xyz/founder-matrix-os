@@ -117,6 +117,14 @@ def plan(vault):
             reg_new = None
         elif not rlog:
             log.append("registry: agent fields added")
+    chan = vault / "_system" / "fm" / "channels.json"   # relay's project -> Discord channel map follows the new slugs
+    chan_new = None
+    if chan.is_file():
+        cmap = json.loads(chan.read_text(encoding="utf-8-sig"))
+        add = {RENAME[o]: cmap[o] for o in RENAME if o in cmap and RENAME[o] not in cmap}
+        if add:
+            chan_new = dict(cmap, **add)
+            log.append("channels.json: " + ", ".join("%s -> #%s" % kv for kv in add.items()))
     moves = []
     for old, new in RENAME.items():
         src, dst = vault / STATE / ("%s.md" % old), vault / STATE / ("%s.md" % new)
@@ -137,6 +145,7 @@ def plan(vault):
             else:
                 moves.append((src, dst))
                 log.append("note: %s -> %s.md" % (src.relative_to(vault).as_posix(), new))
+    plan.chan = (chan, chan_new)
     return notes, reg_new, moves, log
 
 
@@ -188,6 +197,9 @@ def apply(vault, notes, reg_new, moves):
                 data.update(fresh)
         else:
             path.write_text(json.dumps(reg_new, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    chan, chan_new = getattr(plan, "chan", (None, None))
+    if chan_new is not None:
+        chan.write_text(json.dumps(chan_new, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     renamed = False
     for src, dst in moves:
         dst.parent.mkdir(parents=True, exist_ok=True)

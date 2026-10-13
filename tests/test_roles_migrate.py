@@ -25,6 +25,7 @@ def main():
                      "project": {"note": A + "01 Project.md"}}}
     w(v, "_system/fm/registry.json", json.dumps(reg, ensure_ascii=False))
     w(v, "_system/fm/state/developer.md", "dev baton")
+    w(v, "_system/fm/channels.json", '{"developer": "architect", "area": "gtd"}')
     w(v, "_system/fm/state/resource.md", "res baton")
     w(v, "_system/fm/state/wiki.md", "wiki baton")
     dry = subprocess.run([sys.executable, str(S), str(v)], capture_output=True, text=True, encoding="utf-8").stdout
@@ -50,6 +51,7 @@ def main():
               ("duplicate numbered note to _trash", not (v / A / "04 Research.md").exists() and any((v / "_trash").glob("ai-workers-*/04 Research.md"))),
               ("links follow", (v / "Home.md").read_text(encoding="utf-8").endswith("[[Project]] · [[Wiki|R]]\n")),
               ("registry note path follows", r["roles"]["project"]["note"] == A + "Project.md"),
+              ("channels.json follows the new slugs", json.loads((v / "_system/fm/channels.json").read_text(encoding="utf-8")).get("architect") == "architect"),
               ("second run only reports the kept baton", "1 change" in again)]
     bad = [n for n, ok in checks if not ok]
     for n, ok in checks: print(("PASS  " if ok else "FAIL  ") + n)

@@ -555,6 +555,8 @@ def d_watch(sid, every=20):
     st = load(STATE, {}); ch = dchannels(st); save(STATE, st)
     # resume from the last seen id (persisted) so restarts after network drops never lose messages
     wk = "_watch_" + sid; last = dict(load(STATE, {}).get(wk, {}))
+    for n in names:   # a channel the mapping names but Discord lacks was skipped silently (2026-10-14: stale channels.json)
+        if n not in ch: print(f"[watch error] #{n}: Discord-д ийм суваг алга (channels.json / registry project-ийг шалга)", flush=True)
     for n in names:
         if n in last or n not in ch: continue
         for attempt in range(10):
