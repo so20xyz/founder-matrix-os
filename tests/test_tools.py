@@ -23,7 +23,7 @@ REPO = Path(__file__).resolve().parents[1]
 PLUGIN = REPO / "plugins" / "fm"
 TOOLS = PLUGIN / "tools"
 TOOL_SKILLS = ["figma", "notion", "relay", "post", "watch", "framer"]
-CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance"]
+CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance", "log"]
 CLIENT_WORDS = re.compile(r"client-b|client b|\bbyd\b|Academy|ep", re.I)
 
 
@@ -44,7 +44,7 @@ def child_env(home):
 
 # ------------------------------------------------------------------ skills
 
-def test_skill_lineup_is_10_plus_6():
+def test_skill_lineup_is_11_plus_6():
     have = sorted(p.parent.name for p in (PLUGIN / "skills").glob("*/SKILL.md"))
     assert have == sorted(CORE_SKILLS + TOOL_SKILLS), have
     for gone in ("track", "clip", "daily", "spawn", "bases", "canvas", "vault-cli"):

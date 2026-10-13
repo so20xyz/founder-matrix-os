@@ -8,6 +8,7 @@
 
 ## Unreleased
 
+- **0.9.25 · Засварласан:** `tools/premiere/story.json`-оос үйлчлүүлэгчийн нэр хасав (repo нийтэд нээлттэй); `fm_brain_check --fix-up/--mark-bridges` Windows note-ийн CRLF-ийг LF болгодог байсныг засав (bytes-аар уншиж бичнэ); тест: skill-ийн жагсаалтад `log` (11 + 6). Бүх тест ногоон.
 - **0.9.24 · Өөрчилсөн (itge.e 2026-10-13):** `/fm:role project` = энэ төхөөрөмж дээр нэг төслийн шинэ сешн: «Ямар төслийн сешн нээх вэ?» (active · planning · ongoing), тэр төсөл энэ төхөөрөмж дээр аль хэдийн сешнтэй бол давхар холбохгүй; дараа нь гарчиг «📁 <Төсөл>», sidebar-ийн **Projects** бүлэг рүү, cwd = төслийн хавтас, `_BRAIN.md` ачаална. 0.9.23-ийн «бүх төсөл» (hub) сонголт хасагдав; `sidebar.json`-оос «📁 Project» мөр хасагдаж, `per: project` (төсөл бүрт, төхөөрөмж бүрт нэг сешн).
 - **0.9.23 · Нэмсэн (itge.e 2026-10-13):** `/fm:role project` эхлээд «Энэ сешн аль төслийнх вэ?» гэж асууна (`fm_project.py list`-ээс active/planning төслүүд + «📁 Project — бүх төсөл + ongoing» hub). Төсөл сонговол `--project/--folder/--title`-тэй холбож, тэр төслийн `_BRAIN.md`-ийг ачаална; ongoing төсөлд тусдаа сешн нээхгүй.
 - **0.9.22 · Засварласан (task 2026-10-13 — «Цаглабар хоосон»):** `/fm:role project` (`--project`-гүй) registry-д `project: "project"` бичдэг байсныг `sessionScope` төслийн нэр гэж уншаад ямар ч task-тай таараагүй тул pane чимээгүй хоосон байв. Одоо generic утга (`project`) scope биш; scope-гүй «📁 Project» сешн Project дүрийн бүх task-ийг харуулна (ongoing ажлууд тэнд), scope-той сешн зөвхөн өөрийн төслийнх. `parse.test.ts`.

@@ -77,11 +77,12 @@ def fix_up(vault: Path, out, notes):
         if not h:
             continue
         p = vault / (k + ".md")
-        t = p.read_text(encoding="utf-8")
-        i = t.find("\n---", 4)
-        if not t.startswith("---\n") or i == -1:
+        t = p.read_bytes().decode("utf-8")                    # bytes: a Windows note's CRLF stays CRLF
+        nl = "\r\n" if "\r\n" in t else "\n"
+        i = t.find(nl + "---", 4)
+        if not t.startswith("---" + nl) or i == -1:
             continue
-        p.write_text(t[:i] + f'\nup: "[[{h}]]"' + t[i:], encoding="utf-8"); n += 1
+        p.write_bytes((t[:i] + nl + f'up: "[[{h}]]"' + t[i:]).encode("utf-8")); n += 1
     return n
 
 
@@ -101,12 +102,13 @@ def mark_bridges(vault: Path):
     n = 0
     for k, organs in BRIDGE_N.items():
         p = vault / (k + ".md")
-        t = p.read_text(encoding="utf-8")
-        i = t.find("\n---", 4)
+        t = p.read_bytes().decode("utf-8")
+        nl = "\r\n" if "\r\n" in t else "\n"
+        i = t.find(nl + "---", 4)
         fm = t[:i]
-        new = re.sub(r"^bridge:.*$", f"bridge: {organs}", fm, flags=re.M) if re.search(r"^bridge:", fm, re.M) else fm + f"\nbridge: {organs}"
+        new = re.sub(r"^bridge:[^\r\n]*", f"bridge: {organs}", fm, flags=re.M) if re.search(r"^bridge:", fm, re.M) else fm + nl + f"bridge: {organs}"
         if new != fm:
-            p.write_text(new + t[i:], encoding="utf-8"); n += 1
+            p.write_bytes((new + t[i:]).encode("utf-8")); n += 1
     return n
 
 
