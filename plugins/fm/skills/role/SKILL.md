@@ -24,11 +24,22 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/role/scripts/fm_role.py" show "${user_conf
 
 ## B. Slug өгсөн → холбох
 
+0. **`project` бол эхлээд аль төсөл гэдгийг асуу** (itge.e 2026-10-12: төсөлд тусдаа дүр байхгүй — сешн = Project agent + нэг төсөл). Аргументад төслийн нэр байхгүй бол төслүүдийг жагсаа:
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" list "${user_config.vault_path}"
+   ```
+
+   AskUserQuestion-оор (2–4 сонголт, хамгийн идэвхтэй/сүүлд хөдөлсөн төслүүд; бусдыг «Other»-оор нэрээр) асуу: «Энэ сешн аль төслийнх вэ?». Сонголт бүр нэг `active`/`planning` төсөл; нэг сонголт нь **«📁 Project — бүх төсөл + ongoing ажлууд»** (hub, scope-гүй). `ongoing` төсөлд тусдаа сешн нээхгүй — тэднийг hub хариуцна гэж тайлбарла.
+   - Төсөл сонговол: slug = төслийн нэрийн англи kebab (`fm_project.py list`-ийн нэрээс), `--project <slug> --folder "02-Projects/<Нэр>" --title "📁 <Нэр> · ${user_config.device}"`-ийг доорх bind-д нэм. Дараа нь тэр төслийн `_BRAIN.md`, төслийн note-ийг бүтнээр Read хий — дүрэм, хориг, skill тэнд.
+   - Hub сонговол: нэмэлт аргументгүй, `--title "📁 Project · ${user_config.device}"`.
+
 1. **Бүртгэ.** Session id-г Claude Code өөрөө орлуулна. Орлуулаагүй бол скрипт `CLAUDE_SESSION_ID` / `CLAUDE_CODE_SESSION_ID` орчны хувьсагчаас уншина.
 
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/role/scripts/fm_role.py" bind "${user_config.vault_path}" "<slug>" --sid "${CLAUDE_SESSION_ID}" --device "${user_config.device}"
    ```
+   (`project` бол 0-р алхмын `--project`/`--folder`/`--title`-ийг нэм.)
 
    - Exit 3 («Session id олдсонгүй») → гишүүнээс session id-г асууж `--sid <id>`-ээр давт. Таамаглаж бүү бич.
    - Exit 2 («дүр олдсонгүй») → жагсаалтыг харуулж зөвийг нь асуу. Шинэ дүр үүсгэх бол Area дүрийн ажил — гишүүнээр батлуул.
