@@ -8,6 +8,7 @@
 
 ## Unreleased
 
+- **0.9.30 · Өөрчилсөн (itge.e 2026-10-14):** «нөгөө машин руу чат» — сешн бүр өөрийн Discord сувгаар шууд (Architect ↔ Architect = `#architect`), #gtd-ээр дамжуулахгүй (0.9.26-ийн дүрмийг солив). BOOT + `fm:relay`.
 - fm 0.9.29: Цаглабар live rows include every running task, not only the session scope (a Mac architect session saw nothing while PC ran a Project task) — in-scope first, then the other device's.
 
 - fm 0.9.28: Цаглабар live rows show another device's running task with its steps — read from the task note's mirrored «## Явц» block once Drive syncs (planOf), each row expands on its own.
