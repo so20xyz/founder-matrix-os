@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.34: Figma Claude Bridge v8 — the camera scanner runs only while a bridge script is active (+5 s); idle it read the page children every 0.7 s and leaked until Figma aborted the plugin («Plugin runtime aborted / Memory leak») on big files.
+
 - fm 0.9.33: /fm:role project «Other» matches every project — completed / on-hold / cancelled / 99-Archive, case- and Latin↔Cyrillic-insensitive (client-b → Client B); a closed project asks «open as is or reopen active».
 
 - **0.9.32 · Нэмсэн (itge.e 2026-10-14) — task түвшний RACI:** `projects:` (олон төсөл), `responsible`, `accountable` (ганц), `consulted`, `informed` (бусад төсөл автоматаар) — Task загвар, `fm:task` хүснэгт, Tasks.base шинэ property + «👥 RACI · олон төсөл» харагдац. Дараа: relay-ийн `informed` мэдэгдэл, Цаглабарын «I» тэмдэг.

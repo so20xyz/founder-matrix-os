@@ -8,7 +8,10 @@
 figma.showUI(__html__, { width: 340, height: 460 });
 // Панелийн хэмжээ, хураасан төлөвийг сэргээнэ (clientStorage)
 (async () => { const u = await figma.clientStorage.getAsync('ui-state'); if (u) { figma.ui.resize(u.w || 340, u.collapsed ? 76 : (u.h || 460)); figma.ui.postMessage({ uiState: u }); } })();
-const store = {}; store.__ver = 'v7';
+const store = {}; store.__ver = 'v8';
+// v8 (2026-10-14): сканнер зөвхөн скрипт ажиллаж байх үед (+5с) — сул үед pg.children-ийг 0.7с тутам уншиж санах ой алдаж,
+// том файлд «Plugin runtime aborted / Memory leak» болж унадаг байв.
+let jobs = 0, jobEnd = 0;
 figma.ui.postMessage({ info: { file: figma.root.name, editor: figma.editorType } });
 
 function serialize(v, depth) {
@@ -122,7 +125,7 @@ function sigNow(){
   }catch(e){ return 'err'; }
 }
 setInterval(async () => {
-  if (!watch || gliding) return;
+  if (!watch || gliding || (jobs === 0 && Date.now() - jobEnd > 5000)) return;
   try {
     const sig = sigNow(); if (sig === lastSig || sig === 'empty' || sig === 'err') return;
     lastSig = sig;
@@ -161,6 +164,7 @@ figma.ui.onmessage = async (msg) => {
   const first = (msg.code.match(/\/\/\s*@title\s+(.+)/) || [])[1];
   log('▶ ' + (first || 'скрипт ажиллаж байна'), 'run');
   const t0 = Date.now();
+  jobs++;
   try {
     const fn = new Function('figma', 'store', 'log', 'follow', 'glide', 'sleep', `return (async () => { ${msg.code}\n })();`);
     lastSig = sigNow();   // суурь: скрипт эхлэхийн өмнөх байдал
@@ -170,5 +174,5 @@ figma.ui.onmessage = async (msg) => {
   } catch (e) {
     log('✗ ' + String(e).slice(0, 160), 'err');
     figma.ui.postMessage({ id: msg.id, error: (e && e.name ? e.name + ': ' : '') + (e && e.message ? e.message : String(e)) + '\n' + String(e && e.stack || '') });
-  }
+  } finally { jobs--; jobEnd = Date.now(); }
 };
