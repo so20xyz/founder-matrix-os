@@ -13,6 +13,7 @@ Reports the vault's unhealthy "synapses" (read-only, no writes):
   python fm_brain_check.py <vault> [--json] [--mark-bridges]   (--mark-bridges: гүүр атомд `bridge: N` бичнэ)
 Private finance (`finances/private/`, `private: true`), `_system/`, `_trash/`, `.backups/` are skipped.
 """
+import unicodedata
 import json, os, re, sys
 from pathlib import Path
 
@@ -112,6 +113,10 @@ def mark_bridges(vault: Path):
     return n
 
 
+def _nfc(s):
+    return unicodedata.normalize("NFC", s)
+
+
 def scan(vault: Path):
     notes = {}
     for p in vault.rglob("*.md"):
@@ -121,13 +126,13 @@ def scan(vault: Path):
         fm, body = split(p.read_text(encoding="utf-8", errors="replace"))
         if re.search(r"^private:\s*true", fm, re.M):
             continue
-        notes[rel[:-3]] = (fm, body)
+        notes[_nfc(rel[:-3])] = (fm, body)   # Mac (Drive) кирилл нэр NFD ирж болно
     names = {}
     for k in notes:
         names.setdefault(k.rsplit("/", 1)[-1], []).append(k)
 
     def resolve(t):
-        t = t.strip()
+        t = _nfc(t.strip())
         if t in notes:
             return t
         c = names.get(t.rsplit("/", 1)[-1], [])

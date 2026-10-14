@@ -55,7 +55,7 @@ ai-first: true
 
 ## 4. Атомууд
 
-Нэг санаа = нэг атом (ихэвчлэн 1-5). Шалгуур: дахин хэрэглэгдэх, контекстгүй уншигдах, vault-д хараахан байхгүй. Зам `04-Resources/Atomic/knowledge/YYYY-MM-DD - <ascii-slug>.md`, загвар `_system/templates/Atomic.md` + дараах талбар:
+Нэг санаа = нэг атом (ихэвчлэн 1-5). Шалгуур: дахин хэрэглэгдэх, контекстгүй уншигдах, vault-д хараахан байхгүй. Зам `04-Resources/Atomic/knowledge/YYYY-MM-DD - <монгол гарчиг>.md`, загвар `_system/templates/Atomic.md` + дараах талбар:
 
 ```yaml
 kind: fact                    # fact | insight | question

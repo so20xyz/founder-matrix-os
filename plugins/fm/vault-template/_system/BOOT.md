@@ -15,11 +15,11 @@ ai-first: true
 
 - Хэрэглэгчийг **{{fm:member}}** гэж дууд (хуучин дүрэм дэх «{{fm:member}}» = {{fm:member}}).
 - Яриа ба note-ийн бичвэр **монгол кирилл**. «нот» биш **note** гэж бич.
-- Англиар: frontmatter түлхүүр ба `type`/`status`/`tags` утга, хавтас/файлын нэр, `## For future agent`, код, зам.
+- Англиар: frontmatter түлхүүр ба `type`/`status`/`tags` утга, хавтасны нэр, `## For future agent`, код, зам.
 
 ## 🕶 Matrix-ийн дүрэм (давуу эрхтэй)
 
-1. **Нэг баримт = нэг атом** `04-Resources/Atomic/`: шийдвэр → `decisions/` (`type: session-decision`), баримт/сургамж → `knowledge/` (`type: atomic`). Нэр `YYYY-MM-DD - <ascii-slug>.md`, бие монголоор. Ижил атом байвал шинэчил, давхар бүү үүсгэ.
+1. **Нэг баримт = нэг атом** `04-Resources/Atomic/`: шийдвэр → `decisions/` (`type: session-decision`), баримт/сургамж → `knowledge/` (`type: atomic`). Нэр `YYYY-MM-DD - <монгол гарчиг>.md`, бие монголоор. Файлын нэр кирилл монголоор (≤60 тэмдэгт, `/ \ : * ? " < > |` хэрэглэхгүй), англи нэр `aliases:`-д (itge.e 2026-10-14). Ижил атом байвал шинэчил, давхар бүү үүсгэ.
 2. **Атом бүр ≥1 PARA гэртэй** (`[[02-Projects/..]]`, `[[03-Areas/..]]`, `[[04-Resources/..]]`).
 3. **Лог / STATUS / Discord = зөвхөн холбоос.** `_system/logs/YYYY-MM-DD.md`: `- **HH:MM** · <дүр> → [[атом]]`.
 4. **Дүр vault-д амьдарна** (`03-Areas/AI Team/ai-workers/`), сешн бол нэг удаагийн бие.

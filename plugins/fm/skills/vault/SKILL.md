@@ -47,8 +47,8 @@ Vault-аас гадуур (`~/.claude/`, бусад repo, хуучин нөөц 
 | Дүр (Agent) | `agent-role` | `03-Areas/AI Team/ai-workers/` | `NN Нэр.md` |
 | **Санхүүгийн бичлэг (хувийн)** | `finance-record` | `03-Areas/Business/finances/private/` | §7-г үз |
 | Лавлагаа, эх сурвалж, судалгаа, нэр томьёо | `reference`, `source`, `research`, `glossary` | `04-Resources/` дэд хавтсууд | — |
-| Шийдвэрийн атом | `session-decision` | `04-Resources/Atomic/decisions/` | `YYYY-MM-DD - <ascii-slug>.md` |
-| Мэдлэгийн атом | `atomic` | `04-Resources/Atomic/knowledge/` | `YYYY-MM-DD - <ascii-slug>.md` |
+| Шийдвэрийн атом | `session-decision` | `04-Resources/Atomic/decisions/` | `YYYY-MM-DD - <монгол гарчиг>.md` |
+| Мэдлэгийн атом | `atomic` | `04-Resources/Atomic/knowledge/` | `YYYY-MM-DD - <монгол гарчиг>.md` |
 | Зорилго | `goal` | `03-Areas/Goals/` | — |
 | Архив | хэвээр + `supersededby:` | `99-Archive/` | — |
 | Систем | — | `_system/` (`BOOT.md`, `templates/`, `logs/`, `fm/`) | — |
@@ -73,7 +73,7 @@ ai-first: true
 
 1. **`## For future agent`** — frontmatter-ийн дараа шууд энэ **англи гарчиг яг үсгээрээ**, доор нь 2–3 өгүүлбэр монголоор: юу, хэзээ, хэнд хамаатай. Lint болон скриптүүд энэ мөрийг тааруулж хайдаг.
 2. **Өөрийгөө тайлбарладаг** — ганцаараа хайлтаар гарч ирсэн ч ойлгогдохоор бич.
-3. **Хэл:** бие, хүснэгт, жагсаалт — монгол кирилл. Англиар үлдэх: frontmatter түлхүүр ба enum утга, хавтас/файлын нэр, `## For future agent`, код, зам, Dataview/Bases синтакс. Үгчилсэн эх сурвалж эх хэлээрээ, орчуулга дэргэд нь.
+3. **Хэл:** бие, хүснэгт, жагсаалт — монгол кирилл. Англиар үлдэх: frontmatter түлхүүр ба enum утга, хавтасны нэр, `## For future agent`, код, зам, Dataview/Bases синтакс. Үгчилсэн эх сурвалж эх хэлээрээ, орчуулга дэргэд нь.
 4. **Холбоос заавал** — хүн, төсөл, шийдвэр, ойлголт бүр `[[wikilink]]`. Зорилтот нот байхгүй бол stub үүсгэ. Ганцаардсан нот бүү үүсгэ.
 5. **Шинэлэг байдал ба эх сурвалж** — гадаад баримтад `(as of YYYY-MM-DD, <URL>)`. Итгэлцэл: `confidence: stated | high | medium | speculation`.
 6. **Зохиохгүй.** Баримт, хүн, дүн, огноог бүү зохио; мэдэхгүй бол `TBD`. **Бүрэн хайлтгүйгээр «байхгүй» гэж бүү мэдэгд** — хуурамч байхгүй байдал хамгийн түгээмэл алдаа.

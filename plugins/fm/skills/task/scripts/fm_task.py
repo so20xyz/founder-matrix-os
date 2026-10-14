@@ -34,6 +34,7 @@ fmconfig.DEVICE: env FMOS_DEVICE > ~/.fmos/config.json "device" (location: env F
 
 Pure standard library, Python 3.9+, macOS / Windows / Linux. Writes only inside 01-GTD/Tasks/.
 """
+import unicodedata
 import datetime
 import json
 import os
@@ -241,8 +242,9 @@ def find_task(vault: Path, ref: str) -> Path:
             return p
     if not folder.is_dir():
         _die("Таскийн хавтас алга: %s" % folder)
-    q = ref.lower().replace(".md", "")
-    hits = [p for p in folder.glob("*.md") if q in p.stem.lower()]
+    nf = lambda s: unicodedata.normalize("NFC", s).casefold()   # кирилл нэр: Mac NFD, том/жижиг үсэг
+    q = nf(ref).replace(".md", "")
+    hits = [p for p in folder.glob("*.md") if q in nf(p.stem)]
     if len(hits) == 1:
         return hits[0]
     if not hits:

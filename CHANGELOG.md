@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.49: атом/note-ийн файлын нэр = кирилл монгол гарчиг (≤60 тэмдэгт), англи нэр `aliases:`-д — BOOT, save/inbox/vault skill, Atomic/Session Decision загвар, README (хуучин `<ascii-slug>` дүрэм). `fm_task` хайлт ба `fm_brain_check` холбоос шийдэгч нэрийг NFC + casefold-оор харьцуулна (Mac Drive кирилл нэрийг NFD-ээр өгч болно).
+  - Яагаад: файлын нэр, холбоос нь латин орчуулгагүй уншигдана; англи нэрээр ч хайхад олдоно · Дүрэм: [[_system/BOOT]] «Нэг баримт = нэг атом» · Ном: Zettelkasten
+
 - fm 0.9.48: relay client mode + channel create — discord.json `"client_channels": [...]` сувагт `relay.py send` task/baton/offer-ийг татгалзаж, wikilink → нэр, `[PC-xxxx]` угтвар, зам хасаж, гарын үсэг `itge.agent (PC|Mac)`; `relay.py channel create --name … [--type voice] [--category …] [--private] [--allow "Role,…"]` анхдагч dry run, `--apply`-аар л үүсгэж регистрийн логт бичнэ. Тест.
   - Яагаад: гадны хамтрагчтай сувагт бот энгийн хүн шиг бичиж, дотоод төлөв задрахгүй; суваг, эрхийг гараар биш нэг командаар · Дүрэм: [[_system/BOOT]] «Лог / STATUS / Discord = зөвхөн холбоос»
 

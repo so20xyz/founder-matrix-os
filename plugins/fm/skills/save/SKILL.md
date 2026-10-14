@@ -62,7 +62,7 @@ argument-hint: "[--checkpoint] [<url>] [онцлох сэдэв]"
 
 ## 4. Атом бичих
 
-Файлын нэр: `YYYY-MM-DD - <ascii-slug>.md` (жишээ `2026-10-05 - inbox-routing-zagvar.md`). Гарчиг, бие монголоор.
+Файлын нэр: `YYYY-MM-DD - <монгол гарчиг>.md` (жишээ `2026-10-05 - Inbox чиглүүлэх загвар.md`, `aliases: [inbox-routing-model]`). Гарчиг, бие монголоор.
 
 **Шийдвэр** - загвар `<V>/_system/templates/Session Decision.md`. Тэмдэгтүүдийг (`{{date:YYYY-MM-DD}}`, `{{title}}`, `<% ... %>`) бодит утгаар соль. Заавал: `decision`, `changetype`, `decidedby` (`me` эсвэл дүрийн slug), `role`, `confidence`, `reversible`, `projects`/`areas`.
 
