@@ -13,7 +13,7 @@
 ## Unreleased
 
 - fm 0.9.46: «Юу өөрчлөгдсөн бэ» — `scripts/fm_whatsnew.py` гишүүний сүүлд харсан хувилбараас (`~/.fmos/whatsnew.json`) хойшхи CHANGELOG мөрүүдийг Яагаад/Дүрэм/Ном мөртэй нь гаргана (plugin cache-д CHANGELOG байхгүй тул marketplace-ийн clone-оос); `/fm:setup upgrade`-д 9-р алхам; CHANGELOG-ийн гишүүний хэлний формат.
-  - Яагаад: шинэчлэл бүрийн дараа юу шинэ гарсан, яагаад гэдгийг таны хэлээр нэг дор харна · Дүрэм: [[_system/BOOT]] «Skill-ийг дуудна, цээжлэхгүй» · Ном: BASB (Express — мэдлэгээ давтан хэрэглэх)
+  - Яагаад: нэг командаар шинэчлээд юу өөрчлөгдсөн, яагаад гэдгийг өөрийн хэлээр уншина · Дүрэм: [[_system/BOOT]] «Skill-ийг дуудна, цээжлэхгүй» · Ном: Atomic Habits
 
 - fm 0.9.45: relay.py split — Discord transport → relay_discord.py, task dispatch (offer/claim/release/task/baton) → relay_dispatch.py; relay.py exec-loads both into its own namespace at the same spot (behaviour identical; works via the tools/relay shim and from the plugin cache). 1790 → 641 + 406 + 763 lines. Test suite unchanged vs before (pre-existing failures only).
 
@@ -22,16 +22,19 @@
 - fm 0.9.43: OBS scene kit moved into the repo — `tools/obs/scene/` (obs-scene-toggle.lua, obs-zoom-to-mouse-multi.lua, «Апп-ууд» dock template + build_panel.py, gen_layouts.cjs, maskmulti.cjs, obs.cjs); paths from OBS_ASSETS / ~/.fmos vault instead of hard-coded drives; `install.py` copies the Lua scripts and regenerates masks + dock (verified: dock output byte-identical).
 
 - fm 0.9.42: Figma bridge multi-pick — панел олон сонголтыг (тоо + chip) харуулна; 💬 коммент `nodes: [{id,name,page}]` илгээнэ (`node` = эхнийх, хуучин нийцтэй); «✓ Pick» товч сонголтыг тайлбаргүй илгээнэ; `fig.py comments` гаралтад `nodes`.
+  - Яагаад: Figma-д хэд хэдэн элемент сонгоод коммент бичихэд agent ажлын явцыг тэр дор нь харуулна · Дүрэм: [[_system/BOOT]] «Skill-ийг дуудна, цээжлэхгүй»
 
 - fm 0.9.41: INAI Newsletter tools — `tools/newsletter/collect.py` (opt-in `public: true`, hard path excludes, `business: client`/`private` project folders excluded, `--include` never overrides excludes; regression test) and `render.py` (issue.json → editorial HTML, official/third-party source tags, `--serve` localhost).
 
 - fm 0.9.40: `browse.mjs pin "<хайлт>"|<board URL> --out <dir> [--n 30]` — signed-in Pinterest, scrolls the virtual grid, saves 736px pins + `_moodboard.md` (pin links) + numbered `_moodboard.png` contact sheet (rendered in the same browser, no Pillow).
+  - Яагаад: YouTube-ийг NotebookLM-ээр монгол хураангуй болгох, Pinterest-ээс moodboard татах — өөрийн браузерын профайлаар, нууц үг хадгалахгүй · Дүрэм: [[_system/BOOT]] «Skill-ийг дуудна, цээжлэхгүй» · Ном: BASB
 
 - fm 0.9.39: `tools/browse/browse.mjs` (playwright-core over CDP, own Chrome/Edge profile ~/.fmos/browser — the member signs in once, no passwords stored): NotebookLM `nlm list | new | add | ask | run` verified live (YouTube source → Mongolian summary). fm_doctor checks playwright-core.
 
 - fm 0.9.38: fm_task set/claim/done never rewrite a note whose frontmatter did not read (Drive mid-sync / blank line before ---) — exit 3 «wait for sync, retry» instead of fabricating a 3-key header (shipped in 0.9.36) + regression test; types declare fm.toolBy (desktop validator error).
 
 - fm 0.9.37: /fm:role project renames its own session «📁 <Нэр>» without asking (correct tool mcp__ccd_session_mgmt__set_session_title via ToolSearch; the old name mcp__ccd_session__… did not exist, leaving «Project Agent role»).
+  - Яагаад: төсөл сонгоход тэр төслийн сешн нээгдэж, нэр нь өөрөө солигдоно; хаагдсан төслийг ч олно · Дүрэм: [[_system/BOOT]] «Дүр vault-д амьдарна» · Ном: PARA
 
 - fm 0.9.36: Figma Claude Bridge v9 — camera follow off by default and no page-children snapshot at job start; on a big image-heavy file even `return 1` aborted the plugin («Plugin runtime aborted»). Verified live on «Client B» (jobs run, plugin stays connected).
 
@@ -45,10 +48,12 @@
 - **0.9.31 · Засварласан (itge.e 2026-10-14 — «watcher яагаад алгасаад байна»):** slug migration-ийн дараа `channels.json` хуучин slug-тай (`developer` → `architect`) үлдсэн тул `chmap` шинэ slug-ийн сешнд байхгүй суваг («🏛️-01-architect») зохиож, `relay.py watch` түүнийг **чимээгүй** алгасаад зөвхөн #gtd сонсож байв. `fm_roles_migrate` одоо `channels.json`-ийг шинэ slug руу нэмнэ; `watch` Discord-д байхгүй сувгийг `[watch error]` гэж мэдэгдэнэ. Тест.
 - **0.9.30 · Өөрчилсөн (itge.e 2026-10-14):** «нөгөө машин руу чат» — сешн бүр өөрийн Discord сувгаар шууд (Architect ↔ Architect = `#architect`), #gtd-ээр дамжуулахгүй (0.9.26-ийн дүрмийг солив). BOOT + `fm:relay`.
 - fm 0.9.29: Цаглабар live rows include every running task, not only the session scope (a Mac architect session saw nothing while PC ran a Project task) — in-scope first, then the other device's.
+  - Яагаад: аль ч машин дээр ажиллаж буй task, түүний алхмыг нэг самбараас харна · Дүрэм: [[_system/BOOT]] «Task» (Эхлэх/Явц) · Ном: GTD
 
 - fm 0.9.28: Цаглабар live rows show another device's running task with its steps — read from the task note's mirrored «## Явц» block once Drive syncs (planOf), each row expands on its own.
 
 - fm 0.9.27: task `device: PC|Mac` — only that machine can claim it (`relay.py claim` → `LOSE <device>` before touching the bus), `relay.py task --device`, the offer carries `for`, Цаглабар card shows `→ PC`; BOOT/fm:task rule: machines talk through the task note, Discord only wakes.
+  - Яагаад: task-ийг зөвхөн заасан машин авна — хоёр компьютер нэг ажлыг давхар хийхгүй · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-09 - task-dispatch-discord-bus-in-progress]] · Ном: GTD
 
 - **0.9.26 · Нэмсэн (itge.e 2026-10-13):** «PC рүү чат хий» дүрэм — нөгөө машин дээр зөвхөн 📥 GTD Discord сонсдог тул `#gtd`-ээр «→ PC @pc · <дүр> → <хүлээн авагч>: …» гэж бичиж, тэр GTD хүлээн авагчид дамжуулна; хариуг `#gtd`-ээс. BOOT (Discord 5-р дүрэм, maintainer vault → `fm_rules.py export`) ба `fm:relay` skill.
 - **0.9.25 · Засварласан:** `tools/premiere/story.json`-оос үйлчлүүлэгчийн нэр хасав (repo нийтэд нээлттэй); `fm_brain_check --fix-up/--mark-bridges` Windows note-ийн CRLF-ийг LF болгодог байсныг засав (bytes-аар уншиж бичнэ); тест: skill-ийн жагсаалтад `log` (11 + 6). Бүх тест ногоон.
@@ -61,8 +66,10 @@
 - **0.9.18 · Өөрчилсөн (itge.e 2026-10-12 — «миний vault-ийн base = default»):** загварын base-ууд одоо maintainer-ийн амьд vault-аас: 34 base (11 → 34; Daily, Events, Habits, Inbox, Goals, Activities, Tools, SOP, Skills, Research, Topics, «Судалгаа ба нөөц» …). `scripts/fm_bases.py export <vault> [--apply]` — maintainer vault → template (`fm_bases.json`: `exclude` нэг байгууллагын base, `rewrite` байгууллагын хавтас → ерөнхий; төсөл/хүн/байгууллагын нэр, URL орсон base-ийг REFUSED). `fm_bases.py update <vault> [--apply]` — гишүүний vault-д нэмэх/солих, хуучныг `_trash/bases-<огноо>/`-д; гишүүний өөрийн base-д хүрэхгүй. `/fm:setup` 2-р алхамд, шинэчлэл бүрт. `tests/test_bases_sync.py`; base тест calendar харагдац, хашилтгүй formula-г зөвшөөрнө.
 - **0.9.17 · Засварласан:** «Сүүлд» дохио obs.mjs-ийг танина.
 - **0.9.16 · Нэмсэн:** `tools/obs/obs.mjs` — OBS-ийг CLI-ээс (obs-websocket, хамааралгүй): status · scenes · scene · record · mic · shot · raw; Цаглабар «Видео → OBS студи»-д командууд, «Сүүлд» дохио obs.mjs-ийг танина.
+  - Яагаад: бичлэг эхлүүлэх, scene солих, Premiere-д sequence угсрахыг Claude-оор хийнэ · Дүрэм: [[_system/BOOT]] «Skill-ийг дуудна, цээжлэхгүй» · Ном: BASB
 - **0.9.15 · Засварласан:** Figma panel-ийн шинэчлэл Figma-д хүрдэггүй байсан — Figma dev plugin-ийг `~/.fmos/figma/plugin` хуулбараас ачаалдаг; bridge сервер эхлэх бүрт `code.js`, `ui.html`-ийг тэр хуулбарт синк хийнэ.
 - **0.9.14 · Өөрчилсөн:** Цаглабар «⊟ Хэрэгсэл» — бүх 12 хэрэгсэл (Figma, Higgsfield, Framer, OBS, Premiere, Post, Moodboard, Discord, Notion, fm:save, fm:watch, Brain check) бүх agent-д харагдана (хэрэгсэл = бүх agent-ийн чадвар).
+  - Яагаад: Figma, OBS, Premiere зэрэг хэрэгслийг аль ч дүрийн сешнээс ашиглана · Дүрэм: [[_system/BOOT]] «Skill-ийг дуудна, цээжлэхгүй»
 - **0.9.13 · Нэмсэн:** Цаглабар «⊟ Хэрэгсэл» — сүүлийн 3 минутад ашигласан хэрэгслийн «Сүүлд» багана «▷ <дүр>» гэж тодоор харагдана (хэн ашиглаж байгаа дохио; `toolLastBy`).
 - **0.9.12 · Өөрчилсөн:** OBS студи, Premiere bridge бүх agent-д харагдана (хэрэгсэл = бүх agent-ийн чадвар, itge.e 2026-10-11).
 - **0.9.11 · Өөрчилсөн:** Цаглабар Kanban — нэг төслийн самбар дээр картын доод мөр төслийн нэрийн оронд эзнийг (agent / гишүүн) харуулна; өөр agent-ийн task төслийн самбарт яагаад байгаа нь шууд харагдана.
@@ -72,12 +79,15 @@
 - **0.9.6 · Өөрчилсөн:** Цаглабар — task-ийн өөрчлөлтийн түүх «› N өөрчлөлт» мөрөөр хураагдана (дарж задлана; ажиллаж буй task нээлттэй). `fm_changelog.py` зөвхөн уншдаг/шалгадаг командын тайлбарыг (read, check, list, шалга …) түүхэд бичихгүй.
 - **0.9.5 · Нэмсэн:** Premiere FM Bridge (`tools/premiere`), `/fm:log` → Google Calendar шинэчлэх алхам, `/fm:project new` ба harvester-т судалгаа хайх/холбох, долоо хоногийн тоймд холбоос шалгалт (`scripts/fm_orphans.py`), өглөөний тоймд calendar нөхөлт, vault template BOOT-д connecting dots, редакцийн бичвэр, туслах agent-ийн дүрэм.
 - **0.9.1 · Нэмсэн (issue #5, Member — «assistant» дүрийн тархалт):** дуусдаггүй ажил (ажил, холбоо, зөвлөл) = `02-Projects/`-д `status: ongoing` төсөл — мөн нэг сешн + нимгэн дүр + `_BRAIN.md` (`03-Areas/`-д шинэ хавтас, гараар дүр үүсгэхгүй). `fm_project.py new … --state ongoing --role <slug>` дүрийг үргэлж `Agent Role` загвараас (`project:`, `owns:` = зөвхөн тэр хавтас, `group: projects`) үүсгэнэ, давхар slug-аас татгалзана. `fm_lint`: төсөл/хүрээний дүрд `project:` алга, `_BRAIN.md` алга, бүхэл PARA хавтас эзэмшсэн, 90+ мөр бүдүүн note → сануулга. Үлдсэн хуучин нэрс (`fm:developer`, `fm:research`, Agent Role-ийн «Developer, Research») засагдав. `tests/test_role_guard.py`.
+  - Яагаад: ажил, холбоо зэрэг дуусдаггүй ажил нэг газар, нэг сешнтэй болно · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-10 - duusdaggui-ajil-ongoing-project]] · Ном: PARA
 - **0.9.0 · Өөрчилсөн — 6 agent = 6 дүр (itge.e 2026-10-10):** repo-ийн vault загвар амьд vault шиг: дүрийн note `Project`, `GTD`, `Wiki`, `Architect`, `Creative Director`, `Finance` (дугааргүй), slug `project · gtd · wiki · architect · creative · finance` — plugin-ийн `fm:<agent>`-тай яг таарна. Research нь Wiki-д нэгдэв, систем (BOOT, template, base, registry) GTD-ээс Architect руу. Registry-ийн дүр бүрт `agent: fm:<slug>`. Хуучин slug (`developer`, `area`, `resource`, `research`) бүх газар alias хэвээр — `fm_role` хуучин vault-д ч олно, pane (`canonRole`) ч уншина. ⚡ Skill каталогийн `roles` шинэ slug-аар.
+  - Яагаад: ажил дүрээрээ (Project, GTD, Wiki, Architect, Creative, Finance) хуваагдана — хэнд юу өгөхөө санах шаардлагагүй · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-10 - 6-agent-slug-architect-gtd-wiki]] · Ном: PARA
 - **Нэмсэн:** `scripts/fm_roles_migrate.py <vault> [--apply]` — байгаа vault-ийн дүрийн note-ийн `role:`, registry-ийн дүр/сешн, baton файлыг шинэ slug руу (анхдагч dry run; Discord сувгийн нэр хэвээр; байгаа baton-ийг нэгтгэхгүй). `tests/test_roles_migrate.py`.
 - **0.8.9 · Засварласан:** шинэ vault-д Цаглабарын «⚡ Skill» хоосон гардаг байсан — загварт `03-Areas/AI Team/skills/catalog/`-ийн 7 `pane: true` товч (Update, Лог·checkpoint, Өдрийн тэмдэглэл, Inbox, Agent-ууд, Бүгдийг хадгалах, Долоо хоногийн тойм) нэмэгдэв. Байгаа vault: `/fm:setup`-ийг дахин ажиллуулахад дутуу файлууд л нэмэгдэнэ.
 - **0.8.8 · Засварласан (issue #4, Member):** `/fm:role architect` буруу дүрд (area) холбогддог байсан. `find_role` одоо бүх дүрээр яг slug → нэр → alias дарааллаар хайна (файлын дарааллаар биш); нэг alias хоёр дүрд байвал чимээгүй сонгохгүй, мэдэгдэнэ. Area загвараас `Architect`/`Архитектор` alias хасаж Developer (= Architect) загварт шилжүүлэв. Windows: `py -3` гэж тодорхой бичив. `tests/test_role_find.py`.
 - **0.8.7 · Сешний эхний санах ой (itge.e 2026-10-10):** SessionStart context-д «Сүүлийн шийдвэрүүд» — `04-Resources/Atomic/decisions/`-ийн хамгийн шинэ 5 шийдвэр (энэ дүрийнх эхэнд, `supersededby`/`private` алгасна, Finance сешнд огт үгүй), агент «өмнө нь шийдсэн үү»-г эндээс эхэлж шалгана. `scripts/fm_context.py`, `tests/test_session_decisions.py`.
 - **Task самбар (mod, itge.e 2026-10-09):** prompt-ын дээр тухайн сешний дүрийн нээлттэй vault task (area agent = owner/responsible, төслийн сешн = `project:`), ▶ Хийх · ↪ Шилжүүлэх товч, `/tasks` нуух. `hooks/register.tsx` (registry-ээс сешний дүр).
+  - Яагаад: сешн бүрт өөрийн нээлттэй task-ууд prompt-ын дээр харагдаж, нэг товчоор эхлүүлж эсвэл шилжүүлнэ · Дүрэм: [[_system/BOOT]] «Task» · Ном: GTD
 
 - **Нэмсэн — `relay.py send <суваг> --file <зам>` ба `send <суваг> -` (stdin) (P1-2, 2026-10-09):** олон мөрт тайланг нэг мөр командаар илгээнэ; хуучин `send <суваг> "текст"` хэвээр. Байхгүй суваг руу (жишээ нь `broadcast`-ын заасан суваг алга) traceback-гүй нэг мөр алдаа + ойролцоо нэрс, exit 1.
 - **Нэмсэн — эзнийг таних (P1-2):** `discord.json`-д `"owner_ids": ["<Discord user ID>"]`. Dispatch event-д `"from_owner": true`, `"from": "<гишүүн>"`; `watch`/`inbox` мөрөнд `(from_owner)`. Зөвхөн author.id-аар, display name-ээр хэзээ ч биш.
