@@ -4,9 +4,16 @@
 
 Формат: [Keep a Changelog](https://keepachangelog.com/), [SemVer](https://semver.org/). Ангилал: **Нэмсэн**, **Өөрчилсөн**, **Засварласан**, **Хассан**, **Нууцлал**.
 
+Гишүүний хэлээр (2026-10-14-өөс, `/fm:setup upgrade` 9-р алхам «Юу өөрчлөгдсөн бэ» уншина): гишүүнд мэдрэгдэх мөр бүрийн доор
+`  - Яагаад: <гишүүнд ямар хэрэгтэй> · Дүрэм: [[BOOT-ийн хэсэг эсвэл атом]] · Ном: <BASB | GTD | PARA | Atomic Habits | Zettelkasten | BMG — номын note-ийн холбоосыг Wiki өгнө>`.
+Дотоод засвар (refactor, тест)-д энэ мөр хэрэггүй.
+
 ---
 
 ## Unreleased
+
+- fm 0.9.46: «Юу өөрчлөгдсөн бэ» — `scripts/fm_whatsnew.py` гишүүний сүүлд харсан хувилбараас (`~/.fmos/whatsnew.json`) хойшхи CHANGELOG мөрүүдийг Яагаад/Дүрэм/Ном мөртэй нь гаргана (plugin cache-д CHANGELOG байхгүй тул marketplace-ийн clone-оос); `/fm:setup upgrade`-д 9-р алхам; CHANGELOG-ийн гишүүний хэлний формат.
+  - Яагаад: шинэчлэл бүрийн дараа юу шинэ гарсан, яагаад гэдгийг таны хэлээр нэг дор харна · Дүрэм: [[_system/BOOT]] «Skill-ийг дуудна, цээжлэхгүй» · Ном: BASB (Express — мэдлэгээ давтан хэрэглэх)
 
 - fm 0.9.45: relay.py split — Discord transport → relay_discord.py, task dispatch (offer/claim/release/task/baton) → relay_dispatch.py; relay.py exec-loads both into its own namespace at the same spot (behaviour identical; works via the tools/relay shim and from the plugin cache). 1790 → 641 + 406 + 763 lines. Test suite unchanged vs before (pre-existing failures only).
 
