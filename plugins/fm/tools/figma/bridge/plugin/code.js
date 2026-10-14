@@ -137,9 +137,11 @@ setInterval(async () => {
   finally { gliding = false; }
 }, 700);
 
-const selInfo = () => figma.currentPage.selection.slice(0, 1).map(n => ({ id: n.id, name: n.name, page: figma.currentPage.name }))[0] || null;
-figma.on('selectionchange', () => figma.ui.postMessage({ sel: selInfo() }));
-figma.ui.postMessage({ sel: selInfo() });
+// Олон сонголт: sel = эхний node (хуучин нийцтэй), sels = бүгд (multi-pick)
+const selAll = () => figma.currentPage.selection.map(n => ({ id: n.id, name: n.name, page: figma.currentPage.name }));
+const selMsg = () => { const a = selAll(); return { sel: a[0] || null, sels: a }; };
+figma.on('selectionchange', () => figma.ui.postMessage(selMsg()));
+figma.ui.postMessage(selMsg());
 
 
 

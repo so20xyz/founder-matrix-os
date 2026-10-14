@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.42: Figma bridge multi-pick — панел олон сонголтыг (тоо + chip) харуулна; 💬 коммент `nodes: [{id,name,page}]` илгээнэ (`node` = эхнийх, хуучин нийцтэй); «✓ Pick» товч сонголтыг тайлбаргүй илгээнэ; `fig.py comments` гаралтад `nodes`.
+
 - fm 0.9.41: INAI Newsletter tools — `tools/newsletter/collect.py` (opt-in `public: true`, hard path excludes, `business: client`/`private` project folders excluded, `--include` never overrides excludes; regression test) and `render.py` (issue.json → editorial HTML, official/third-party source tags, `--serve` localhost).
 
 - fm 0.9.40: `browse.mjs pin "<хайлт>"|<board URL> --out <dir> [--n 30]` — signed-in Pinterest, scrolls the virtual grid, saves 736px pins + `_moodboard.md` (pin links) + numbered `_moodboard.png` contact sheet (rendered in the same browser, no Pillow).
@@ -198,6 +200,8 @@
 ---
 
 ## Unreleased
+
+- fm 0.9.42: Figma bridge multi-pick — панел олон сонголтыг (тоо + chip) харуулна; 💬 коммент `nodes: [{id,name,page}]` илгээнэ (`node` = эхнийх, хуучин нийцтэй); «✓ Pick» товч сонголтыг тайлбаргүй илгээнэ; `fig.py comments` гаралтад `nodes`.
 
 - **0.9.8 · Засварласан (Season 2 QA, 2026-10-10):** `check_layout.js` текстийн хайрцаг биш бодит зурагдсан хүрээгээр (`absoluteRenderBounds`) харьцуулна, нуугдсан эцэгтэй текстийг алгасаж clip хийсэн frame-ээр тасална — nested карт/compound панелд худал давхцал гарахгүй. `fm:figma`: sandbox URL-ээс зураг татдаггүй тул base64 + `figma.createImage` жор (`--inject`); кирилл JS-ийг Bash heredoc биш Write-аар файлд. `fm_lint`: өөрийн огноогоор нэрлэгдсэн note (`YYYY-MM-DD - …`, шөнө дунд давсан subagent атом) өчигдрийн `date:`-д сануулахгүй.
 - **0.9.7 · Нэмсэн:** Цаглабар «⊟ Хэрэгсэл»-д «Видео» бүлэг — OBS студи (`tools/obs/obs_status.py`: obs-websocket асаалттай эсэх) ба Premiere bridge (`pr.py status`: FM Bridge panel холбогдсон эсэх); Architect, Creative, Project дүрд харагдана, «Сүүлд» багана pr.py / obs.cjs ашиглалтыг тэмдэглэнэ.

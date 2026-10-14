@@ -108,10 +108,10 @@
 <div id="box" class="on">
   <div id="sel">Сонгосон: <b>—</b></div>
   <textarea id="txt" placeholder="Claude-д коммент… (Ctrl+Enter илгээнэ)"></textarea>
-  <button id="send">Илгээх</button>
+  <div style="display:flex;gap:4px"><button id="send" style="flex:1">Илгээх</button><button id="pick" title="Сонголтыг тайлбаргүй илгээх" style="margin-top:4px;background:#2f2f33;color:#e4f25c;border:0;border-radius:10px;padding:6px 10px;font-weight:600;cursor:pointer">✓ Pick</button></div>
 </div>
 <script>
-let ws, info = { file: '?', editor: 'figma' }, sel = null, all = [], replyTo = null;
+let ws, info = { file: '?', editor: 'figma' }, sel = null, sels = [], all = [], replyTo = null;
 let ME = 'Би'; fetch('http://localhost:3055/member').then(r => r.json()).then(j => { if (j.member) { ME = j.member; render(); } }).catch(() => {});
 const $ = (id) => document.getElementById(id);
 const s = $('s'), dot = $('dot'), L = $('l'), C = $('c');
@@ -211,7 +211,7 @@ function render() {
     const work = (CL.threads || []).includes(r.id) && CL.state !== 'idle';
     return '<div class="th' + (r.resolved ? ' done' : '') + (replyTo === r.id ? ' act' : '') + (work ? ' work' : '') + '" data-th="' + r.id + '">' +
 
-      (r.node ? '<span class="node" data-n="' + r.node.id + '">◎ ' + esc(r.node.name) + '</span>' : '') +
+      (r.nodes && r.nodes.length > 1 ? r.nodes.map(n => '<span class="node" data-n="' + n.id + '">◎ ' + esc(n.name) + '</span>').join(' ') : r.node ? '<span class="node" data-n="' + r.node.id + '">◎ ' + esc(r.node.name) + '</span>' : '') +
       (kids.length ? '<span class="cnt">' + (kids.length + 1) + ' мессеж</span>' : '') +
       msgHtml(r, false) +
       (hidden > 0 ? '<div class="more" data-e="' + r.id + '">↕ өмнөх ' + hidden + ' мессежийг харах</div>' : '') +
@@ -233,11 +233,14 @@ C.onclick = (e) => { const t = e.target;
     $('cx').onclick = () => { replyTo = null; showSel(); render(); }; render(); $('txt').focus(); }
   if (t.dataset.d) fetch('http://localhost:3055/comments', { method: 'POST', body: JSON.stringify({ delete: t.dataset.d }) });
   if (t.dataset.x) fetch('http://localhost:3055/comments', { method: 'POST', body: JSON.stringify({ resolve: t.dataset.x }) }); };
-function showSel() { if (!replyTo) $('sel').innerHTML = 'Сонгосон: <b>' + esc(sel ? sel.name : '— (файл даяар)') + '</b>'; }
-function send() { const text = $('txt').value.trim(); if (!text || !ws || ws.readyState !== 1) return;
-  ws.send(JSON.stringify({ newComment: replyTo ? { text, parent: replyTo } : { text, node: sel } }));
+function showSel() { if (replyTo) return; $('sel').style.whiteSpace = sels.length > 1 ? 'normal' : '';
+  $('sel').innerHTML = sels.length > 1 ? 'Сонгосон (' + sels.length + '): ' + sels.map(n => '<span class="node">' + esc(n.name) + '</span>').join(' ')
+    : 'Сонгосон: <b>' + esc(sel ? sel.name : '— (файл даяар)') + '</b>'; }
+function send(pick) { let text = $('txt').value.trim(); if (pick === true && !replyTo) { if (!sels.length) return; text = '✓ pick: ' + sels.map(n => n.name).join(', '); }
+  if (!text || !ws || ws.readyState !== 1) return;
+  ws.send(JSON.stringify({ newComment: replyTo ? { text, parent: replyTo } : { text, node: sel, nodes: sels.length ? sels : undefined } }));
   $('txt').value = ''; replyTo = null; showSel(); render(); }
-$('send').onclick = send; $('txt').onkeydown = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send(); };
+$('send').onclick = () => send(); $('pick').onclick = () => send(true); $('txt').onkeydown = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send(); };
 function connect() {
   ws = new WebSocket('ws://localhost:3055');
   ws.onopen = () => { s.textContent = info.file; dot.style.background='#8fd694'; ws.send(JSON.stringify({ hello: info })); };
@@ -294,7 +297,7 @@ connect(); render();
 window.onmessage = (e) => { const m = e.data.pluginMessage; if (!m) return;
   if (m.uiState) { UI = { ...UI, ...m.uiState }; if (UI.collapsed) { document.body.classList.add('collapsed'); $('col').textContent = '▸'; } return; }
   if (m.info) { info = m.info; s.textContent = info.file; if (ws && ws.readyState === 1) ws.send(JSON.stringify({ hello: info })); return; }
-  if (m.sel !== undefined) { sel = m.sel; showSel(); return; }
+  if (m.sel !== undefined) { sel = m.sel; sels = m.sels || (m.sel ? [m.sel] : []); showSel(); return; }
   if (m.log !== undefined) { add(m.log, m.kind, m.t, m.node); return; }
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); };
 </script>

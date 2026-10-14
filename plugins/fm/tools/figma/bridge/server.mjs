@@ -131,7 +131,7 @@ const server = http.createServer(async (req, res) => {
       if (b.status) { const t = comments.find(c => c.id === b.status); if (t) { t.status = b.state ? { state: b.state, text: b.text || "", at: Date.now() } : null; saveComments(); for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments })); } return json(200, { ok: !!t }); }
       if (b.resolve) { const t = comments.find(c => c.id === b.resolve); if (t) { t.resolved = true; saveComments(); for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments })); } return json(200, { ok: !!t }); }
       const parent = b.parent && comments.find(c => c.id === b.parent);
-      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null }));
+      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}) }));
     }
   }
   // /claude : Claude Code hook-ууд төлвөө илгээнэ → бүх plugin-д WebSocket-оор (Claude Code-ийн «Running… 16s» шиг)
