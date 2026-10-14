@@ -458,3 +458,26 @@ if __name__ == "__main__":
         except (AttributeError, ValueError):
             pass
     sys.exit(main())
+
+
+def test_newsletter_collect_opt_in_and_hard_excludes(tmp_path):
+    """INAI Newsletter (decision 2026-10-14): only public: true notes; hard-excluded paths never, even when public or forced."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("nl_collect", REPO / "plugins/fm/tools/newsletter/collect.py")
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    today = __import__("datetime").date.today().isoformat()
+    def note(rel, fm):
+        p = tmp_path / rel; p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("---\n%s\nupdated: %s\n---\n\n# %s\n\nbody\n" % (fm, today, p.stem), encoding="utf-8")
+    note("04-Resources/Atomic/knowledge/ok.md", "public: true")
+    note("04-Resources/Atomic/knowledge/quiet.md", "type: atomic")
+    note("03-Areas/Business/finances/money.md", "public: true")
+    note("03-Areas/people/Bat.md", "public: true")
+    note("01-GTD/Tasks/t.md", "public: true")
+    note("02-Projects/Acme/Acme.md", "business: client")
+    note("02-Projects/Acme/brief.md", "public: true")
+    note("04-Resources/secret.md", "public: true\nprivate: true")
+    items, skipped = m.collect(tmp_path, 7, include=["03-Areas/people/Bat.md", "04-Resources/Atomic/knowledge/quiet.md"])
+    got = sorted(i["path"] for i in items)
+    assert got == ["04-Resources/Atomic/knowledge/ok.md", "04-Resources/Atomic/knowledge/quiet.md"]   # forced quiet ok, forced people NO
+    assert skipped["path"] == 3 and skipped["client"] == 2 and skipped["private"] == 1

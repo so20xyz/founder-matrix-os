@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.41: INAI Newsletter tools — `tools/newsletter/collect.py` (opt-in `public: true`, hard path excludes, `business: client`/`private` project folders excluded, `--include` never overrides excludes; regression test) and `render.py` (issue.json → editorial HTML, official/third-party source tags, `--serve` localhost).
+
 - fm 0.9.40: `browse.mjs pin "<хайлт>"|<board URL> --out <dir> [--n 30]` — signed-in Pinterest, scrolls the virtual grid, saves 736px pins + `_moodboard.md` (pin links) + numbered `_moodboard.png` contact sheet (rendered in the same browser, no Pillow).
 
 - fm 0.9.39: `tools/browse/browse.mjs` (playwright-core over CDP, own Chrome/Edge profile ~/.fmos/browser — the member signs in once, no passwords stored): NotebookLM `nlm list | new | add | ask | run` verified live (YouTube source → Mongolian summary). fm_doctor checks playwright-core.
