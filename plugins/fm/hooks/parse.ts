@@ -1,4 +1,10 @@
 import type { VaultTask } from '../types'
+// хэсэглэсэн модулиуд (GitNexus 2026-10-14: 131 функц нэг файлд) — гаднаас './parse'-ээр импортлоход өөрчлөлтгүй
+export * from './parse/text'
+export * from './parse/bus'
+export * from './parse/plan'
+export * from './parse/capture'
+import { stampMs } from './parse/plan'
 
 /** GTD cycle of an open task (completing has its own confirmed ✓ button). */
 export const OPEN_ORDER = ['inbox', 'next-action', 'in-progress', 'waiting']
@@ -252,66 +258,7 @@ export function matchesSession(t: VaultTask, names: string[], project: string, d
   return ownerMatches(t.owners ?? [t.owner], t.project ?? '', names, project, devices)
 }
 
-/**
- * Title without a leading «<project> - » (the band shows the project once, on the meta line); `masked` (a 🔒 task, shown only
- * in a private session) also drops money amounts, «🔒» when nothing is left.
- */
-export function shortTitle(title: string, project?: string, masked = false): string {
-  if (masked) return sanitizeDesc(shortTitle(title, project)) || '🔒'
-  if (!project) return title
-  const p = project.toLowerCase()
-  const t = title.toLowerCase()
-  return t.startsWith(p) ? title.slice(project.length).replace(/^\s*[-–:·]\s*/, '') || title : title
-}
 
-// terminal cells of one character: emoji / wide CJK 2, joiners and variation selectors 0
-const cells = (ch: string) => (/[̀-ͯ​-‏︀-️]/u.test(ch) ? 0
-  : /\p{Extended_Pictographic}|[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]/u.test(ch) ? 2 : 1)
-
-/** Terminal cells a text takes on one line. */
-export function cellWidth(text: string): number {
-  return [...text].reduce((a, c) => a + cells(c), 0)
-}
-
-/** Text cut to `n` terminal cells on one line, «…» marking the cut. */
-export function fit(text: string, n: number): string {
-  const chars = [...text]
-  if (cellWidth(text) <= n) return text
-  if (n < 2) return n === 1 ? '…' : ''
-  const out: string[] = []
-  let w = 0
-  for (const c of chars) {
-    if (w + cells(c) > n - 1) break
-    out.push(c)
-    w += cells(c)
-  }
-  return `${out.join('').replace(/\s+$/, '')}…`
-}
-
-/** `relay.py watch` line «[task-offer] <vault-relative path>» → the path, '' for any other line. */
-export function parseOffer(line: string): string {
-  return (line.match(/^\[task-offer\]\s+(.+?)\s*$/)?.[1] ?? '').replace(/\\/g, '/')
-}
-
-/** What `relay.py claim` said: won; lost to `device` (`error` = no verdict / network); or lost for a non-device `reason`. */
-export type ClaimVerdict = { win: boolean; device: string; reason?: 'closed' | 'missing' | 'private' }
-
-/** `relay.py claim` output → won, the device that won (`error` when there is no verdict line), or closed / missing / private. */
-export function parseClaim(stdout: string): ClaimVerdict {
-  const verdict = stdout.split(/\r?\n/).map(l => l.trim()).filter(l => /^(WIN|LOSE)\b/.test(l)).pop() ?? ''
-  if (/^WIN\b/.test(verdict)) return { win: true, device: '' }
-  const who = verdict.replace(/^LOSE\s*/, '').trim()
-  if (who === 'closed' || who === 'missing' || who === 'private') return { win: false, device: '', reason: who }
-  return { win: false, device: who || 'error' }
-}
-
-/** What `relay.py release` said: RELEASED → released; RELEASE missing / private; anything else (no line, RELEASE error) → error. */
-export function parseRelease(stdout: string): 'released' | 'missing' | 'private' | 'error' {
-  const line = stdout.split(/\r?\n/).map(l => l.trim()).filter(l => /^RELEASED?\b/.test(l)).pop() ?? ''
-  if (/^RELEASED\b/.test(line)) return 'released'
-  const why = line.replace(/^RELEASE\s*/, '').trim()
-  return why === 'missing' || why === 'private' ? why : 'error'
-}
 
 // ── 🔒 private tasks (decision 2026-10-09 «Шинэчлэл»): read like relay.py fmconfig.is_private / _private_owner / _private_task.
 // A private task dispatches like any other, but only private sessions list it, and only an opaque id leaves the vault (relay).
@@ -398,13 +345,6 @@ export function segLit(pct: number): number {
   return pct > 0 ? Math.min(10, Math.max(1, Math.round(pct / 10))) : 0
 }
 
-/** A local "YYYY-MM-DD HH:MM" (or "…THH:MM") stamp as ms on the shifted clock localNow() reads; NaN without a time. */
-export function stampMs(stamp: string): number {
-  const m = (stamp ?? '').match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})/)
-  if (!m) return NaN
-  return Date.parse(`${m[1]}T${(m[2] ?? '0').padStart(2, '0')}:${m[3]}:00Z`)
-}
-
 /** Time since a local stamp: «11m», «2h 5m», «3d»; '' without a time (a stamp up to 2 min ahead reads «0m»). */
 export function fmtAgo(stamp: string, nowLocalMs: number): string {
   const at = stampMs(stamp)
@@ -445,45 +385,6 @@ export function roleOf(owner: string, devices: string[] = [], people: string[] =
   return ''
 }
 
-/**
- * The Claude task-list steps that belong to a vault task this session started at `from` (local-shifted ms, the planFile
- * marker): noted at or after `from`, and, when `until` (the task's completed stamp) has a time, not after that minute.
- */
-export function planWindow<T extends { at: number }>(steps: T[], from: number, until: string): T[] {
-  const end = stampMs(until)
-  return steps.filter(s => s.at >= (from || 0) && (Number.isNaN(end) || s.at < end + 60000))
-}
-
-export const PLAN_OPEN = '<!-- fm:plan -->'
-export const PLAN_CLOSE = '<!-- /fm:plan -->'
-
-/** A task note's managed «## Явц» block → its steps (the other device's live plan, read from the synced note; itge.e 2026-10-14). */
-export function planOf(text: string): { subject: string; done: boolean }[] {
-  const a = text.indexOf(PLAN_OPEN)
-  const b = a < 0 ? -1 : text.indexOf(PLAN_CLOSE, a)
-  if (a < 0 || b < 0) return []
-  return text.slice(a + PLAN_OPEN.length, b).split(/\r?\n/).map(l => l.match(/^- \[([ xX])\] (.+)$/)).filter((m): m is RegExpMatchArray => !!m)
-    .map(m => ({ subject: (m[2] ?? '').trim(), done: (m[1] ?? ' ') !== ' ' }))
-}
-
-/**
- * A task note with its managed «## Явц» block (`- [x]` / `- [ ]` per step between PLAN_OPEN and PLAN_CLOSE) rewritten in
- * place: an existing block is replaced, else the block goes right under a «## Явц» heading, else a new heading + block is
- * appended. Nothing outside the block changes; the note's line breaks (CRLF / LF) are kept.
- */
-export function planBlock(text: string, steps: { subject: string; done: boolean }[]): string {
-  const eol = text.includes('\r\n') ? '\r\n' : '\n'
-  const block = [PLAN_OPEN, ...steps.map(s => `- [${s.done ? 'x' : ' '}] ${s.subject.replace(/\s+/g, ' ').trim()}`), PLAN_CLOSE].join(eol)
-  const a = text.indexOf(PLAN_OPEN)
-  const b = a < 0 ? -1 : text.indexOf(PLAN_CLOSE, a)
-  if (a >= 0 && b >= 0) return text.slice(0, a) + block + text.slice(b + PLAN_CLOSE.length)
-  const head = text.match(/^## Явц[ \t]*(?=\r?\n|$)/m)
-  if (head && head.index !== undefined) {
-    const at = head.index + head[0].length
-    return text.slice(0, at) + eol + block + text.slice(at)
-  }
-  return `${text.replace(/\s*$/, '')}${eol}${eol}## Явц${eol}${block}${eol}`
-}
 
 /** A duration as the elapsed labels read: «38m», «1h 12m», «3d»; '' when negative or not a number. */
 export function fmtSpan(ms: number): string {
@@ -495,95 +396,6 @@ export function fmtSpan(ms: number): string {
   return `${Math.floor(hrs / 24)}d`
 }
 
-// 🔒 money in a description: «1,500,000₮», «(1сая₮)», «3 сая төгрөг», «$1,200»
-const MONEY = /\(?\s*[\d.,]+\s*(сая|мянга|тэрбум)?\s*(₮|төг(рөг)?)\s*\)?|\$\s?[\d.,]+|\(\s*\d+\s*сая₮\s*\)/gi
-
-/** A project description safe to show: money amounts dropped (🔒), spaces and the punctuation left dangling tidied. */
-export function sanitizeDesc(text: string): string {
-  return (text ?? '').replace(MONEY, ' ').replace(/\(\s*\)/g, ' ').replace(/\s+([,.;:)])/g, '$1').replace(/\s{2,}/g, ' ').trim()
-    .replace(/[\s,;:—–-]+$/, '').trim()
-}
-
-/**
- * The last history line of an agent state note (`_system/fm/state/<role>.md`): the last «- YYYY-MM-DD HH:MM · dev · role · text»
- * under «## ТҮҮХ», prefix stripped (only the date when the line has no dev / role parts); '' when there is none.
- */
-export function lastHistoryLine(md: string): string {
-  const lines = (md ?? '').split(/\r?\n/)
-  const at = lines.findIndex(l => /^##\s+ТҮҮХ\s*$/.test(l))
-  if (at < 0) return ''
-  let last = ''
-  for (const l of lines.slice(at + 1)) {
-    if (/^#{1,2}\s/.test(l)) break
-    if (/^-\s+\d{4}-\d{2}-\d{2}/.test(l)) last = l
-  }
-  if (!last) return ''
-  const full = last.match(/^-\s+\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}\s+·\s+[^·]*·\s+[^·]*·\s+(.*)$/)
-  return (full ? full[1] ?? '' : last.replace(/^-\s+\d{4}-\d{2}-\d{2}(\s+\d{1,2}:\d{2})?\s*(·\s*)?/, '')).trim()
-}
-
-/** A skill for the V3 footer: every plugin prefix dropped except fm: («superpowers:brainstorming» → «brainstorming», «fm:relay» stays). */
-export function stripSkill(s: string): string {
-  const t = (s ?? '').trim()
-  return t.startsWith('fm:') ? t : t.replace(/^[^:\s]+:/, '')
-}
-
-const WEEKDAYS = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба']
-
-/** The date (YYYY-MM-DD) of the named weekday on or after `today`: «Пүрэв» on Fri 2026-10-09 → 2026-10-15; '' for no weekday name. */
-export function nextWeekday(today: string, wdName: string): string {
-  const want = WEEKDAYS.findIndex(w => w.toLowerCase() === (wdName ?? '').trim().toLowerCase())
-  const d = new Date(`${today}T00:00:00Z`)
-  if (want < 0 || Number.isNaN(d.getTime())) return ''
-  d.setUTCDate(d.getUTCDate() + ((want - d.getUTCDay() + 7) % 7))
-  return d.toISOString().slice(0, 10)
-}
-
-/** What V5 suggests for a capture: its kind (glyph), the route (task | note | agent | project, '' when masked) and the details. */
-export type CaptureGuess = { kind: string; route: string; agent?: string; project?: string; due?: string; masked: boolean }
-
-// 🔒 a finance word together with a digit masks the capture (shown as «хувийн санхүү», routed only through /fm:inbox)
-const FINANCE_RE = /₮|төгрөг|төлбөр|зээл|санхүү/i
-const URL_RE = /https?:\/\/\S+|(^|[^\w.@-])[\w-]+(\.[\w-]+)*\.(com|io|org|net|mn|app|dev|co|me|ai|so|site)(\/\S*)?(?![\w.])/i
-const CREATIVE_RE = /cover|moodboard|баннер|дизайн|лого|carousel|зураг|figma/i
-const RESEARCH_RE = /судал|судл|research|fact/i
-const CODE_RE = /код|plugin|bug|deploy/i
-// a size («1200×628») makes a creative word a concrete spec to do: a task, not a hand-off
-const SIZE_RE = /\d{2,5}\s*[×xх]\s*\d{2,5}/
-// a weekday name, with the locative «-т / -д» allowed («Пүрэвт»)
-const WD_RE = new RegExp(`(^|[^\\p{L}])(${WEEKDAYS.join('|')})[тд]?(?![\\p{L}])`, 'iu')
-const HHMM_RE = /(?<![\d:])([01]?\d|2[0-3]):([0-5]\d)(?![\d:])/
-
-/**
- * V5's suggestion for one capture (frontmatter `route:` wins in the caller): a URL → Note; creative / research / code words →
- * Агент (🎨 Creative / 📚 Wiki / 🏛️ Architect); a 02-Projects folder name or үнэ / студи / төсөл → Төсөл; a weekday, «HH:MM»
- * or уулзалт → Task due on that weekday (on or after `today`) at that time; else Task. A finance word with a digit masks it.
- * The kind: Telegram → chat, URL → clip, creative → idea, weekday / time / уулзалт → meet, else memo.
- */
-export function classifyCapture(c: { title: string; body: string; src?: string; today: string }, projectNames: string[]): CaptureGuess {
-  const text = `${c.title ?? ''}\n${c.body ?? ''}`
-  const url = URL_RE.test(text)
-  const creative = CREATIVE_RE.test(text)
-  const wd = text.match(WD_RE)?.[2] ?? ''
-  const tm = text.match(HHMM_RE)
-  const meet = !!wd || !!tm || /уулзалт/i.test(text)
-  const kind = /telegram/i.test(c.src ?? '') ? 'chat' : url ? 'clip' : creative ? 'idea' : meet ? 'meet' : 'memo'
-  if (FINANCE_RE.test(text) && /\d/.test(text)) return { kind, route: '', masked: true }
-  if (url) return { kind, route: 'note', masked: false }
-  if (creative && !SIZE_RE.test(text)) return { kind, route: 'agent', agent: '🎨 Creative', masked: false }
-  if (RESEARCH_RE.test(text)) return { kind, route: 'agent', agent: '📚 Wiki', masked: false }
-  if (CODE_RE.test(text)) return { kind, route: 'agent', agent: '🏛️ Architect', masked: false }
-  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const project = projectNames.filter(p => p.trim().length >= 3 && new RegExp(`(^|[^\\p{L}\\p{N}])${esc(p.trim())}(?![\\p{L}\\p{N}])`, 'iu').test(text))
-    .sort((a, b) => b.length - a.length)[0]
-  if (project || /үнэ|студи|төсөл/i.test(text)) return { kind, route: 'project', ...(project ? { project: project.trim() } : {}), masked: false }
-  if (meet) {
-    const day = wd ? nextWeekday(c.today, wd) : tm ? c.today : ''
-    const hhmm = tm ? `${(tm[1] ?? '').padStart(2, '0')}:${tm[2] ?? '00'}` : ''
-    return { kind, route: 'task', ...(day ? { due: hhmm ? `${day} ${hhmm}` : day } : {}), masked: false }
-  }
-  return { kind, route: 'task', masked: false }
-}
 
 /**
  * `/fm-agents` (itge.e 2026-10-09): one text block — every vault agent role with what it is working on now. Role rows come

@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.44: hooks/parse.ts split into parse/text.ts (cell width, fit, short titles), parse/bus.ts (relay offer/claim/release output), parse/plan.ts (## Явц block, stampMs), parse/capture.ts (inbox classify, money mask, history line); parse.ts re-exports them so imports are unchanged (622 → ~430 lines). Tests 33/34 (the 1 is the pre-existing missing claude-code/testing harness).
+
 - fm 0.9.43: OBS scene kit moved into the repo — `tools/obs/scene/` (obs-scene-toggle.lua, obs-zoom-to-mouse-multi.lua, «Апп-ууд» dock template + build_panel.py, gen_layouts.cjs, maskmulti.cjs, obs.cjs); paths from OBS_ASSETS / ~/.fmos vault instead of hard-coded drives; `install.py` copies the Lua scripts and regenerates masks + dock (verified: dock output byte-identical).
 
 - fm 0.9.42: Figma bridge multi-pick — панел олон сонголтыг (тоо + chip) харуулна; 💬 коммент `nodes: [{id,name,page}]` илгээнэ (`node` = эхнийх, хуучин нийцтэй); «✓ Pick» товч сонголтыг тайлбаргүй илгээнэ; `fig.py comments` гаралтад `nodes`.
