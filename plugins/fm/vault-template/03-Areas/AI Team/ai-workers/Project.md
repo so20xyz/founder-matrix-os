@@ -83,3 +83,7 @@ views:
 | Код, хэрэгсэл | [[03-Areas/AI Team/ai-workers/Architect|Architect]] |
 | Судалгаа, атом | [[03-Areas/AI Team/ai-workers/Wiki|Wiki]] |
 | Бизнес санхүү | [[03-Areas/AI Team/ai-workers/Finance|Finance]] |
+
+## Төслийн визуал
+
+- **Төслийн визуал = төслийн сешн өөрөө (itge.e 2026-10-14):** төслийн сешнд слайд, диаграм, зураг хэрэгтэй бол Creative сешнийг хүлээхгүй — Creative дүрийг давхар авч `/fm:figma`-аар өөрөө зурна (брэндийн визуал ДНХ, wrap grid auto-layout, `creative_check.js`). 🎨 Creative-д зөвхөн том брэнд/кампанит ажил шилжинэ. Төлбөртэй зураг үүсгэх (Figma AI credit, Higgsfield) зөвхөн {{fm:member}}-ийн зөвшөөрлөөр.
