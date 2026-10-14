@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.51: RACI ба pipeline дүрэм (BOOT загвар, fm:task) — R = `owner`, A = `project:`-ийн сешн (эсвэл `delegated_from`), C = `consulted:` (заавал биш), I = гишүүн; тусдаа `raci:` талбаргүй. Өөр agent-ын гаралтыг хүлээх task: `status: waiting` + `waiting_on: "[[task]]"`, дуусмагц гүйцэтгэгч «## Шилжүүлэлт»-д мөр нэмж A сешнийг сэрээнэ.
+  - Яагаад: agent-ууд бие биеийнхээ ажлыг хүлээж, дамжуулж, дүгнэлт нэг газар гарна — ажил pipeline шиг урсана · Дүрэм: [[_system/BOOT]] «RACI ба pipeline» · Ном: GTD, BMG (Key Activities)
+
 - fm 0.9.50: creative шалгалт (Wiki-ийн branding судалгаа) — Figma `scripts/creative_check.js` (текст ≥ 18 px, фонтын бүл ≤ 2, шатлал ≤ 3 түвшин / харьцаа ≥ 1.25, safe zone feed 135 px · story 14/35/6%), `scripts/safe_zones.js` (guide нэмэх); HTML `tools/browse/post_check.mjs` (жижиг текст, халалт, мөрийн хязгаар, фонт, шатлал, гарчгийн зай, слайд бүрийн 360 px thumbnail; headless Chrome/Edge); fm:post brief-д 3 түвшний scale, лавлагааны spec, Ө/Ү фонт шалгалт, 8 layout жор, AI зургийн анкор + 3 блок prompt + харьцуулах frame; fm:figma шалгах алхам 4-5. Бүгд өөрсдийн код — guizang (AGPL)-аас хуулаагүй.
   - Яагаад: постыг нийтлэхээс өмнө утсан дээр уншигдахгүй текст, safe zone-оос гарсан үнэ, хэт олон хэмжээг автоматаар илрүүлж, v2→v12 давталтыг багасгана · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-14 - type-scale-three-levels]]
 
