@@ -494,3 +494,13 @@ def test_newsletter_questions_only_inai_topics(tmp_path):
     qs = m.questions(tmp_path)
     assert [q["question"] for q in qs] == ["Q1?", "Q2"]
     assert qs[0]["link"] == "[[04-Resources/Topics/A]]"
+
+
+def test_relay_client_clean_strips_internal_refs():
+    import re
+    src = (REPO / "plugins" / "fm" / "tools" / "relay" / "relay_discord.py").read_text(encoding="utf-8")
+    ns = {"re": re}
+    exec(src[src.index("def client_clean"):src.index("def d_send")], ns)
+    out = ns["client_clean"]("[PC-ab12] [[02-Projects/M/M|M сайт]] бэлэн, [[01-GTD/Tasks/X.md]].\n`D:/a/b.py` 01-GTD/Tasks/Y.md")
+    assert out.startswith("M сайт бэлэн, X.")
+    assert "PC-" not in out and "D:/" not in out and "01-GTD" not in out and "[[" not in out

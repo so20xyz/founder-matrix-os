@@ -147,6 +147,61 @@ def _threads(parent_ids):
     except Exception: return {}
 
 
+def d_channel(a):
+    """relay.py channel create --name "<нэр>" [--type text|voice] [--category "<ангилал>"] [--private]
+    [--allow "Role A,Role B"] [--apply] — анхдагч dry run (төлөвлөгөө л хэвлэнэ). Эрх өгөх үйлдэл бүрийг
+    itge.e тодорхой зөвшөөрсний дараа л --apply (agent өөрөө санаачлахгүй, itge.e 2026-10-14)."""
+    arg = lambda k, d=None: a[a.index(k) + 1] if k in a else d
+    if not a or a[0] != "create" or not arg("--name"):
+        print(d_channel.__doc__); return
+    gid = load(DCFG, {})["guild"]["id"]
+    kind = {"text": 0, "voice": 2}[arg("--type", "text")]
+    chans = dapi("GET", f"/guilds/{gid}/channels")
+    name = arg("--name")
+    if any(c["name"] == name and c.get("type") == kind for c in chans):
+        print(f"⚠ «{name}» суваг аль хэдийн байна — юу ч хийсэнгүй"); return
+    body = {"name": name, "type": kind}
+    if arg("--category"):
+        cat = [c for c in chans if c.get("type") == 4 and c["name"].lower() == arg("--category").lower()]
+        if not cat: sys.exit(f"ангилал «{arg('--category')}» олдсонгүй")
+        body["parent_id"] = cat[0]["id"]
+    VIEW, SEND, HIST, CONNECT, SPEAK = 1 << 10, 1 << 11, 1 << 16, 1 << 20, 1 << 21
+    roles = {r["name"]: r["id"] for r in dapi("GET", f"/guilds/{gid}/roles")}
+    ow = []
+    if "--private" in a:
+        ow.append({"id": gid, "type": 0, "deny": str(VIEW), "allow": "0"})   # @everyone харахгүй
+    for rn in [x.strip() for x in (arg("--allow") or "").split(",") if x.strip()]:
+        if rn not in roles: sys.exit(f"role «{rn}» олдсонгүй. Байгаа: {', '.join(sorted(roles))}")
+        ow.append({"id": roles[rn], "type": 0, "deny": "0", "allow": str(VIEW | SEND | HIST | CONNECT | SPEAK)})
+    if ow: body["permission_overwrites"] = ow
+    plan = f"{'voice' if kind == 2 else 'text'} #{name}" + (f" · {arg('--category')}" if arg("--category") else "") \
+        + (" · private" if "--private" in a else "") + (f" · зөвшөөрөх: {arg('--allow')}" if arg("--allow") else "")
+    if "--apply" not in a:
+        print("DRY RUN —", plan, "\n(үүсгэхийн тулд itge.e зөвшөөрсний дараа --apply)"); return
+    c = dapi("POST", f"/guilds/{gid}/channels", body)
+    regstore.log(f"channel create: {plan} → {c['id']} ({DEVICE})")
+    print("үүсгэв:", plan, "→", c["id"])
+
+
+CLIENT_INTERNAL = ("📌 TASK", "📌 NOTION", "🏃 baton", "OFFER", "CLAIM")
+
+
+def client_channels():
+    """discord.json "client_channels": гадны хүнтэй суваг (itge.e 2026-10-14, ClientM) — дотоод төлөв орохгүй."""
+    return set(load(DCFG, {}).get("client_channels", []))
+
+
+def client_clean(text):
+    """Client сувагт: [[зам|нэр]] → нэр, [[a/b/c]] → c, [PC-ab12] угтвар, зам (D:/…, 01-GTD/…) хасна."""
+    t = re.sub(r"\[\[([^\]|]+)\|([^\]]+)\]\]", r"\2", text)
+    t = re.sub(r"\[\[([^\]]+)\]\]", lambda m: m.group(1).rstrip("/").split("/")[-1].removesuffix(".md"), t)
+    t = re.sub(r"\[(?:PC|Mac)-[0-9a-fA-F]{2,}\]\s*", "", t)
+    t = re.sub(r"`[^`\n]*[/\\][^`\n]*`", "", t)
+    t = re.sub(r"(?<!\S)(?:[A-Za-z]:[/\\]|~/|\d\d-[A-Za-z]+/|_system/)\S+", "", t)
+    t = re.sub(r"[ \t]{2,}", " ", t)
+    return "\n".join(l.rstrip() for l in t.splitlines()).strip()
+
+
 def d_send(to, text, sid):
     reg = load(REG, {"sessions": {}}); me = reg["sessions"].get(sid, {"name": f"{DEVICE}-{sid[:6]}"})
     state = load(STATE, {}); ch = dchannels(state); save(STATE, state)
@@ -168,6 +223,11 @@ def d_send(to, text, sid):
                          + (" (discord.json \"broadcast\" — sys/all энэ суваг руу явна)" if name == BROADCAST else "")
                          + (f". Ойролцоо: {', '.join(near)}" if near else f". Байгаа: {', '.join(sorted(ch))[:400]}") + "\n")
         sys.exit(1)
+    if name in client_channels():   # гадны хүн: дотоод төлөв бүү, зам/wikilink-гүй, бот = itge.agent
+        if any(k in text for k in CLIENT_INTERNAL):
+            print(f"🔒 татгалзав: #{name} = client суваг — task/baton/offer зөвхөн дотоод сувагт")
+            return
+        text = client_clean(text); sig = f"\n-# itge.agent ({DEVICE})"
     cid = ch[name]; ref = None; target = cid
     arg = lambda k: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else None
     if arg("--thread"):

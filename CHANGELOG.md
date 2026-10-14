@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.48: relay client mode + channel create — discord.json `"client_channels": [...]` сувагт `relay.py send` task/baton/offer-ийг татгалзаж, wikilink → нэр, `[PC-xxxx]` угтвар, зам хасаж, гарын үсэг `itge.agent (PC|Mac)`; `relay.py channel create --name … [--type voice] [--category …] [--private] [--allow "Role,…"]` анхдагч dry run, `--apply`-аар л үүсгэж регистрийн логт бичнэ. Тест.
+  - Яагаад: гадны хамтрагчтай сувагт бот энгийн хүн шиг бичиж, дотоод төлөв задрахгүй; суваг, эрхийг гараар биш нэг командаар · Дүрэм: [[_system/BOOT]] «Лог / STATUS / Discord = зөвхөн холбоос»
+
 - fm 0.9.47: newsletter `collect.py --questions` — өдрийн судалгааны цикл: `scope: inai` сэдвийн hub-уудын `open-questions:` → [{topic, question, link}]; agent асуулт бүрээр хайж `topics:` + `question:`-тай лавлагаа үүсгэнэ, Wiki шалгана. `scope: internal` сэдэв орохгүй. Тест.
   - Яагаад: сэдэв бүрийн нээлттэй асуултаар өдөр бүр шинэ эх сурвалж олдож, newsletter нь «энэ долоо хоногт юу шинээр мэдэв» болно · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-14 - sedev-sudalgaany-hodolguur]] · Ном: Zettelkasten
 

@@ -623,6 +623,8 @@ def main():
         if len(a) < 2:
             sys.stderr.write('usage: relay.py release "<task path>" --sid <sid>\n'); print("RELEASE error"); return
         return d_release(a[1], sid)
+    if a[0] == "channel":
+        return d_channel(a[1:])
     if a[0] == "hub":
         return d_hub()
     if a[0] == "research-status":
