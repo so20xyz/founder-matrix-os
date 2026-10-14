@@ -43,6 +43,14 @@ argument-hint: "[status | run -f <script.js> | export <nodeId> | comments]"
 4б. **Композиц:** `scripts/composition_check.js` - `@product` маркерын дарагдал ≤ 10%, ≥ 40 px текст фото дээр тунгалаг биш дэвсгэргүй бол алдаа (хоосон хэсэг гэж баталсан бол нэрэнд `@clear`), cutout-ийн `edges:`/`fade:` ирмэг frame дотор орсон эсэх, хөвөгч жижиг текст + гар шалгалтын жагсаалт.
 5. **360 px thumbnail:** `fig.py export <id> --scale 0.3333 --out x-360.png` → Read; утсан дээрх хэмжээгээр дэгээ уншигдаж байгаа эсэх.
 
+## Гаралт: нэр, батлалт, архив
+
+- **Export нэр:** `<Төсөл>_<Гаралт>_<Хэмжээ>_vNN_YYYYMMDD.png` (жишээ `Acme_Poster_1080x1350_v07_20261014.png`); нэрэнд «final» бүү бич — хувилбар нь vNN. `fig.py export ... --out <нэр>`.
+- **Ready шалгалт:** export хийхээс өмнө тухайн section/frame-ийн `devStatus` (Ready for dev) байгаа эсэхийг хар; Ready гэж тэмдэглэсний дараа засвар орсон («Changed») эсэхийг Plugin API өгдөггүй тул гишүүнээс асуу эсвэл Figma-д нүдээр шалга.
+- **Батлалт:** гишүүн баталсан frame-ийг `node.locked = true` болгож, төслийн Output note-д `батлагдсан · YYYY-MM-DD · vNN` мөр бич. Батлагдсан frame-ийг засахгүй — шинэ хувилбарыг хуулбараар (vNN+1).
+- **Архив:** хуучин хувилбаруудыг `scripts/archive_frames.js` (`__IDS__` = id жагсаалт, `__APPLY__` = false → dry run, true → зөөнө)-ээр «Archive» хуудас руу огноотой зөө. Устгахгүй; locked frame-д хүрэхгүй.
+- **Хэвлэл (брошур, шошго):** Figma PDF export нь CMYK, 3 мм bleed, preflight хийдэггүй — хэвлэхийн өмнө frame-ийг bleed-тэй (+3 мм тал бүрт) зурж, зургийг ≥ 300 dpi-аар оруулаад PDF-ийг хэвлэлийн газарт эсвэл Acrobat preflight-аар (CMYK хөрвүүлэлт, фонт embed) шалгуулна гэж гишүүнд хэл.
+
 ## Animation (prototype)
 
 Smart Animate: frame A-г B болгон хуулж, давхаргын **нэрийг ижил** үлдээгээд B-д байрлал/хэмжээ/өнгө сольж:
