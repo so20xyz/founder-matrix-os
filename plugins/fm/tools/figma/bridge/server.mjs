@@ -43,7 +43,9 @@ function addComment(c) {
   if (c.from === "user") { for (const w of waiters) w(); waiters.clear(); }
   return c;
 }
-const openThreads = (file) => comments.filter(c => c.from === "user" && !c.parent && (!file || (c.file || "").toLowerCase().includes(file.toLowerCase())))
+const fileMatch = (c, file) => !file || (c.file || "").toLowerCase().includes(file.toLowerCase());
+// session routing: a thread delivered to session X (claimedBy) is not handed to session Y; sessionless callers see all (backward compat)
+const openThreads = (file, session) => comments.filter(c => c.from === "user" && !c.parent && fileMatch(c, file) && (!session || !c.claimedBy || c.claimedBy === session))
   .map(c => ({ ...c, replies: comments.filter(r => r.parent === c.id) })).filter(t => !t.resolved && (t.replies.length === 0 || t.replies.at(-1).from === "user"));
 
 // ---- minimal WebSocket (RFC 6455, text frames only) ----
@@ -116,10 +118,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET") {
       const file = q.get("file") || "";
       if (q.get("all")) return json(200, comments.filter(c => !file || (c.file || "").toLowerCase().includes(file.toLowerCase())));
-      const fresh = () => openThreads(file).filter(t => !(q.get("wait") && delivered.includes(t.id)));   // хариулж буй thread-ийг дахин бүү өг
+      const session = q.get("session") || "";
+      const fresh = () => openThreads(file, session).filter(t => !(q.get("wait") && delivered.includes(t.id)));   // хариулж буй thread-ийг дахин бүү өг
       let open = fresh();
       if (!open.length && q.get("wait")) { await new Promise(r => { const f = () => r(); waiters.add(f); setTimeout(() => { waiters.delete(f); r(); }, 1000 * Number(q.get("wait"))); }); open = fresh(); }
-      if (q.get("wait") && open.length) delivered = [...new Set([...delivered, ...open.map(t => t.id)])];   // Claude-д хүргэгдсэн thread → Stop hook хариуг mirror хийнэ
+      if (q.get("wait") && open.length) { delivered = [...new Set([...delivered, ...open.map(t => t.id)])];
+        if (session) { for (const t of open) { const r = comments.find(c => c.id === t.id); if (r && !r.claimedBy) r.claimedBy = session; } saveComments(); } }   // Claude-д хүргэгдсэн thread → Stop hook хариуг mirror хийнэ
       return json(200, open);
     }
     if (req.method === "POST") {
@@ -131,7 +135,11 @@ const server = http.createServer(async (req, res) => {
       if (b.status) { const t = comments.find(c => c.id === b.status); if (t) { t.status = b.state ? { state: b.state, text: b.text || "", at: Date.now() } : null; saveComments(); for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments })); } return json(200, { ok: !!t }); }
       if (b.resolve) { const t = comments.find(c => c.id === b.resolve); if (t) { t.resolved = true; saveComments(); for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments })); } return json(200, { ok: !!t }); }
       const parent = b.parent && comments.find(c => c.id === b.parent);
-      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}) }));
+      // reply guard: caller says which file it works on (doc); refuse replying into another file's thread unless force
+      if (parent && b.doc && !b.force && !fileMatch(parent, b.doc)) return json(409, { error: `thread ${parent.id} нь «${parent.file}» файлынх, --doc «${b.doc}» биш. --force-оор хүчлэх` });
+      if (parent && b.session && !parent.claimedBy) parent.claimedBy = b.session;
+      if (parent && b.session && parent.claimedBy && parent.claimedBy !== b.session && !b.force) return json(409, { error: `thread ${parent.id}-ийг «${parent.claimedBy}» сешн авсан. --force-оор хүчлэх` });
+      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, ...(b.session ? { session: b.session } : {}), parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}) }));
     }
   }
   // /claude : Claude Code hook-ууд төлвөө илгээнэ → бүх plugin-д WebSocket-оор (Claude Code-ийн «Running… 16s» шиг)

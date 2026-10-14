@@ -196,7 +196,7 @@ function msgHtml(m, isReply) {
   if (long && !open) { let cut = t.slice(0, 180); cut = cut.slice(0, Math.max(cut.lastIndexOf(' '), 120)); body = fmt(cut) + '…';
     meta = '<div class="mt" data-m="' + m.id + '">▸ ' + metrics(t) + ' · <u data-m="' + m.id + '">Цааш унших</u></div>'; }
   else if (long) meta = '<div class="mt" data-m="' + m.id + '">▴ <u data-m="' + m.id + '">Хураах</u></div>';
-  return '<div class="msg ' + m.from + (isReply ? ' re' : '') + (long && !open ? ' clp' : '') + '"><span class="who">' + (m.from === 'user' ? esc(ME) : 'Claude') +
+  return '<div class="msg ' + m.from + (isReply ? ' re' : '') + (long && !open ? ' clp' : '') + '"><span class="who">' + (m.from === 'user' ? esc(ME) : 'Claude' + (m.session ? ' · ' + esc(m.session) : '')) +
     '</span>' + body + '<span class="tm">' + hhmm(m.at) + '</span>' + meta + '</div>';
 }
 function render() {

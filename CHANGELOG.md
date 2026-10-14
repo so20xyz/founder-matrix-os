@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.47: Figma bridge коммент routing — `fig.py comments --doc X [--session S]` зөвхөн X файлын, өөр сешн аваагүй thread-ийг өгнө (`--wait`-ээр хүргэсэн thread `claimedBy=S` болно); `reply` сешний нэрийг (`--as` эсвэл env FIG_SESSION/CLAUDE_SESSION_TITLE/FM_ROLE) тэмдэглэж, plugin панелд «Claude · S» гэж харуулна; `--doc`-оос өөр файлын эсвэл өөр сешний thread-д хариулахыг 409-өөр хориглоно (`--force`). Session/--doc өгөхгүй бол хуучин зан.
+  - Яагаад: хэд хэдэн Claude сешн зэрэг ажиллахад нэг төслийн Figma коммент-д өөр төслийн сешн хариулахаа болино · Дүрэм: [[_system/BOOT]] · Ном: GTD
+
 - fm 0.9.46: «Юу өөрчлөгдсөн бэ» — `scripts/fm_whatsnew.py` гишүүний сүүлд харсан хувилбараас (`~/.fmos/whatsnew.json`) хойшхи CHANGELOG мөрүүдийг Яагаад/Дүрэм/Ном мөртэй нь гаргана (plugin cache-д CHANGELOG байхгүй тул marketplace-ийн clone-оос); `/fm:setup upgrade`-д 9-р алхам; CHANGELOG-ийн гишүүний хэлний формат.
   - Яагаад: нэг командаар шинэчлээд юу өөрчлөгдсөн, яагаад гэдгийг өөрийн хэлээр уншина · Дүрэм: [[_system/BOOT]] «Skill-ийг дуудна, цээжлэхгүй» · Ном: Atomic Habits
 

@@ -8,6 +8,8 @@
   fig.py run -f script.js       - файлаас ажиллуулах
   fig.py comments [--wait 600] [--all]  - plugin-ий 💬 самбараас хэрэглэгчийн хариулаагүй коммент
   fig.py progress <id> queued|working|done|clear ["текст"] - comment-ийн доор амьд төлөв (олон comment-ийг subagent-аар зэрэг хийхэд)
+  fig.py comments --doc X --session S  - зөвхөн X файлын, өөр сешн аваагүй thread (S default: env FIG_SESSION/CLAUDE_SESSION_TITLE)
+  fig.py --doc X reply <id> "текст" [--as S] [--force] - X-ээс өөр файлын/өөр сешний thread-д хариулахыг хориглоно
   fig.py reply <id> "текст" [--play nodeId] - хариулах; текстэд @[нэр](nodeId) = дарвал тэр screen рүү очно
   fig.py resolve <id>            - thread-ийг шийдсэн болгох
   fig.py delete <id>             - хариулт (эсвэл бүх thread) устгах
@@ -29,6 +31,14 @@ URL = "http://127.0.0.1:" + os.environ.get("FIGMA_BRIDGE_PORT", "3055")
 FILE = os.environ.get("FIG_FILE")
 
 
+def session_label():
+    """Энэ сешний нэр: FIG_SESSION > CLAUDE_SESSION_TITLE > FM_ROLE > ~/.fmos/config.json member. Хоосон бол routing-гүй (хуучин зан)."""
+    for k in ("FIG_SESSION", "CLAUDE_SESSION_TITLE", "CLAUDE_SESSION_NAME", "FM_ROLE"):
+        if os.environ.get(k):
+            return os.environ[k].strip()
+    return ""
+
+
 def call(code, timeout=120000):
     req = urllib.request.Request(f"{URL}/exec", data=json.dumps({"code": code, "timeout": timeout, "file": FILE}).encode(),
                                  headers={"content-type": "application/json"})
@@ -42,7 +52,7 @@ def call(code, timeout=120000):
 
 
 def main():
-    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8"); sys.stderr.reconfigure(encoding="utf-8")
     global FILE
     p = argparse.ArgumentParser()
     p.add_argument("-d", "--doc", help="Figma файлын нэр (эсвэл хэсэг)")
@@ -54,7 +64,9 @@ def main():
     e = s.add_parser("export"); e.add_argument("node"); e.add_argument("--format", default="PNG")
     e.add_argument("--scale", type=float, default=2); e.add_argument("--out")
     c = s.add_parser("comments"); c.add_argument("--wait", type=int, default=0, help="шинэ коммент ирэх хүртэл хүлээх (сек)"); c.add_argument("--all", action="store_true")
+    c.add_argument("--session", help="сешний tag (default: FIG_SESSION/CLAUDE_SESSION_TITLE env); өөр сешний авсан thread-ийг алгасна")
     rp = s.add_parser("reply"); rp.add_argument("id"); rp.add_argument("text"); rp.add_argument("--play", help="▶ харах товчны node id")
+    rp.add_argument("--as", dest="session", help="хариултад тэмдэглэх сешний нэр (default: env)"); rp.add_argument("--force", action="store_true", help="өөр файл/сешний thread-д хариулахыг зөвшөөрөх")
     rs = s.add_parser("resolve"); rs.add_argument("id")
     pg = s.add_parser("progress"); pg.add_argument("id"); pg.add_argument("state", choices=["queued", "working", "done", "clear"]); pg.add_argument("text", nargs="?", default="")
     dl = s.add_parser("delete"); dl.add_argument("id")
@@ -80,7 +92,9 @@ def main():
             except urllib.error.URLError:
                 sys.exit("Bridge сервер ажиллахгүй байна: node " + str(Path(__file__).resolve().parent / "bridge" / "server.mjs"))
         if a.cmd == "comments":
-            q = "?file=" + urllib.parse.quote(FILE or "") + ("&all=1" if a.all else "") + (f"&wait={a.wait}" if a.wait else "")
+            q = "?file=" + urllib.parse.quote(FILE or "") + ("&all=1" if a.all else "") + ("&session=" + urllib.parse.quote(a.session or session_label()) if (a.session or session_label()) else "") + (f"&wait={a.wait}" if a.wait else "")
+            if not FILE:
+                print("⚠ --doc (эсвэл FIG_FILE) өгөөгүй - бүх Figma файлын коммент ирнэ; өөр төслийн thread-д хариулахгүйн тулд --doc өг", file=sys.stderr)
             print(json.dumps(req("/comments" + q, t=a.wait + 10), ensure_ascii=False, indent=1))
         elif a.cmd == "reply":
             # Хариултыг thread-ийн ҮНДСЭН (root) комментод залгана. Дунд мессежийн
@@ -96,7 +110,12 @@ def main():
                 raise
             except Exception:
                 pid = a.id
-            print(json.dumps(req("/comments", {"parent": pid, "text": a.text, "from": "claude", "play": a.play}), ensure_ascii=False))
+            body = {"parent": pid, "text": a.text, "from": "claude", "play": a.play, "doc": FILE, "session": a.session or session_label() or None, "force": a.force}
+            r2 = urllib.request.Request(URL + "/comments", data=json.dumps(body).encode(), headers={"content-type": "application/json"})
+            try:
+                with urllib.request.urlopen(r2, timeout=10) as x: print(json.dumps(json.load(x), ensure_ascii=False))
+            except urllib.error.HTTPError as e:
+                sys.exit(json.loads(e.read() or b'{}').get("error", f"HTTP {e.code}"))
         elif a.cmd == "delete":
             print(json.dumps(req("/comments", {"delete": a.id})))
         elif a.cmd == "progress":
