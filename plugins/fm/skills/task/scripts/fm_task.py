@@ -113,11 +113,25 @@ def _positional(args: List[str]) -> List[str]:
 def split_note(text: str) -> Tuple[List[str], List[str]]:
     """Return (frontmatter lines without delimiters, body lines)."""
     lines = text.replace("\r\n", "\n").split("\n")
-    if lines and lines[0].strip() == "---":
-        for i in range(1, len(lines)):
+    k = 0
+    while k < len(lines) and not lines[k].strip():  # blank lines before the opening --- (a hand / Drive edit)
+        k += 1
+    if k < len(lines) and lines[k].strip() == "---":
+        for i in range(k + 1, len(lines)):
             if lines[i].strip() == "---":
-                return lines[1:i], lines[i + 1:]
+                return lines[k + 1:i], lines[i + 1:]
     return [], lines
+
+
+def read_task(path: Path) -> Tuple[List[str], List[str]]:
+    """split_note of a task note that must have frontmatter: none (an empty / partial read while Drive syncs, a broken
+    note) → stop before writing. Writing then put only status/owner/updated in a new header and dropped every other
+    key and the H1 (2026-10-11 Premiere, 2026-10-14 Client B task notes)."""
+    fm, body = split_note(path.read_text(encoding="utf-8-sig"))
+    if not any(re.match(r"^[^\s#][^:]*:", l) for l in fm):
+        _die("«%s»: frontmatter уншигдсангүй (хоосон эсвэл `---` алга) — тэмдэглэлийг хөндсөнгүй. "
+             "Drive sync дуусахыг хүлээгээд дахин оролд." % path.name, 3)
+    return fm, body
 
 
 def join_note(fm: List[str], body: List[str]) -> str:
@@ -506,7 +520,7 @@ def cmd_claim(vault: Path, args: List[str]) -> None:
         _die("Хэрэглээ: fm_task.py claim <vault> \"<таск>\" --by \"<Дүр> · <device>\" [--device PC|Mac]")
     device = device_of(args, who)
     path = find_task(vault, pos[0])
-    fm, body = split_note(path.read_text(encoding="utf-8-sig"))
+    fm, body = read_task(path)
     status = fm_get(fm, "status")
     if status in CLOSED:
         _die("Таск аль хэдийн %s — авах боломжгүй." % status, 4)
@@ -534,7 +548,7 @@ def cmd_done(vault: Path, args: List[str]) -> None:
         _die("Хэрэглээ: fm_task.py done <vault> \"<таск>\" --by \"<Дүр> · <device>\" --summary \"...\" [--device PC|Mac]")
     device = device_of(args, who)
     path = find_task(vault, pos[0])
-    fm, body = split_note(path.read_text(encoding="utf-8-sig"))
+    fm, body = read_task(path)
     holder = open_claim(body)
     if holder and holder != who:
         _die("Энэ таскийг 🙋 %s авсан. Түүний өмнөөс ✅ бүү тавь." % holder, 4)
@@ -554,7 +568,7 @@ def cmd_set(vault: Path, args: List[str]) -> None:
         _die("Хэрэглээ: fm_task.py set <vault> \"<таск>\" --status S [--owner R] [--priority P] [--due D] "
              "[--device PC|Mac] [--sid <session id>]")
     path = find_task(vault, pos[0])
-    fm, body = split_note(path.read_text(encoding="utf-8-sig"))
+    fm, body = read_task(path)
     changes = []
     notes = []  # type: List[str]
     had_claim = bool(fm_get(fm, "claimed"))

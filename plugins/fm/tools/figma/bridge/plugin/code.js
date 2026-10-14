@@ -8,7 +8,7 @@
 figma.showUI(__html__, { width: 340, height: 460 });
 // Панелийн хэмжээ, хураасан төлөвийг сэргээнэ (clientStorage)
 (async () => { const u = await figma.clientStorage.getAsync('ui-state'); if (u) { figma.ui.resize(u.w || 340, u.collapsed ? 76 : (u.h || 460)); figma.ui.postMessage({ uiState: u }); } })();
-const store = {}; store.__ver = 'v8';
+const store = {}; store.__ver = 'v9';
 // v8 (2026-10-14): сканнер зөвхөн скрипт ажиллаж байх үед (+5с) — сул үед pg.children-ийг 0.7с тутам уншиж санах ой алдаж,
 // том файлд «Plugin runtime aborted / Memory leak» болж унадаг байв.
 let jobs = 0, jobEnd = 0;
@@ -28,7 +28,7 @@ function serialize(v, depth) {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let watch = true; // камер Claude-ийн зурж буй газрыг дагана
+let watch = false; // v9: том хуудсанд children-ийг уншихад plugin унадаг тул анхдагчаар унтраалттай (панелээс асаана) // камер Claude-ийн зурж буй газрыг дагана
 // Төлөвлөгөө (@plan/@step) — plugin дахин нээгдэхэд ч хадгалагдана (clientStorage).
 let planState = null;
 function planPersist(){ try { figma.clientStorage.setAsync('planState', planState); } catch (e) {} }
@@ -167,7 +167,7 @@ figma.ui.onmessage = async (msg) => {
   jobs++;
   try {
     const fn = new Function('figma', 'store', 'log', 'follow', 'glide', 'sleep', `return (async () => { ${msg.code}\n })();`);
-    lastSig = sigNow();   // суурь: скрипт эхлэхийн өмнөх байдал
+    if (watch) lastSig = sigNow();   // суурь: скрипт эхлэхийн өмнөх байдал (камер асаалттай үед л)
     const result = await fn(figma, store, log, follow, glide, sleep);
     log('✓ дууслаа · ' + ((Date.now() - t0) / 1000).toFixed(1) + 'с', 'ok');
     figma.ui.postMessage({ id: msg.id, result: serialize(result, 0) });

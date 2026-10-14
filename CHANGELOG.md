@@ -8,6 +8,10 @@
 
 ## Unreleased
 
+- fm 0.9.36: Figma Claude Bridge v9 — camera follow off by default and no page-children snapshot at job start; on a big image-heavy file even `return 1` aborted the plugin («Plugin runtime aborted»). Verified live on «Client B» (jobs run, plugin stays connected).
+
+- **0.9.35 · Засварласан (itge.e 2026-10-14):** `fm_task.py set/claim/done` frontmatter уншигдаагүй (хоосон/дутуу уншилт Drive sync-ийн үеэр, `---`-ээс өмнө хоосон мөр) task note-д status/owner/updated-ийг шинэ толгой болгож бичин type/project/device/tags/up/date/priority болон H1-ийг устгадаг байв (10-11 Premiere, 10-14 Client B). Одоо `---`-ийн өмнөх хоосон мөрийг тэвчиж, frontmatter-гүй бол юу ч бичилгүй зогсоно (exit 3). Тест.
+
 - fm 0.9.34: Figma Claude Bridge v8 — the camera scanner runs only while a bridge script is active (+5 s); idle it read the page children every 0.7 s and leaked until Figma aborted the plugin («Plugin runtime aborted / Memory leak») on big files.
 
 - fm 0.9.33: /fm:role project «Other» matches every project — completed / on-hold / cancelled / 99-Archive, case- and Latin↔Cyrillic-insensitive (client-b → Client B); a closed project asks «open as is or reopen active».
