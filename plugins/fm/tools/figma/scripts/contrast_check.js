@@ -11,10 +11,12 @@ const box=n=>n.absoluteBoundingBox;const inside=(p,b)=>b&&p.x>=b.x&&p.x<=b.x+b.w
 const blend=(top,o,bot)=>({r:top.r*o+bot.r*(1-o),g:top.g*o+bot.g*(1-o),b:top.b*o+bot.b*(1-o)});
 // Доорх давхаргын өнгө: frame дотор painter's order-оор ард байгаа, цэгийг агуулсан бүх давхаргаас
 function bgAt(frame,node,pt){const all=frame.findAll(()=>true);const idx=all.indexOf(node);let color=solid(frame)?.c||{r:1,g:1,b:1};let img=false;
- let anc=node.parent,base=null;while(anc&&anc!==frame){const s=solid(anc);if(s&&s.o>0.5){base=s.c;break}anc=anc.parent}
- const below=all.slice(0,idx).filter(n=>n.visible&&!(node.type==='TEXT'&&n.type==='TEXT')&&!n.name.startsWith('texture')&&inside(pt,box(n))&&!isAncestor(n,node));
+ // хамгийн ойрын цул эцэг = суурь; түүнээс хойш (дээр) зурагдсан давхаргуудыг (ellipse, rectangle…) дээр нь давхарлана
+ let anc=node.parent,base=null,from=0;while(anc&&anc!==frame){const s=solid(anc);if(s&&s.o>0.5){base=s.c;from=all.indexOf(anc)+1;break}anc=anc.parent}
+ if(base)color=base;
+ const below=all.slice(from,idx).filter(n=>n.visible&&!(node.type==='TEXT'&&n.type==='TEXT')&&!n.name.startsWith('texture')&&inside(pt,box(n))&&!isAncestor(n,node));
  for(const n of below){if(n.type==='TEXT'||n.type==='VECTOR')continue;if(hasImg(n)){img=true;color=null;continue;}const s=solid(n);if(s){color=color?blend(s.c,s.o,color):s.c;img=img&&s.o<1;}}
- if(base&&!img)color=base;return {color,img}}
+ return {color,img}}
 function isAncestor(a,n){let p=n.parent;while(p){if(p===a)return true;p=p.parent}return false}
 const hex=c=>'#'+[c.r,c.g,c.b].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('').toUpperCase();
 const out=[];const kids=(ROOT.children||[]).filter(c=>c.type==='FRAME');const numbered=kids.filter(c=>/^\d\d · /.test(c.name));

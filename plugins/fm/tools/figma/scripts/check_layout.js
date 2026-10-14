@@ -5,7 +5,7 @@
 // Хүрээ = бодитоор зурагдсан үсэг (absoluteRenderBounds), текстийн хайрцаг биш: тогтмол өндөртэй (fixed) текст
 //   хайрцгаасаа богино байхад nested карт/compound панелд худал давхцал гардаг байсан (Season 2 QA, 2026-10-10).
 //   Нуугдсан эцэгтэй текст алгасагдана; clipsContent frame-ийн гадна гарсан хэсэг тасдагдана.
-const SAFE = 88;                     // ирмэгээс доторх аюулгүй зай (px). Instagram 1080 өргөнд ~88px.
+const SAFE_SOCIAL = 88;              // ирмэгээс доторх аюулгүй зай (px). Instagram 1080 өргөнд ~88px; вэб (≥1200) бол 0.
 const root = await figma.getNodeByIdAsync(__ROOT__);
 if (!root) return 'node олдсонгүй: ' + __ROOT__;
 if (root.type === 'PAGE') await root.loadAsync();
@@ -38,6 +38,7 @@ for (const s of frames) {
     if (o && o.width > 2 && o.height > 2) hits.push(texts[i].n + ' ✕ ' + texts[j].n + ' (' + Math.round(o.width) + '×' + Math.round(o.height) + ')');
   }
   const out = [];
+  const SAFE = sb && sb.width >= 1200 ? 0 : SAFE_SOCIAL;   // вэб хуудас (≥1200 өргөн): зөвхөн хүрээнээс халалт
   for (const t of texts) {
     const b = t.b; if (!sb) continue;
     if (b.y < sb.y + SAFE) out.push(t.n + ' дээд хязгаараас ' + Math.round(sb.y + SAFE - b.y) + 'px');

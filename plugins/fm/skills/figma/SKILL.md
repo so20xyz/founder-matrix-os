@@ -39,7 +39,7 @@ argument-hint: "[status | run -f <script.js> | export <nodeId> | comments]"
 1. **Харах:** `python3 "$F/fig.py" --doc "<файл>" export <nodeId> --out <scratch>/x.png` → Read-ээр PNG-г хар.
 2. **Давхцал:** `scripts/check_layout.js`-ийн `__ROOT__`-г `"<id>"`-ээр солиод run - 0 гартал зас.
 3. **Contrast (WCAG):** `scripts/contrast_check.js` (`__ROOT__` мөн адил) - том текст 3:1, бусад 4.5:1. Нийтлэх (post) бүтээл бүрт заавал.
-4. **Creative (пост, постер):** `scripts/creative_check.js` (`__ROOT__` мөн адил) - текст ≥ 18 px, фонтын бүл ≤ 2, шатлал ≤ 3 түвшин (харьцаа ≥ 1.25), текст safe zone дотор (feed 135 px дээд/доод · story 14% / 35% / 6%). Guide нэмэх: `scripts/safe_zones.js`.
+4. **Creative (пост, постер):** `scripts/creative_check.js` (`__ROOT__` мөн адил) - текст ≥ 18 px, фонтын бүл ≤ 2, шатлал ≤ 3 түвшин (харьцаа ≥ 1.25), текст safe zone дотор (feed 135 px дээд/доод · story 14% / 35% / 6%). Guide нэмэх: `scripts/safe_zones.js`. Вэб хуудас (frame өргөн ≥ 1200 px) автоматаар **вэб горимд**: safe zone-гүй, текст ≥ 14 px, шатлал ≤ 5 түвшин; `check_layout.js` ч вэб frame-д зөвхөн хүрээнээс халалтыг шалгана.
 4б. **Композиц:** `scripts/composition_check.js` - `@product` маркерын дарагдал ≤ 10%, ≥ 40 px текст фото дээр тунгалаг биш дэвсгэргүй бол алдаа (хоосон хэсэг гэж баталсан бол нэрэнд `@clear`), cutout-ийн `edges:`/`fade:` ирмэг frame дотор орсон эсэх, хөвөгч жижиг текст + гар шалгалтын жагсаалт.
 5. **360 px thumbnail:** `fig.py export <id> --scale 0.3333 --out x-360.png` → Read; утсан дээрх хэмжээгээр дэгээ уншигдаж байгаа эсэх.
 
