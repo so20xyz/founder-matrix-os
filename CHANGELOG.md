@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.60: загварын `03-Areas/Studio.base` — Social saves хасагдсан (өөрийн gallery), «Бүгд (хавтасаар)» бүлэглэлт + Brainstorm · Moodboard · Social Posts · Poster maker · Motion · Бусад view; `type` хоосон бол хавтасны нэр (formula.kind).
+  - Яагаад: Studio-ийн ажлын файлууд 500 social save-ийн дунд алга болохгүй · Дүрэм: [[_system/BOOT]] «Хавтас бүр base»
+
 - fm 0.9.59: Цаглабар — task-ийн `waiting_on: "[[…]]"` (RACI pipeline) картын эзний мөрөнд «⏳ <хүлээж буй task>» гэж харагдана (`parseTask` → `waitingOn`, тест).
   - Яагаад: аль ажил өөр agent-ын гаралтыг хүлээж байгааг самбараас шууд харна · Дүрэм: [[_system/BOOT]] «RACI ба pipeline» · Ном: GTD
 

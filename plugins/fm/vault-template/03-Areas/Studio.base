@@ -2,10 +2,80 @@ filters:
   and:
     - file.inFolder("03-Areas/Studio")
     - file.ext == "md"
+    - '!file.inFolder("03-Areas/Studio/Social saves")'
+formulas:
+  folder: 'if(file.folder == "03-Areas/Studio", "Studio", file.folder.replace("03-Areas/Studio/", ""))'
+  kind: 'if(type, type, formula.folder)'
+properties:
+  formula.folder:
+    displayName: Хавтас
+  formula.kind:
+    displayName: Төрөл
 views:
   - type: table
-    name: Studio
-    order: [file.name, type, status, file.mtime]
+    name: Бүгд (хавтасаар)
+    groupBy:
+      property: formula.folder
+      direction: ASC
+    order: [file.name, formula.kind, status, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Brainstorm
+    filters:
+      and:
+        - file.inFolder("03-Areas/Studio/brainstorm")
+    order: [file.name, formula.kind, status, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Moodboard
+    filters:
+      and:
+        - file.inFolder("03-Areas/Studio/moodboard")
+    order: [file.name, formula.kind, status, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Social Posts
+    filters:
+      and:
+        - file.inFolder("03-Areas/Studio/Social Posts")
+    order: [file.name, formula.kind, status, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Poster maker
+    filters:
+      and:
+        - file.inFolder("03-Areas/Studio/poster-maker")
+    order: [file.name, formula.kind, status, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Motion
+    filters:
+      and:
+        - file.inFolder("03-Areas/Studio/motion")
+    order: [file.name, formula.kind, status, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Бусад
+    filters:
+      and:
+        - '!file.inFolder("03-Areas/Studio/brainstorm")'
+        - '!file.inFolder("03-Areas/Studio/moodboard")'
+        - '!file.inFolder("03-Areas/Studio/Social Posts")'
+        - '!file.inFolder("03-Areas/Studio/poster-maker")'
+        - '!file.inFolder("03-Areas/Studio/motion")'
+    order: [file.name, formula.kind, formula.folder, file.mtime]
     sort:
       - property: file.mtime
         direction: DESC
