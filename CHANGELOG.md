@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.58: newsletter `render.py` v2 — №2 дугаарын гар HTML-ийг загвар болгов: `title_em`, `byline`, `hero` зураг, хэсэг бүрт `body` (догол мөрийн жагсаалт, **тод**/`код`), `quote`, `figure` (svg эсвэл зураг + caption), `table`, `ours` («Манайд»), `relevance`, номын эх (`book: true`); Inai Website DS (Spectral + Inter, #F0EDE4 / #E8E4DA / #080808, accent #1B5CFF). v1 issue.json хэвээр ажиллана; Windows консолд UTF-8.
+  - Яагаад: newsletter-ийн дугаар бүр гараар HTML бичихгүйгээр, ижил брэнд, бүтэцтэй гарна · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-14 - INAI Newsletter тусдаа төсөл болов]]
+
 - fm 0.9.57: `contrast_check.js` — текстийн дэвсгэр = хамгийн ойрын цул эцэг + түүн дээр зурагдсан дүрс (ellipse, rectangle); өмнө нь эцгийн өнгө дүрсийг дарж худал FAIL өгдөг байв (диаграм дээр 5 → 0). `creative_check.js` / `check_layout.js` — вэб горим автоматаар (frame ≥ 1200 px): social safe zone-гүй, текст ≥ 14 px, шатлал ≤ 5.
   - Яагаад: диаграм, вэб хуудсыг шалгахад худал алдаа гарахгүй, жинхэнэ асуудал л үлдэнэ · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-14 - Creative шалгалтыг fm-д нэмэх]]
 
