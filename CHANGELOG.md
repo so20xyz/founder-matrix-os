@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.45: relay.py split — Discord transport → relay_discord.py, task dispatch (offer/claim/release/task/baton) → relay_dispatch.py; relay.py exec-loads both into its own namespace at the same spot (behaviour identical; works via the tools/relay shim and from the plugin cache). 1790 → 641 + 406 + 763 lines. Test suite unchanged vs before (pre-existing failures only).
+
 - fm 0.9.44: hooks/parse.ts split into parse/text.ts (cell width, fit, short titles), parse/bus.ts (relay offer/claim/release output), parse/plan.ts (## Явц block, stampMs), parse/capture.ts (inbox classify, money mask, history line); parse.ts re-exports them so imports are unchanged (622 → ~430 lines). Tests 33/34 (the 1 is the pre-existing missing claude-code/testing harness).
 
 - fm 0.9.43: OBS scene kit moved into the repo — `tools/obs/scene/` (obs-scene-toggle.lua, obs-zoom-to-mouse-multi.lua, «Апп-ууд» dock template + build_panel.py, gen_layouts.cjs, maskmulti.cjs, obs.cjs); paths from OBS_ASSETS / ~/.fmos vault instead of hard-coded drives; `install.py` copies the Lua scripts and regenerates masks + dock (verified: dock output byte-identical).

@@ -400,7 +400,8 @@ def test_task_writers_fall_back_to_legacy_tasks():
         assert ft.tasks_dir(v) == v / "00-GTD/Tasks"           # одоогийн layout нь хуучнаас түрүүлнэ
         (v / "01-GTD/Tasks").mkdir(parents=True)
         assert ft.tasks_dir(v) == v / "01-GTD/Tasks"
-    relay = (REPO / "plugins" / "fm" / "tools" / "relay" / "relay.py").read_text(encoding="utf-8")
+    rd = REPO / "plugins" / "fm" / "tools" / "relay"   # relay.py + exec-лэгддэг хэсгүүд (relay_*.py)
+    relay = "\n".join(f.read_text(encoding="utf-8") for f in [rd / "relay.py", *sorted(rd.glob("relay_*.py"))])
     assert 'vault / "01-GTD" / "Tasks"' in relay and 'vault / "00-GTD" / "Tasks", vault / "02-GTD" / "tasks"' in relay
 
 
