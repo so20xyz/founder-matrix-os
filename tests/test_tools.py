@@ -404,6 +404,36 @@ def test_task_writers_fall_back_to_legacy_tasks():
     assert 'vault / "01-GTD" / "Tasks"' in relay and 'vault / "00-GTD" / "Tasks", vault / "02-GTD" / "tasks"' in relay
 
 
+def test_fm_task_set_never_fabricates_frontmatter():
+    """2026-10-14 (Client B task, 10-11 Premiere task): `set` уншихад frontmatter олдоогүй (хоосон/дутуу уншилт,
+    `---`-ээс өмнө хоосон мөр) бол status/owner/updated-ийг шинэ толгой болгон бичиж бусад түлхүүр + H1-ийг устгадаг байв."""
+    import tempfile
+    script = REPO / "plugins" / "fm" / "skills" / "task" / "scripts" / "fm_task.py"
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    with tempfile.TemporaryDirectory() as t:
+        v = Path(t); d = v / "01-GTD" / "Tasks"; d.mkdir(parents=True)
+        title = "Client B- Figma-ийн мэдээлэл → Pinterest moodboard → шинэ пост rebuild"
+        f = d / (title + ".md")
+        full = ("\r\n---\r\ndate: 2026-10-14\r\ntype: task\r\nstatus: in-progress\r\nowner: \"🎨 Creative\"\r\n"
+                "priority: 🟡\r\nproject: \"[[02-Projects/Client B/Client B]]\"\r\ndevice: PC\r\ntags:\r\n  - task\r\n"
+                "up: \"[[01-GTD/Tasks/Tasks]]\"\r\nclaimed: PC\r\n---\r\n\r\n# " + title + "\r\n\r\nтекст\r\n")
+        for text in ("", "# " + title + "\nтекст\n"):   # no frontmatter at all → refuse, leave the note untouched
+            f.write_text(text, encoding="utf-8")
+            r = subprocess.run([sys.executable, str(script), "set", str(v), title, "--status", "inbox", "--owner", "me"],
+                               capture_output=True, env=env)
+            assert r.returncode != 0, r.stdout
+            assert f.read_text(encoding="utf-8") == text
+        f.write_bytes(full.encode("utf-8"))   # leading blank line + CRLF: still the note's frontmatter
+        r = subprocess.run([sys.executable, str(script), "set", str(v), title, "--status", "inbox", "--owner", "me"],
+                           capture_output=True, env=env)
+        assert r.returncode == 0, r.stderr.decode("utf-8", "replace")
+        out = f.read_text(encoding="utf-8")
+        for k in ("type: task", "project: ", "device: PC", "tags:", "  - task", "up: ", "date: ", "priority: ",
+                  "status: inbox", "updated: ", "# " + title, "текст"):
+            assert k in out, (k, out)
+        assert out.startswith("---\n") and out.count("\n---\n") == 1 and "claimed: PC" not in out, out
+
+
 # ------------------------------------------------------------------ runner
 
 def main():

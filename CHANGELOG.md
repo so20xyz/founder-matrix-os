@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.38: fm_task set/claim/done never rewrite a note whose frontmatter did not read (Drive mid-sync / blank line before ---) — exit 3 «wait for sync, retry» instead of fabricating a 3-key header (shipped in 0.9.36) + regression test; types declare fm.toolBy (desktop validator error).
+
 - fm 0.9.37: /fm:role project renames its own session «📁 <Нэр>» without asking (correct tool mcp__ccd_session_mgmt__set_session_title via ToolSearch; the old name mcp__ccd_session__… did not exist, leaving «Project Agent role»).
 
 - fm 0.9.36: Figma Claude Bridge v9 — camera follow off by default and no page-children snapshot at job start; on a big image-heavy file even `return 1` aborted the plugin («Plugin runtime aborted»). Verified live on «Client B» (jobs run, plugin stays connected).
