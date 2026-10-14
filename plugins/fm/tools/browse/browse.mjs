@@ -10,6 +10,7 @@
 //   node browse.mjs nlm add <notebook> <url>...              эх сурвалж (YouTube, вэб); <notebook> = id эсвэл нэрийн хэсэг
 //   node browse.mjs nlm ask <notebook> "<асуулт>"            хариу (текст)
 //   node browse.mjs nlm run <url>... -- "<асуулт>"           шинэ notebook + эх сурвалж + асуулт нэг дор
+//   node browse.mjs pin "<хайлт>"|<board URL> --out <хавтас> [--n 30]   Pinterest moodboard (зураг + _moodboard.md/.png)
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -144,6 +145,46 @@ async function nlmAsk(pg, q) {
   throw new Error('хариу ирсэнгүй')
 }
 
+// ── Pinterest: хайлт эсвэл board-оос pin цуглуулж moodboard болгох
+async function pinCollect(ctx, query, n) {
+  const pg = await pageFor(ctx, SITES.pinterest)
+  const url = /^https?:/.test(query) ? query : 'https://www.pinterest.com/search/pins/?q=' + encodeURIComponent(query)
+  await pg.goto(url, { waitUntil: 'domcontentloaded' })
+  await pg.waitForSelector('a[href^="/pin/"] img', { timeout: 30000 })
+  const seen = new Map()
+  for (let i = 0; i < 40 && seen.size < n; i++) {   // grid нь virtual — гүйлгэх бүрт шинэ pin-үүдийг нэмж цуглуулна
+    const batch = await pg.evaluate(() => [...document.querySelectorAll('a[href^="/pin/"]')].map(a => {
+      const img = a.querySelector('img'); return img && img.src.includes('pinimg') ? { href: 'https://www.pinterest.com' + a.getAttribute('href'), img: img.src.replace(/\/\d+x\//, '/736x/'), alt: img.alt || '' } : null
+    }).filter(Boolean))
+    for (const p of batch) if (!seen.has(p.href)) seen.set(p.href, p)
+    await pg.mouse.wheel(0, 2200); await sleep(1300)
+  }
+  return [...seen.values()].slice(0, n)
+}
+
+async function pinSave(ctx, pins, outDir, query) {
+  fs.mkdirSync(outDir, { recursive: true })
+  const rows = []
+  for (const [i, p] of pins.entries()) {
+    const file = `pin-${String(i + 1).padStart(2, '0')}.jpg`
+    try { const r = await fetch(p.img); if (r.ok) { fs.writeFileSync(path.join(outDir, file), Buffer.from(await r.arrayBuffer())); rows.push({ ...p, file }) } } catch {}
+  }
+  const md = [`# Moodboard · ${query}`, '', `- ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · Pinterest (fm browse pin) · ${rows.length} pin`, '', '![[_moodboard.png]]', '',
+    ...rows.map((p, i) => `${i + 1}. ![[${p.file}|120]] [pin](${p.href})${p.alt ? ' — ' + p.alt.replace(/\s+/g, ' ').slice(0, 80) : ''}`)].join('\n')
+  fs.writeFileSync(path.join(outDir, '_moodboard.md'), md + '\n', 'utf-8')
+  // contact sheet: дугаартай grid-ийг тусдаа табд зурж screenshot авна (Pillow шаардахгүй)
+  const html = `<html><body style="margin:0;background:#fff;display:grid;grid-template-columns:repeat(5,300px);gap:6px;padding:6px;font:bold 14px sans-serif">${rows.map((p, i) => `<div style="position:relative;height:400px;background:#eee;display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="${p.file}" style="max-width:100%;max-height:100%"><span style="position:absolute;left:0;top:0;background:#000;color:#fff;padding:2px 6px">${i + 1}</span></div>`).join('')}</body></html>`
+  const htmlPath = path.join(outDir, '_moodboard.html'); fs.writeFileSync(htmlPath, html, 'utf-8')
+  const tab = await ctx.newPage()
+  try {
+    await tab.setViewportSize({ width: 1542, height: 900 })
+    await tab.goto('file:///' + htmlPath.replace(/\\/g, '/'), { waitUntil: 'load' })
+    await tab.screenshot({ path: path.join(outDir, '_moodboard.png'), fullPage: true })
+  } finally { await tab.close() }
+  fs.unlinkSync(htmlPath)
+  return rows.length
+}
+
 const [cmd = 'status', ...a] = process.argv.slice(2)
 const out = o => console.log(typeof o === 'string' ? o : JSON.stringify(o, null, 1))
 try {
@@ -169,7 +210,14 @@ try {
         out(`# ${src.join(' · ')}\nnotebook: ${pg.url().split('?')[0]}\n\n${ans}`)
       } else out('nlm list | new | add <notebook> <url>... | ask <notebook> "<асуулт>" | run <url>... -- "<асуулт>"')
     } finally { await b.close() }
+  } else if (cmd === 'pin') {
+    const opt = (k, d) => { const i = a.indexOf(k); return i < 0 ? d : a.splice(i, 2)[1] }
+    const n = Number(opt('--n', 30)), outDir = path.resolve(opt('--out', path.join(os.homedir(), '.fmos', 'browser', 'moodboards', 'pins')))
+    const query = a.join(' ')
+    if (!query) throw new Error('pin "<хайлт>" | <board/хайлтын URL> --out <хавтас> [--n 30]')
+    const { b, ctx } = await connect()
+    try { const pins = await pinCollect(ctx, query, n); out({ query, saved: await pinSave(ctx, pins, outDir, query), out: outDir }) } finally { await b.close() }
   } else {
-    out('commands: open [notebooklm|pinterest|url] · status · nlm list|new|add|ask|run')
+    out('commands: open [notebooklm|pinterest|url] · status · nlm list|new|add|ask|run · pin "<хайлт>" --out <хавтас> [--n 30]')
   }
 } catch (e) { console.error('✗ ' + e.message); process.exit(1) }

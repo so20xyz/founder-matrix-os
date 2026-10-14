@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.40: `browse.mjs pin "<хайлт>"|<board URL> --out <dir> [--n 30]` — signed-in Pinterest, scrolls the virtual grid, saves 736px pins + `_moodboard.md` (pin links) + numbered `_moodboard.png` contact sheet (rendered in the same browser, no Pillow).
+
 - fm 0.9.39: `tools/browse/browse.mjs` (playwright-core over CDP, own Chrome/Edge profile ~/.fmos/browser — the member signs in once, no passwords stored): NotebookLM `nlm list | new | add | ask | run` verified live (YouTube source → Mongolian summary). fm_doctor checks playwright-core.
 
 - fm 0.9.38: fm_task set/claim/done never rewrite a note whose frontmatter did not read (Drive mid-sync / blank line before ---) — exit 3 «wait for sync, retry» instead of fabricating a 3-key header (shipped in 0.9.36) + regression test; types declare fm.toolBy (desktop validator error).
