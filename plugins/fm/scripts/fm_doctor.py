@@ -223,6 +223,16 @@ ITEMS = [
                     "interactive": False, "note": ""},
     },
     {
+        "id": "playwright", "name": "playwright-core (fm browse)", "level": "optional",
+        "why": "NotebookLM, Pinterest-ийг өөрийн бүртгэлээр удирдана (fm browse).",
+        "skills": ["browse", "watch"], "link": "https://playwright.dev/docs/library",
+        "detect": {"kind": "node_pkg", "dir": "tools/browse", "pkg": "playwright-core"},
+        "mac": {"command": "npm i --prefix \"${CLAUDE_PLUGIN_ROOT}/tools/browse\"", "interactive": False,
+                "note": "Шинэ browser татахгүй — суусан Chrome/Edge-ийг ашиглана."},
+        "windows": {"command": "npm i --prefix \"${CLAUDE_PLUGIN_ROOT}/tools/browse\"", "interactive": False,
+                    "note": "Шинэ browser татахгүй — суусан Edge-ийг ашиглана."},
+    },
+    {
         "id": "framer", "name": "Framer desktop", "level": "optional",
         "why": "Framer bridge.",
         "skills": ["framer"], "link": "https://www.framer.com/downloads/",
@@ -428,6 +438,8 @@ class Detector(object):
             res = self._detect_app(item)
         elif kind == "python":
             res = self._detect_python(item)
+        elif kind == "node_pkg":
+            res = self._detect_node_pkg(item)
         else:
             res = self._detect_cli(item)
         res.setdefault("version", None)
@@ -506,6 +518,21 @@ class Detector(object):
                 res["note"] = "; ".join(notes)
                 return res
         return {"status": "missing"}
+
+    def _detect_node_pkg(self, item):
+        # type: (dict) -> dict
+        d = item["detect"]
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        pj = os.path.join(root, d["dir"], "node_modules", d["pkg"], "package.json")
+        if not os.path.isfile(pj):
+            return {"status": "missing"}
+        try:
+            import json as _json
+            with open(pj, encoding="utf-8") as fh:
+                ver = _json.load(fh).get("version")
+        except Exception:
+            ver = None
+        return {"status": "ok", "path": pj, "version": ver}
 
     def _detect_app(self, item):
         # type: (dict) -> dict

@@ -1,0 +1,8 @@
+{
+  "name": "fm-browse",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "playwright-core": "^1.47.2"
+  }
+}
