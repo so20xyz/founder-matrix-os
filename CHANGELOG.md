@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.37: /fm:role project renames its own session «📁 <Нэр>» without asking (correct tool mcp__ccd_session_mgmt__set_session_title via ToolSearch; the old name mcp__ccd_session__… did not exist, leaving «Project Agent role»).
+
 - fm 0.9.36: Figma Claude Bridge v9 — camera follow off by default and no page-children snapshot at job start; on a big image-heavy file even `return 1` aborted the plugin («Plugin runtime aborted»). Verified live on «Client B» (jobs run, plugin stays connected).
 
 - **0.9.35 · Засварласан (itge.e 2026-10-14):** `fm_task.py set/claim/done` frontmatter уншигдаагүй (хоосон/дутуу уншилт Drive sync-ийн үеэр, `---`-ээс өмнө хоосон мөр) task note-д status/owner/updated-ийг шинэ толгой болгож бичин type/project/device/tags/up/date/priority болон H1-ийг устгадаг байв (10-11 Premiere, 10-14 Client B). Одоо `---`-ийн өмнөх хоосон мөрийг тэвчиж, frontmatter-гүй бол юу ч бичилгүй зогсоно (exit 3). Тест.
