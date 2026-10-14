@@ -43,7 +43,7 @@ root.counterAxisSizingMode = 'FIXED'; root.resize(1920, 10);
 // Hero
 const hero = box('hero', 'VERTICAL', 14);
 hero.appendChild(txt('FOUNDER MATRIX · SECOND BRAIN · v0.3.1', 14, F.s, C.project));
-hero.appendChild(txt('Нэг vault. 7 Agent. 16 skill. Ганц команд — «update».', 56, F.b, C.text, 1760));
+hero.appendChild(txt('Нэг vault. 7 Agent. 17 skill. Ганц команд — «update».', 56, F.b, C.text, 1760));
 hero.appendChild(txt('Obsidian vault бол цорын ганц эх сурвалж. Claude-ийн сешн бүр нэг дүртэй Agent; skill-ээр vault-д бичиж, bridge-ээр Figma, Framer, Notion, Discord руу гарна.', 20, F.r, C.mute, 1300));
 root.appendChild(hero);
 
@@ -78,7 +78,7 @@ const rs = box('sidebar', 'HORIZONTAL', 14);
 sd.appendChild(rs); root.appendChild(sd);
 
 // Skills
-const ss = section('02', 'Skill-ууд — юу', '10 үндсэн skill vault-ийг ажиллуулна, 6 хэрэгслийн skill гадагш холбоно.');
+const ss = section('02', 'Skill-ууд — юу', '11 үндсэн skill vault-ийг ажиллуулна, 6 хэрэгслийн skill гадагш холбоно.');
 const core = [['/fm:update', 'Ганц команд: save → task → хүмүүс → төсөл → inbox → өдөр → STATUS'], ['/fm:save', 'Атом + PARA холбоос · --checkpoint · <url>'], ['/fm:inbox', 'Ангилж төлөвлөөд зогсоно, батласны дараа зөөнө'], ['/fm:task', 'Үүсгэх · 🙋 авах · ✅ дуусгах'], ['/fm:project', 'Нээх, төлөв, хаах, самбар'], ['/fm:people', 'Хүмүүс, харилцаа, hot list'], ['/fm:role', 'Сешнийг дүрд холбох'], ['/fm:finance 🔒', 'Сарын төлбөр, бичлэг'], ['/fm:vault', 'Vault-ийн дүрэм, синтакс'], ['/fm:setup', 'Суулгалт, онбординг, doctor']];
 const tools = [['/fm:figma', 'Локал bridge-ээр зурах, prototype, export'], ['/fm:framer', 'Бүтэц, style · Framer → Figma'], ['/fm:notion', 'Тэмдэглэсэн note → багийн Notion'], ['/fm:post', 'Пост, 10 слайдын carousel, poster'], ['/fm:watch', 'Бичлэг → транскрипт + кадр'], ['/fm:relay', 'Discord: Mac ↔ PC ↔ утас, baton']];
 const sk = (n, d, a, w) => { const c = box(n, 'VERTICAL', 6, 20, C.card, 12); c.counterAxisSizingMode = 'FIXED'; c.resize(w, 10); c.strokes = [hex(C.line)];

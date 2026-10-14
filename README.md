@@ -144,7 +144,7 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 
 ---
 
-## Skill-ууд (10 + 6)
+## Skill-ууд (11 + 6)
 
 | Үндсэн skill | Юу | Хэрэгслийн skill | Юу |
 |---|---|---|---|
@@ -158,6 +158,7 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 | `/fm:finance` 🔒 | Сарын төлбөр, санхүүгийн бичлэг | | |
 | `/fm:vault` | Vault-ийн дүрэм, синтакс | | |
 | `/fm:setup` | Суулгалт, онбординг | | |
+| `/fm:log` | Task-ийн «Өөрчлөлтийн түүх»-д мөр + Google Calendar | | |
 
 Хэрэгсэл бүрийн заавар (юу, суулгах, token, аль Agent): [docs/tools/](docs/tools/). Bridge, routine, Discord-ийн дүрэм, нэмэлт хэрэгслийг нэг дор: **[docs/GUIDE.md](docs/GUIDE.md)**.
 
@@ -223,7 +224,7 @@ fm албан ёсны skill-ийг өөртөө **хуулдаггүй** — `/
 | Хавтас | Юу |
 |---|---|
 | `.claude-plugin/marketplace.json` | marketplace `founder-matrix` |
-| `plugins/fm/` | plugin `fm`: `skills/` (10 + 6), `agents/` (7), `hooks/`, `scripts/` (`fm_doctor`, `fm_setup`, `fm_onboard`…), `tools/` (relay, figma, framer, notion, watch), `vault-template/` — [plugins/fm/README.md](plugins/fm/README.md) |
+| `plugins/fm/` | plugin `fm`: `skills/` (11 + 6), `agents/` (7), `hooks/`, `scripts/` (`fm_doctor`, `fm_setup`, `fm_onboard`…), `tools/` (relay, figma, framer, notion, watch), `vault-template/` — [plugins/fm/README.md](plugins/fm/README.md) |
 | `tools/` | Plugin-гүй нэмэлт хэрэгсэл (save-to-inbox extension, sidepanel, n8n, inbox shortcut-ууд); `tools/relay/*.py` = live hook-уудын хуучин замын shim |
 | `docs/GUIDE.md` | Бүх бүрэлдэхүүний гарын авлага (Agent · skill · bridge · routine · Discord) |
 | `docs/tools/` | Хэрэгсэл бүрийн заавар |

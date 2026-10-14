@@ -12,6 +12,8 @@
 
 ## Unreleased
 
+- fm 0.9.61: загварын `Tasks.base` — `waiting_on` property («⏳ Хүлээж буй») + Waiting On харагдацын багана. README / system-map: skill 17 (11 үндсэн + 6 хэрэгсэл; `/fm:log` жагсаалтад нэмэгдэв).
+
 - fm 0.9.60: загварын `03-Areas/Studio.base` — Social saves хасагдсан (өөрийн gallery), «Бүгд (хавтасаар)» бүлэглэлт + Brainstorm · Moodboard · Social Posts · Poster maker · Motion · Бусад view; `type` хоосон бол хавтасны нэр (formula.kind).
   - Яагаад: Studio-ийн ажлын файлууд 500 social save-ийн дунд алга болохгүй · Дүрэм: [[_system/BOOT]] «Хавтас бүр base»
 

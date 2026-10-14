@@ -56,6 +56,8 @@ properties:
     displayName: I · Мэдээлэх
   device:
     displayName: Машин
+  waiting_on:
+    displayName: ⏳ Хүлээж буй
 views:
   - type: table
     name: Inbox
@@ -148,6 +150,7 @@ views:
     order:
       - formula.owner_icon
       - file.basename
+      - waiting_on
       - due
       - formula.days_until_due
       - project
