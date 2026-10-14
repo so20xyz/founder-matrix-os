@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- fm 0.9.33: /fm:role project «Other» matches every project — completed / on-hold / cancelled / 99-Archive, case- and Latin↔Cyrillic-insensitive (client-b → Client B); a closed project asks «open as is or reopen active».
+
 - **0.9.32 · Нэмсэн (itge.e 2026-10-14) — task түвшний RACI:** `projects:` (олон төсөл), `responsible`, `accountable` (ганц), `consulted`, `informed` (бусад төсөл автоматаар) — Task загвар, `fm:task` хүснэгт, Tasks.base шинэ property + «👥 RACI · олон төсөл» харагдац. Дараа: relay-ийн `informed` мэдэгдэл, Цаглабарын «I» тэмдэг.
 - **0.9.31 · Засварласан (itge.e 2026-10-14 — «watcher яагаад алгасаад байна»):** slug migration-ийн дараа `channels.json` хуучин slug-тай (`developer` → `architect`) үлдсэн тул `chmap` шинэ slug-ийн сешнд байхгүй суваг («🏛️-01-architect») зохиож, `relay.py watch` түүнийг **чимээгүй** алгасаад зөвхөн #gtd сонсож байв. `fm_roles_migrate` одоо `channels.json`-ийг шинэ slug руу нэмнэ; `watch` Discord-д байхгүй сувгийг `[watch error]` гэж мэдэгдэнэ. Тест.
 - **0.9.30 · Өөрчилсөн (itge.e 2026-10-14):** «нөгөө машин руу чат» — сешн бүр өөрийн Discord сувгаар шууд (Architect ↔ Architect = `#architect`), #gtd-ээр дамжуулахгүй (0.9.26-ийн дүрмийг солив). BOOT + `fm:relay`.

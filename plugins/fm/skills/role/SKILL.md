@@ -30,7 +30,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/role/scripts/fm_role.py" show "${user_conf
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" list "${user_config.vault_path}"
    ```
 
-   AskUserQuestion: сүүлд хөдөлсөн 2–4 төсөл (`active` · `planning` · `ongoing`), бусдыг «Other»-оор нэрээр. Тэр төслийн сешн **энэ төхөөрөмж дээр** registry-д аль хэдийн байвал (`role: project`, ижил `project`/`folder`, ижил `device`) — «энэ төслийн сешн аль хэдийн байна: <гарчиг>, тэнд үргэлжлүүлэх үү?» гэж хэл, давхар бүү холбо.
+   AskUserQuestion: сүүлд хөдөлсөн 2–4 төсөл (`active` · `planning` · `ongoing`), бусдыг «Other»-оор нэрээр. **«Other»-д бичсэн нэрийг `list`-ийн БҮХ төсөлтэй тулга** — `completed` · `on-hold` · `cancelled` · архивласан ч (itge.e 2026-10-14: «client-b archived гаргаж ирэх»): том жижиг үсэг, хоосон зай, латин ↔ кирилл галиг (client-b ↔ Client B, Inai ↔ Инай) хамаагүй; `99-Archive/`-д байгаа төслийг ч хай. Хаалттай төсөл олдвол «<Нэр> — <status>. Сешнийг нээх үү (төлөв хэвээр), эсвэл `active` болгож дахин нээх үү?» гэж нэг асуултаар тодруулаад bind хий; олдохгүй бол ойролцоо 3 нэрийг санал болго. Тэр төслийн сешн **энэ төхөөрөмж дээр** registry-д аль хэдийн байвал (`role: project`, ижил `project`/`folder`, ижил `device`) — «энэ төслийн сешн аль хэдийн байна: <гарчиг>, тэнд үргэлжлүүлэх үү?» гэж хэл, давхар бүү холбо.
    Сонгосны дараа: slug = төслийн нэрийн англи kebab; доорх bind-д `--project <slug> --folder "02-Projects/<Нэр>" --title "📁 <Нэр>"` нэм.
 
 1. **Бүртгэ.** Session id-г Claude Code өөрөө орлуулна. Орлуулаагүй бол скрипт `CLAUDE_SESSION_ID` / `CLAUDE_CODE_SESSION_ID` орчны хувьсагчаас уншина.
