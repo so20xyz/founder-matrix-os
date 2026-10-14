@@ -1,7 +1,7 @@
 /** `private` = a 🔒 task / event (private: true, a private owner, a finances/ path): listed only in a private session. */
 export type CalItem = { kind: 'task' | 'event'; title: string; date: string; time: string; status: string; owner: string; owners?: string[]; project: string; activity?: string; priority?: string; research?: string; file: string; started?: string; completed?: string; claimed?: string; updated?: string; log?: Array<{ at: string; what: string }>; plan?: Array<{ subject: string; done: boolean }>; private?: boolean }
 
-export type VaultTask = { title: string; status: string; due: string; owner: string; owners?: string[]; project?: string; updated?: string; file?: string; started?: string; completed?: string; claimed?: string; device?: string; private?: boolean }
+export type VaultTask = { title: string; status: string; due: string; owner: string; owners?: string[]; project?: string; updated?: string; file?: string; started?: string; completed?: string; claimed?: string; device?: string; waitingOn?: string; private?: boolean }
 
 export type RoleInfo = { slug: string; label: string; agent: string; skills: string[]; note: string; channel: string; private: boolean }
 

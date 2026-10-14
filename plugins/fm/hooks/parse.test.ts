@@ -1,6 +1,12 @@
 import { expect, test } from 'bun:test'
 import { parseTask, rank, canonRole, planOf } from './parse'
 
+test('waiting_on wikilink → waitingOn (basename)', () => {
+  const n = (fm: string) => `---\n${fm}\n---\nbody`
+  expect(parseTask('W.md', n('type: task\nstatus: waiting\nwaiting_on: "[[01-GTD/Tasks/Wiki судалгаа|алиас]]"'))?.waitingOn).toBe('Wiki судалгаа')
+  expect(parseTask('V.md', n('type: task\nstatus: inbox'))?.waitingOn).toBeUndefined()
+})
+
 const note = (fm: string) => `---\n${fm}\n---\n\n# x\n`
 
 test('open and completed tasks parsed, non-task skipped', () => {

@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.59: Цаглабар — task-ийн `waiting_on: "[[…]]"` (RACI pipeline) картын эзний мөрөнд «⏳ <хүлээж буй task>» гэж харагдана (`parseTask` → `waitingOn`, тест).
+  - Яагаад: аль ажил өөр agent-ын гаралтыг хүлээж байгааг самбараас шууд харна · Дүрэм: [[_system/BOOT]] «RACI ба pipeline» · Ном: GTD
+
 - fm 0.9.58: newsletter `render.py` v2 — №2 дугаарын гар HTML-ийг загвар болгов: `title_em`, `byline`, `hero` зураг, хэсэг бүрт `body` (догол мөрийн жагсаалт, **тод**/`код`), `quote`, `figure` (svg эсвэл зураг + caption), `table`, `ours` («Манайд»), `relevance`, номын эх (`book: true`); Inai Website DS (Spectral + Inter, #F0EDE4 / #E8E4DA / #080808, accent #1B5CFF). v1 issue.json хэвээр ажиллана; Windows консолд UTF-8.
   - Яагаад: newsletter-ийн дугаар бүр гараар HTML бичихгүйгээр, ижил брэнд, бүтэцтэй гарна · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-14 - INAI Newsletter тусдаа төсөл болов]]
 
