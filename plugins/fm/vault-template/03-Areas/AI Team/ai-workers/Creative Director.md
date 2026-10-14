@@ -32,7 +32,6 @@ aliases:
 up: "[[03-Areas/AI Team/ai-workers/AI Workers]]"
 agent: "🎨 Creative Agent"
 bases:
-  - "[[03-Areas/Studio.base]]"
   - "[[03-Areas/Gallery.base]]"
 scripts:
   - "build_library.py"

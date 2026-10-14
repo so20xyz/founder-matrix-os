@@ -100,3 +100,10 @@ context: work | home
 area: "[[байгууллага эсвэл хүрээ]]" · company: "[[байгууллага]]" · goals: ["[[<он> Goals]]"]
 people: ["[[Хүн]]"] — хүний note-д `projects:` нь энэ төсөл рүү заана.
 -->
+
+## 📂 Төслийн файлууд (Inbox → Баримт → Output)
+
+> Энэ төслийн хавтасны файлууд шатаар: 📥 Inbox (орж ирсэн), 📄 Баримт (brief, spec, plan), 📤 Output (гаралт). Бүх төслийн нэгдсэн харагдац: [[02-Projects/Project Files.base]].
+
+![[02-Projects/Project Files.base#Энэ төсөл]]
+

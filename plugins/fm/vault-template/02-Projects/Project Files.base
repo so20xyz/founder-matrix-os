@@ -2,17 +2,58 @@ filters:
   and:
     - file.inFolder("02-Projects")
     - file.ext == "md"
+    - note.type != "project"
+formulas:
+  project: file.folder.split("/")[1]
+  stage: 'if(file.folder.contains("/Inbox"), "📥 Inbox", if(file.folder.contains("/Output"), "📤 Output", "📄 Баримт"))'
+properties:
+  formula.project:
+    displayName: Төсөл
+  formula.stage:
+    displayName: Шат
 views:
+  - type: table
+    name: Энэ төсөл
+    filters:
+      and:
+        - file.inFolder(this.file.folder)
+    groupBy:
+      property: formula.stage
+      direction: ASC
+    order: [file.name, type, status, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: 📥 Inbox (бүх төсөл)
+    filters:
+      and:
+        - file.folder.contains("/Inbox")
+    groupBy:
+      property: formula.project
+      direction: ASC
+    order: [file.name, formula.project, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: 📤 Output (бүх төсөл)
+    filters:
+      and:
+        - file.folder.contains("/Output")
+    groupBy:
+      property: formula.project
+      direction: ASC
+    order: [file.name, formula.project, status, file.mtime]
+    sort:
+      - property: file.mtime
+        direction: DESC
   - type: table
     name: Төслийн бүх файл
     groupBy:
-      property: file.folder
+      property: formula.project
       direction: ASC
-    order:
-      - file.name
-      - type
-      - status
-      - file.mtime
+    order: [file.name, formula.stage, type, status, file.mtime]
     sort:
       - property: file.mtime
         direction: DESC
