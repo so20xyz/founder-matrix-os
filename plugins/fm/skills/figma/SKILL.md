@@ -8,7 +8,7 @@ argument-hint: "[status | run -f <script.js> | export <nodeId> | comments]"
 
 Бүрэн локал: таны компьютер дээрх жижиг сервер (порт 3055) ↔ Figma **desktop** дахь «Claude Bridge» dev plugin. Заавар, суулгалт: `docs/tools/figma.md`.
 
-- Код: `F=${CLAUDE_PLUGIN_ROOT}/tools/figma` - `bridge/server.mjs` (Node, сан шаардахгүй), `bridge/plugin/manifest.json`, `fig.py` (CLI), `figma.py` (REST), `icons.py`, `scripts/check_layout.js`, `scripts/contrast_check.js`.
+- Код: `F=${CLAUDE_PLUGIN_ROOT}/tools/figma` - `bridge/server.mjs` (Node, сан шаардахгүй), `bridge/plugin/manifest.json`, `fig.py` (CLI), `figma.py` (REST), `icons.py`, `scripts/check_layout.js`, `scripts/contrast_check.js`, `scripts/creative_check.js`, `scripts/safe_zones.js`.
 - Шаардлага: Figma desktop, Node.js 24, Python 3.9+ (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_doctor.py" --only figma,node`).
 - Төлөв (коммент, stash): `~/.fmos/figma/` (plugin хавтсанд биш). Порт: `FIGMA_BRIDGE_PORT`.
 
@@ -38,6 +38,8 @@ argument-hint: "[status | run -f <script.js> | export <nodeId> | comments]"
 1. **Харах:** `python3 "$F/fig.py" --doc "<файл>" export <nodeId> --out <scratch>/x.png` → Read-ээр PNG-г хар.
 2. **Давхцал:** `scripts/check_layout.js`-ийн `__ROOT__`-г `"<id>"`-ээр солиод run - 0 гартал зас.
 3. **Contrast (WCAG):** `scripts/contrast_check.js` (`__ROOT__` мөн адил) - том текст 3:1, бусад 4.5:1. Нийтлэх (post) бүтээл бүрт заавал.
+4. **Creative (пост, постер):** `scripts/creative_check.js` (`__ROOT__` мөн адил) - текст ≥ 18 px, фонтын бүл ≤ 2, шатлал ≤ 3 түвшин (харьцаа ≥ 1.25), текст safe zone дотор (feed 135 px дээд/доод · story 14% / 35% / 6%). Guide нэмэх: `scripts/safe_zones.js`.
+5. **360 px thumbnail:** `fig.py export <id> --scale 0.3333 --out x-360.png` → Read; утсан дээрх хэмжээгээр дэгээ уншигдаж байгаа эсэх.
 
 ## Animation (prototype)
 

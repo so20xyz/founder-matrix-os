@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.50: creative шалгалт (Wiki-ийн branding судалгаа) — Figma `scripts/creative_check.js` (текст ≥ 18 px, фонтын бүл ≤ 2, шатлал ≤ 3 түвшин / харьцаа ≥ 1.25, safe zone feed 135 px · story 14/35/6%), `scripts/safe_zones.js` (guide нэмэх); HTML `tools/browse/post_check.mjs` (жижиг текст, халалт, мөрийн хязгаар, фонт, шатлал, гарчгийн зай, слайд бүрийн 360 px thumbnail; headless Chrome/Edge); fm:post brief-д 3 түвшний scale, лавлагааны spec, Ө/Ү фонт шалгалт, 8 layout жор, AI зургийн анкор + 3 блок prompt + харьцуулах frame; fm:figma шалгах алхам 4-5. Бүгд өөрсдийн код — guizang (AGPL)-аас хуулаагүй.
+  - Яагаад: постыг нийтлэхээс өмнө утсан дээр уншигдахгүй текст, safe zone-оос гарсан үнэ, хэт олон хэмжээг автоматаар илрүүлж, v2→v12 давталтыг багасгана · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-14 - type-scale-three-levels]]
+
 - fm 0.9.49: атом/note-ийн файлын нэр = кирилл монгол гарчиг (≤60 тэмдэгт), англи нэр `aliases:`-д — BOOT, save/inbox/vault skill, Atomic/Session Decision загвар, README (хуучин `<ascii-slug>` дүрэм). `fm_task` хайлт ба `fm_brain_check` холбоос шийдэгч нэрийг NFC + casefold-оор харьцуулна (Mac Drive кирилл нэрийг NFD-ээр өгч болно).
   - Яагаад: файлын нэр, холбоос нь латин орчуулгагүй уншигдана; англи нэрээр ч хайхад олдоно · Дүрэм: [[_system/BOOT]] «Нэг баримт = нэг атом» · Ном: Zettelkasten
 
