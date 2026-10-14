@@ -31,6 +31,7 @@ argument-hint: "[status | run -f <script.js> | export <nodeId> | comments]"
 - Зураг: plugin sandbox URL-ээс татаж чаддаггүй (`createImageAsync` бүтэлгүйтдэг) — **base64-ээр залга**: `python3 -c "import base64,json,sys;print(json.dumps(base64.b64encode(open(sys.argv[1],'rb').read()).decode()))" img.png > img.json` → `fig.py run -f s.js --inject IMG=img.json`, JS-д `const h = figma.createImage(figma.base64Decode(IMG)).hash; node.fills = [{type:'IMAGE', imageHash:h, scaleMode:'FILL'}]`. Нэг зураг ≤ ~4 MB.
 - Нэг frame, нэг текстэд ижил нэр бүү өг (`findOne` frame-ийг түрүүлж олно).
 - **Холбоос шугам (diagram):** шугамыг хайрцгийн ТӨВӨӨС биш, хамгийн ойр ИРМЭГИЙН дундаас ирмэг рүү; шугам доод давхаргад, хайрцаг дүүргэлттэй (тунгалаг биш) — шугам текстийг огтолж болохгүй. Placeholder (диагональ X) хоосон хайрцаг үлдээхгүй — жишээ агуулга оруул. Сонголтын (selection) stroke үлдээхгүй. (itge.e 2026-10-07: FIG.06/08 «муухай»)
+- **Олон frame-тэй гаралт (слайд, карт) = wrap grid, «могой» биш (itge.e 2026-10-14):** frame-уудыг нэг урт мөрөнд биш, wrapper frame-д: `layoutMode='HORIZONTAL'`, `layoutWrap='WRAP'`, өргөн = N багана (жишээ 5 × 1920 + 4 × 120), `itemSpacing`/`counterAxisSpacing` 120, padding 120, өндөр HUG (`primaryAxisSizingMode`/`counterAxisSizingMode`); section-ийг wrapper-ийн хэмжээнд тааруул. Жишээ: «Second Brain» файлын 582:2 (10 слайд, 5×2).
 - Байрлуулахдаа хэмж: богино шошгод `textAutoResize='WIDTH_AND_HEIGHT'`, дараагийнх `y = өмнөх y + өндөр + зай`.
 
 ## Шалгах (зурсан бүрийн дараа)

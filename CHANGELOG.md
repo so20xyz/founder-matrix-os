@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.52: fm:figma — олон frame-тэй гаралт (слайд, карт) нэг урт мөр биш, wrap auto-layout grid-д (HORIZONTAL + WRAP, N багана, 120 зай/padding, HUG өндөр, section wrapper-ийн хэмжээнд).
+  - Яагаад: Figma-д слайдуудыг нэг дэлгэцэд багтааж харж, сэтгэгдэл өгөхөд хялбар · Дүрэм: fm:figma «Код ажиллуулах»
+
 - fm 0.9.51: RACI ба pipeline дүрэм (BOOT загвар, fm:task) — R = `owner`, A = `project:`-ийн сешн (эсвэл `delegated_from`), C = `consulted:` (заавал биш), I = гишүүн; тусдаа `raci:` талбаргүй. Өөр agent-ын гаралтыг хүлээх task: `status: waiting` + `waiting_on: "[[task]]"`, дуусмагц гүйцэтгэгч «## Шилжүүлэлт»-д мөр нэмж A сешнийг сэрээнэ.
   - Яагаад: agent-ууд бие биеийнхээ ажлыг хүлээж, дамжуулж, дүгнэлт нэг газар гарна — ажил pipeline шиг урсана · Дүрэм: [[_system/BOOT]] «RACI ба pipeline» · Ном: GTD, BMG (Key Activities)
 
