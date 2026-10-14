@@ -8,6 +8,12 @@
   * хатуу хасалт: `public: true` байсан ч доорх замууд, `private: true` note хэзээ ч орохгүй.
   * --include: localhost прототипт л — заасан note-ыг opt-in-гүй оруулна, гэхдээ хатуу хасалтыг ДАВАХГҮЙ.
 Гаралт: [{path, title, type, date, updated, summary, links}] — шүүх/бичих шат (Haiku → Opus) оролт.
+
+  python collect.py <vault> --questions   # өдрийн судалгааны цикл: `scope: inai` сэдвүүдийн open-questions
+Сэдвийн hub (04-Resources/Topics/*.md)-ийн `open-questions:` → [{topic, question, link}]. Agent асуулт бүрээр
+вэбээс хайж, олдсоныг `04-Resources/references/`-д `topics: ["<link>"]`, `question: "<асуулт>"`-тай лавлагаа
+болгоно → Wiki шалгана (decision 2026-10-14 sedev-sudalgaany-hodolguur). `scope: internal` сэдэв орохгүй
+(decision 2026-10-14 sudalgaa-inai-vs-dotood-hureee).
 """
 import argparse, datetime as dt, json, os, re, sys
 from pathlib import Path
@@ -98,13 +104,39 @@ def collect(vault, days=7, include=()):
     return items, skipped
 
 
+def questions(vault):
+    """`scope: inai` сэдвийн hub бүрийн open-questions (YAML жагсаалт, мөр бүр `  - "..."`)."""
+    out = []
+    for p in sorted((Path(vault) / "04-Resources" / "Topics").glob("*.md")):
+        m = FM_RE.match(p.read_text(encoding="utf-8"))
+        if not m:
+            continue
+        head, qs, inq = m.group(1), [], False
+        if not re.search(r"(?m)^scope:\s*inai\s*$", head):
+            continue
+        for line in head.splitlines():
+            if re.match(r"^open-questions:\s*$", line):
+                inq = True
+            elif inq and re.match(r"^\s+-\s+", line):
+                qs.append(re.sub(r"^\s+-\s+", "", line).strip().strip("\"'"))
+            elif inq and not line.startswith(" "):
+                inq = False
+        out += [{"topic": p.stem, "question": q, "link": "[[04-Resources/Topics/%s]]" % p.stem} for q in qs if q]
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("vault")
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--include", action="append", default=[])
     ap.add_argument("--out")
+    ap.add_argument("--questions", action="store_true", help="scope: inai сэдвүүдийн open-questions")
     a = ap.parse_args(argv)
+    if a.questions:
+        sys.stdout.reconfigure(encoding="utf-8")
+        print(json.dumps(questions(a.vault), ensure_ascii=False, indent=1))
+        return
     items, skipped = collect(a.vault, a.days, a.include)
     data = json.dumps({"generated": dt.datetime.now().isoformat(timespec="minutes"), "items": items, "skipped": skipped},
                       ensure_ascii=False, indent=1)

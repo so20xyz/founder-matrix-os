@@ -482,3 +482,15 @@ def test_newsletter_collect_opt_in_and_hard_excludes(tmp_path):
     got = sorted(i["path"] for i in items)
     assert got == ["04-Resources/Atomic/knowledge/ok.md", "04-Resources/Atomic/knowledge/quiet.md"]   # forced quiet ok, forced people NO
     assert skipped["path"] == 3 and skipped["client"] == 2 and skipped["private"] == 1
+
+
+def test_newsletter_questions_only_inai_topics(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("nl_collect", REPO / "plugins" / "fm" / "tools" / "newsletter" / "collect.py")
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    t = tmp_path / "04-Resources" / "Topics"; t.mkdir(parents=True)
+    (t / "A.md").write_text('---\ntype: topic\nopen-questions:\n  - "Q1?"\n  - Q2\nscope: inai\n---\n# A\n', encoding="utf-8")
+    (t / "B.md").write_text('---\ntype: topic\nopen-questions:\n  - "Дотоод?"\nscope: internal\n---\n# B\n', encoding="utf-8")
+    qs = m.questions(tmp_path)
+    assert [q["question"] for q in qs] == ["Q1?", "Q2"]
+    assert qs[0]["link"] == "[[04-Resources/Topics/A]]"

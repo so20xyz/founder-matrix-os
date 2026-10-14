@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.47: newsletter `collect.py --questions` — өдрийн судалгааны цикл: `scope: inai` сэдвийн hub-уудын `open-questions:` → [{topic, question, link}]; agent асуулт бүрээр хайж `topics:` + `question:`-тай лавлагаа үүсгэнэ, Wiki шалгана. `scope: internal` сэдэв орохгүй. Тест.
+  - Яагаад: сэдэв бүрийн нээлттэй асуултаар өдөр бүр шинэ эх сурвалж олдож, newsletter нь «энэ долоо хоногт юу шинээр мэдэв» болно · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-14 - sedev-sudalgaany-hodolguur]] · Ном: Zettelkasten
+
 - fm 0.9.47: Figma bridge коммент routing — `fig.py comments --doc X [--session S]` зөвхөн X файлын, өөр сешн аваагүй thread-ийг өгнө (`--wait`-ээр хүргэсэн thread `claimedBy=S` болно); `reply` сешний нэрийг (`--as` эсвэл env FIG_SESSION/CLAUDE_SESSION_TITLE/FM_ROLE) тэмдэглэж, plugin панелд «Claude · S» гэж харуулна; `--doc`-оос өөр файлын эсвэл өөр сешний thread-д хариулахыг 409-өөр хориглоно (`--force`). Session/--doc өгөхгүй бол хуучин зан.
   - Яагаад: хэд хэдэн Claude сешн зэрэг ажиллахад нэг төслийн Figma коммент-д өөр төслийн сешн хариулахаа болино · Дүрэм: [[_system/BOOT]] · Ном: GTD
 
