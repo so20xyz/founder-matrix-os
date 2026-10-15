@@ -31,12 +31,14 @@ def test_publish_and_plan():
 
 def test_sub_parent_by_title_and_startedby():
     v = Path(tempfile.mkdtemp()); (v / "_system/fm").mkdir(parents=True)
+    fs.ACTIVE = v / "active"; fs.ACTIVE.mkdir(); (fs.ACTIVE / "p3").write_text("01-GTD/Tasks/Брэнд.md", encoding="utf-8")
     pc = [s("p1", "📁 Client B", "Projects"), s("p2", "📚 Wiki", "Resources"),
           s("p3", "🔍 Client B › брэнд", "Projects"), dict(s("p4", "🎨 Journal 004 › постер", "Resources"), startedBy="p2")]
     d = fs.publish(v, pc, "PC")
     par = {x["title"]: x["parent"] for x in d["subs"]}
     assert par == {"🔍 Client B › брэнд": "title/client b", "🎨 Journal 004 › постер": "title/wiki"}, par
     a = fs.plan(v, [s("m1", "📁 Client B", "Projects"), s("m2", "📚 Wiki", "Resources")], "Mac")
+    assert {x["title"]: x["task"] for x in a["missing_sub"]}["🔍 Client B › брэнд"] == "01-GTD/Tasks/Брэнд.md", a
     assert {x["title"]: x["parent_id"] for x in a["missing_sub"]} == {"🔍 Client B › брэнд": "m1", "🎨 Journal 004 › постер": "m2"}, a
 
 

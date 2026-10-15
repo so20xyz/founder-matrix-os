@@ -100,6 +100,19 @@ def nameless(title):
     return t.startswith("side chat") or t.endswith("(fork)") and "›" not in t
 
 
+ACTIVE = Path.home() / ".fmos" / "active-task"
+
+
+def active_task(sid):
+    """fm:log-ийн ~/.fmos/active-task/<sid> — дэд сешний одоогийн task (vault-аас харьцангуй), байхгүй бол None."""
+    sid = (sid or "").replace("local_", "")
+    try:
+        t = (ACTIVE / sid).read_text(encoding="utf-8").strip()
+        return t or None
+    except Exception:
+        return None
+
+
 def subs_of(vault, sessions, tops, keys):
     """Дэд сешнүүд (itge.e 2026-10-15: «fork хийгдсэн сешнүүдийг барьж авах»): эцэг = startedBy, эсвэл «эх › …»-ийн эх."""
     by_id = {s.get("sessionId"): s for s in sessions}
@@ -116,7 +129,8 @@ def subs_of(vault, sessions, tops, keys):
         elif "›" in t:
             head = norm(t.split("›")[0])
             parent = next((k for n, k in top_by_norm.items() if n == head or n.endswith(" " + head) or head.endswith(" " + n)), None)
-        out.append({"key": "sub/" + norm(t), "title": t, "group": g, "parent": parent, "folder": rel_folder(vault, s.get("cwd"))})
+        out.append({"key": "sub/" + norm(t), "title": t, "group": g, "parent": parent, "folder": rel_folder(vault, s.get("cwd")),
+                    "task": active_task(s.get("sessionId"))})
     return out
 
 
@@ -184,7 +198,8 @@ def plan(vault, sessions, device):
         acts["missing_sub"].append({"title": e["title"], "group": e["group"],
                                     "parent_id": par["sessionId"] if par else None,
                                     "parent_title": par["title"] if par else None,
-                                    "folder": str(vault / e["folder"]) if e.get("folder") else str(vault)})
+                                    "folder": str(vault / e["folder"]) if e.get("folder") else str(vault),
+                                    "task": e.get("task")})
     return acts
 
 
