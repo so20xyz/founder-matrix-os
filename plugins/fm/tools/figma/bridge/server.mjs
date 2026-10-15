@@ -40,7 +40,12 @@ const waiters = new Set();
 const choiceWaiters = new Map();   // choice thread id -> Set(fn)  (fig.py ask --wait)
 function answerChoice(root, ans) {
   if (!root || !root.choice || root.answer) return;
-  root.answer = { ...ans, at: Date.now() }; saveComments();
+  root.answer = { ...ans, at: Date.now() };
+  // харагдах төлөв: агент хүлээж байвал шууд «ажиллаж байна», үгүй бол «дараалалд» (сешн дараа нь авна)
+  const who = root.claimedBy || root.session || "сешн", live = (choiceWaiters.get(root.id) || new Set()).size > 0;
+  root.status = { state: live ? "working" : "queued", text: live ? `${who} хүлээн авлаа, эхэлж байна` : `${who} одоогоор хүлээгээгүй — дараагийн шалгалтаар авна`, at: Date.now() };
+  if (live) delivered = [...new Set([...delivered, root.id])];   // live спиннер + Stop hook эцсийн хариуг thread-д mirror хийнэ
+  saveComments();
   for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments }));
   for (const w of choiceWaiters.get(root.id) || []) w(); choiceWaiters.delete(root.id);
 }
@@ -145,6 +150,7 @@ const server = http.createServer(async (req, res) => {
       if (q.get("all")) return json(200, comments.filter(c => !file || (c.file || "").toLowerCase().includes(file.toLowerCase())));
       if (q.get("choice")) { const id = q.get("choice"); let t = comments.find(c => c.id === id);
         if (t && !t.answer && q.get("wait")) { await new Promise(r => { const f = () => r(); const set = choiceWaiters.get(id) || new Set(); set.add(f); choiceWaiters.set(id, set); setTimeout(() => { set.delete(f); r(); }, 1000 * Number(q.get("wait"))); }); t = comments.find(c => c.id === id); }
+        if (t && t.answer && t.status && t.status.state === "queued") { t.status = { state: "working", text: `${t.claimedBy || "сешн"} хүлээн авлаа, эхэлж байна`, at: Date.now() }; delivered = [...new Set([...delivered, id])]; saveComments(); for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments })); }
         return t ? json(200, { id, title: t.text, answer: t.answer || null, options: t.choice }) : json(404, { error: "choice олдсонгүй" }); }
       const session = q.get("session") || "";
       const fresh = () => openThreads(file, session).filter(t => !(q.get("wait") && delivered.includes(t.id)));   // хариулж буй thread-ийг дахин бүү өг
@@ -167,6 +173,7 @@ const server = http.createServer(async (req, res) => {
       if (parent && b.doc && !b.force && !fileMatch(parent, b.doc)) return json(409, { error: `thread ${parent.id} нь «${parent.file}» файлынх, --doc «${b.doc}» биш. --force-оор хүчлэх` });
       if (parent && b.session && !parent.claimedBy) parent.claimedBy = b.session;
       if (parent && b.session && parent.claimedBy && parent.claimedBy !== b.session && !b.force) return json(409, { error: `thread ${parent.id}-ийг «${parent.claimedBy}» сешн авсан. --force-оор хүчлэх` });
+      if (parent && (b.from || "claude") === "claude" && parent.status && parent.status.state !== "done" && !b.keepStatus) parent.status = null;
       return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, ...(b.session ? { session: b.session } : {}), parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}), ...(b.choice ? { choice: b.choice } : {}), ...(!b.parent && b.session ? { claimedBy: b.session } : {}), ...(b.images ? { images: b.images } : {}) }));
     }
   }
@@ -207,7 +214,7 @@ const server = http.createServer(async (req, res) => {
       claude = { ...claude, state: "idle", since: now, doneMs: now - (claude.turnStart || now) };
       // Сешний эцсийн хариуг plugin-ий thread руу яг тэр чигээр нь (mirror)
       if (b.text && delivered.length) {
-        for (const id of delivered) { const root = comments.find(c => c.id === id);
+        for (const id of delivered) { const root = comments.find(c => c.id === id); if (root && root.status && root.status.state === "working") root.status = null;
           if (root && !comments.some(c => c.parent === id && c.from === "claude" && c.text === b.text)) addComment({ from: "claude", text: b.text, parent: id, file: root.file, node: root.node, mirror: true }); }
         delivered = [];
       }
