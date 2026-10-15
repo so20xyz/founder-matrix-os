@@ -12,6 +12,8 @@
 
 ## Unreleased
 
+- fm 0.9.70: fm:figma — шинэ хувилбарын frame холбогдох section дотор, өмнөх хувилбарын баруун талд (ижил мөр, 120 px), дараа нь section resize; хоосон canvas-д сул frame үлдээхгүй.
+
 - fm 0.9.69: сешн icon-тойгоо төрнө — SessionStart hook (`source: startup`, fork/spawn/Workflow-ээр нээсэн сешн ч мөн) additionalContext-ийн эхэнд «⚠️ ЭХНИЙ АЛХАМ: нэр icon-оор эхлээгүй бол set_session_title → «<icon> <ажил> › <дэд ажил>»» (дүр танигдвал түүний icon). Mod-ын API сешний гарчгийг шууд тавих боломжгүй (шалгав).
 
 - fm 0.9.68: сешний нэрийн дүрэм бүх урсгалд — Desktop fork, `start_session`/spawn, Workflow agent `label`, `/fm:role`/project сешн: «<ажлын icon> <ажил> › <дэд ажил>», нээсэн сешн `set_session_title`-аар тэр даруй нэрлэнэ. BOOT «Зэрэгцээ сешн», fm:task, fm:update, fm:role-д.
