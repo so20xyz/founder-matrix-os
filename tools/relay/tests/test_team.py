@@ -26,7 +26,15 @@ MSGS = {"c1": [{"id": "11", "content": "сайн уу баг", "author": {"usern
         "t1": [{"id": "21", "content": "reply in thread", "author": {"username": "so20"}, "timestamp": "2026-10-06T10:05:00"}]}
 def fake(method, path, body=None):
     CALLS.append((method, path))
-    if path.endswith("/channels") and path.startswith("/guilds/TEAM"): return [{"id": "c1", "name": "general", "type": 0}]
+    if path == "/users/@me": return {"id": "BOT"}
+    if path.startswith("/guilds/TEAM/members/search"): return [{"user": {"id": "U9", "username": "tse"}}]
+    if method == "POST" and path == "/guilds/TEAM/channels":
+        SENT.append((path, body)); return {"id": "new1", "name": body["name"]}
+    if path.endswith("/channels") and path.startswith("/guilds/TEAM"):
+        return [{"id": "c1", "name": "general", "type": 0, "parent_id": "cat1"},
+                {"id": "c2", "name": "zakhiral", "type": 0,
+                 "permission_overwrites": [{"id": "TEAM", "type": 0, "deny": "1024"}]},
+                {"id": "cat1", "name": "Төслүүд", "type": 4}]
     if path.startswith("/guilds/TEAM/threads/active"): return {"threads": [{"id": "t1", "name": "brief", "parent_id": "c1"}]}
     if path.startswith("/guilds/"): raise AssertionError("touched non-team guild: " + path)
     if method == "POST": SENT.append((path, body)); return {"id": "x"}
@@ -67,6 +75,35 @@ def main():
         check(rc != 0 and "SENT" not in out, f"send: blocks vault/finance leak: {leak[:24]}", out)
     rc, out = child("team.send('#general', 'Маргааш 10:00-д уулзъя', True)\nprint('SENT', json.dumps(SENT, ensure_ascii=False))", env)
     check(rc == 0 and '"/channels/c1/messages"' in out and "уулзъя" in out, "send: approved clean text posted to team channel", out)
+
+    rc, out = child("team.create_channel('bus-1-handiv', False)\nprint('SENT', len(SENT))", env)
+    check(rc != 0 and "--approved" in out and "SENT" not in out, "create-channel: refused without --approved", out)
+
+    rc, out = child("team.create_channel('General', True)\nprint('SENT', len(SENT))", env)
+    check(rc == 0 and "EXISTS c1" in out and "SENT 0" in out, "create-channel: idempotent, existing name → EXISTS, nothing created", out)
+
+    rc, out = child("team.create_channel('bus-1-handiv', True, private=True, members=[\'701\', \'@tse\'])\n"
+                    "print('SENT', json.dumps(SENT, ensure_ascii=False))", env)
+    ok = rc == 0 and "CREATED new1" in out
+    try:
+        body = json.loads(out.split("SENT", 1)[1])[0][1]
+        ows = {o["id"]: o for o in body["permission_overwrites"]}
+        ok = ok and body["name"] == "bus-1-handiv" and ows["TEAM"]["deny"] == "1024" and ows["TEAM"]["type"] == 0
+        ok = ok and all(ows[i]["allow"] == "1024" and ows[i]["type"] == 1 for i in ("701", "U9", "BOT"))
+    except Exception as e:
+        ok = False; out += f"\nparse: {e}"
+    check(ok, "create-channel: private overwrites deny @everyone, allow members + bot", out)
+
+    rc, out = child("team.create_channel('zar medee', True, category='Шинэ бүлэг', topic='t', map_slug='bus1')\n"
+                    "print('SENT', json.dumps(SENT, ensure_ascii=False))", env)
+    cfg = json.loads((repo / "relay" / "discord.json").read_text(encoding="utf-8"))
+    check(rc == 0 and '"type": 4' in out.split("SENT", 1)[-1], "create-channel: missing category created once", out)
+    check(cfg.get("team_map") == {"bus1": "zar-medee"} and cfg.get("guild", {}).get("id") == "PERSONAL"
+          and cfg.get("team_guild", {}).get("id") == "TEAM", "create-channel: --map adds one key, other keys untouched", json.dumps(cfg))
+
+    rc, out = child("team.list_channels()", env)
+    check(rc == 0 and "public  #general" in out and "private  #zakhiral" in out and "[Төслүүд]" in out
+          and "SENT" not in out, "list-channels: category, public/private shown, read-only", out)
 
     (repo / "relay" / "discord.json").write_text(json.dumps({"guild": {"id": "PERSONAL"}}), encoding="utf-8")
     rc, out = child("team.read()", env)
