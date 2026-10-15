@@ -93,11 +93,15 @@ async function nlmList(ctx) {
 }
 
 async function nlmOpen(ctx, ref) {
+  // аль хэдийн нээлттэй notebook (id-аар) — нүүр хуудас руу навигац хийхгүй, өөр ask-ийг таслахгүй
+  const open = ctx.pages().find(p => p.url().includes('/notebook/' + ref))
+  if (open) { await open.bringToFront(); await open.waitForSelector('textarea[aria-label="Query box"]', { timeout: 30000 }); return open }
   const list = await nlmList(ctx)
   const hit = list.find(n => n.id === ref) || list.find(n => n.title.toLowerCase().includes(String(ref).toLowerCase()))
   if (!hit) throw new Error('notebook олдсонгүй: ' + ref)
   const pg = await pageFor(ctx, NLM)
-  await pg.goto('https://notebook.google.com/notebook/' + hit.id, { waitUntil: 'domcontentloaded' })
+  // аль хэдийн тэр notebook дээр бол дахин навигац хийхгүй — зэрэг ажиллаж буй өөр ask-ийн хуудсыг таслахгүй (nlmIdle дараалалд оруулна)
+  if (!pg.url().includes('/notebook/' + hit.id)) await pg.goto('https://notebook.google.com/notebook/' + hit.id, { waitUntil: 'domcontentloaded' })
   await pg.waitForSelector('textarea[aria-label="Query box"]', { timeout: 30000 })
   await dismissPromo(pg)
   return pg
@@ -126,20 +130,38 @@ async function nlmAdd(pg, urls) {
   throw new Error('эх сурвалж боловсруулалт 3 минутаас удаан')
 }
 
+// Query box идэвхтэй (өмнөх хариу бичигдэж дууссан) болтол хүлээнэ — Wiki QA 2026-10-15: дараалсан ask «Query box disabled»-оор унадаг байв
+async function nlmIdle(pg, box, ms = 180000) {
+  const t0 = Date.now()
+  while (Date.now() - t0 < ms) {
+    if (await box.isEnabled().catch(() => false)) return
+    await sleep(1500)
+  }
+  throw new Error('өмнөх хариу ' + Math.round(ms / 60000) + ' минутад дуусаагүй (Query box идэвхгүй)')
+}
+
+// Чатын түүх хоцорч (lazy) ачаалагддаг — хариуны тоо 3 удаа дараалан тогтвортой болтол хүлээнэ
+async function stableCount(loc) {
+  let n = -1, same = 0
+  for (let i = 0; i < 20 && same < 3; i++) { await sleep(1000); const c = await loc.count(); same = c === n ? same + 1 : 0; n = c }
+  return n
+}
+
 async function nlmAsk(pg, q) {
   const msgs = pg.locator('mat-card.to-user-message-card-content')
-  await sleep(2500)   // чатын түүх хоцорч ачаалагддаг — хуучин хариуг шинэ гэж андуурахгүйн тулд
   const clean = t => t.replace(/^Thoughts\s*expand_more\s*/, '').replace(/\n\d+\n/g, ' ').replace(/more_horiz|keep_pin|Save to note|copy|thumb_up|thumb_down/g, '').trim()
-  const before = await msgs.count(), old = before ? clean(await msgs.last().innerText()) : ''
   const box = pg.getByRole('textbox', { name: 'Query box' })
+  await nlmIdle(pg, box)                       // (1) өмнөх хариу дуусаагүй бол хүлээнэ
+  const before = await stableCount(msgs)       // (2) түүх бүрэн ачаалагдсаны дараах тоо
+  const olds = new Set(await msgs.allInnerTexts().then(a => a.map(clean)).catch(() => []))
   await box.fill(q); await box.press('Enter')
   let prev = '', same = 0
-  for (let i = 0; i < 90; i++) {   // шинэ хариу тогтвортой болтол (2 удаа ижил)
-    await sleep(2500)
+  for (let i = 0; i < 120; i++) {              // шинэ хариу: index ≥ before, хуучин хариунуудын аль нэгтэй ижил биш,
+    await sleep(2500)                          // 2 удаа ижил, Query box дахин идэвхтэй (бичигдэж дууссан)
     if ((await msgs.count()) <= before) continue
-    const t = clean(await msgs.last().innerText())
-    if (!t || t === old) continue
-    if (t === prev) { if (++same >= 2) return t } else same = 0
+    const t = clean(await msgs.nth(before).innerText().catch(() => ''))
+    if (!t || olds.has(t)) continue
+    if (t === prev) { if (++same >= 2 && await box.isEnabled().catch(() => false)) return t } else same = 0
     prev = t
   }
   throw new Error('хариу ирсэнгүй')
