@@ -10,7 +10,7 @@
   fig.py progress <id> queued|working|done|clear ["текст"] - comment-ийн доор амьд төлөв (олон comment-ийг subagent-аар зэрэг хийхэд)
   fig.py comments --doc X --session S  - зөвхөн X файлын, өөр сешн аваагүй thread (S default: env FIG_SESSION/CLAUDE_SESSION_TITLE)
   fig.py --doc X reply <id> "текст" [--as S] [--force] - X-ээс өөр файлын/өөр сешний thread-д хариулахыг хориглоно
-  fig.py reply <id> "текст" [--play nodeId] - хариулах; текстэд @[нэр](nodeId) = дарвал тэр screen рүү очно
+  fig.py reply <id> "текст" [--play nodeId] [--image a.png] - хариулах; текстэд @[нэр](nodeId) = дарвал тэр screen рүү очно
   fig.py ask --title "Асуулт" --option "<label>|<desc>|<nodeId>" ... [--wait 600]
                                 - панелд 2–4 сонголт (node руу очих линктэй); --wait бол хариуг JSON-оор буцаана
   fig.py answer <id> [--wait N]   - ask-ийн хариуг дараа нь шалгах
@@ -68,7 +68,7 @@ def main():
     e.add_argument("--scale", type=float, default=2); e.add_argument("--out")
     c = s.add_parser("comments"); c.add_argument("--wait", type=int, default=0, help="шинэ коммент ирэх хүртэл хүлээх (сек)"); c.add_argument("--all", action="store_true")
     c.add_argument("--session", help="сешний tag (default: FIG_SESSION/CLAUDE_SESSION_TITLE env); өөр сешний авсан thread-ийг алгасна")
-    rp = s.add_parser("reply"); rp.add_argument("id"); rp.add_argument("text"); rp.add_argument("--play", help="▶ харах товчны node id")
+    rp = s.add_parser("reply"); rp.add_argument("id"); rp.add_argument("text"); rp.add_argument("--play", help="▶ харах товчны node id"); rp.add_argument("--image", action="append", default=[], help="хавсаргах зураг (png/jpg), олон удаа")
     rp.add_argument("--as", dest="session", help="хариултад тэмдэглэх сешний нэр (default: env)"); rp.add_argument("--force", action="store_true", help="өөр файл/сешний thread-д хариулахыг зөвшөөрөх")
     ak = s.add_parser("ask"); ak.add_argument("--title", required=True); ak.add_argument("--option", action="append", required=True, help="label|desc|nodeId")
     ak.add_argument("--wait", type=int, default=0); ak.add_argument("--as", dest="session")
@@ -117,6 +117,8 @@ def main():
             except Exception:
                 pid = a.id
             body = {"parent": pid, "text": a.text, "from": "claude", "play": a.play, "doc": FILE, "session": a.session or session_label() or None, "force": a.force}
+            if a.image:
+                body["images"] = ["data:image/" + ("jpeg" if i.lower().endswith((".jpg", ".jpeg")) else "png") + ";base64," + base64.b64encode(Path(i).read_bytes()).decode() for i in a.image]
             r2 = urllib.request.Request(URL + "/comments", data=json.dumps(body).encode(), headers={"content-type": "application/json"})
             try:
                 with urllib.request.urlopen(r2, timeout=10) as x: print(json.dumps(json.load(x), ensure_ascii=False))

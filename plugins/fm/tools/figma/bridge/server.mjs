@@ -35,6 +35,7 @@ try {
 const STASH = (await import("node:url")).pathToFileURL(STATE_DIR.replace(/[\\/]?$/, "/") + "stash/");
 const CFILE = new URL("./comments.json", STASH);
 let comments = []; try { comments = JSON.parse(fs.readFileSync(CFILE, "utf8")); } catch {}
+const await_path = await import("node:url");
 const waiters = new Set();
 const choiceWaiters = new Map();   // choice thread id -> Set(fn)  (fig.py ask --wait)
 function answerChoice(root, ans) {
@@ -45,15 +46,27 @@ function answerChoice(root, ans) {
 }
 function saveComments() { fs.mkdirSync(STASH, { recursive: true }); fs.writeFileSync(CFILE, JSON.stringify(comments, null, 1)); }
 function addComment(c) {
-  c = { id: crypto.randomUUID().slice(0, 8), at: Date.now(), ...c }; comments.push(c); saveComments();
+  const id = crypto.randomUUID().slice(0, 8), { images, ...rest } = c;
+  c = { id, at: Date.now(), ...rest }; const imgs = saveImages(id, images); if (imgs && imgs.length) c.images = imgs; comments.push(c); saveComments();
   for (const [s, m] of plugins) if (!c.file || m.file === c.file) sendFrame(s, JSON.stringify({ comment: c }));
   if (c.from === "user") { for (const w of waiters) w(); waiters.clear(); }
   return c;
 }
 const fileMatch = (c, file) => !file || (c.file || "").toLowerCase().includes(file.toLowerCase());
 // session routing: a thread delivered to session X (claimedBy) is not handed to session Y; sessionless callers see all (backward compat)
-const openThreads = (file, session) => comments.filter(c => c.from === "user" && !c.parent && fileMatch(c, file) && (!session || !c.claimedBy || c.claimedBy === session))
-  .map(c => ({ ...c, replies: comments.filter(r => r.parent === c.id) })).filter(t => !t.resolved && (t.replies.length === 0 || t.replies.at(-1).from === "user"));
+// thread = root (хэрэглэгчийн коммент эсвэл Claude-ийн ask) + хариултууд; сүүлийн мессеж хэрэглэгчийнх бол нээлттэй.
+// claimedBy = thread-ийг эзэмших сешн (ask тавьсан сешн, эсвэл анх хүлээж авсан) — хариулт зөвхөн тэр сешнд очно
+const openThreads = (file, session) => comments.filter(c => !c.parent && (c.from === "user" || c.claimedBy) && fileMatch(c, file) && (!session || !c.claimedBy || c.claimedBy === session))
+  .map(c => ({ ...c, replies: comments.filter(r => r.parent === c.id) })).filter(t => !t.resolved && (t.replies.length ? t.replies.at(-1).from === "user" : t.from === "user"));
+// зураг (paste / frame snapshot): stash/img/<id>-<n>.png → comment.images = [{f, path}]; агент path-ийг Read хийнэ
+const IMGDIR = new URL("./img/", STASH);
+function saveImages(id, arr) {
+  if (!Array.isArray(arr) || !arr.length) return undefined;
+  fs.mkdirSync(IMGDIR, { recursive: true });
+  return arr.slice(0, 6).map((d, i) => { const m = /^data:image\/(png|jpe?g|webp|gif);base64,(.+)$/.exec(String(d)); if (!m) return null;
+    const f = `${id}-${i}.${m[1] === "jpeg" ? "jpg" : m[1]}`, u = new URL(f, IMGDIR); fs.writeFileSync(u, Buffer.from(m[2], "base64"));
+    return { f, path: (await_path).fileURLToPath(u) }; }).filter(Boolean);
+}
 
 // ---- minimal WebSocket (RFC 6455, text frames only) ----
 function sendFrame(sock, str) {
@@ -118,6 +131,11 @@ const server = http.createServer(async (req, res) => {
     let member = ""; try { member = JSON.parse(fs.readFileSync((await import("node:path")).join((await import("node:os")).homedir(), ".fmos", "config.json"), "utf8")).member || ""; } catch {}
     return json(200, { member });
   }
+  if (req.method === "GET" && req.url.startsWith("/cimg?")) {
+    const f = (new URL(req.url, "http://x").searchParams.get("f") || "").replace(/[^\w.-]/g, ""), u = new URL(f, IMGDIR);
+    if (!f || !fs.existsSync(u)) return json(404, { error: "not found" });
+    res.writeHead(200, { "content-type": "image/" + (f.endsWith("jpg") ? "jpeg" : f.split(".").pop()), "access-control-allow-origin": "*" }); return fs.createReadStream(u).pipe(res);
+  }
   if (req.url.startsWith("/comments")) {
     res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "content-type");
     if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
@@ -149,7 +167,7 @@ const server = http.createServer(async (req, res) => {
       if (parent && b.doc && !b.force && !fileMatch(parent, b.doc)) return json(409, { error: `thread ${parent.id} нь «${parent.file}» файлынх, --doc «${b.doc}» биш. --force-оор хүчлэх` });
       if (parent && b.session && !parent.claimedBy) parent.claimedBy = b.session;
       if (parent && b.session && parent.claimedBy && parent.claimedBy !== b.session && !b.force) return json(409, { error: `thread ${parent.id}-ийг «${parent.claimedBy}» сешн авсан. --force-оор хүчлэх` });
-      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, ...(b.session ? { session: b.session } : {}), parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}), ...(b.choice ? { choice: b.choice } : {}) }));
+      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, ...(b.session ? { session: b.session } : {}), parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}), ...(b.choice ? { choice: b.choice } : {}), ...(!b.parent && b.session ? { claimedBy: b.session } : {}), ...(b.images ? { images: b.images } : {}) }));
     }
   }
   // /claude : Claude Code hook-ууд төлвөө илгээнэ → бүх plugin-д WebSocket-оор (Claude Code-ийн «Running… 16s» шиг)

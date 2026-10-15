@@ -87,6 +87,10 @@ python3 "$F/fig.py" --doc "<файл>" ask --title "Аль чиглэлийг ү
 - `--wait N` → хариу ирэх хүртэл хүлээгээд JSON: `{"answer": {"pick": 1, "label": "B · Нүүр", "node": "607:1221", "note": "…"}}`; хугацаа дуусвал exit 2. `--wait`-гүй бол `{"id": …}` буцаана → дараа нь `fig.py answer <id> [--wait N]`.
 - Сонголт ирсний дараа шийдвэрээ thread-д `fig.py reply <id> "…"`-ээр баталгаажуул.
 
+**Thread = сешний context (itge.e 2026-10-15).** `ask` тавьсан сешн thread-ийг эзэмшинэ (`claimedBy`): хэрэглэгчийн хариулт зөвхөн тэр сешний `fig.py comments --session <нэр>`-д ирнэ, өөр сешнд харагдахгүй; thread-ийн бүх түүх (`replies`) хамт ирнэ. Тиймээс ask, comments, reply гурвыг **нэг ижил `--as`/`--session`** (эсвэл env `FIG_SESSION`)-оор дууд.
+
+**Хариулт дахь frame, зураг:** хэрэглэгч thread дотроо «↩ хариулах» дарвал хайрцаг тэр thread-ийн дотор нээгдэнэ: «◎ сонгосон frame» (Figma-ийн одоогийн selection-ийг хавсаргана) · «📸 frame зураг» (selection-ийг PNG болгоно) · Ctrl+V (clipboard-ын screenshot). `comments` гаралтад `nodes: [{id,name}]`, `images: [{path}]` — зургийг `Read <path>`-аар хар. Агент зураг буцаахдаа `fig.py reply <id> "…" --image a.png`.
+
 ## Icon, REST, Framer
 
 - Icon: `fig.py icons <iconify-set> [--filter solid] [--names a,b] [--size 24]` (Iconify-ийн нийтийн API).

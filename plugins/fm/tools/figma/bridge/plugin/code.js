@@ -160,6 +160,9 @@ figma.ui.onmessage = async (msg) => {
   if (msg && msg.resize) { const w = Math.max(280, Math.min(900, Math.round(msg.resize.w))), h = Math.max(76, Math.min(1400, Math.round(msg.resize.h)));
     figma.ui.resize(w, h); if (msg.resize.save) await figma.clientStorage.setAsync('ui-state', msg.resize.save); return; }
   if (msg && msg.focus) { const n = await figma.getNodeByIdAsync(msg.focus); if (n) await follow(n, null, 0); else figma.notify('Node олдсонгүй'); return; }
+  if (msg && msg.snap) { const ns = figma.currentPage.selection; if (!ns.length) { figma.notify('Frame сонгоно уу'); return; }
+    for (const n of ns.slice(0, 4)) { try { const b = await n.exportAsync({ format: 'PNG', constraint: { type: 'WIDTH', value: Math.min(1200, Math.round(n.width) || 1200) } });
+      figma.ui.postMessage({ snap: { rid: msg.snap, data: figma.base64Encode(b), node: { id: n.id, name: n.name } } }); } catch (e) { figma.notify('Export: ' + e); } } return; }
   if (msg && msg.watch !== undefined) { watch = msg.watch; return; }
   if (msg && msg.notify) { figma.notify(msg.notify, { timeout: 4000 }); return; }
   if (!msg || !msg.id) return;
