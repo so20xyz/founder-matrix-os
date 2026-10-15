@@ -13,6 +13,8 @@
 
 ## Unreleased
 
+- fm 0.9.74: sidebar sync — дэд сешн (fork, «эх › дэд ажил», Side chat, өөр сешнээс эхэлсэн `startedBy`) загварт орохгүй; тухайн машины түр ажил тул нөгөө машинд «дутуу» гэж гарахгүй. Тест.
+
 - fm 0.9.73: төхөөрөмж хоорондын sidebar sync — `scripts/fm_sidebar.py publish` нэг машины sidebar-ийг (бүлэг, гарчиг) `_system/fm/sidebar-layout.json`-д бичнэ, `plan` нөгөө машины list_sessions-ийг тулгаж rename / move / дутуу / илүүг гаргана (сешнийг registry-ийн role/project-оор таньдаг: «client-b» = «Client B»); fm:update-ийн (S) хэсэг, daily горимд. Тест.
   - Яагаад: PC дээр sidebar-аа цэгцэлбэл Mac (эсвэл эсрэгээр) өөрөө ижил болно — гараар давтахгүй · Дүрэм: [[_system/BOOT]] «Sidebar = PARA» · Ном: PARA
   - Ойлго: sidebar-ийн загварыг нэг л газар (vault) хадгална; аль машин дээр зассан тэр нь publish, нөгөө нь plan.

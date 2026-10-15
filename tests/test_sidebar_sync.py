@@ -17,7 +17,7 @@ def test_publish_and_plan():
         "a": {"title": "📁 client-b", "role": "project", "project": "client-b"},
         "b": {"title": "📁 Client B", "role": "project", "project": "client-b"}}}, ensure_ascii=False), encoding="utf-8")
     pc = [s("p1", "📁 Client B", "Projects"), s("p2", "📥 GTD", "Areas"), s("p3", "📁 New", "Projects"),
-          s("p4", "x (fork)", "Areas"), s("p5", "old", "Archive")]
+          s("p4", "x (fork)", "Areas"), s("p6", "🔍 A › дэд", "Projects"), s("p7", "Side chat", "Projects"), s("p5", "old", "Archive")]
     data = fs.publish(v, pc, "PC")
     assert [e["title"] for e in data["sessions"]] == ["📁 Client B", "📥 GTD", "📁 New"]
     mac = [s("m1", "📁 client-b", "Projects"), s("m2", "📥 GTD", "Resources"), s("m3", "📁 Extra", "Projects"), s("m4", "junk", None)]

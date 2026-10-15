@@ -10,7 +10,7 @@ sessions.json = `mcp__ccd_session_mgmt__list_sessions`-ийн гаралт (titl
 Загвар: <vault>/_system/fm/sidebar-layout.json — Drive-аар хоёр машинд. Хэн сүүлд publish хийсэн нь загвар;
 анхдагчаар PC (primary) publish хийнэ, нөгөө нь plan → apply. Сешн тус бүрийг (role, project) түлхүүрээр тааруулна
 (registry-ээс гарчгаар олно — «client-b» ба «Client B» нэг төсөл), олдохгүй бол icon-гүй гарчгаар.
-Archive, бүлэггүй сешн, fork загварт орохгүй.
+Archive, бүлэггүй сешн, дэд сешн (fork, «… › …», Side chat) загварт орохгүй.
 """
 import datetime
 import json
@@ -46,10 +46,16 @@ def key_of(title, keys):
     return keys.get(norm(title)) or "title/" + norm(title)
 
 
+def is_sub(title):
+    """Дэд сешн (fork, «эх › дэд ажил», Side chat) — тухайн машины түр ажил, загварт орохгүй."""
+    t = title or ""
+    return "(fork)" in t or "›" in t or t.strip().lower().startswith("side chat")
+
+
 def grouped(sessions):
     for s in sessions:
         g = (s.get("group") or {}).get("name")
-        if g and g not in SKIP_GROUPS and not s.get("isArchived") and "(fork)" not in (s.get("title") or ""):
+        if g and g not in SKIP_GROUPS and not s.get("isArchived") and not is_sub(s.get("title")) and not s.get("startedBy"):
             yield s, g
 
 
@@ -77,7 +83,7 @@ def plan(vault, sessions, device):
     keys = reg_keys(vault)
     for e in layout["sessions"]:                     # загварын гарчгийг ч түлхүүрт нэм (шинэ нэр registry-д ороогүй байж болно)
         keys.setdefault(norm(e["title"]), e["key"])
-    want = {e["key"]: e for e in layout["sessions"]}
+    want = {e["key"]: e for e in layout["sessions"] if not is_sub(e["title"])}
     have = {}
     for s in sessions:
         if s.get("isArchived"):
