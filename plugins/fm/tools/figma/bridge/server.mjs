@@ -268,4 +268,7 @@ server.on("upgrade", (req, sock) => {
   sock.on("error", () => {});
 });
 
+// нэг хүсэлтийн алдаа серверийг унагахгүй — ~/.fmos/figma/server.log-д бичнэ
+const elog = (e) => { try { fs.appendFileSync(STATE_DIR + "/server.log", new Date().toISOString() + " " + (e && e.stack || e) + "\n"); } catch {} };
+process.on("uncaughtException", elog); process.on("unhandledRejection", elog);
 server.listen(PORT, "127.0.0.1", () => console.log(`figma bridge on http://127.0.0.1:${PORT}`));

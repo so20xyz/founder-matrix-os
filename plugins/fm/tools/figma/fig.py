@@ -13,6 +13,7 @@
   fig.py reply <id> "текст" [--play nodeId] [--image a.png] - хариулах; текстэд @[нэр](nodeId) = дарвал тэр screen рүү очно
   fig.py ask --title "Асуулт" --option "<label>|<desc>|<nodeId>" ... [--wait 600]
                                 - панелд 2–4 сонголт (node руу очих линктэй); --wait бол хариуг JSON-оор буцаана
+  fig.py review <nodeId> "олдворууд" [--scale 1] [--as S] - design test: frame-ийг PNG болгоод зураг + олдворыг thread болгож тавина
   fig.py answer <id> [--wait N]   - ask-ийн хариуг дараа нь шалгах
   fig.py resolve <id>            - thread-ийг шийдсэн болгох
   fig.py delete <id>             - хариулт (эсвэл бүх thread) устгах
@@ -72,6 +73,8 @@ def main():
     rp.add_argument("--as", dest="session", help="хариултад тэмдэглэх сешний нэр (default: env)"); rp.add_argument("--force", action="store_true", help="өөр файл/сешний thread-д хариулахыг зөвшөөрөх")
     ak = s.add_parser("ask"); ak.add_argument("--title", required=True); ak.add_argument("--option", action="append", required=True, help="label|desc|nodeId")
     ak.add_argument("--wait", type=int, default=0); ak.add_argument("--as", dest="session")
+    rv = s.add_parser("review"); rv.add_argument("node"); rv.add_argument("findings", help="олдворууд (текст эсвэл @file.md)")
+    rv.add_argument("--scale", type=float, default=1); rv.add_argument("--as", dest="session"); rv.add_argument("--out", help="PNG хадгалах зам")
     an = s.add_parser("answer"); an.add_argument("id"); an.add_argument("--wait", type=int, default=0)
     rs = s.add_parser("resolve"); rs.add_argument("id")
     pg = s.add_parser("progress"); pg.add_argument("id"); pg.add_argument("state", choices=["queued", "working", "done", "clear"]); pg.add_argument("text", nargs="?", default="")
@@ -155,6 +158,22 @@ def main():
             print(json.dumps(req("/comments", {"status": a.id, "state": "" if a.state == "clear" else a.state, "text": a.text}), ensure_ascii=False))
         else:
             print(json.dumps(req("/comments", {"resolve": a.id})))
+        return
+    if a.cmd == "review":
+        code = (f"const n=await figma.getNodeByIdAsync({json.dumps(a.node)});if(!n)throw new Error('node олдсонгүй');"
+                f"const b=await n.exportAsync({{format:'PNG',constraint:{{type:'SCALE',value:{a.scale}}}}});return {{name:n.name,png:figma.base64Encode(b)}};")
+        res = call(code, 300000)
+        if "error" in res:
+            sys.exit(res["error"])
+        name, png = res["result"]["name"], res["result"]["png"]
+        out = Path(a.out or f"review-{a.node.replace(':', '-')}.png"); out.write_bytes(base64.b64decode(png))
+        text = Path(a.findings[1:]).read_text(encoding="utf-8") if a.findings.startswith("@") else a.findings
+        body = {"from": "claude", "text": "🔎 Design test · " + name + "\n" + text, "file": FILE, "node": {"id": a.node, "name": name},
+                "session": a.session or session_label() or None, "images": ["data:image/png;base64," + png]}
+        r = urllib.request.Request(URL + "/comments", data=json.dumps(body).encode(), headers={"content-type": "application/json"})
+        with urllib.request.urlopen(r, timeout=30) as x:
+            c = json.load(x)
+        print(json.dumps({"id": c["id"], "png": str(out)}, ensure_ascii=False))
         return
     if a.cmd == "icons":
         import icons

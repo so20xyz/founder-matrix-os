@@ -257,8 +257,8 @@ function replyHtml(r) { const d = D(r.id);
     '<textarea data-rt="' + r.id + '" placeholder="Хариулт… (Ctrl+Enter илгээнэ · Ctrl+V зураг)"></textarea>' +
     '<div class="rrow"><a data-ra="' + r.id + '">◎ сонгосон frame</a><a data-rs="' + r.id + '">📸 frame зураг</a><button data-rsend="' + r.id + '">Илгээх</button></div></div>'; }
 function sendReply(id) { const d = D(id), ta = C.querySelector('[data-rt="' + id + '"]'); if (ta) d.text = ta.value;
-  const text = d.text.trim(); if ((!text && !d.imgs.length && !d.nodes.length) || !ws || ws.readyState !== 1) return;
-  ws.send(JSON.stringify({ newComment: { text: text || (d.imgs.length ? '🖼' : '◎'), parent: id, nodes: d.nodes.length ? d.nodes : undefined, images: d.imgs.length ? d.imgs : undefined } }));
+  const text = d.text.trim(); if ((!text && !d.imgs.length && !d.nodes.length) ) return;
+  wsSend(({ newComment: { text: text || (d.imgs.length ? '🖼' : '◎'), parent: id, nodes: d.nodes.length ? d.nodes : undefined, images: d.imgs.length ? d.imgs : undefined } }));
   delete draft[id]; replyTo = null; showSel(); render(); }
 function readImg(file, cb) { const fr = new FileReader(); fr.onload = () => cb(fr.result); fr.readAsDataURL(file); }
 function pasteImgs(e, cb) { const it = [...((e.clipboardData || {}).items || [])].filter(x => x.type.indexOf('image/') === 0); if (!it.length) return false;
@@ -271,9 +271,9 @@ function choiceHtml(r) { const A = r.answer;
     (A ? '' : '<button data-ch="' + r.id + '" data-i="' + i + '">Сонгох</button>') + '</div></div>').join('') +
     (A ? '<div class="cha">✓ ' + (A.label ? esc(A.label) : 'тайлбар') + (A.note ? ' — ' + esc(A.note) : '') + ' · ' + hhmm(A.at) + '</div>'
        : '<input class="chn" data-cn="' + r.id + '" placeholder="Тайлбар (заавал биш) · зөвхөн тайлбар бол Enter">') + '</div>'; }
-C.onkeydown = (e) => { const t = e.target; if (t.dataset && t.dataset.cn && e.key === 'Enter' && t.value.trim() && ws && ws.readyState === 1) ws.send(JSON.stringify({ answerChoice: { id: t.dataset.cn, pick: null, note: t.value.trim() } })); };
+C.onkeydown = (e) => { const t = e.target; if (t.dataset && t.dataset.cn && e.key === 'Enter' && t.value.trim()) wsSend(({ answerChoice: { id: t.dataset.cn, pick: null, note: t.value.trim() } })); };
 C.onclick = (e) => { const t = e.target;
-  if (t.dataset.ch) { const inp = C.querySelector('[data-cn="' + t.dataset.ch + '"]'); if (ws && ws.readyState === 1) ws.send(JSON.stringify({ answerChoice: { id: t.dataset.ch, pick: Number(t.dataset.i), note: inp ? inp.value.trim() : '' } })); return; }
+  if (t.dataset.ch) { const inp = C.querySelector('[data-cn="' + t.dataset.ch + '"]'); wsSend(({ answerChoice: { id: t.dataset.ch, pick: Number(t.dataset.i), note: inp ? inp.value.trim() : '' } })); return; }
   if (t.dataset.n) parent.postMessage({ pluginMessage: { focus: t.dataset.n } }, '*');
   if (t.dataset.e) { expanded[t.dataset.e] = true; keepScroll = true; render(); }
   if (t.dataset.m) { openMsg[t.dataset.m] = !openMsg[t.dataset.m]; const y = C.scrollTop; keepScroll = true; render(); C.scrollTop = y; return; }
@@ -303,15 +303,20 @@ $('box').addEventListener('click', (e) => { const t = e.target, d = D(K());
   if (t.id === 'as') post({ snap: K() }); });
 function send(pick) { let text = $('txt').value.trim(); const d = D(K());
   if (pick === true) { if (!sels.length) return; text = (text ? text + '\n' : '') + '✓ pick: ' + sels.map(n => n.name).join(', '); for (const n of sels) if (!d.nodes.some(x => x.id === n.id)) d.nodes.push({ id: n.id, name: n.name }); }
-  if ((!text && !d.imgs.length && !d.nodes.length) || !ws || ws.readyState !== 1) return;
+  if ((!text && !d.imgs.length && !d.nodes.length) ) return;
   const att = { nodes: d.nodes.length ? d.nodes : undefined, images: d.imgs.length ? d.imgs : undefined };
-  ws.send(JSON.stringify({ newComment: replyTo ? { text: text || (d.imgs.length ? '🖼' : '◎'), parent: replyTo, ...att }
+  wsSend(({ newComment: replyTo ? { text: text || (d.imgs.length ? '🖼' : '◎'), parent: replyTo, ...att }
     : { text: text || '🖼', node: sel, nodes: att.nodes || (sels.length ? sels : undefined), images: att.images } }));
   delete draft[K()]; $('txt').value = ''; showAtt(); showSel(); render(); }
 $('send').onclick = () => send(); $('pick').onclick = () => send(true); $('txt').onkeydown = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send(); };
+// холболт тасарсан үед мессеж алдагдахгүй: дараалалд хадгалж, дахин холбогдмогц илгээнэ
+let outbox = []; try { outbox = JSON.parse(localStorage.getItem('fm-outbox') || '[]'); } catch (e) {}
+const saveOut = () => { try { localStorage.setItem('fm-outbox', JSON.stringify(outbox)); } catch (e) {} };
+function wsSend(o) { if (ws && ws.readyState === 1) { ws.send(JSON.stringify(o)); return; } outbox.push(o); saveOut(); setState('⏸ bridge тасарсан — мессеж дараалалд (' + outbox.length + '), холбогдмогц илгээнэ', 'err'); }
+function flushOut() { while (outbox.length && ws && ws.readyState === 1) ws.send(JSON.stringify(outbox.shift())); saveOut(); }
 function connect() {
   ws = new WebSocket('ws://localhost:3055');
-  ws.onopen = () => { s.textContent = info.file; dot.style.background='#8fd694'; ws.send(JSON.stringify({ hello: info })); };
+  ws.onopen = () => { s.textContent = info.file; dot.style.background='#8fd694'; ws.send(JSON.stringify({ hello: info })); setTimeout(flushOut, 400); };
   ws.onclose = () => { s.textContent = 'салсан, дахин оролдож байна…'; dot.style.background='#ff7b72'; setTimeout(connect, 2000); };
   ws.onerror = () => {};
   ws.onmessage = (e) => { const m = JSON.parse(e.data);
