@@ -1614,7 +1614,20 @@ async function checkTool($: EngineInterface, t: ToolDef): Promise<ToolStatus> {
 }
 
 /** V3 data: every live-checked tool (process / mcp) older than a minute (or all, `force`), in parallel; never from a draw. */
+/** «🧠 Контекст» (itge.e 2026-10-15): fm SessionStart hook-ийн бичсэн _system/fm/state/context-<төхөөрөмж>.json — энэ сешнд
+ *  ачаалагдсан эх (BOOT, дүр, AGENTS.md, CLAUDE.md, MEMORY.md: хэмжээ, огноо, механизм) ба PC ↔ Mac-ийн memory hash. */
+async function loadContextInfo($: EngineInterface) {
+  const vault = await vaultOf($)
+  if (!vault) return
+  const sid = await $.session.id()
+  const read = async (d: string) => { try { return JSON.parse(String(await $.fs.read(`${vault}/_system/fm/state/context-${d}.json`))) } catch { return null } }
+  const pc = await read('PC'), mac = await read('Mac')
+  const mineDev = [pc, mac].find(x => x?.sessions?.[sid])
+  await $.state.set({ plugin: 'fm', key: 'ctxInfo' }, { mine: mineDev ? mineDev.sessions[sid] : null, machines: { PC: pc?.machine ?? null, Mac: mac?.machine ?? null } })
+}
+
 async function loadTools($: EngineInterface, force: boolean) {
+  await loadContextInfo($).catch(() => null)
   const { value: cur = {} } = await $.state.get({ plugin: 'fm', key: 'toolStatus' })
   const at = await $.clock.now()
   Object.assign(toolLive, cur)
@@ -1949,6 +1962,7 @@ export const register: Register = (on, options) => {
     const { value: toolStatus = {} } = await $.state.get({ plugin: 'fm', key: 'toolStatus' })
     const { value: toolUsed = {} } = await $.state.get({ plugin: 'fm', key: 'toolUsed' })
     const { value: toolBy = {} } = await $.state.get({ plugin: 'fm', key: 'toolBy' })
+    const { value: ctxInfo = { mine: null, machines: {} } } = await $.state.get({ plugin: 'fm', key: 'ctxInfo' })
     const { value: watching = false } = await $.state.get(WATCHING)
     const { value: health = '' } = await $.state.get(HEALTH)
     const { value: inboxList = [], version: inboxVersion } = await $.state.get({ plugin: 'fm', key: 'inbox' })
@@ -2866,11 +2880,34 @@ export const register: Register = (on, options) => {
           </Box>
         </Box>
       ) : null
+      // «🧠 Контекст»: энэ сешнд ачаалагдсан эх + PC ↔ Mac memory (hash зөрвөл ⚠)
+      const ctxBlock = () => {
+        const srcs: any[] = ctxInfo?.mine?.sources ?? []
+        const m: any = ctxInfo?.machines ?? {}
+        const kb = (b?: number) => (b == null ? '—' : b >= 1024 ? `${(b / 1024).toFixed(1)} KB` : `${b} B`)
+        const cmp = (k: string) => {
+          const a = m.PC?.[k], b = m.Mac?.[k]
+          if (!a || !b) return `${k}: ${a ? 'зөвхөн PC' : b ? 'зөвхөн Mac' : '—'}`
+          return `${k}: ${a.sha === b.sha ? '✓ ижил' : `⚠ зөрүүтэй (PC ${a.mtime} · Mac ${b.mtime})`}`
+        }
+        return (
+          <Box key="tl-ctx" flexDirection="column" marginTop={1}>
+            <Text bold>{`🧠 Контекст${ctxInfo?.mine ? ` · ${ctxInfo.mine.at} · inject ${kb(ctxInfo.mine.injected_bytes)}` : ''}`}</Text>
+            {srcs.length ? srcs.map((s, n) => (
+              <Text key={`ctx-${n}`} color={s.exists ? undefined : C.muted} wrap="truncate-end">
+                {`  ${s.exists ? '•' : '∅'} ${s.name} · ${kb(s.bytes)}${s.files != null ? ` · ${s.files} файл` : ''} · ${s.mtime ?? '—'} · ${s.mechanism}`}
+              </Text>
+            )) : <Text color={C.muted}>  энэ сешний бүртгэл алга (сешнийг дахин эхлүүлбэл гарна)</Text>}
+            <Text color={C.muted} wrap="truncate-end">{`  PC ↔ Mac · ${cmp('memory/MEMORY.md')} · ${cmp('~/.claude/CLAUDE.md')}`}</Text>
+          </Box>
+        )
+      }
       return (
         <Box key="v3" flexDirection="column">
           {hdr}
           {skillBlock('tools:skills', '⚡ Хурдан skill', false)}
           {mine.length ? sections : mutedRow('tl-none', 'Энэ дүрд хэрэгсэл бүртгэгдээгүй')}
+          {ctxBlock()}
           {footer}
         </Box>
       )

@@ -21,6 +21,7 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 
 ROLE_MAX_BYTES = 8 * 1024      # role rules budget
 TOTAL_MAX_BYTES = 28 * 1024    # whole additionalContext budget (2026-10-12: the maintainer BOOT ~16 KB travels whole)
@@ -239,6 +240,63 @@ def build_context(vault, session_id):
     return ctx
 
 
+def _fstat(path, mechanism, injected=None):
+    """Нэг эх файлын мэдээлэл: зам, хэмжээ, огноо, hash (агуулга бичихгүй)."""
+    import hashlib, datetime
+    p = Path(path)
+    if not p.is_file():
+        return {"path": str(p), "mechanism": mechanism, "exists": False}
+    b = p.read_bytes()
+    out = {"path": str(p), "mechanism": mechanism, "exists": True, "bytes": len(b),
+           "mtime": datetime.datetime.fromtimestamp(p.stat().st_mtime).strftime("%Y-%m-%d %H:%M"),
+           "sha": hashlib.sha256(b).hexdigest()[:12]}
+    if injected is not None:
+        out["injected"] = injected
+    return out
+
+
+def write_manifest(vault, session_id, cwd, ctx, role_rel):
+    """Цаглабарын «🧠 Контекст» (itge.e 2026-10-15): энэ сешнд юу ачаалагдсан, Mac ↔ PC зөрүү.
+    <vault>/_system/fm/state/context-<DEVICE>.json — hash/хэмжээ/огноо л (агуулгагүй), сүүлийн 15 сешн."""
+    import json, datetime, re as _re
+    from fm_common import BOOT_REL, byte_len
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "relay"))
+        from fmconfig import DEVICE   # relay-ийн төхөөрөмжийн нэр
+    except Exception:
+        DEVICE = "Mac" if sys.platform == "darwin" else "PC"
+    home = Path.home() / ".claude"
+    slug = _re.sub(r"[^A-Za-z0-9]", "-", str(cwd or vault))
+    memdir = home / "projects" / slug / "memory"
+    mem = _fstat(memdir / "MEMORY.md", "Claude auto memory")
+    if mem.get("exists"):
+        mem["files"] = len([f for f in memdir.glob("*.md") if f.name != "MEMORY.md"])
+    sources = [
+        dict(_fstat(vault / BOOT_REL, "fm SessionStart hook"), name="BOOT.md"),
+        dict(_fstat(vault / role_rel, "fm SessionStart hook"), name="Дүрийн note") if role_rel else None,
+        dict(_fstat(vault / "AGENTS.md", "mod (agents-md)"), name="AGENTS.md"),
+        dict(_fstat(home / "CLAUDE.md", "Claude memory (машин бүрт)"), name="~/.claude/CLAUDE.md"),
+        dict(mem, name="memory/MEMORY.md"),
+    ]
+    st = vault / "_system" / "fm" / "state"; f = st / ("context-%s.json" % DEVICE)
+    try:
+        data = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
+    except Exception:
+        data = {}
+    sess = data.get("sessions", {})
+    sess[session_id or "?"] = {"at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "injected_bytes": byte_len(ctx),
+                               "sources": [s for s in sources if s]}
+    sess = dict(sorted(sess.items(), key=lambda kv: kv[1].get("at", ""))[-15:])
+    data = {"device": DEVICE, "updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "machine": {s["name"]: {k: s.get(k) for k in ("sha", "bytes", "mtime", "files", "exists")}
+                        for s in sources if s and s["name"] in ("~/.claude/CLAUDE.md", "memory/MEMORY.md")},
+            "sessions": sess}
+    st.mkdir(parents=True, exist_ok=True)
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(str(tmp), str(f))
+
+
 def main():
     from fm_common import configured_vault, emit_json, is_inside, read_stdin_json
 
@@ -258,6 +316,12 @@ def main():
     session_id = payload.get("session_id")
     session_id = session_id.strip() if isinstance(session_id, str) else ""
     ctx = build_context(vault, session_id)
+    try:   # «🧠 Контекст» бүртгэл — ямар ч алдаа сешнийг зогсоохгүй
+        role, _p, _s = find_role(vault, session_id)
+        role_rel = os.path.relpath(str(role["path"]), str(vault)) if role and role.get("path") is not None else ""
+        write_manifest(vault, session_id, cwd if isinstance(cwd, str) else "", ctx, role_rel)
+    except Exception:
+        pass
     emit_json({"hookSpecificOutput": {"hookEventName": "SessionStart",
                                       "additionalContext": ctx}})
     return 0
