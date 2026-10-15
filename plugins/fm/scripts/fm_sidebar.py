@@ -8,7 +8,8 @@ sessions.json = `mcp__ccd_session_mgmt__list_sessions`-ийн гаралт (titl
 Загвар хавтсыг (vault-аас харьцангуй) ч хадгална — `folder` алхам: тэр сешнд send_message-ээр change_directory хийлгэнэ. Скрипт зөвхөн
 тооцоолно; нэр солих (set_session_title), бүлэг солих (move_sessions), шинэ сешн (/fm:role) -ийг agent хийнэ.
 
-Загвар: <vault>/_system/fm/sidebar-layout.json — Drive-аар хоёр машинд. Хэн сүүлд publish хийсэн нь загвар;
+Загвар: <vault>/_system/fm/sidebar-layout-<төхөөрөмж>.json (машин бүр өөрийн файлд — Drive зөрчилгүй). plan нь бусад
+төхөөрөмжийн хамгийн сүүлийн загварыг уншина. Хэн сүүлд publish хийсэн нь загвар;
 анхдагчаар PC (primary) publish хийнэ, нөгөө нь plan → apply. Сешн тус бүрийг (role, project) түлхүүрээр тааруулна
 (registry-ээс гарчгаар олно — «client-b» ба «Client B» нэг төсөл), олдохгүй бол icon-гүй гарчгаар.
 Archive, бүлэггүй сешн, дэд сешн (fork, «… › …», Side chat) загварт орохгүй.
@@ -19,7 +20,28 @@ import re
 import sys
 from pathlib import Path
 
-LAYOUT = Path("_system") / "fm" / "sidebar-layout.json"
+LAYOUT = Path("_system") / "fm" / "sidebar-layout.json"     # хуучин (0.9.73–0.9.76) нэг файл
+FM_DIR = Path("_system") / "fm"
+
+
+def layout_path(vault, device):
+    """Төхөөрөмж бүр өөрийн файлд бичнэ — нэг файлд хоёр машин бичвэл Drive «(1)» хуулбар үүсгэдэг (2026-10-15)."""
+    return vault / FM_DIR / ("sidebar-layout-%s.json" % re.sub(r"[^\w-]", "", device or "x"))
+
+
+def latest_layout(vault, device):
+    """Өөр төхөөрөмжийн хамгийн сүүлийн загвар (updated-аар); «(1)» хуулбар, хуучин нэг файлыг ч уншина."""
+    best = None
+    for p in (vault / FM_DIR).glob("sidebar-layout*.json"):
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if d.get("device") == device or not d.get("sessions"):
+            continue
+        if best is None or d.get("updated", "") > best.get("updated", ""):
+            best = d
+    return best
 REG = Path("_system") / "fm" / "registry.json"
 SKIP_GROUPS = {"Archive", "Tasks", "🟢 Plugins"}
 
@@ -82,16 +104,15 @@ def publish(vault, sessions, device):
         seen.add(k)
         entries.append({"key": k, "title": s["title"], "group": g, "folder": rel_folder(vault, s.get("cwd"))})
     data = {"device": device, "updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "sessions": entries}
-    p = vault / LAYOUT
+    p = layout_path(vault, device)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return data
 
 
 def plan(vault, sessions, device):
-    try:
-        layout = json.loads((vault / LAYOUT).read_text(encoding="utf-8"))
-    except Exception:
+    layout = latest_layout(vault, device)
+    if layout is None:
         return {"error": "загвар алга — эхлээд нэг төхөөрөмж дээр publish хий"}
     keys = reg_keys(vault)
     for e in layout["sessions"]:                     # загварын гарчгийг ч түлхүүрт нэм (шинэ нэр registry-д ороогүй байж болно)
