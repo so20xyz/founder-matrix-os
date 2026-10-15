@@ -40,9 +40,11 @@ def dapi(method, path, body=None):
                 time.sleep(min(wait + 0.5, 30)); continue
             raise
 
-def dchannels(state):
+def dchannels(state, need=()):
+    """Guild text channels name -> id, cached 1 h; a needed name missing from the cache refreshes it at once
+    (2026-10-15: new project channels stayed invisible to watch for up to an hour)."""
     ch = state.get("_dch")
-    if not ch or time.time() - state.get("_dch_t", 0) > 3600:
+    if not ch or time.time() - state.get("_dch_t", 0) > 3600 or any(n and n not in ch for n in need):
         gid = load(DCFG, {})["guild"]["id"]
         ch = {c["name"].removeprefix(BUSY): c["id"] for c in dapi("GET", f"/guilds/{gid}/channels") if c.get("type") == 0}
         state["_dch"], state["_dch_t"] = ch, time.time()
@@ -307,7 +309,7 @@ def d_watch(sid, every=20):
     reg = load(REG, {"sessions": {}}); me = reg["sessions"].get(sid)
     names = list(dict.fromkeys([BROADCAST] + ([chmap().get(sid, chname(me))] if me else [])))
     tag = f"[{me['name']}]" if me else None
-    st = load(STATE, {}); ch = dchannels(st); save(STATE, st)
+    st = load(STATE, {}); ch = dchannels(st, names); save(STATE, st)
     # resume from the last seen id (persisted) so restarts after network drops never lose messages
     wk = "_watch_" + sid; last = dict(load(STATE, {}).get(wk, {}))
     for n in names:   # a channel the mapping names but Discord lacks was skipped silently (2026-10-14: stale channels.json)
