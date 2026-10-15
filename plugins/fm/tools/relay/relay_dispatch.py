@@ -192,11 +192,54 @@ def _task_file(vault, rel):
     except OSError: return None
 
 
+TASK_BAK = Path.home() / ".fmos" / "task-backup"   # сүүлийн сайн хуулбар (local only; Drive sync-ийн 0 байтаас сэргээх)
+
+
+def _bak_path(p):
+    return TASK_BAK / (hashlib.sha256(_nfc(Path(p).name).encode("utf-8")).hexdigest()[:16] + ".md")
+
+
+def _task_backup(p, data):
+    """Task note-ийн сүүлийн сайн агуулга → ~/.fmos/task-backup/ (зөвхөн энэ машинд)."""
+    try:
+        # 🔒 хувийн note-ийн агуулга vault-аас гарахгүй — нөөцлөхгүй
+        if b"private: true" in data[:2000] or "private" in [s.lower() for s in Path(p).parts] or "🔒" in Path(p).name: return
+        if data:
+            TASK_BAK.mkdir(parents=True, exist_ok=True); _bak_path(p).write_bytes(data)
+    except OSError: pass
+
+
+def _task_restore_if_empty(p):
+    """Wiki QA 2026-10-15: task үүсгэж claim хийсний дараа файл 0 байт болсон (шинэ файлыг Drive upload хийж дуусаагүй
+    байхад орлуулсан бололтой). Файл 0 байт бөгөөд нөөц байвал сэргээнэ → True."""
+    p = Path(p)
+    try:
+        if p.is_file() and p.stat().st_size == 0 and _bak_path(p).is_file():
+            p.write_bytes(_bak_path(p).read_bytes())
+            sys.stderr.write(f"relay: «{p.name}» 0 байт байсан — ~/.fmos/task-backup-аас сэргээв\n")
+            return True
+    except OSError: pass
+    return False
+
+
+def _verify_write(p, data):
+    """Бичсэний дараа уншиж шалгана: 0 байт эсвэл зөрсөн бол шууд (non-atomic) дахин бичнэ."""
+    p = Path(p)
+    for _ in range(3):
+        time.sleep(0.3)
+        try:
+            if p.read_bytes() == data: return True
+            p.write_bytes(data)
+            sys.stderr.write(f"relay: «{p.name}» бичилт зөрсөн (Drive sync?) — шууд дахин бичив\n")
+        except OSError: pass
+    return False
+
+
 def _fm_set(p, updates):
     """Set top-level frontmatter keys in place: an existing key's line (+ its indented / list continuation) is replaced,
     a missing key is added before the closing ---; value None removes the key (a missing one stays missing). Body,
     other keys, BOM and line endings stay byte for byte; atomic write. False → the note has no frontmatter."""
-    p = Path(p); raw = p.read_bytes(); bom = raw[:3] == b"\xef\xbb\xbf"
+    p = Path(p); _task_restore_if_empty(p); raw = p.read_bytes(); bom = raw[:3] == b"\xef\xbb\xbf"
     lines = raw[3 if bom else 0:].decode("utf-8").splitlines(keepends=True)
     if not lines or lines[0].rstrip("\r\n").strip() != "---": return False
     end = next((i for i in range(1, len(lines)) if lines[i].rstrip("\r\n").strip() == "---"), None)
@@ -220,6 +263,7 @@ def _fm_set(p, updates):
         try: os.unlink(tmp)
         except OSError: pass
         raise
+    enc = data.encode("utf-8"); _verify_write(p, enc); _task_backup(p, enc)
     return True
 
 
@@ -406,6 +450,7 @@ def _claim(ref, sid):
     if not f:
         sys.stderr.write(f"relay claim: «{_shown(want, _private_task(want, {}))}» олдсонгүй\n"); return "LOSE missing"
     rel = _nfc(f.relative_to(vault).as_posix())          # the name as it is on disk: both devices post the same path
+    _task_restore_if_empty(f)
     R = load(REG, {"sessions": {}}); me = R["sessions"].get(sid); m = _fm(f)
     if str(m.get("status") or "").strip().lower() in CLOSED_STATUSES: return "LOSE closed"
     secret = _secret_task(rel, m, R)
@@ -513,6 +558,8 @@ def d_task(args, sid):
         f"priority: {opt('--prio', '🟡')}", f"due: {opt('--due')}", f"project: \"[[{proj}]]\"" if proj else "project:",
         *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []), *([f"device: {opt('--device')}"] if opt("--device") else []), *(["private: true"] if secret else []),
         "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
+    _new = f.read_bytes(); _verify_write(f, _new)
+    if not secret: _task_backup(f, _new)
     try:
         if secret:  # 🔒: the opaque id only — the private sessions' watch finds the note in the vault itself
             _dispatch_post({"op": "offer", "task": _opaque_id(rel), "device": DEVICE, "sid": sid, "ts": round(time.time(), 3)})

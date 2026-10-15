@@ -12,6 +12,9 @@
 
 ## Unreleased
 
+- fm 0.9.63: relay task/claim 0 байтын хамгаалалт (Wiki QA 2026-10-15) — task үүсгэх, frontmatter бичих бүрийн дараа уншиж шалгана (0 байт/зөрвөл шууд дахин бичнэ); сүүлийн сайн агуулга `~/.fmos/task-backup/`-д; claim болон бичихийн өмнө файл 0 байт бол нөөцөөс сэргээнэ. 🔒 хувийн task нөөцлөгдөхгүй. Тест.
+  - Яагаад: Drive sync шинэ task-ийг хоосолсон ч агуулга алдагдахгүй · Дүрэм: [[_system/BOOT]] «Task»
+
 - fm 0.9.62: `02-Projects/Project Files.base` — төслийн файлыг шатаар (formula `stage`: 📥 Inbox · 📄 Баримт · 📤 Output, formula `project`); view «Энэ төсөл» (`this.file.folder`, төслийн note-д embed), «📥 Inbox (бүх төсөл)», «📤 Output (бүх төсөл)», «Төслийн бүх файл». Project загварт «📂 Төслийн файлууд» хэсэг. `03-Areas/Studio.base` хасагдав (Studio = Creative-ийн дүрэм, хэрэгсэл; гаралт төслийн Output-д).
   - Яагаад: төслийн орж ирсэн материал, баримт, гаралт нэг дор шатаараа харагдана · Дүрэм: [[_system/BOOT]] «Хавтас бүр base» · Ном: PARA
 

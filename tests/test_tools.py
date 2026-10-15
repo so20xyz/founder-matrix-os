@@ -504,3 +504,20 @@ def test_relay_client_clean_strips_internal_refs():
     out = ns["client_clean"]("[PC-ab12] [[02-Projects/M/M|M сайт]] бэлэн, [[01-GTD/Tasks/X.md]].\n`D:/a/b.py` 01-GTD/Tasks/Y.md")
     assert out.startswith("M сайт бэлэн, X.")
     assert "PC-" not in out and "D:/" not in out and "01-GTD" not in out and "[[" not in out
+
+
+def test_relay_task_restore_from_backup_when_empty(tmp_path, monkeypatch):
+    import re, hashlib, unicodedata, sys, time
+    from pathlib import Path
+    src = (REPO / "plugins" / "fm" / "tools" / "relay" / "relay_dispatch.py").read_text(encoding="utf-8")
+    seg = src[src.index("TASK_BAK = "):src.index("def _fm_set(")]
+    ns = {"Path": Path, "hashlib": hashlib, "sys": sys, "time": time,
+          "_nfc": lambda s: unicodedata.normalize("NFC", str(s or ""))}
+    exec(seg, ns)
+    ns["TASK_BAK"] = tmp_path / "bak"
+    f = tmp_path / "Task.md"; good = "---\ntype: task\nstatus: inbox\n---\n# x\n".encode()
+    f.write_bytes(good); ns["_task_backup"](f, good)
+    f.write_bytes(b"")
+    assert ns["_task_restore_if_empty"](f) and f.read_bytes() == good
+    p = tmp_path / "P.md"; ns["_task_backup"](p, b"---\nprivate: true\n---\n")
+    assert not ns["_bak_path"](p).exists()          # 🔒 нөөцлөгдөхгүй
