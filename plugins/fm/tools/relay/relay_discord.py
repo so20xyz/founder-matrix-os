@@ -192,7 +192,7 @@ def client_channels():
 
 
 def client_clean(text):
-    """Client сувагт: [[зам|нэр]] → нэр, [[a/b/c]] → c, [PC-ab12] угтвар, зам (D:/…, 01-GTD/…) хасна."""
+    """Client сувагт: [[зам|нэр]] → нэр, [[a/b/c]] → c, [PC-ab12] угтвар, зам (диск:/…, 01-GTD/…) хасна."""
     t = re.sub(r"\[\[([^\]|]+)\|([^\]]+)\]\]", r"\2", text)
     t = re.sub(r"\[\[([^\]]+)\]\]", lambda m: m.group(1).rstrip("/").split("/")[-1].removesuffix(".md"), t)
     t = re.sub(r"\[(?:PC|Mac)-[0-9a-fA-F]{2,}\]\s*", "", t)

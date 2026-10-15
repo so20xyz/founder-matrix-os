@@ -9,6 +9,9 @@
 CHANGELOG-ийн мөр бүр (`- fm 0.9.N: …` эсвэл `- **0.9.N · Ангилал:** …`) доор гишүүний хэлээр нэмэлт
 мөр байж болно (2026-10-14-ний формат):
     - Яагаад: <гишүүнд ямар хэрэгтэй> · Дүрэм: [[BOOT-ийн хэсэг / атом]] · Ном: <BASB | GTD | PARA | Atomic Habits | Zettelkasten | BMG>
+    - Ойлго: <цаашид ингэж ойлгоно — itge.e-ийн шийдвэр, зөвлөгөө>          (2026-10-15)
+Мөр бүр Second Brain-ий аль хэсэгт ашигтайгаар (area) бүлэглэгдэнэ: Санах ой · Атом ба шийдвэр · Task ба GTD ·
+Төсөл · Дүр ба сешн · Хэрэгсэл · Бусад — «юу өөрчлөгдсөн → чамд юугаараа ашигтай → цаашид ингэж ойлго» (Гишүүн 10-14).
 Энэ скрипт зөвхөн задалж хэвлэнэ; гишүүнд тайлбарлах (техник үгийг хасах) нь agent-ийн ажил.
 """
 import json
@@ -19,7 +22,28 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]          # plugins/fm
 STATE = Path.home() / ".fmos" / "whatsnew.json"
 HEAD = re.compile(r"^- (?:fm |\*\*)(\d+)\.(\d+)\.(\d+)\b")
-META = re.compile(r"^\s+- (Яагаад|Дүрэм|Ном):\s*(.+)$")
+META = re.compile(r"^\s+- (Яагаад|Дүрэм|Ном|Ойлго):\s*(.+)$")
+FIELDS = {"Яагаад": "why", "Дүрэм": "rule", "Ном": "book", "Ойлго": "understand"}
+AREAS = [   # (нэр, түлхүүр) — «Яагаад» мөрөөр эхэлж, дараа нь гарчгаар; эхний таарсан нь
+    ("🛠 Хэрэгсэл (Figma, Discord, OBS …)", ("figma", "framer", "relay", "discord", "obs", "premiere", "bridge", "browse", "notebooklm", "notion", "dupes", "drive")),
+    ("🧠 Санах ой (baton, лог, контекст)", ("baton", "memory", "санах ой", "контекст", "context", "checkpoint", "fm:save")),
+    ("🤖 Дүр ба сешн", ("сешн", "session", "дүр", "role", "agent", "sidebar", "slug", "гарчиг")),
+    ("📁 Төсөл", ("төсл", "төсөл", "project", "_brain", "ongoing")),
+    ("✅ Task ба GTD", ("task", "inbox", "gtd", "daily", "raci", "due", "цаглабар")),
+    ("⚛️ Атом ба шийдвэр", ("атом", "atom", "decision", "шийдвэр", "wiki", "fact-check", "topics")),
+]
+ORDER = ["🧠 Санах ой (baton, лог, контекст)", "⚛️ Атом ба шийдвэр", "✅ Task ба GTD", "📁 Төсөл",
+         "🤖 Дүр ба сешн", "🛠 Хэрэгсэл (Figma, Discord, OBS …)", "📦 Бусад"]
+
+
+def area(e):
+    for t in (e.get("why", "").split(" · ")[0], e.get("text", "")[:160]):
+        t = t.lower()
+        hit = next((n for n, keys in AREAS if any(re.search(r"(?<![\w])" + re.escape(k), t) for k in keys)), None)
+        if hit:
+            return hit
+    return "📦 Бусад"
+
 
 
 def changelog():
@@ -57,17 +81,21 @@ def entries(text):
                 continue
             seen.add(v)
             body = re.sub(r"^- (?:fm \d+\.\d+\.\d+:|\*\*\d+\.\d+\.\d+[^*]*\*\*)\s*", "", line).strip()
+            body = re.sub(r"^-\s*fm \d+\.\d+\.\d+\s*(\([^)]*\))?:?\s*", "", body)
             cur = {"version": ".".join(map(str, v)), "text": body}
             out.append(cur)
             continue
         mm = META.match(line)
         if mm and out and cur is out[-1]:
-            cur[{"Яагаад": "why", "Дүрэм": "rule", "Ном": "book"}[mm.group(1)]] = mm.group(2).strip()
+            for part in ("%s: %s" % (mm.group(1), mm.group(2))).split(" · "):   # «Яагаад: … · Дүрэм: … · Ном: …» нэг мөрөнд
+                k, _, v = part.partition(":")
+                if k.strip() in FIELDS and v.strip():
+                    cur[FIELDS[k.strip()]] = v.strip()
     return out
 
 
 def main(argv):
-    sys.stdout.reconfigure(encoding="utf-8")
+    getattr(sys.stdout, "reconfigure", lambda **k: None)(encoding="utf-8")
     now = current()
     if "--mark" in argv:
         STATE.parent.mkdir(parents=True, exist_ok=True)
@@ -82,12 +110,27 @@ def main(argv):
     if "--json" in argv:
         print(json.dumps({"since": since, "now": now, "entries": new}, ensure_ascii=False, indent=1))
         return 0
-    print(f"# Юу өөрчлөгдсөн бэ ({since or 'эхнээс'} → {now}, {len(new)} өөрчлөлт)\n")
     for e in new:
-        print(f"- {e['version']}: {e['text']}")
-        meta = " · ".join(f"{k}: {e[f]}" for k, f in (("Яагаад", "why"), ("Дүрэм", "rule"), ("Ном", "book")) if e.get(f))
-        if meta:
-            print(f"  - {meta}")
+        e["area"] = area(e)
+    print(f"# Юу өөрчлөгдсөн бэ ({since or 'эхнээс'} → {now}, {len(new)} өөрчлөлт)\n")
+    groups = {}
+    for e in new:
+        groups.setdefault(e["area"], []).append(e)
+    for name in ORDER:
+        if name not in groups:
+            continue
+        print(f"## {name} ({len(groups[name])})")
+        for e in groups[name]:
+            print(f"- {e['version']}: {e['text']}")
+            meta = " · ".join(f"{k}: {e[f]}" for k, f in FIELDS.items() if e.get(f) and f != "understand")
+            if meta:
+                print(f"  - {meta}")
+            if e.get("understand"):
+                print(f"  - 👉 Цаашид: {e['understand']}")
+        print()
+    gaps = sum(1 for e in new if not e.get("why"))
+    if gaps:
+        print(f"_{gaps} мөрд «Яагаад» алга — agent гишүүний хэлээр нөхөж тайлбарлана, ном бүү зохио._")
     return 0
 
 
