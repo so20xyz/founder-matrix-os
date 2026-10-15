@@ -128,7 +128,11 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 Хоёр машины sidebar (бүлэг, сешний нэр) ижил байна. Загвар = `_system/fm/sidebar-layout.json` (Drive-аар).
 1. `mcp__ccd_session_mgmt__list_sessions` (limit 100)-ийн гаралтыг scratchpad-д `sessions.json` болгож хадгал; энэ сешнийг (`self`) өөрийн гарчиг, бүлгээр нь нэм.
 2. Sidebar-аа гишүүн өөрөө зассан бол (эсвэл primary төхөөрөмж — PC — дээр) → `python3 "$S/fm_sidebar.py" publish "<vault>" --device <төхөөрөмж> < sessions.json`, тэгээд #architect (эсвэл өөрийн суваг)-д «sidebar загвар шинэчлэгдлээ» гэж нэг мөр.
-3. Нөгөө төхөөрөмж дээр → `python3 "$S/fm_sidebar.py" plan "<vault>" --device <төхөөрөмж> < sessions.json` → `rename` бүрийг `set_session_title`, `move` бүрийг `mcp__ccd_sidebar__move_sessions` (бүлгийн id-г `list_groups`-оос)-аар асуулгүй хий; `missing` бүрийг «шинэ сешн нээгээд `/fm:role …`» гэж гишүүнд хэл; `extra`-г Archive руу зөөх эсэхийг асуу. Дэд (nested) сешнийг апп тусад нь зөөхгүй — гишүүнд гараар чирэхийг хэл.
+3. Нөгөө төхөөрөмж дээр → `python3 "$S/fm_sidebar.py" plan "<vault>" --device <төхөөрөмж> < sessions.json` → **бүгдийг agent өөрөө хийнэ, гишүүнд даалгахгүй** (itge.e 2026-10-15: «чи бүгдийг нь нээнэ»):
+   - `rename` → `set_session_title`; `move` → `mcp__ccd_sidebar__move_sessions` (id-г `list_groups`-оос);
+   - `folder` → тэр сешнд `mcp__ccd_session_mgmt__send_message`: «`mcp__ccd_directory__change_directory` → <to>, дараа нь хариу бүү бич»;
+   - `missing` → `start_session` (байвал: title, cwd = загварын хавтас, эхний prompt «`/fm:role <role> --project <project>`, нэрийг «<title>» болго, `<group>` бүлэгт оруул») → буцсан id-г `move_sessions`-оор бүлэгт; `start_session` алга бол `mcp__ccd_session__spawn_task` chip ижил prompt-оор (гишүүн нэг дарна);
+   - `extra` → Archive бүлэг рүү (устгахгүй); дэд (nested) сешнийг апп тусад нь зөөхгүй бол эцэг сешний хамт зөөгөөд эцгийг буцаа, болохгүй бол тайланд нэр.
 4. Тайланд нэг мөр: «Sidebar: N нэр, M бүлэг тааруулав · дутуу: … · илүү: …».
 
 ## 🔒 Хувийн дүр (Finance)
