@@ -71,6 +71,22 @@ Timeline/scroll/parallax анимэйшн Figma-д боломжгүй - кодо
 3. Agent эхлэхдээ `fig.py progress <id> working "<юу хийж байна>"`, явцдаа текстээ шинэчилнэ (⏳ ажиллаж байна); дуусахад `fig.py reply <id> "…"` → `fig.py progress <id> done`.
 4. Үндсэн сешн хариу бүрийг зургаар (export) шалгаад л «шийдсэн» болгоно.
 
+## 🗳 Санал / сонголт (`fig.py ask`)
+
+**Дизайны санал, сонголтыг чатаар (AskUserQuestion) биш — Figma панелд, frame-ийн линктэй тавь** (itge.e 2026-10-15: «эдгээр саналуудаа figma bridge дээрээ гаргаад явдаг болго»).
+
+```bash
+python3 "$F/fig.py" --doc "<файл>" ask --title "Аль чиглэлийг үргэлжлүүлэх вэ?" \
+  --option "A · Хавтас|12 карт табтай|607:1194" \
+  --option "B · Нүүр|нэг hero, том гарчиг|607:1221" \
+  --option "C · Индекс|12 картын тор|607:1230" --wait 600
+```
+
+- `--option "<label>|<тайлбар>|<nodeId>"` 2–4 удаа; node бүр «◎ frame руу очих» линктэй (дарвал zoom).
+- Хэрэглэгч «Сонгох» дарна (тайлбар нэмж болно), эсвэл зөвхөн тайлбар бичээд Enter, эсвэл thread-д хариулна.
+- `--wait N` → хариу ирэх хүртэл хүлээгээд JSON: `{"answer": {"pick": 1, "label": "B · Нүүр", "node": "607:1221", "note": "…"}}`; хугацаа дуусвал exit 2. `--wait`-гүй бол `{"id": …}` буцаана → дараа нь `fig.py answer <id> [--wait N]`.
+- Сонголт ирсний дараа шийдвэрээ thread-д `fig.py reply <id> "…"`-ээр баталгаажуул.
+
 ## Icon, REST, Framer
 
 - Icon: `fig.py icons <iconify-set> [--filter solid] [--names a,b] [--size 24]` (Iconify-ийн нийтийн API).

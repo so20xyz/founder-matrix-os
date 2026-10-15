@@ -36,6 +36,13 @@ const STASH = (await import("node:url")).pathToFileURL(STATE_DIR.replace(/[\\/]?
 const CFILE = new URL("./comments.json", STASH);
 let comments = []; try { comments = JSON.parse(fs.readFileSync(CFILE, "utf8")); } catch {}
 const waiters = new Set();
+const choiceWaiters = new Map();   // choice thread id -> Set(fn)  (fig.py ask --wait)
+function answerChoice(root, ans) {
+  if (!root || !root.choice || root.answer) return;
+  root.answer = { ...ans, at: Date.now() }; saveComments();
+  for (const [s] of plugins) sendFrame(s, JSON.stringify({ commentsAll: comments }));
+  for (const w of choiceWaiters.get(root.id) || []) w(); choiceWaiters.delete(root.id);
+}
 function saveComments() { fs.mkdirSync(STASH, { recursive: true }); fs.writeFileSync(CFILE, JSON.stringify(comments, null, 1)); }
 function addComment(c) {
   c = { id: crypto.randomUUID().slice(0, 8), at: Date.now(), ...c }; comments.push(c); saveComments();
@@ -118,6 +125,9 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET") {
       const file = q.get("file") || "";
       if (q.get("all")) return json(200, comments.filter(c => !file || (c.file || "").toLowerCase().includes(file.toLowerCase())));
+      if (q.get("choice")) { const id = q.get("choice"); let t = comments.find(c => c.id === id);
+        if (t && !t.answer && q.get("wait")) { await new Promise(r => { const f = () => r(); const set = choiceWaiters.get(id) || new Set(); set.add(f); choiceWaiters.set(id, set); setTimeout(() => { set.delete(f); r(); }, 1000 * Number(q.get("wait"))); }); t = comments.find(c => c.id === id); }
+        return t ? json(200, { id, title: t.text, answer: t.answer || null, options: t.choice }) : json(404, { error: "choice олдсонгүй" }); }
       const session = q.get("session") || "";
       const fresh = () => openThreads(file, session).filter(t => !(q.get("wait") && delivered.includes(t.id)));   // хариулж буй thread-ийг дахин бүү өг
       let open = fresh();
@@ -139,7 +149,7 @@ const server = http.createServer(async (req, res) => {
       if (parent && b.doc && !b.force && !fileMatch(parent, b.doc)) return json(409, { error: `thread ${parent.id} нь «${parent.file}» файлынх, --doc «${b.doc}» биш. --force-оор хүчлэх` });
       if (parent && b.session && !parent.claimedBy) parent.claimedBy = b.session;
       if (parent && b.session && parent.claimedBy && parent.claimedBy !== b.session && !b.force) return json(409, { error: `thread ${parent.id}-ийг «${parent.claimedBy}» сешн авсан. --force-оор хүчлэх` });
-      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, ...(b.session ? { session: b.session } : {}), parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}) }));
+      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, ...(b.session ? { session: b.session } : {}), parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}), ...(b.choice ? { choice: b.choice } : {}) }));
     }
   }
   // /claude : Claude Code hook-ууд төлвөө илгээнэ → бүх plugin-д WebSocket-оор (Claude Code-ийн «Running… 16s» шиг)
@@ -219,7 +229,12 @@ server.on("upgrade", (req, sock) => {
     if (msg.hello) { const h = typeof msg.hello === 'object' ? msg.hello : { file: msg.hello };
       plugins.set(sock, { ...h, at: Date.now() }); last = sock; console.log("plugin:", h.file, h.editor);
       sendFrame(sock, JSON.stringify({ commentsAll: comments.filter(c => !c.file || c.file === h.file) })); return; }
-    if (msg.newComment) { const m = plugins.get(sock) || {}; addComment({ from: "user", file: m.file, ...msg.newComment }); return; }
+    if (msg.answerChoice) { const a = msg.answerChoice, root = comments.find(c => c.id === a.id); if (!root || !root.choice || root.answer) return;
+      const opt = a.pick != null ? root.choice[a.pick] : null;
+      addComment({ from: "user", parent: root.id, file: root.file, node: root.node, text: (opt ? "✓ " + opt.label : "💬") + (a.note ? " — " + a.note : "") });
+      answerChoice(root, { pick: a.pick ?? null, label: opt ? opt.label : null, node: opt ? opt.node || null : null, note: a.note || "" }); return; }
+    if (msg.newComment) { const m = plugins.get(sock) || {}; const c = addComment({ from: "user", file: m.file, ...msg.newComment });
+      const root = c.parent && comments.find(x => x.id === c.parent); if (root && root.choice && !root.answer) answerChoice(root, { pick: null, label: null, node: null, note: c.text }); return; }
     if (msg.id === '__who' && msg.result) { plugins.set(sock, { ...msg.result, at: Date.now() }); console.log("plugin:", msg.result.file); return; }
     const p = pending.get(msg.id); if (!p) return;
     clearTimeout(p.timer); pending.delete(msg.id); p.resolve(msg);

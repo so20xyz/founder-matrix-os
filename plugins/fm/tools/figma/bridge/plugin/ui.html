@@ -94,6 +94,14 @@
   #gg .gi span{position:absolute;left:0;right:0;bottom:0;padding:3px 5px;font-size:9.5px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.75));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ghint{color:#6a6a6a;font-size:10.5px;text-align:center;margin:10px 0 4px}
   body.collapsed #st,body.collapsed #pl,body.collapsed .pane,body.collapsed #box,body.collapsed #grip{display:none!important}
+  .ch{margin:6px 0 2px;display:flex;flex-direction:column;gap:5px}
+  .op{border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:6px 8px;background:rgba(0,0,0,.2)}
+  .op.on{border-color:#e4f25c;background:rgba(228,242,92,.08)}.op.off{opacity:.4}
+  .op .ol{font-weight:600;color:#fff}.op .od{color:#aaa;font-size:11px;margin:2px 0}
+  .op .orow{display:flex;gap:8px;align-items:center;margin-top:3px}
+  .op button{margin-left:auto;background:#e4f25c;color:#111;border:0;border-radius:7px;padding:2px 10px;font-weight:600;cursor:pointer}
+  .chn{width:100%;box-sizing:border-box;background:rgba(0,0,0,.35);color:#eee;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 7px;font:inherit}
+  .cha{color:#8fd694;font-size:11px}
   .st { font-size: 11px; margin: 4px 0 2px; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,.05); color: #aaa; }
   .st.working { color: #e8c547; background: rgba(232,197,71,.10); }
 </style>
@@ -213,7 +221,7 @@ function render() {
 
       (r.nodes && r.nodes.length > 1 ? r.nodes.map(n => '<span class="node" data-n="' + n.id + '">◎ ' + esc(n.name) + '</span>').join(' ') : r.node ? '<span class="node" data-n="' + r.node.id + '">◎ ' + esc(r.node.name) + '</span>' : '') +
       (kids.length ? '<span class="cnt">' + (kids.length + 1) + ' мессеж</span>' : '') +
-      msgHtml(r, false) +
+      msgHtml(r, false) + (r.choice ? choiceHtml(r) : '') +
       (hidden > 0 ? '<div class="more" data-e="' + r.id + '">↕ өмнөх ' + hidden + ' мессежийг харах</div>' : '') +
       shown.map(m => msgHtml(m, true)).join('') +
       (r.status && r.status.state && r.status.state !== 'done' && !r.resolved ? '<div class="st ' + r.status.state + '">' + (r.status.state === 'working' ? '⏳ ажиллаж байна' : '🕐 дараалалд') + (r.status.text ? ' · ' + esc(r.status.text) : '') + ' · ' + hhmm(r.status.at) + '</div>' : '') +
@@ -222,7 +230,15 @@ function render() {
   }).join('');
   if (!keepScroll) C.scrollTop = C.scrollHeight; keepScroll = false; try { renderCl(); } catch (e) {}
 }
+function choiceHtml(r) { const A = r.answer;
+  return '<div class="ch">' + r.choice.map((o, i) => '<div class="op' + (A ? (A.pick === i ? ' on' : ' off') : '') + '"><div class="ol">' + (i + 1) + '. ' + esc(o.label) + '</div>' +
+    (o.desc ? '<div class="od">' + fmt(o.desc) + '</div>' : '') + '<div class="orow">' + (o.node ? '<span class="lk" data-n="' + esc(o.node) + '">◎ frame руу очих</span>' : '') +
+    (A ? '' : '<button data-ch="' + r.id + '" data-i="' + i + '">Сонгох</button>') + '</div></div>').join('') +
+    (A ? '<div class="cha">✓ ' + (A.label ? esc(A.label) : 'тайлбар') + (A.note ? ' — ' + esc(A.note) : '') + ' · ' + hhmm(A.at) + '</div>'
+       : '<input class="chn" data-cn="' + r.id + '" placeholder="Тайлбар (заавал биш) · зөвхөн тайлбар бол Enter">') + '</div>'; }
+C.onkeydown = (e) => { const t = e.target; if (t.dataset && t.dataset.cn && e.key === 'Enter' && t.value.trim() && ws && ws.readyState === 1) ws.send(JSON.stringify({ answerChoice: { id: t.dataset.cn, pick: null, note: t.value.trim() } })); };
 C.onclick = (e) => { const t = e.target;
+  if (t.dataset.ch) { const inp = C.querySelector('[data-cn="' + t.dataset.ch + '"]'); if (ws && ws.readyState === 1) ws.send(JSON.stringify({ answerChoice: { id: t.dataset.ch, pick: Number(t.dataset.i), note: inp ? inp.value.trim() : '' } })); return; }
   if (t.dataset.n) parent.postMessage({ pluginMessage: { focus: t.dataset.n } }, '*');
   if (t.dataset.e) { expanded[t.dataset.e] = true; keepScroll = true; render(); }
   if (t.dataset.m) { openMsg[t.dataset.m] = !openMsg[t.dataset.m]; const y = C.scrollTop; keepScroll = true; render(); C.scrollTop = y; return; }

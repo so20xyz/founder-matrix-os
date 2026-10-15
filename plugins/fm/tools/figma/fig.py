@@ -11,6 +11,9 @@
   fig.py comments --doc X --session S  - зөвхөн X файлын, өөр сешн аваагүй thread (S default: env FIG_SESSION/CLAUDE_SESSION_TITLE)
   fig.py --doc X reply <id> "текст" [--as S] [--force] - X-ээс өөр файлын/өөр сешний thread-д хариулахыг хориглоно
   fig.py reply <id> "текст" [--play nodeId] - хариулах; текстэд @[нэр](nodeId) = дарвал тэр screen рүү очно
+  fig.py ask --title "Асуулт" --option "<label>|<desc>|<nodeId>" ... [--wait 600]
+                                - панелд 2–4 сонголт (node руу очих линктэй); --wait бол хариуг JSON-оор буцаана
+  fig.py answer <id> [--wait N]   - ask-ийн хариуг дараа нь шалгах
   fig.py resolve <id>            - thread-ийг шийдсэн болгох
   fig.py delete <id>             - хариулт (эсвэл бүх thread) устгах
   fig.py run -f s.js --inject IMG=a.json --inject LOGO=b.json  - JSON-ийг `const IMG=…` болгож залгана
@@ -67,6 +70,9 @@ def main():
     c.add_argument("--session", help="сешний tag (default: FIG_SESSION/CLAUDE_SESSION_TITLE env); өөр сешний авсан thread-ийг алгасна")
     rp = s.add_parser("reply"); rp.add_argument("id"); rp.add_argument("text"); rp.add_argument("--play", help="▶ харах товчны node id")
     rp.add_argument("--as", dest="session", help="хариултад тэмдэглэх сешний нэр (default: env)"); rp.add_argument("--force", action="store_true", help="өөр файл/сешний thread-д хариулахыг зөвшөөрөх")
+    ak = s.add_parser("ask"); ak.add_argument("--title", required=True); ak.add_argument("--option", action="append", required=True, help="label|desc|nodeId")
+    ak.add_argument("--wait", type=int, default=0); ak.add_argument("--as", dest="session")
+    an = s.add_parser("answer"); an.add_argument("id"); an.add_argument("--wait", type=int, default=0)
     rs = s.add_parser("resolve"); rs.add_argument("id")
     pg = s.add_parser("progress"); pg.add_argument("id"); pg.add_argument("state", choices=["queued", "working", "done", "clear"]); pg.add_argument("text", nargs="?", default="")
     dl = s.add_parser("delete"); dl.add_argument("id")
@@ -84,7 +90,7 @@ def main():
         except Exception:
             print({"server": False})
         return
-    if a.cmd in ("comments", "reply", "resolve", "delete", "progress"):
+    if a.cmd in ("comments", "reply", "resolve", "delete", "progress", "ask", "answer"):
         def req(path, body=None, t=10):
             r = urllib.request.Request(URL + path, data=json.dumps(body).encode() if body else None, headers={"content-type": "application/json"})
             try:
@@ -116,6 +122,31 @@ def main():
                 with urllib.request.urlopen(r2, timeout=10) as x: print(json.dumps(json.load(x), ensure_ascii=False))
             except urllib.error.HTTPError as e:
                 sys.exit(json.loads(e.read() or b'{}').get("error", f"HTTP {e.code}"))
+        elif a.cmd in ("ask", "answer"):
+            if a.cmd == "ask":
+                if not 2 <= len(a.option) <= 4:
+                    sys.exit("--option 2–4 удаа өг")
+                opts = []
+                for o in a.option:
+                    parts = (o.split("|") + ["", ""])[:3]
+                    opts.append({"label": parts[0].strip(), "desc": parts[1].strip(), "node": parts[2].strip() or None})
+                target = FILE
+                if not target:
+                    print("⚠ --doc өгөөгүй - хамгийн сүүлд холбогдсон файлд тавина", file=sys.stderr)
+                    try:
+                        with urllib.request.urlopen(f"{URL}/status", timeout=3) as x: target = json.load(x).get("current")
+                    except Exception: pass
+                first = next((o["node"] for o in opts if o["node"]), None)
+                c = req("/comments", {"from": "claude", "text": a.title, "choice": opts, "file": target, "session": a.session or session_label() or None,
+                                      "node": {"id": first, "name": "сонголт"} if first else None})
+                cid = c["id"]
+                if not a.wait:
+                    print(json.dumps({"id": cid, "answer": None}, ensure_ascii=False)); return
+            else:
+                cid = a.id
+            r = req(f"/comments?choice={cid}" + (f"&wait={a.wait}" if a.wait else ""), t=a.wait + 10)
+            print(json.dumps(r, ensure_ascii=False, indent=1))
+            if a.wait and not r.get("answer"): sys.exit(2)
         elif a.cmd == "delete":
             print(json.dumps(req("/comments", {"delete": a.id})))
         elif a.cmd == "progress":
