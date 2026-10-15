@@ -4,7 +4,9 @@
   python3 fm_sidebar.py publish <vault> --device PC < sessions.json   # энэ төхөөрөмжийн sidebar → vault-ийн загвар
   python3 fm_sidebar.py plan    <vault> --device Mac < sessions.json   # загвартай тулгаж хийх алхмууд (JSON)
 
-sessions.json = `mcp__ccd_session_mgmt__list_sessions`-ийн гаралт (title, group{name}, sessionId, cwd).
+  python3 fm_sidebar.py check   <vault> < sessions.json                # дүрмийн зөрчил: буруу бүлэг, nested төсөл, routine
+
+sessions.json =`mcp__ccd_session_mgmt__list_sessions`-ийн гаралт (title, group{name}, sessionId, cwd).
 Загвар хавтсыг (vault-аас харьцангуй) ч хадгална — `folder` алхам: тэр сешнд send_message-ээр change_directory хийлгэнэ. Скрипт зөвхөн
 тооцоолно; нэр солих (set_session_title), бүлэг солих (move_sessions), шинэ сешн (/fm:role) -ийг agent хийнэ.
 
@@ -134,6 +136,47 @@ def subs_of(vault, sessions, tops, keys):
     return out
 
 
+# Дүр → sidebar бүлэг (BOOT «Sidebar бүлгийн дүрэм», itge.e 2026-10-15). Дэд сешн эцгийнхээ доор — энд хамаарахгүй.
+ROLE_GROUP = {"project": "Projects", "architect": "Areas", "gtd": "Areas", "creative": "Areas",
+              "wiki": "Resources", "research": "Resources", "finance": "Finance"}
+ICON_GROUP = {"📁": "Projects", "🏛": "Areas", "📥": "Areas", "🎨": "Areas", "📚": "Resources", "🔍": "Resources",
+              "🔒": "Finance", "💼": "Finance"}
+ROUTINE = ("harvester", "өглөөний тойм")
+
+
+def want_group(title, key):
+    """Сешний зөв бүлэг: registry-ийн дүрээр, үгүй бол гарчгийн icon-оор; мэдэгдэхгүй бол None."""
+    g = ROLE_GROUP.get((key or "").split("/")[0])
+    if g:
+        return g
+    t = (title or "").lstrip()
+    return next((v for k, v in ICON_GROUP.items() if t.startswith(k)), None)
+
+
+def check(vault, sessions):
+    """Дүрмийн зөрчил: буруу бүлэг (move), төслийн сешн өөр сешний доор (detach), routine Recents-д (archive)."""
+    keys = reg_keys(vault)
+    acts = {"move": [], "detach": [], "archive_routine": []}
+    for s in sessions:
+        if s.get("isArchived"):
+            continue
+        t, g = s.get("title") or "", (s.get("group") or {}).get("name")
+        if any(r in t.lower() for r in ROUTINE):
+            if not s.get("isRunning"):
+                acts["archive_routine"].append({"session_id": s["sessionId"], "title": t})
+            continue
+        if is_sub(t) or g in SKIP_GROUPS:
+            continue
+        want = want_group(t, keys.get(norm(t)))
+        if s.get("startedBy"):
+            if want != "Projects":
+                continue                       # дэд сешн эцгийнхээ хамт явна
+            acts["detach"].append({"session_id": s["sessionId"], "title": t})
+        if want and g != want:
+            acts["move"].append({"session_id": s["sessionId"], "title": t, "from": g, "to": want})
+    return acts
+
+
 def publish(vault, sessions, device):
     keys = reg_keys(vault)
     entries, seen = [], set()
@@ -206,12 +249,15 @@ def plan(vault, sessions, device):
 def main(argv):
     getattr(sys.stdout, "reconfigure", lambda **k: None)(encoding="utf-8")
     pos = [a for a in argv if not a.startswith("--")]
-    if len(pos) < 2 or pos[0] not in ("publish", "plan"):
+    if len(pos) < 2 or pos[0] not in ("publish", "plan", "check"):
         sys.stderr.write(__doc__); return 2
     vault = Path(pos[1]).expanduser()
     device = argv[argv.index("--device") + 1] if "--device" in argv else "?"
-    sessions = json.loads(sys.stdin.read() or "[]")
-    out = (publish if pos[0] == "publish" else plan)(vault, sessions, device)
+    sessions = json.loads(sys.stdin.buffer.read().decode("utf-8-sig") or "[]")
+    if pos[0] == "check":
+        out = check(vault, sessions)
+    else:
+        out = (publish if pos[0] == "publish" else plan)(vault, sessions, device)
     print(json.dumps(out, ensure_ascii=False, indent=1))
     return 0
 

@@ -52,6 +52,21 @@ def test_plan_without_layout():
     assert "error" in fs.plan(Path(tempfile.mkdtemp()), [], "Mac")
 
 
+
+def test_check_group_rule():
+    v = Path(tempfile.mkdtemp()); (v / "_system/fm").mkdir(parents=True)
+    a = fs.check(v, [{"sessionId": "h", "title": "🧠 Harvester (PC) — яриа → атом", "group": None},
+                     {"sessionId": "r", "title": "🧠 Harvester (PC) — яриа → атом", "group": None, "isRunning": True},
+                     {"sessionId": "g", "title": "📁 ClientG", "group": {"name": "Areas"}, "startedBy": "x"},
+                     {"sessionId": "w", "title": "📚 Wiki", "group": {"name": "Projects"}},
+                     {"sessionId": "s", "title": "🎨 J › постер", "group": {"name": "Resources"}, "startedBy": "y"},
+                     {"sessionId": "f", "title": "🔒 Personal", "group": {"name": "Finance"}},
+                     {"sessionId": "t", "title": "🔍 Research", "group": {"name": "Projects"}, "startedBy": "g"}])   # project's helper agent stays nested
+    assert [x["session_id"] for x in a["archive_routine"]] == ["h"], a        # running routine untouched
+    assert [x["session_id"] for x in a["detach"]] == ["g"], a
+    assert sorted(x["session_id"] for x in a["move"]) == ["g", "w"], a       # sub-session moves with its parent
+
+
 if __name__ == "__main__":
     n = 0
     for k, f in list(globals().items()):

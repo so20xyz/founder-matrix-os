@@ -13,6 +13,10 @@
 
 ## Unreleased
 
+- fm 0.9.83: Sidebar бүлгийн дүрэм — дүр бүлгээ шийднэ (project → Projects · architect, gtd, creative → Areas · wiki, research → Resources · finance → Finance). `fm_sidebar.py check` зөрчлийг олно: буруу бүлэг, өөр сешний доор нээгдсэн төслийн сешн (detach), Recents дахь routine (archive); fm:update (S) publish-аас өмнө засна. Төслийн доорх Research/Architect/Creative дэд сешн эцгийнхээ доор үлдэнэ.
+  - Яагаад: сешн аль бүлэгт байхыг гараар засах шаардлагагүй, хоёр машинд ижил · Дүрэм: [[_system/BOOT]] «Sidebar бүлгийн дүрэм» · Ном: PARA
+  - Ойлго: төслийн доорх дэд сешнүүд = тэр төслийг олон agent хамтарч хийж байна
+
 - fm 0.9.82: `team.py` багийн Discord-ийн суваг — `list-channels` (зөвхөн унших: ангилал, public/private), `create-channel "<нэр>" [--private] [--category] [--topic] [--member …] [--map <slug>] --approved` (идемпотент: байвал `EXISTS`), `delete-channel "<нэр|id>" --approved` (байхгүй бол `NOT FOUND`, нэр давхардвал exit 2, `team_map`-ийн зөв түлхүүрийг хамт устгана). Зөвхөн `team_guild`; 403-д Manage Channels-ийн заавар. Тест 24.
   - Яагаад: шинэ багийн төсөл нээхэд сувгийг гараар биш командаар үүсгэнэ, нэр ба `team_map` зэрэгцээ бүртгэгдэнэ · Дүрэм: [[_system/BOOT]] «Лог / STATUS / Discord = зөвхөн холбоос»
   - Ойлго: багийн сервер дээрх суваг үүсгэх, устгах нь `--approved`-гүйгээр хэзээ ч явахгүй — itge.e заавал зөвшөөрнө.
