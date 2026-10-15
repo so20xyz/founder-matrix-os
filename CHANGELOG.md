@@ -12,6 +12,8 @@
 
 ## Unreleased
 
+- fm 0.9.71 (Mac GTD-ийн 4 олдвор): (1) relay-ийн inject хийдэг Monitor/send/register заавар платформоор `python3` (Mac/Linux) / `python` (Windows); (2) `scripts/fm_dupes.py <vault> [--apply]` — Drive «X (1).md»: SAME → _trash, эх алга → RENAME, DIFF → гараар нэгтгэх жагсаалт (« (N)»-ийг regex-ээр, «, 1кг»-ийг хөндөхгүй), тест; (3) SessionStart: сешн тохируулсан vault-аас гадуурх `_system/BOOT.md`-тэй (хуучин) vault-аас ажиллавал «⚠️ ХУУЧИН VAULT» анхааруулга; (4) dispatcher сүлжээний алдаа (getaddrinfo, timeout)-нд retry/алгасалт — traceback wake event болохгүй.
+
 - fm 0.9.70: fm:figma — шинэ хувилбарын frame холбогдох section дотор, өмнөх хувилбарын баруун талд (ижил мөр, 120 px), дараа нь section resize; хоосон canvas-д сул frame үлдээхгүй.
 
 - fm 0.9.69: сешн icon-тойгоо төрнө — SessionStart hook (`source: startup`, fork/spawn/Workflow-ээр нээсэн сешн ч мөн) additionalContext-ийн эхэнд «⚠️ ЭХНИЙ АЛХАМ: нэр icon-оор эхлээгүй бол set_session_title → «<icon> <ажил> › <дэд ажил>»» (дүр танигдвал түүний icon). Mod-ын API сешний гарчгийг шууд тавих боломжгүй (шалгав).

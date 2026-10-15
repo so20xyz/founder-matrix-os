@@ -312,6 +312,15 @@ def main():
     if proj:
         candidates.append(proj)
     if not any(is_inside(c, vault) for c in candidates):
+        # Mac GTD 2026-10-15: сешн хуучин (read-only) vault-аас ажилладаг — ижил бүтэцтэй өөр хавтас бол анхааруулна
+        for c in candidates:
+            for d in [Path(c)] + list(Path(c).parents):
+                if (d / "_system" / "BOOT.md").is_file():
+                    emit_json({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext":
+                        "⚠️ ХУУЧИН VAULT: энэ сешн «%s»-ээс ажиллаж байна, тохируулсан vault нь «%s». "
+                        "Хуучин хавтас руу бүү бич — эхлээд `mcp__ccd_directory__change_directory`-оор (ToolSearch) "
+                        "жинхэнэ vault руу шилж, эсвэл itge.e-д хэл." % (d, vault)}})
+                    return 0
         return 0
     session_id = payload.get("session_id")
     session_id = session_id.strip() if isinstance(session_id, str) else ""

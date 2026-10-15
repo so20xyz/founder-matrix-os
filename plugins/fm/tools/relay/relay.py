@@ -39,6 +39,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fmconfig  # noqa: E402  (vault vs legacy paths, device, member, configurable specifics)
+PY = "python" if os.name == "nt" else "python3"   # Mac/Linux-д `python` байхгүй (Mac GTD 2026-10-15)
 import regstore  # noqa: E402  (registry.json: one lock ~/.fmos/registry.lock, atomic write, .bak, never overwrite on read error)
 
 REPO = fmconfig.REPO
@@ -218,14 +219,14 @@ def cmd_inbox():
             out.append(f"### #{key}\n" + "\n\n".join(items))
     save(STATE, state)
     if me and fmconfig.DISPATCHER_TITLE in (me.get("title") or "") and event == "SessionStart":
-        out.insert(0, f"### 🛰 Та {me.get('title')} — ДИСПЕТЧЕРИЙГ одоо асаа: Monitor(command='python {Path(__file__)} dispatch --sid {sid}', timeout_ms=1800000), дуусах бүрд тэр даруй дахин асаа. Event ирвэл wake жагсаалтын сешнийг send_message-ээр сэрээ.")
+        out.insert(0, f"### 🛰 Та {me.get('title')} — ДИСПЕТЧЕРИЙГ одоо асаа: Monitor(command='{PY} {Path(__file__)} dispatch --sid {sid}', timeout_ms=1800000), дуусах бүрд тэр даруй дахин асаа. Event ирвэл wake жагсаалтын сешнийг send_message-ээр сэрээ.")
     if me and me.get("folder"): out.insert(0, f"### 📁 Төслийн хавтас: `{me['folder']}` — энэ төслийн бүх тэмдэглэл, файл ЗӨВХӨН энд (vault-ийн дүрэм _CLAUDE.md-г дагана). Өөр төслийн хавтсанд бүү бич.")
     who = f"{me['name']} · @{me['group']} · {DEVICE}" if me else f"бүртгэлгүй ({DEVICE}, sid {sid[:8]})"
     if not out and event != "SessionStart":
         return
     ctx = f"[FMOS relay] Энэ сешн: {who}.\n"
     if not me and event == "SessionStart":
-        ctx += ("Бүртгүүлэх: `python " + str(Path(__file__)) + f" register <нэр> <{'|'.join(GROUPS)}> --sid {sid}` "
+        ctx += ("Бүртгүүлэх: `" + PY + " " + str(Path(__file__)) + f" register <нэр> <{'|'.join(GROUPS)}> --sid {sid}` "
                 f"({fmconfig.MEMBER_LABEL}-ийн sidebar групптэй ижил). Илгээх: `relay.py send <all|@group|нэр> \"гарчиг\" \"агуулга\"`.\n")
     ctx += "\n\n".join(out) if out else "Шинэ relay бичлэг алга."
     print(json.dumps({"hookSpecificOutput": {"hookEventName": event or "UserPromptSubmit", "additionalContext": ctx}}, ensure_ascii=False))
@@ -486,17 +487,27 @@ def d_dispatch(every=15):
             local.setdefault(ch, []).append(v.get("title") or v["name"])
     for sid, fc in finmap().items():
         if reg[sid].get("device") == DEVICE: local.setdefault(fc, []).append(reg[sid].get("title") or reg[sid]["name"])
-    st = load(STATE, {}); st.pop("_dch", None); ch = dchannels(st); save(STATE, st)
+    def _retry(fn, tries=8):   # Mac GTD 2026-10-15: сүлжээ тасрахад (getaddrinfo, timeout) traceback wake event болж ирдэг байв
+        for i in range(tries):
+            try: return fn()
+            except Exception as e:
+                if i == tries - 1: raise
+                regstore.log(f"dispatch: сүлжээ ({type(e).__name__}) — {min(60, 5 * (i + 1))} сек дараа дахин")
+                time.sleep(min(60, 5 * (i + 1)))
+    st = load(STATE, {}); st.pop("_dch", None); ch = _retry(lambda: dchannels(st)); save(STATE, st)
     watch = {n: ch[n] for n in local if n in ch}
     bot_wakes = {}; last = {}; seen_threads = {}
     for n, cid in watch.items():
-        lm = dapi("GET", f"/channels/{cid}/messages?limit=1"); last[n] = lm[0]["id"] if lm else "0"
+        lm = _retry(lambda: dapi("GET", f"/channels/{cid}/messages?limit=1")); last[n] = lm[0]["id"] if lm else "0"
     print(json.dumps({"ready": len(watch), "channels": list(watch)}, ensure_ascii=False), flush=True)
     tag = re.compile(r"(→\s*" + DEVICE + r"\b|@" + DEVICE.lower() + r"\b)", re.I)
     while True:
         time.sleep(every)
         srcs = list(watch.items()); parent = {}
-        for tid, pid in _threads(set(watch.values())).items():   # itge.e 2026-10-06: replies inside threads wake too
+        try: threads = _threads(set(watch.values()))
+        except Exception as e:   # сүлжээ тасарсан — энэ тойргийг алгасаж, дараа нь дахин
+            regstore.log(f"dispatch: threads ({type(e).__name__})"); threads = {}
+        for tid, pid in threads.items():   # itge.e 2026-10-06: replies inside threads wake too
             pn = next((k for k, v in watch.items() if v == pid), None)
             if not pn: continue
             if "t:" + tid not in last:

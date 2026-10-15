@@ -521,3 +521,15 @@ def test_relay_task_restore_from_backup_when_empty(tmp_path, monkeypatch):
     assert ns["_task_restore_if_empty"](f) and f.read_bytes() == good
     p = tmp_path / "P.md"; ns["_task_backup"](p, b"---\nprivate: true\n---\n")
     assert not ns["_bak_path"](p).exists()          # 🔒 нөөцлөгдөхгүй
+
+
+def test_fm_dupes_classifies(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("fm_dupes", REPO / "plugins" / "fm" / "scripts" / "fm_dupes.py")
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    (tmp_path / "A.md").write_text("x", encoding="utf-8"); (tmp_path / "A (1).md").write_text("x", encoding="utf-8")
+    (tmp_path / "B (1).md").write_text("y", encoding="utf-8")
+    (tmp_path / "C.md").write_text("1", encoding="utf-8"); (tmp_path / "C (1).md").write_text("2", encoding="utf-8")
+    (tmp_path / "Байцаа, 1кг.md").write_text("z", encoding="utf-8")   # « (1)» биш — хөндөхгүй
+    got = {d.name: k for k, d, _ in m.scan(tmp_path)}
+    assert got == {"A (1).md": "SAME", "B (1).md": "RENAME", "C (1).md": "DIFF"}

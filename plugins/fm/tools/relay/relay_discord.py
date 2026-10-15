@@ -122,10 +122,10 @@ def d_inbox(hook):
     if me and event == "SessionStart" and fmconfig.DISPATCHER_TITLE in (me.get("title") or ""):
         # itge.e 2026-10-07: the GTD (dispatcher) session must start listening by itself after every restart/resume
         out.insert(0, f"### 🛰 Та {me.get('title')} ({DEVICE}) — ЭХЛЭЭД 2 Monitor-ыг асаа, хэрэглэгчээс бүү асуу:\n"
-                      f"1. Monitor(command='python -u {Path(__file__)} dispatch --sid {sid} 2>&1 | grep --line-buffered -v ready', timeout_ms=1800000) — wake event ирвэл тэр сешнийг send_message-ээр сэрээ\n"
-                      f"2. Monitor(command='python -u {Path(__file__)} status 2>&1 | grep --line-buffered -iE \"error|traceback|exception\"', timeout_ms=1800000) — #gtd-ийн status самбар\n"
+                      f"1. Monitor(command='{PY} -u {Path(__file__)} dispatch --sid {sid} 2>&1 | grep --line-buffered -v ready', timeout_ms=1800000) — wake event ирвэл тэр сешнийг send_message-ээр сэрээ\n"
+                      f"2. Monitor(command='{PY} -u {Path(__file__)} status 2>&1 | grep --line-buffered -iE \"error|traceback|exception\"', timeout_ms=1800000) — #gtd-ийн status самбар\n"
                       "Monitor дуусах бүрд тэр даруй дахин асаа.")
-    ctx = (f"[FMOS Discord] Энэ сешн: {who}. Хариу: `python {Path(__file__)} send <сувгийн нэр|sys> \"текст\" --sid {sid}`."
+    ctx = (f"[FMOS Discord] Энэ сешн: {who}. Хариу: `{PY} {Path(__file__)} send <сувгийн нэр|sys> \"текст\" --sid {sid}`."
            + "\n"
            + ("\n\n".join(out) if out else "Шинэ мессеж алга."))
     print(json.dumps({"hookSpecificOutput": {"hookEventName": event or "UserPromptSubmit", "additionalContext": ctx}}, ensure_ascii=False))
