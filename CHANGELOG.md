@@ -13,6 +13,10 @@
 
 ## Unreleased
 
+- fm 0.9.82: `team.py` багийн Discord-ийн суваг — `list-channels` (зөвхөн унших: ангилал, public/private), `create-channel "<нэр>" [--private] [--category] [--topic] [--member …] [--map <slug>] --approved` (идемпотент: байвал `EXISTS`), `delete-channel "<нэр|id>" --approved` (байхгүй бол `NOT FOUND`, нэр давхардвал exit 2, `team_map`-ийн зөв түлхүүрийг хамт устгана). Зөвхөн `team_guild`; 403-д Manage Channels-ийн заавар. Тест 24.
+  - Яагаад: шинэ багийн төсөл нээхэд сувгийг гараар биш командаар үүсгэнэ, нэр ба `team_map` зэрэгцээ бүртгэгдэнэ · Дүрэм: [[_system/BOOT]] «Лог / STATUS / Discord = зөвхөн холбоос»
+  - Ойлго: багийн сервер дээрх суваг үүсгэх, устгах нь `--approved`-гүйгээр хэзээ ч явахгүй — itge.e заавал зөвшөөрнө.
+
 - fm 0.9.81: `start_session` Mac, PC хоёуланд байхгүй тул дутуу дэд сешнийг гишүүн эцгийг нь **fork** хийж нээнэ (fork эцгийн доор гарна); fm:update (S) хэнийг fork хийх, ямар нэр өгөхийг нэг мөрөөр хэлнэ.
 
 - fm 0.9.80: нөгөө машины дэд сешнийг **эцэг сешн нь** `start_session`-оор нээнэ (fm:update (S) `missing_sub` → эцэгт send_message) — sidebar-д эцгийн доор харагдана; BOOT «Дэд сешн = нэг task»-д нэмэв.

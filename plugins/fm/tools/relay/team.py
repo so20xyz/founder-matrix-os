@@ -13,6 +13,9 @@ and is used only through this file, so team channels never mix with personal cha
   python team.py create-channel "<name>" [--private] [--category "<cat>"] [--topic "<text>"]
                 [--member <user id|@name>]... [--map <slug>] --approved
                                      create one team channel (--approved required; idempotent: prints EXISTS <id>)
+  python team.py delete-channel "<name|id>" --approved
+                                     delete one team channel (--approved required; idempotent: prints NOT FOUND <name>;
+                                     two channels with that name → prints both ids, exit 2, call again with an id)
 
 Rules: nothing from the vault or finance ever goes to the team server — send() refuses text that looks like it
 (wikilinks, vault/system paths, private/finance markers, local file paths). Read cursors: ~/.fmos_team_seen.json.
@@ -204,6 +207,48 @@ def create_channel(name, approved, private=False, category=None, topic=None, mem
         _map_write(map_slug, ch.get("name", slug))
 
 
+def _map_drop(name):
+    """Remove every discord.json \"team_map\" key pointing at this channel — the other keys stay as they were."""
+    f = relay.fmconfig.DISCORD_CFG
+    cfg = _load(f, {})
+    tm = cfg.get("team_map")
+    if not isinstance(tm, dict):
+        return
+    gone = [k for k, v in tm.items() if _slugify(str(v)) == _slugify(name)]
+    if not gone:
+        return
+    for k in gone:
+        tm.pop(k)
+    f.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    print("map -", ", ".join(gone))
+
+
+def delete_channel(target, approved):
+    if not approved:
+        sys.exit("татгалзав: багийн сувгийг устгах нь буцаахгүй — itge.e-ийн шууд зөвшөөрөл хэрэгтэй (--approved)")
+    t = team(); gid = t["id"]; want = target.lstrip("#").strip()
+    _, allc = _cats_and_text(gid)
+    if want.isdigit():
+        hits = [c for c in allc if c["id"] == want]
+    else:
+        hits = [c for c in allc if _slugify(c["name"]) == _slugify(want)]
+    if not hits:
+        print(f"NOT FOUND {target}")
+        return
+    if len(hits) > 1:
+        print(f"«{want}» нэртэй {len(hits)} суваг байна — юу ч устгасангүй. id-гаар нь дахин дуудна уу:")
+        for c in hits:
+            print(f"  #{c['name']}  {c['id']}")
+        sys.exit(2)
+    ch = hits[0]
+    try:
+        relay.dapi("DELETE", f"/channels/{ch['id']}")
+    except urllib.error.HTTPError as e:
+        sys.exit(_perm_error(e, f"«{ch['name']}» суваг устгах") or f"суваг устгаж чадсангүй: {e}")
+    print(f"DELETED {ch['id']} #{ch['name']}")
+    _map_drop(ch["name"])
+
+
 def _parse_create(a):
     """team.py create-channel «нэр» [--private] [--category X] [--topic X] [--member X]... [--map slug]"""
     name, opts, members, i = None, {}, [], 0
@@ -229,6 +274,10 @@ def main(a):
         name, opts, members = _parse_create(a[1:])
         return create_channel(name, opts.pop("approved", False), members=members,
                               map_slug=opts.pop("map", None), **opts)
+    if a[:1] == ["delete-channel"]:
+        args = [x for x in a[1:] if x != "--approved"]
+        if len(args) != 1: sys.exit("ашиглалт: team.py delete-channel \"<нэр|id>\" --approved")
+        return delete_channel(args[0], "--approved" in a)
     if a[:1] == ["send"] and len(a) >= 3:
         args = [x for x in a[1:] if x != "--approved"]
         return send(args[0], " ".join(args[1:]), "--approved" in a)

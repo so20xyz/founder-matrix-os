@@ -18,7 +18,7 @@ def check(cond, label, extra=""):
 
 
 FAKE = """
-import sys, json
+import sys, json, os
 sys.path.insert(0, %r)
 import relay, team
 SENT, CALLS = [], []
@@ -28,13 +28,15 @@ def fake(method, path, body=None):
     CALLS.append((method, path))
     if path == "/users/@me": return {"id": "BOT"}
     if path.startswith("/guilds/TEAM/members/search"): return [{"user": {"id": "U9", "username": "tse"}}]
+    if method == "DELETE": SENT.append((path, None)); return {"id": path.split("/")[-1]}
     if method == "POST" and path == "/guilds/TEAM/channels":
         SENT.append((path, body)); return {"id": "new1", "name": body["name"]}
     if path.endswith("/channels") and path.startswith("/guilds/TEAM"):
         return [{"id": "c1", "name": "general", "type": 0, "parent_id": "cat1"},
-                {"id": "c2", "name": "zakhiral", "type": 0,
+                {"id": "9002", "name": "zakhiral", "type": 0,
                  "permission_overwrites": [{"id": "TEAM", "type": 0, "deny": "1024"}]},
-                {"id": "cat1", "name": "Төслүүд", "type": 4}]
+                {"id": "cat1", "name": "Төслүүд", "type": 4}] + (
+                [{"id": "c3", "name": "General", "type": 0}] if os.environ.get("FAKE_DUP") else [])
     if path.startswith("/guilds/TEAM/threads/active"): return {"threads": [{"id": "t1", "name": "brief", "parent_id": "c1"}]}
     if path.startswith("/guilds/"): raise AssertionError("touched non-team guild: " + path)
     if method == "POST": SENT.append((path, body)); return {"id": "x"}
@@ -104,6 +106,31 @@ def main():
     rc, out = child("team.list_channels()", env)
     check(rc == 0 and "public  #general" in out and "private  #zakhiral" in out and "[Төслүүд]" in out
           and "SENT" not in out, "list-channels: category, public/private shown, read-only", out)
+
+    rc, out = child("team.delete_channel('general', False)\nprint('SENT', len(SENT))", env)
+    check(rc != 0 and "--approved" in out and "SENT" not in out, "delete-channel: refused without --approved", out)
+
+    rc, out = child("team.delete_channel('baihgui-suvag', True)\nprint('SENT', json.dumps(SENT))", env)
+    check(rc == 0 and "NOT FOUND baihgui-suvag" in out and "SENT []" in out, "delete-channel: unknown name → NOT FOUND, nothing deleted", out)
+
+    dup = dict(env, FAKE_DUP="1")
+    rc, out = child("team.delete_channel('general', True)\nprint('SENT', json.dumps(SENT))", dup)
+    check(rc == 2 and "c1" in out and "c3" in out and "SENT" not in out, "delete-channel: duplicate name → both ids, exit 2, nothing deleted", out)
+
+    cfgf = repo / "relay" / "discord.json"
+    base = json.loads(cfgf.read_text(encoding="utf-8"))
+    base["team_map"] = {"bus1": "zar-medee", "gen": "general", "keep": "zakhiral"}
+    cfgf.write_text(json.dumps(base, ensure_ascii=False), encoding="utf-8")
+    rc, out = child("team.delete_channel('#general', True)\nprint('SENT', json.dumps(SENT))", env)
+    cfg = json.loads(cfgf.read_text(encoding="utf-8"))
+    check(rc == 0 and "DELETED c1 #general" in out and '"/channels/c1"' in out, "delete-channel: deletes by name, prints DELETED", out)
+    check(cfg.get("team_map") == {"bus1": "zar-medee", "keep": "zakhiral"} and cfg.get("guild", {}).get("id") == "PERSONAL",
+          "delete-channel: only the matching team_map key removed", json.dumps(cfg, ensure_ascii=False))
+
+    rc, out = child("team.delete_channel('9002', True)\nprint('SENT', json.dumps(SENT))", env)
+    cfg = json.loads(cfgf.read_text(encoding="utf-8"))
+    check(rc == 0 and "DELETED 9002 #zakhiral" in out and cfg.get("team_map") == {"bus1": "zar-medee"},
+          "delete-channel: by id works, its team_map key removed", out + json.dumps(cfg, ensure_ascii=False))
 
     (repo / "relay" / "discord.json").write_text(json.dumps({"guild": {"id": "PERSONAL"}}), encoding="utf-8")
     rc, out = child("team.read()", env)
