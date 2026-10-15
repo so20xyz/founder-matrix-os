@@ -13,6 +13,9 @@ Vault: `${user_config.vault_path}` (хоосон бол гишүүнээс ас�
 
 Доорх командуудад `python3`; Windows дээр `py -3` (`python` нь ихэвчлэн Microsoft Store-ийн хоосон stub). Зам хоосон зайтай тул хашилтыг бүү хас.
 
+
+> **Сешний нэр (itge.e 2026-10-15):** Шинэ сешн/agent нээх бүрт (Desktop fork, `start_session`/spawn, Workflow-ийн agent `label`, `/fm:role`/project сешн) нэрийг шууд тавина: «<ажлын icon> <ажил> › <дэд ажил>» — icon = ажлын төрөл (🎨 Creative · 🔍 Research · 📚 Wiki · 🏛️ Architect · 📁 төсөл · 📥 GTD); нээсэн сешн нь `mcp__ccd_session_mgmt__set_session_title`-аар (ToolSearch) тэр даруй нэрлэнэ.
+
 ## A. Аргументгүй → жагсаалт
 
 ```bash

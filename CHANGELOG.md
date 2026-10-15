@@ -12,6 +12,8 @@
 
 ## Unreleased
 
+- fm 0.9.68: сешний нэрийн дүрэм бүх урсгалд — Desktop fork, `start_session`/spawn, Workflow agent `label`, `/fm:role`/project сешн: «<ажлын icon> <ажил> › <дэд ажил>», нээсэн сешн `set_session_title`-аар тэр даруй нэрлэнэ. BOOT «Зэрэгцээ сешн», fm:task, fm:update, fm:role-д.
+
 - fm 0.9.67: дэд сешний гарчгийн icon = ажлын төрөл (🎨 Creative · 🔍 Research · 📚 Wiki · 🏛️ Architect · 📁 төсөл · 📥 GTD), эх сешнийх биш (0.9.66-ийн залруулга).
 
 - fm 0.9.66: BOOT загвар — дэд сешний (fork/spawn) гарчиг «<эх дүрийн icon> <ажил> › <дэд ажил>», дэд сешн өөрөө `set_session_title`-аар тавина.

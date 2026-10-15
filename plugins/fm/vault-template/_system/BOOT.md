@@ -82,6 +82,7 @@ ai-first: true
 
 ## Зэрэгцээ сешн ба нэг бичигч
 
+- **Сешний нэр:** Шинэ сешн/agent нээх бүрт (Desktop fork, `start_session`/spawn, Workflow-ийн agent `label`, `/fm:role`/project сешн) нэрийг шууд тавина: «<ажлын icon> <ажил> › <дэд ажил>» — icon = ажлын төрөл (🎨 Creative · 🔍 Research · 📚 Wiki · 🏛️ Architect · 📁 төсөл · 📥 GTD); нээсэн сешн нь `mcp__ccd_session_mgmt__set_session_title`-аар (ToolSearch) тэр даруй нэрлэнэ.
 - Хуваалцсан файл (`_system/logs/`, `01-GTD/Daily/`, `03-Areas/people/`, `index.md`, самбар) → **зөвхөн нэмнэ**.
 - Атом өөрчлөгдөхгүй: засвар = шинэ атом + `supersededby`.
 - Нэг үед **нэг машин** бичнэ (Drive `(1)` давхардал). Багц засварын өмнө зарла.
