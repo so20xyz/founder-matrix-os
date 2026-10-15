@@ -34,6 +34,7 @@ Vault: `${user_config.vault_path}` (хоосон эсвэл `${...}` хэвээ�
 | 1 | Plugin шинэ эсэх (`plugin.json`-ийн `version`; marketplace local repo-г заадаг бол эхлээд тэр clone-д `git pull`) | `claude plugin marketplace update founder-matrix && claude plugin update fm@founder-matrix` → restart |
 | 2 | Компьютер ба апп (Obsidian, Drive, Figma, Discord …) — дутуу/хуучирсныг нэг бүрчлэн «суулгах уу?» гэж зөвлө | `python3 "$S/fm_doctor.py"` |
 | 2б | Claude plugin — fm-ийн санал болгосон жагсаалттай тулга: ⬜ дутууг юунд хэрэгтэйг хэлж суулгах эсэхийг асуу, ⚠️ (productivity) бол яагаад хасахыг тайлбарла | `python3 "$S/fm_plugins.py"` |
+| 2в | Claude тохиргоо машин хооронд нэг эх сурвалжтай (2026-10-15): vault `_system/fm/claude/` байвал — `status` → `merge` (dry run, CONFLICT-ийг гараар) → `link` → `claude-md` (бүгд `--apply`-аар, гишүүн зөвшөөрсний дараа); plugin-уудыг `fm_plugins.py --profile <vault>`-аар профайлтай тулга. Хуучин vault-ийн memory-г автоматаар нэгтгэхгүй (хувийн/хуучирсан байж болно) | `python3 "$S/fm_claude_sync.py" status <vault>` |
 | 3 | Хуучин хавтасны бүтэц (00-GTD, 03-Projects, 04-Areas …) | `python3 "$S/fm_migrate.py" "<vault>"` (байвал, 2.1) |
 | 4 | Дүрийн slug (developer→architect, area→gtd, resource/research→wiki; registry, baton) | `python3 "$S/fm_roles_migrate.py" "<vault>"` |
 | 5 | Дутуу загварын файл (дүрийн note, skill каталог, template) — байгаа файлд хүрэхгүй | `python3 "$S/fm_setup.py" "<vault>" --member "<нэр>" --merge-registry --dry-run` |

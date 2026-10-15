@@ -13,6 +13,10 @@
 
 ## Unreleased
 
+- fm 0.9.88: Claude-ийн тохиргоо хоёр машинд нэг эх сурвалжтай — vault `_system/fm/claude/` (CLAUDE.md, memory/, plugins.json). `fm_claude_sync.py` status / merge (memory-г нэг хавтаст, CONFLICT-ийг хуулахгүй) / link (cwd бүрийн memory → vault, Windows junction, Mac symlink, хуучныг ~/.fmos/memory-backup руу) / claude-md (`@~/.claude/fm-shared/CLAUDE.md` import). `fm_plugins.py --profile <vault>` — профайлтай тулгана (апп-аар ирдэг plugin-ыг давхар суулгахгүй). `/fm:setup` 2в алхам. Тест 2.
+  - Яагаад: аль машин, аль хавтаснаас нээсэн сешн ч нэг санах ой, нэг заавар, ижил plugin-тай · Ном: BASB
+  - Ойлго: санах ой одоо vault-д амьдарна — Drive-аар хоёр машинд очно
+
 - fm 0.9.87: sidebar-ын дараалал хоёр машинд ижил — бүлэг Projects → Areas → Resources → Finance, бүлэг дотор нэрээр (`set_view sort_by: alpha`); recency эрэмбэ машин бүрт өөр байсан. fm:update (S) 5-р алхам.
 
 - fm 0.9.86: relay watch — шинэ Discord суваг (жишээ нь шинэ төслийн) кэшийн 1 цагийг хүлээлгүй шууд танигдана: хэрэгтэй нэр кэшид алга бол сувгийн жагсаалтыг тэр даруй шинэчилнэ.
