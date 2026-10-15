@@ -13,6 +13,8 @@
 
 ## Unreleased
 
+- fm 0.9.87: sidebar-ын дараалал хоёр машинд ижил — бүлэг Projects → Areas → Resources → Finance, бүлэг дотор нэрээр (`set_view sort_by: alpha`); recency эрэмбэ машин бүрт өөр байсан. fm:update (S) 5-р алхам.
+
 - fm 0.9.86: relay watch — шинэ Discord суваг (жишээ нь шинэ төслийн) кэшийн 1 цагийг хүлээлгүй шууд танигдана: хэрэгтэй нэр кэшид алга бол сувгийн жагсаалтыг тэр даруй шинэчилнэ.
 
 - fm 0.9.85: `fm_doctor` Google Drive апп суусан ч **ажиллахгүй** бол ⏸ «ажиллахгүй байна → апп-аа асаа» гэж мэдэгдэнэ (Windows: GoogleDriveFS.exe, Mac: «Google Drive» процесс). PC-ийн Drive зогссоноос Mac-д 4+ цаг юу ч ирээгүй (2026-10-15).
