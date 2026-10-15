@@ -132,6 +132,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
    - `rename` → `set_session_title`; `move` → `mcp__ccd_sidebar__move_sessions` (id-г `list_groups`-оос);
    - `folder` → тэр сешнд `mcp__ccd_session_mgmt__send_message`: «`mcp__ccd_directory__change_directory` → <to>, дараа нь хариу бүү бич»;
    - `missing` → `start_session` (байвал: title, cwd = загварын хавтас, эхний prompt «`/fm:role <role> --project <project>`, нэрийг «<title>» болго, `<group>` бүлэгт оруул») → буцсан id-г `move_sessions`-оор бүлэгт; `start_session` алга бол `mcp__ccd_session__spawn_task` chip ижил prompt-оор (гишүүн нэг дарна);
+   - `missing_sub` (нөгөө машины дэд/fork сешн) → `start_session` (байхгүй бол `spawn_task` chip): гарчиг = загварынх, cwd = `folder`, prompt «`01-GTD/Tasks/`-оос энэ ажлын task-ийг (гарчгаар) олж claim хий, «Өөрчлөлтийн түүх», «Үр дүн»-ээс хаана зогссоныг уншаад үргэлжлүүл; ажлаа `fm:log`-оор тэр task-д бич; дуусахдаа эцэг сешн «<parent_title>»-д `send_message`-ээр нэг мөр»; бүлэг = `group`. Task олдохгүй бол эцэг сешнээс асуу.
    - `extra` → Archive бүлэг рүү (устгахгүй); дэд (nested) сешнийг апп тусад нь зөөхгүй бол эцэг сешний хамт зөөгөөд эцгийг буцаа, болохгүй бол тайланд нэр.
 4. Тайланд нэг мөр: «Sidebar: N нэр, M бүлэг тааруулав · дутуу: … · илүү: …».
 

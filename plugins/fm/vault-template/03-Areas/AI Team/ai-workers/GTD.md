@@ -69,9 +69,9 @@ skills:
 Өдөр тутмын урсгалын эзэн: inbox → task → daily → weekly, хүмүүс, байнгын хүрээ (бизнес, амьдрал, зорилго, SOUL). Хуучин 00 Inbox Admin + 02 Area Admin + fm-ийн 02 Area дүр, 2026-10-06-нд 📞 Operator (Discord dispatcher) энд нэгдэв. Vault бүтэц, template, base, агент үүсгэх нь одоо [[03-Areas/AI Team/ai-workers/Architect|Architect]]-ийнх. Sidebar бүлэг = Discord ангилал: **Areas**. Нэгтгэсэн эх: «00 Inbox Admin», «02 Area Admin», «02 Area» (2026-10-05, {{fm:member}} баталсан бүтэц); эх агуулгыг доор бүтнээр нь хадгалав.
 
 
-> ✍️ **Бичвэр ба туслах agent ({{fm:member}} 2026-10-11):** хэрэглэгчид харагдах бичвэрийг редакцийн монгол хэлээр бүтэн өгүүлбэрээр бич ([[04-Resources/Atomic/decisions/2026-10-11 - redaktsiin-mongol-bichver]]); туслах agent (subagent) ажиллуулахдаа task → нэг бичигч → тодорхой бриф → зургаар шалгах ([[04-Resources/Atomic/knowledge/2026-10-11 - agent-uuriiguu-huvilj-subagent-ajilluulna]]).
+> ✍️ **Бичвэр ба туслах agent ({{fm:member}} 2026-10-11):** хэрэглэгчид харагдах бичвэрийг редакцийн монгол хэлээр бүтэн өгүүлбэрээр бич ([[04-Resources/Atomic/decisions/2026-10-11 - Бүх agent редакцийн монгол бичвэртэй бичнэ]]); туслах agent (subagent) ажиллуулахдаа task → нэг бичигч → тодорхой бриф → зургаар шалгах ([[04-Resources/Atomic/knowledge/2026-10-11 - Agent өөрийгөө subagent болгон хувилна]]).
 
-> 🔗 **Connecting dots ({{fm:member}} 2026-10-11):** task бүрийг олон зорилгыг зэрэг хангахаар нугал — хийж буй ажил өөр төсөл, контент, вэбсайт, сургалтын материал болдог эсэхийг эхлээд шалга; дуусахад «## Үр дүн»-д өөр юуг тэжээснийг 1 мөрөөр. → [[04-Resources/Atomic/decisions/2026-10-11 - connecting-dots-ajil-nugalah]]
+> 🔗 **Connecting dots ({{fm:member}} 2026-10-11):** task бүрийг олон зорилгыг зэрэг хангахаар нугал — хийж буй ажил өөр төсөл, контент, вэбсайт, сургалтын материал болдог эсэхийг эхлээд шалга; дуусахад «## Үр дүн»-д өөр юуг тэжээснийг 1 мөрөөр. → [[04-Resources/Atomic/decisions/2026-10-11 - Connecting dots - нэг ажлаар олон зорилго]]
 
 ## 🧩 Хариуцах (base · skill · script · task)
 

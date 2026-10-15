@@ -68,9 +68,9 @@ skills:
 Систем барьдаг дүр: код (skill, script, hook, Figma/Framer bridge, Notion CLI), vault-ийн бүтэц (folder, type схем, bases, templates), шинэ агент/persona/skill үүсгэх, сешн ↔ дүрийн зураглал. Хуучин 03 Sys Admin, 05 Session Admin, 08 Tool Developer, 05 Developer энд нэгдэв. Discord dispatcher-ийн өдөр тутмын ажил [[03-Areas/AI Team/ai-workers/GTD|GTD]]-т шилжсэн. Sidebar бүлэг = Discord ангилал: **Areas**. Нэгтгэсэн эх: «03 Sys Admin», «05 Session Admin», «08 Tool Developer», «05 Developer» (2026-10-05, {{fm:member}} баталсан бүтэц); эх агуулгыг доор бүтнээр нь хадгалав.
 
 
-> ✍️ **Бичвэр ба туслах agent ({{fm:member}} 2026-10-11):** хэрэглэгчид харагдах бичвэрийг редакцийн монгол хэлээр бүтэн өгүүлбэрээр бич ([[04-Resources/Atomic/decisions/2026-10-11 - redaktsiin-mongol-bichver]]); туслах agent (subagent) ажиллуулахдаа task → нэг бичигч → тодорхой бриф → зургаар шалгах ([[04-Resources/Atomic/knowledge/2026-10-11 - agent-uuriiguu-huvilj-subagent-ajilluulna]]).
+> ✍️ **Бичвэр ба туслах agent ({{fm:member}} 2026-10-11):** хэрэглэгчид харагдах бичвэрийг редакцийн монгол хэлээр бүтэн өгүүлбэрээр бич ([[04-Resources/Atomic/decisions/2026-10-11 - Бүх agent редакцийн монгол бичвэртэй бичнэ]]); туслах agent (subagent) ажиллуулахдаа task → нэг бичигч → тодорхой бриф → зургаар шалгах ([[04-Resources/Atomic/knowledge/2026-10-11 - Agent өөрийгөө subagent болгон хувилна]]).
 
-> 🔗 **Connecting dots ({{fm:member}} 2026-10-11):** task бүрийг олон зорилгыг зэрэг хангахаар нугал — хийж буй ажил өөр төсөл, контент, вэбсайт, сургалтын материал болдог эсэхийг эхлээд шалга; дуусахад «## Үр дүн»-д өөр юуг тэжээснийг 1 мөрөөр. → [[04-Resources/Atomic/decisions/2026-10-11 - connecting-dots-ajil-nugalah]]
+> 🔗 **Connecting dots ({{fm:member}} 2026-10-11):** task бүрийг олон зорилгыг зэрэг хангахаар нугал — хийж буй ажил өөр төсөл, контент, вэбсайт, сургалтын материал болдог эсэхийг эхлээд шалга; дуусахад «## Үр дүн»-д өөр юуг тэжээснийг 1 мөрөөр. → [[04-Resources/Atomic/decisions/2026-10-11 - Connecting dots - нэг ажлаар олон зорилго]]
 
 ## 🧩 Хариуцах (base · skill · script · task)
 

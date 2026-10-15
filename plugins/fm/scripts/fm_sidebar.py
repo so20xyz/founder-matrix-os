@@ -70,7 +70,7 @@ def key_of(title, keys):
 
 
 def is_sub(title):
-    """Дэд сешн (fork, «эх › дэд ажил», Side chat) — тухайн машины түр ажил, загварт орохгүй."""
+    """Дэд сешн (fork, «эх › дэд ажил», Side chat) — загварт `parent`-тай тусдаа (`subs`) бүртгэгдэнэ."""
     t = title or ""
     return "(fork)" in t or "›" in t or t.strip().lower().startswith("side chat")
 
@@ -94,6 +94,32 @@ def rel_folder(vault, cwd):
     return None
 
 
+def nameless(title):
+    """Утгагүй дэд сешн (нэргүй fork, Side chat) — бүртгэхгүй."""
+    t = (title or "").strip().lower()
+    return t.startswith("side chat") or t.endswith("(fork)") and "›" not in t
+
+
+def subs_of(vault, sessions, tops, keys):
+    """Дэд сешнүүд (itge.e 2026-10-15: «fork хийгдсэн сешнүүдийг барьж авах»): эцэг = startedBy, эсвэл «эх › …»-ийн эх."""
+    by_id = {s.get("sessionId"): s for s in sessions}
+    top_by_norm = {norm(e["title"]): e["key"] for e in tops}
+    out = []
+    for s in sessions:
+        g = (s.get("group") or {}).get("name")
+        t = s.get("title") or ""
+        if not g or g in SKIP_GROUPS or s.get("isArchived") or nameless(t) or not (is_sub(t) or s.get("startedBy")):
+            continue
+        parent = None
+        if s.get("startedBy") in by_id:
+            parent = key_of(by_id[s["startedBy"]].get("title"), keys)
+        elif "›" in t:
+            head = norm(t.split("›")[0])
+            parent = next((k for n, k in top_by_norm.items() if n == head or n.endswith(" " + head) or head.endswith(" " + n)), None)
+        out.append({"key": "sub/" + norm(t), "title": t, "group": g, "parent": parent, "folder": rel_folder(vault, s.get("cwd"))})
+    return out
+
+
 def publish(vault, sessions, device):
     keys = reg_keys(vault)
     entries, seen = [], set()
@@ -103,7 +129,8 @@ def publish(vault, sessions, device):
             continue
         seen.add(k)
         entries.append({"key": k, "title": s["title"], "group": g, "folder": rel_folder(vault, s.get("cwd"))})
-    data = {"device": device, "updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "sessions": entries}
+    data = {"device": device, "updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "sessions": entries,
+            "subs": subs_of(vault, sessions, entries, keys)}
     p = layout_path(vault, device)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
@@ -143,6 +170,21 @@ def plan(vault, sessions, device):
     for s, g in grouped(sessions):
         if key_of(s["title"], keys) not in want:
             acts["extra"].append({"session_id": s["sessionId"], "title": s["title"], "group": g})
+    # дэд сешн: ижил нэртэй байвал хавтсыг тааруулна, алга бол эцгийнх нь доор нээнэ (task-аас үргэлжлүүлнэ)
+    acts["missing_sub"] = []
+    local = {norm(s.get("title")): s for s in sessions if not s.get("isArchived")}
+    for e in layout.get("subs") or []:
+        s = local.get(norm(e["title"]))
+        if s is not None:
+            if e.get("folder") is not None and rel_folder(vault, s.get("cwd")) != e["folder"]:
+                acts["folder"].append({"session_id": s["sessionId"], "title": e["title"], "from": s.get("cwd"),
+                                       "to": str(vault / e["folder"]) if e["folder"] else str(vault)})
+            continue
+        par = have.get(e.get("parent")) if e.get("parent") else None
+        acts["missing_sub"].append({"title": e["title"], "group": e["group"],
+                                    "parent_id": par["sessionId"] if par else None,
+                                    "parent_title": par["title"] if par else None,
+                                    "folder": str(vault / e["folder"]) if e.get("folder") else str(vault)})
     return acts
 
 

@@ -51,9 +51,9 @@ skills:
 Төсөл бүрт нэг Project agent (sidebar: 📁 <төсөл>). Зөвхөн өөрийн төслийн folder-т бичнэ. RACI: agent = Responsible + Accountable, {{fm:member}} = Consulted + Informed. **📁 Portfolio** = энэ дүрийн тойм сешн (Projects бүлэгт): төсөл нээх/хаах, төлөв солих, бүх төслийн нийт тойм. Нэг төслийн дотоод ажил → тэр төслийн 📁 сешн. Sidebar бүлэг = Discord ангилал: **Projects**. Нэгтгэсэн эх: «01 Project» (2026-10-05, {{fm:member}} баталсан бүтэц); эх агуулгыг доор бүтнээр нь хадгалав.
 
 
-> ✍️ **Бичвэр ба туслах agent ({{fm:member}} 2026-10-11):** хэрэглэгчид харагдах бичвэрийг редакцийн монгол хэлээр бүтэн өгүүлбэрээр бич ([[04-Resources/Atomic/decisions/2026-10-11 - redaktsiin-mongol-bichver]]); туслах agent (subagent) ажиллуулахдаа task → нэг бичигч → тодорхой бриф → зургаар шалгах ([[04-Resources/Atomic/knowledge/2026-10-11 - agent-uuriiguu-huvilj-subagent-ajilluulna]]).
+> ✍️ **Бичвэр ба туслах agent ({{fm:member}} 2026-10-11):** хэрэглэгчид харагдах бичвэрийг редакцийн монгол хэлээр бүтэн өгүүлбэрээр бич ([[04-Resources/Atomic/decisions/2026-10-11 - Бүх agent редакцийн монгол бичвэртэй бичнэ]]); туслах agent (subagent) ажиллуулахдаа task → нэг бичигч → тодорхой бриф → зургаар шалгах ([[04-Resources/Atomic/knowledge/2026-10-11 - Agent өөрийгөө subagent болгон хувилна]]).
 
-> 🔗 **Connecting dots ({{fm:member}} 2026-10-11):** task бүрийг олон зорилгыг зэрэг хангахаар нугал — хийж буй ажил өөр төсөл, контент, вэбсайт, сургалтын материал болдог эсэхийг эхлээд шалга. → [[04-Resources/Atomic/decisions/2026-10-11 - connecting-dots-ajil-nugalah]]
+> 🔗 **Connecting dots ({{fm:member}} 2026-10-11):** task бүрийг олон зорилгыг зэрэг хангахаар нугал — хийж буй ажил өөр төсөл, контент, вэбсайт, сургалтын материал болдог эсэхийг эхлээд шалга. → [[04-Resources/Atomic/decisions/2026-10-11 - Connecting dots - нэг ажлаар олон зорилго]]
 
 ## 🧩 Хариуцах (base · skill · script · task)
 
@@ -83,7 +83,3 @@ views:
 | Код, хэрэгсэл | [[03-Areas/AI Team/ai-workers/Architect|Architect]] |
 | Судалгаа, атом | [[03-Areas/AI Team/ai-workers/Wiki|Wiki]] |
 | Бизнес санхүү | [[03-Areas/AI Team/ai-workers/Finance|Finance]] |
-
-## Төслийн визуал
-
-- **Төслийн визуал = төслийн сешн өөрөө (itge.e 2026-10-14):** төслийн сешнд слайд, диаграм, зураг хэрэгтэй бол Creative сешнийг хүлээхгүй — Creative дүрийг давхар авч `/fm:figma`-аар өөрөө зурна (брэндийн визуал ДНХ, wrap grid auto-layout, `creative_check.js`). 🎨 Creative-д зөвхөн том брэнд/кампанит ажил шилжинэ. Төлбөртэй зураг үүсгэх (Figma AI credit, Higgsfield) зөвхөн {{fm:member}}-ийн зөвшөөрлөөр.
