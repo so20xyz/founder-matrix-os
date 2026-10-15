@@ -295,9 +295,9 @@ Vault-д `00-GTD`, `02-GTD`, `00-Inbox`, `01-Soul`, `03-Projects` (`1-Active`…
 
 1. **Бүлгүүд** (энэ дарааллаар): `Projects · Areas · Resources · Finance`. Эхлээд `mcp__ccd_sidebar__list_groups` — нэр нь таарах бүлэг байвал түүнийг ашигла, байхгүйг л `mcp__ccd_sidebar__create_group`-ээр үүсгэ. Давхар бүлэг бүү үүсгэ.
 2. **Энэ сешн = 📥 GTD.** `set_session_title("self", "📥 GTD")` → `move_sessions(["self"], Areas)` → `/fm:role area`.
-3. **Бусад сешн** `sidebar.json`-ийн `order`-оор, 6-р алхамд бичигдсэн дүрүүдэд л (`_system/fm/registry.json` → `roles`, `active: true`): 📁 Active төсөл бүр (`/fm:role project` → төслөө сонгоно) → (🎨 Creative) → (🏛️ Architect) → 📚 Wiki → 📖 Library → (🔍 Research · <сэдэв>) → (💼 Business, 🔒 Personal); `routines`-ийн 🧠 Matrix Harvester-ийг 8-р алхамд. Сешн бүрт `mcp__ccd_session__spawn_task` chip үүсгэ — гишүүн нэг дарахад нээгдэнэ. Chip-ийн prompt бие даасан байна:
-   > «Энэ сешн нь `<гарчиг>`. 1) `set_session_title("self", "<гарчиг>")` 2) `move_sessions(["self"], "<бүлэг>")` 3) cwd = `<vault>/<cwd>` (`mcp__ccd_directory__change_directory`) 4) `/fm:role <slug>` 5) нэг мөрөөр «бэлэн» гэж хариул.»
-4. Гишүүнд жагсаалтаар харуул (бүлэг → сешн), chip-уудыг **дээрээс доош** дарахыг хэл. 🔒 Finance-ийн сешнүүд (Business, Personal тусдаа) Discord-гүй. Нэг удаагийн сешн бүлэггүй, дууссаныг апп-ын Archive руу.
+3. **Бусад сешн** `sidebar.json`-ийн `order`-оор, 6-р алхамд бичигдсэн дүрүүдэд л (`_system/fm/registry.json` → `roles`, `active: true`): 📁 Active төсөл бүр (`/fm:role project` → төслөө сонгоно) → (🎨 Creative) → (🏛️ Architect) → 📚 Wiki → 📖 Library → (🔍 Research · <сэдэв>) → (💼 Business, 🔒 Personal); `routines`-ийн 🧠 Matrix Harvester-ийг 8-р алхамд. Сешн бүрийг **гишүүн бүлгийн + товчоор** нээнэ (spawn_task chip **бүү** үүсгэ — chip-ээр нээсэн сешн энэ сешний доор nested болж, бүлгээ солих, салгах боломжгүй гацдаг; #14, 2026-10-15). Сешн бүрт гишүүнд хуулах нэг мөр өг:
+   > «`<бүлэг>` бүлгийн **+** → шинэ сешнд: `/fm:role <slug>` (төсөл бол `/fm:role project --project <slug>`)» — `/fm:role` нэр, бүлэг, cwd-г өөрөө тавина.
+4. Гишүүнд жагсаалтаар харуул (бүлэг → сешн), мөрүүдийг **дээрээс доош** нэг нэгээр хийхийг хэл. 🔒 Finance-ийн сешнүүд (Business, Personal тусдаа) Discord-гүй. Нэг удаагийн сешн бүлэггүй, дууссаныг апп-ын Archive руу.
 
 Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй орчинд (CLI): жагсаалтыг өгөөд гараар хийхийг хэл.
 

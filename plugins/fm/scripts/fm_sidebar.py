@@ -169,9 +169,13 @@ def check(vault, sessions):
             continue
         want = want_group(t, keys.get(norm(t)))
         if s.get("startedBy"):
-            if want != "Projects":
-                continue                       # дэд сешн эцгийнхээ хамт явна
-            acts["detach"].append({"session_id": s["sessionId"], "title": t})
+            # дүрийн үндсэн сешн (📁 төсөл, 📥 🏛️ 🎨 📚, 🔒 💼) хэзээ ч өөр сешний доор байхгүй (#14, 2026-10-15);
+            # 🔍 Research гэх мэт туслах agent эцгийнхээ доор үлдэнэ
+            if not want or t.lstrip().startswith("🔍"):
+                continue
+            acts["detach"].append({"session_id": s["sessionId"], "title": t, "to": want,
+                                   "fallback": "апп салгахыг зөвшөөрөхгүй бол: «%s» бүлгийн + товчоор шинэ сешн нээж "
+                                               "ижил /fm:role-оор холбо (ажил vault-д тул алдагдахгүй), хуучныг Archive" % want})
         if want and g != want:
             acts["move"].append({"session_id": s["sessionId"], "title": t, "from": g, "to": want})
     return acts

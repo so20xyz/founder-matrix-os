@@ -61,10 +61,12 @@ def test_check_group_rule():
                      {"sessionId": "w", "title": "📚 Wiki", "group": {"name": "Projects"}},
                      {"sessionId": "s", "title": "🎨 J › постер", "group": {"name": "Resources"}, "startedBy": "y"},
                      {"sessionId": "f", "title": "🔒 Personal", "group": {"name": "Finance"}},
-                     {"sessionId": "t", "title": "🔍 Research", "group": {"name": "Projects"}, "startedBy": "g"}])   # project's helper agent stays nested
+                     {"sessionId": "t", "title": "🔍 Research", "group": {"name": "Projects"}, "startedBy": "g"},   # project's helper agent stays nested
+                     {"sessionId": "p", "title": "🔒 Personal", "group": {"name": "Areas"}, "startedBy": "gtd"}])   # #14: core session under GTD
     assert [x["session_id"] for x in a["archive_routine"]] == ["h"], a        # running routine untouched
-    assert [x["session_id"] for x in a["detach"]] == ["g"], a
-    assert sorted(x["session_id"] for x in a["move"]) == ["g", "w"], a       # sub-session moves with its parent
+    assert [x["session_id"] for x in a["detach"]] == ["g", "p"], a
+    assert all("+" in x["fallback"] for x in a["detach"]), a
+    assert sorted(x["session_id"] for x in a["move"]) == ["g", "p", "w"], a       # sub-session moves with its parent
 
 
 if __name__ == "__main__":
