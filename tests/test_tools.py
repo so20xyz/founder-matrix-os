@@ -342,7 +342,7 @@ def test_no_stale_gtd_paths_in_repo():
     # шилжилтийн хамгаалалтын код, тест, CHANGELOG хуучин нэрийг санаатай дурдана
     allowed = {"tools/inbox-gallery/server.py", "tools/sidepanel/server.py", "tools/save-to-inbox/popup.js",
                "tools/move-to-inbox.sh", "tools/screenshot-to-inbox.sh", "CHANGELOG.md",
-               "plugins/fm/tools/relay/relay.py", "plugins/fm/skills/task/scripts/fm_task.py",
+               "plugins/fm/tools/relay/relay.py", "plugins/fm/tools/relay/relay_discord.py", "plugins/fm/skills/task/scripts/fm_task.py",
                "plugins/fm/skills/project/scripts/fm_project.py", "plugins/fm/skills/vault/scripts/fm_brain_check.py",
                "plugins/fm/scripts/fm_onboard.py", "plugins/fm/skills/project/SKILL.md",
                "plugins/fm/scripts/fm_migrate.py", "plugins/fm/skills/setup/SKILL.md", "plugins/fm/skills/update/SKILL.md"}
