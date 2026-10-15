@@ -12,6 +12,8 @@
 
 ## Unreleased
 
+- fm 0.9.67: дэд сешний гарчгийн icon = ажлын төрөл (🎨 Creative · 🔍 Research · 📚 Wiki · 🏛️ Architect · 📁 төсөл · 📥 GTD), эх сешнийх биш (0.9.66-ийн залруулга).
+
 - fm 0.9.66: BOOT загвар — дэд сешний (fork/spawn) гарчиг «<эх дүрийн icon> <ажил> › <дэд ажил>», дэд сешн өөрөө `set_session_title`-аар тавина.
 
 - fm 0.9.65: Цаглабар «Хэрэгсэл» табд «🧠 Контекст» — энэ сешнд ачаалагдсан эх (BOOT.md, дүрийн note, AGENTS.md, ~/.claude/CLAUDE.md, memory/MEMORY.md + файлын тоо): хэмжээ, огноо, ачаалсан механизм (fm hook · mod · Claude memory), inject хэмжээ; PC ↔ Mac memory/CLAUDE.md hash харьцуулалт (⚠ зөрвөл). SessionStart hook (`fm_context.py`) `_system/fm/state/context-<төхөөрөмж>.json`-д hash/хэмжээ/огноо л бичнэ (агуулгагүй, сүүлийн 15 сешн).
