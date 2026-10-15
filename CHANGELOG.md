@@ -13,6 +13,9 @@
 
 ## Unreleased
 
+- fm 0.9.85: `fm_doctor` Google Drive апп суусан ч **ажиллахгүй** бол ⏸ «ажиллахгүй байна → апп-аа асаа» гэж мэдэгдэнэ (Windows: GoogleDriveFS.exe, Mac: «Google Drive» процесс). PC-ийн Drive зогссоноос Mac-д 4+ цаг юу ч ирээгүй (2026-10-15).
+  - Яагаад: Drive зогсвол хоёр машин чимээгүй салдаг — одоо `/fm:setup` шалгалт шууд хэлнэ · Ном: BASB
+
 - fm 0.9.84: BOOT-ийн «Sidebar бүлэг» мөрийг товчлов — сешний контекст 28 KB-аас хэтэрч BOOT таслагдаж байсан (creative 28375 B); дэлгэрэнгүй нь fm:update (S)-д.
 
 - fm 0.9.83: Sidebar бүлгийн дүрэм — дүр бүлгээ шийднэ (project → Projects · architect, gtd, creative → Areas · wiki, research → Resources · finance → Finance). `fm_sidebar.py check` зөрчлийг олно: буруу бүлэг, өөр сешний доор нээгдсэн төслийн сешн (detach), Recents дахь routine (archive); fm:update (S) publish-аас өмнө засна. Төслийн доорх Research/Architect/Creative дэд сешн эцгийнхээ доор үлдэнэ.

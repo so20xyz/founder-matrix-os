@@ -207,7 +207,9 @@ ITEMS = [
         "why": "Vault-ийн гэр: «My Drive/Second Brain» — нөөц + Mac ↔ PC sync (Mirror files).",
         "skills": ["sync"], "link": "https://www.google.com/drive/download/",
         "detect": {"kind": "app", "mac": ["Google Drive.app"],
-                   "windows": [("ProgramFiles", "Google/Drive File Stream")]},
+                   "windows": [("ProgramFiles", "Google/Drive File Stream")],
+                   # 2026-10-15: PC-ийн Drive зогссон тул Mac-д 4+ цаг юу ч ирээгүй — суусан ч ажиллаж байх ёстой
+                   "process": {"mac": "Google Drive", "windows": "GoogleDriveFS.exe"}},
         "mac": {"command": "brew install --cask google-drive", "interactive": True,
                 "note": "System extension-д Mac-ийн нууц үг асууна — Terminal-д өөрөө ажиллуул."},
         "windows": {"command": "winget install --id Google.GoogleDrive -e --source winget",
@@ -283,7 +285,7 @@ REQUIRES_NOTE = {"homebrew": "эхлээд Homebrew суулга",
 PLATFORM_LABEL = {"mac": "Mac", "windows": "Windows", "linux": "Linux"}
 LEVEL_LABEL = {"required": "заавал", "recommended": "санал болгох", "optional": "заавал биш"}
 LEVEL_SUMMARY = [("required", "Заавал"), ("recommended", "Санал болгох"), ("optional", "Нэмэлт")]
-ICON = {"ok": "✅", "missing": "❌", "old": "⚠️", "unknown": "❔"}
+ICON = {"ok": "✅", "missing": "❌", "old": "⚠️", "unknown": "❔", "stopped": "⏸"}
 PROBE_TIMEOUT = 10
 VERSION_RE = re.compile(r"(\d+)\.(\d+)(?:\.(\d+))?")
 
@@ -536,6 +538,15 @@ class Detector(object):
 
     def _detect_app(self, item):
         # type: (dict) -> dict
+        res = self._detect_app_installed(item)
+        proc = (item["detect"].get("process") or {}).get(self.plat)
+        if res["status"] == "ok" and proc and self.app_dirs is None and not self.mocked and not _proc_running(proc):
+            res["status"] = "stopped"
+            res["note"] = "суусан ч ажиллахгүй байна — апп-аа асаа (sync зогссон)"
+        return res
+
+    def _detect_app_installed(self, item):
+        # type: (dict) -> dict
         d = item["detect"]
         if self.plat == "linux":
             return {"status": "unknown", "note": "Linux дээр апп шалгахгүй"}
@@ -573,6 +584,21 @@ class Detector(object):
         if not checked or unsure:
             return {"status": "unknown"}
         return {"status": "missing"}
+
+
+def _proc_running(name):
+    # type: (str) -> bool
+    """Процесс ажиллаж байгаа эсэх (Windows: tasklist, Mac: pgrep); шалгаж чадахгүй бол True (худал дохио өгөхгүй)."""
+    try:
+        if os.name == "nt":
+            r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq %s" % name, "/NH"], stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, timeout=PROBE_TIMEOUT)
+            return name.lower() in r.stdout.decode("utf-8", errors="replace").lower()
+        r = subprocess.run(["pgrep", "-x", name], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                           stdin=subprocess.DEVNULL, timeout=PROBE_TIMEOUT)
+        return r.returncode == 0
+    except Exception:
+        return True
 
 
 def _mac_app_version(app):
@@ -652,10 +678,12 @@ def _row(x):
         else:
             what = x["version"] or "шинэчлэх хэрэгтэй"
         line = "%s %s — %s (%s) → %s" % (icon, x["name"], what, lvl, cmd)
+    elif x["status"] == "stopped":
+        line = "%s %s — ажиллахгүй байна (%s) → апп-аа асаа" % (icon, x["name"], lvl)
     else:
         line = "%s %s — тодорхойгүй (%s) → %s" % (icon, x["name"], lvl, x["link"])
     notes = []
-    if x["note"] and not (x["status"] == "old" and x["note"].endswith("+ хэрэгтэй")):
+    if x["note"] and x["status"] != "stopped" and not (x["status"] == "old" and x["note"].endswith("+ хэрэгтэй")):
         notes.append(x["note"])
     if x["status"] in ("missing", "old") and x["install"]["note"]:
         notes.append(x["install"]["note"])
