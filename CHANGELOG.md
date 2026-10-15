@@ -13,6 +13,10 @@
 
 ## Unreleased
 
+- fm 0.9.75: sidebar sync сешний хавтсыг ч тааруулна — `publish` vault-аас харьцангуй `folder`-ийг хадгална, `plan` зөрсөн сешнийг `folder` алхмаар (тэр сешнд send_message → change_directory) гаргана; vault-аас гадуурх хавтас (repo) машин тус бүрийнх тул шаардахгүй. Тест.
+  - Яагаад: Mac-ийн сешн PC-ийнхтэй яг ижил хавтаснаас ажиллана — хуучин vault руу бичихгүй
+  - Ойлго: сешн = нэр + бүлэг + дүр + хавтас; дөрвүүлээ хоёр машинд ижил.
+
 - fm 0.9.74: sidebar sync — дэд сешн (fork, «эх › дэд ажил», Side chat, өөр сешнээс эхэлсэн `startedBy`) загварт орохгүй; тухайн машины түр ажил тул нөгөө машинд «дутуу» гэж гарахгүй. Тест.
 
 - fm 0.9.73: төхөөрөмж хоорондын sidebar sync — `scripts/fm_sidebar.py publish` нэг машины sidebar-ийг (бүлэг, гарчиг) `_system/fm/sidebar-layout.json`-д бичнэ, `plan` нөгөө машины list_sessions-ийг тулгаж rename / move / дутуу / илүүг гаргана (сешнийг registry-ийн role/project-оор таньдаг: «client-b» = «Client B»); fm:update-ийн (S) хэсэг, daily горимд. Тест.

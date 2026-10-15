@@ -28,6 +28,12 @@ def test_publish_and_plan():
 
 
 def test_plan_without_layout():
+    v = Path(tempfile.mkdtemp()); (v / "_system/fm").mkdir(parents=True)
+    fs.publish(v, [{"sessionId": "p", "title": "📚 Wiki", "group": {"name": "Resources"}, "cwd": "D:\\x"},
+                   {"sessionId": "q", "title": "📥 GTD", "group": {"name": "Areas"}, "cwd": str(v / "01-GTD")}], "PC")
+    a = fs.plan(v, [{"sessionId": "m", "title": "📥 GTD", "group": {"name": "Areas"}, "cwd": "/old/vault"},
+                    {"sessionId": "w", "title": "📚 Wiki", "group": {"name": "Resources"}, "cwd": "/repo"}], "Mac")
+    assert [f["session_id"] for f in a["folder"]] == ["m"] and a["folder"][0]["to"].endswith("01-GTD"), a   # outside-vault folder not enforced
     assert "error" in fs.plan(Path(tempfile.mkdtemp()), [], "Mac")
 
 
