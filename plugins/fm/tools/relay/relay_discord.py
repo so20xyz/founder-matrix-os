@@ -331,6 +331,8 @@ def d_watch(sid, every=20):
               "scope": _session_scope(me, reg), "generic": _generic_role_keys(reg),
               "private": bool(me) and is_private(me), "reg": reg}
     _watch_offers(offers)
+    cmap = chmap()   # хоёр машинд ижил сешнтэй суваг → хүний мессежийг эхэлж claim хийсэн машин л хариулна (2026-10-15)
+    shared = {c for s2, c in cmap.items() if reg["sessions"].get(s2, {}).get("device") not in (DEVICE, None, "")}
     while True:
         time.sleep(every)
         st = load(STATE, {}); st.setdefault("_alive", {})[sid] = time.time(); save(STATE, st)   # dispatcher skips live sessions
@@ -364,6 +366,9 @@ def d_watch(sid, every=20):
                 fm = FOR.search(m["content"])
                 if fm and fm.group(1).lower() != fmconfig.KIND: continue
                 who = _who(m["author"])
+                if not m["author"].get("bot") and not fm and n in shared and not msg_claim(m["id"]):
+                    print(f"#{n} · {who}: [нөгөө машин авлаа — бүү хариул] " + m["content"].replace("\n", " ⏎ ")[:200], flush=True)
+                    continue
                 print(f"#{n} · {who}: " + m["content"].replace("\n", " ⏎ ")[:600], flush=True)
         _watch_offers(offers)
 

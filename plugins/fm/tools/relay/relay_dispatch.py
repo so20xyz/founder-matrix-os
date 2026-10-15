@@ -421,6 +421,24 @@ def _read_claims(cid, rel, after, upto, mine=None):
     return {k: v for k, v in claims.items() if k not in released and int(k) > cut}
 
 
+def msg_claim(msg_id):
+    """Хоёр машинд ижил сешнтэй сувгийн хүний мессеж (жишээ нь #gtd): аль dispatcher сэрээхийг #sys-dispatch-ийн
+    claim-аар шийднэ — эхний claim ялна (itge.e 2026-10-15: PC, Mac хоёр GTD нэг мессежийг зэрэг авсан).
+    True = энэ машин сэрээнэ. Сүлжээний алдаанд True (хуучин зан төлөв — мессеж алдагдахгүй)."""
+    key = "m:" + str(msg_id)
+    try:
+        t0 = time.time()
+        cid, msg = _dispatch_post({"op": "claim", "task": key, "device": DEVICE, "sid": "dispatch", "ts": round(t0, 3)})
+        mine = str(msg["id"])
+        time.sleep(CLAIM_WAIT)
+        claims = _read_claims(cid, key, _snowflake_at(t0 - CLAIM_WINDOW), mine, {mine: (DEVICE, "dispatch")})
+        first = min(claims, key=int)
+        return claims[first][0] == DEVICE
+    except Exception as e:
+        regstore.log(f"msg_claim {msg_id}: {type(e).__name__}")
+        return True
+
+
 def _release(rel, claim_id, sid):
     """Best effort: withdraw a claim this device will not act on (its read-back failed) so it cannot block the other."""
     try: _dispatch_post({"op": "release", "task": rel, "claim": claim_id, "device": DEVICE, "sid": sid, "ts": round(time.time(), 3)})

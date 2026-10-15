@@ -487,6 +487,8 @@ def d_dispatch(every=15):
             local.setdefault(ch, []).append(v.get("title") or v["name"])
     for sid, fc in finmap().items():
         if reg[sid].get("device") == DEVICE: local.setdefault(fc, []).append(reg[sid].get("title") or reg[sid]["name"])
+    # хоёр машинд ижил сешнтэй суваг → хүний мессежийг нэг л машин сэрээнэ (msg_claim, 2026-10-15)
+    shared_ch = {ch for sid, ch in cm.items() if reg[sid].get("device") not in (DEVICE, None, "")} & set(local)
     def _retry(fn, tries=8):   # Mac GTD 2026-10-15: сүлжээ тасрахад (getaddrinfo, timeout) traceback wake event болж ирдэг байв
         for i in range(tries):
             try: return fn()
@@ -538,6 +540,8 @@ def d_dispatch(every=15):
                                      ensure_ascii=False), flush=True)
                     continue
                 if _channel_live(parent.get(n, n)): continue        # itge.e 2026-10-07: that session hears it itself
+                if not a.get("bot") and not fm and parent.get(n, n) in shared_ch and not msg_claim(m["id"]):
+                    continue                                          # нөгөө машин түрүүлж авлаа
                 ev = {"wake": local[n], "channel": parent.get(n, n), **_author_fields(a), "text": txt[:1500]}
                 if n.startswith("t:"): ev["thread"] = n[2:]; seen_threads[n[2:]] = m["id"]
                 print(json.dumps(ev, ensure_ascii=False), flush=True)

@@ -13,6 +13,9 @@
 
 ## Unreleased
 
+- fm 0.9.89: Хоёр машинд ижил сешнтэй сувгийн (жишээ нь #gtd) хүний мессежийг **нэг л машин** авна — dispatcher ба сешний watch хоёул `#sys-dispatch`-д `m:<мессежийн id>` claim бичиж, эхнийх нь ялна; ялагдсан машины сешнд «[нөгөө машин авлаа — бүү хариул]» гэж харагдана. Сүлжээний алдаанд хуучнаараа (мессеж алдагдахгүй). Тест 2.
+  - Яагаад: ClientG-ийн хүсэлтийг PC, Mac хоёр GTD зэрэг аваад давхар ажилласан (2026-10-15) · Ном: GTD
+
 - fm 0.9.88: Claude-ийн тохиргоо хоёр машинд нэг эх сурвалжтай — vault `_system/fm/claude/` (CLAUDE.md, memory/, plugins.json). `fm_claude_sync.py` status / merge (memory-г нэг хавтаст, CONFLICT-ийг хуулахгүй) / link (cwd бүрийн memory → vault, Windows junction, Mac symlink, хуучныг ~/.fmos/memory-backup руу) / claude-md (`@~/.claude/fm-shared/CLAUDE.md` import). `fm_plugins.py --profile <vault>` — профайлтай тулгана (апп-аар ирдэг plugin-ыг давхар суулгахгүй). `/fm:setup` 2в алхам. Тест 2.
   - Яагаад: аль машин, аль хавтаснаас нээсэн сешн ч нэг санах ой, нэг заавар, ижил plugin-тай · Ном: BASB
   - Ойлго: санах ой одоо vault-д амьдарна — Drive-аар хоёр машинд очно
