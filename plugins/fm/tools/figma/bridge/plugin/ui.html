@@ -102,6 +102,10 @@
   .op button{margin-left:auto;background:#e4f25c;color:#111;border:0;border-radius:7px;padding:2px 10px;font-weight:600;cursor:pointer}
   .chn{width:100%;box-sizing:border-box;background:rgba(0,0,0,.35);color:#eee;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 7px;font:inherit}
   .cha{color:#8fd694;font-size:11px}
+  #att{display:flex;gap:10px;align-items:center;margin:4px 0;font-size:11px}#att a{color:#9a9a9a;cursor:pointer}#att a:hover{color:#fff}
+  #attl{margin-bottom:3px}#attl .node{cursor:pointer}
+  .th.solo{border-color:rgba(228,242,92,.35)!important}
+  #back{color:#e4f25c;cursor:pointer}
   .rbox{margin-top:6px;border-top:1px solid rgba(255,255,255,.08);padding-top:6px}
   .rbox textarea{height:46px}
   .rrow{display:flex;gap:8px;align-items:center;margin-top:4px;font-size:11px}.rrow a{color:#9a9a9a;cursor:pointer}.rrow a:hover{color:#fff}
@@ -121,6 +125,8 @@
 <div id="l" class="pane"></div>
 <div id="box" class="on">
   <div id="sel">Сонгосон: <b>—</b></div>
+  <div id="attl"></div>
+  <div id="att"><a id="af">◎ сонгосон frame</a><a id="as">📸 frame зураг</a><span style="color:#5f5f5f">· Ctrl+V зураг</span></div>
   <textarea id="txt" placeholder="Claude-д коммент… (Ctrl+Enter илгээнэ)"></textarea>
   <div style="display:flex;gap:4px"><button id="send" style="flex:1">Илгээх</button><button id="pick" title="Сонголтыг тайлбаргүй илгээх" style="margin-top:4px;background:#2f2f33;color:#e4f25c;border:0;border-radius:10px;padding:6px 10px;font-weight:600;cursor:pointer">✓ Pick</button></div>
 </div>
@@ -216,17 +222,18 @@ function msgHtml(m, isReply) {
     (m.images && m.images.length ? '<div class="thumbs">' + m.images.map(i => '<img src="http://localhost:3055/cimg?f=' + encodeURIComponent(i.f) + '" data-big="' + esc(i.f) + '">').join('') + '</div>' : '') + '</div>';
 }
 function render() {
-  const cur = replyTo && C.querySelector('[data-rt="' + replyTo + '"]'); if (cur) D(replyTo).text = cur.value;
   const roots = all.filter(c => !c.parent);
   const open = roots.filter(r => !r.resolved).length; $('n').textContent = open || '';
   if (!roots.length) { C.innerHTML = '<div class="empty">Node сонгоод доор бичээрэй.<br>Claude энд хариулна.</div>'; return; }
-  C.innerHTML = roots.map(r => {
+  if (replyTo && !roots.some(r => r.id === replyTo)) replyTo = null;
+  const list = replyTo ? roots.filter(r => r.id === replyTo) : roots;
+  C.innerHTML = (replyTo ? '<div style="margin:6px 0"><span id="back">← Бүх thread</span></div>' : '') + list.map(r => {
     const kids = all.filter(c => c.parent === r.id);
-    const collapsed = kids.length > 3 && !expanded[r.id];
+    const collapsed = !replyTo && kids.length > 3 && !expanded[r.id];
     const shown = collapsed ? kids.slice(-2) : kids;
     const hidden = kids.length - shown.length;
     const work = (CL.threads || []).includes(r.id) && CL.state !== 'idle';
-    return '<div class="th' + (r.resolved ? ' done' : '') + (replyTo === r.id ? ' act' : '') + (work ? ' work' : '') + '" data-th="' + r.id + '">' +
+    return '<div class="th' + (r.resolved && !replyTo ? ' done' : '') + (replyTo === r.id ? ' solo' : '') + (work ? ' work' : '') + '" data-th="' + r.id + '">' +
 
       (r.nodes && r.nodes.length > 1 ? r.nodes.map(n => '<span class="node" data-n="' + n.id + '">◎ ' + esc(n.name) + '</span>').join(' ') : r.node ? '<span class="node" data-n="' + r.node.id + '">◎ ' + esc(r.node.name) + '</span>' : '') +
       (kids.length ? '<span class="cnt">' + (kids.length + 1) + ' мессеж</span>' : '') +
@@ -235,12 +242,11 @@ function render() {
       shown.map(m => msgHtml(m, true)).join('') +
       (r.status && r.status.state && r.status.state !== 'done' && !r.resolved ? '<div class="st ' + r.status.state + '">' + (r.status.state === 'working' ? '⏳ ажиллаж байна' : '🕐 дараалалд') + (r.status.text ? ' · ' + esc(r.status.text) : '') + ' · ' + hhmm(r.status.at) + '</div>' : '') +
       (work ? '<div class="msg re claude live"><span class="who">Claude</span><span class="wsp">✳</span> <b class="lvt"></b> <span class="lvd"></span><div class="lvm"></div></div>' : '') +
-      (replyTo === r.id ? replyHtml(r) : '') +
-      '<div class="acts"><a data-r="' + r.id + '">' + (replyTo === r.id ? '✕ болих' : '↩ хариулах') + '</a>' + (r.resolved ? '' : '<a data-x="' + r.id + '">✓ шийдсэн</a>') + '</div></div>';
+      '<div class="acts">' + (replyTo === r.id ? '' : '<a data-r="' + r.id + '">💬 нээх / хариулах</a>') + (r.resolved ? '' : '<a data-x="' + r.id + '">✓ шийдсэн</a>') + '</div></div>';
   }).join('');
-  const ta = replyTo && C.querySelector('[data-rt="' + replyTo + '"]');
-  if (ta) { ta.value = D(replyTo).text; ta.onkeydown = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendReply(replyTo); }; ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length; }
-  if (!keepScroll && !ta) C.scrollTop = C.scrollHeight; keepScroll = false; try { renderCl(); } catch (e) {}
+  const bk = $('back'); if (bk) bk.onclick = () => { replyTo = null; showSel(); render(); };
+  showAtt();
+  if (!keepScroll) C.scrollTop = C.scrollHeight; keepScroll = false; try { renderCl(); } catch (e) {}
 }
 // thread доторх хариултын хайрцаг: текст + сонгосон frame (◎) + зураг (Ctrl+V / 📸 frame)
 const draft = {};
@@ -271,8 +277,7 @@ C.onclick = (e) => { const t = e.target;
   if (t.dataset.n) parent.postMessage({ pluginMessage: { focus: t.dataset.n } }, '*');
   if (t.dataset.e) { expanded[t.dataset.e] = true; keepScroll = true; render(); }
   if (t.dataset.m) { openMsg[t.dataset.m] = !openMsg[t.dataset.m]; const y = C.scrollTop; keepScroll = true; render(); C.scrollTop = y; return; }
-  if (t.dataset.r) { replyTo = replyTo === t.dataset.r ? null : t.dataset.r; keepScroll = true; render();
-    const th = C.querySelector('[data-th="' + t.dataset.r + '"]'); if (th && replyTo) th.scrollIntoView({ block: 'nearest' }); return; }
+  if (t.dataset.r) { replyTo = t.dataset.r; showSel(); render(); $('txt').focus(); return; }
   if (t.dataset.rsend) return sendReply(t.dataset.rsend);
   if (t.dataset.ra) { const d = D(t.dataset.ra); for (const n of sels) if (!d.nodes.some(x => x.id === n.id)) d.nodes.push({ id: n.id, name: n.name }); if (!sels.length) post({ notify: 'Figma дээр frame сонгоно уу' }); keepScroll = true; render(); return; }
   if (t.dataset.rs) { post({ snap: t.dataset.rs }); return; }
@@ -281,18 +286,28 @@ C.onclick = (e) => { const t = e.target;
   if (t.dataset.big) { window.open('http://localhost:3055/cimg?f=' + encodeURIComponent(t.dataset.big)); return; }
   if (t.dataset.d) fetch('http://localhost:3055/comments', { method: 'POST', body: JSON.stringify({ delete: t.dataset.d }) });
   if (t.dataset.x) fetch('http://localhost:3055/comments', { method: 'POST', body: JSON.stringify({ resolve: t.dataset.x }) }); };
-function showSel() { if (replyTo) return; $('sel').style.whiteSpace = sels.length > 1 ? 'normal' : '';
+const K = () => replyTo || 'new';
+function showAtt() { const d = D(K()), l = $('attl'); if (!l) return;
+  l.innerHTML = d.nodes.map((n, i) => '<span class="node" data-an="' + i + '" title="хасах">◎ ' + esc(n.name) + ' ✕</span>').join(' ') +
+    (d.imgs.length ? '<div class="thumbs">' + d.imgs.map((u, i) => '<img src="' + u + '" data-ai="' + i + '" title="хасах">').join('') + '</div>' : ''); }
+function showSel() { if (replyTo) { const r = all.find(c => c.id === replyTo); const sn = r ? String(r.text).slice(0, 40) + (String(r.text).length > 40 ? '…' : '') : '';
+    $('sel').style.whiteSpace = ''; $('sel').innerHTML = '💬 <b>' + esc(sn) + '</b>'; $('txt').placeholder = 'Энэ thread-д бичих… (Ctrl+Enter · Ctrl+V зураг)'; return; }
+  $('txt').placeholder = 'Claude-д коммент… (Ctrl+Enter илгээнэ · Ctrl+V зураг)'; $('sel').style.whiteSpace = sels.length > 1 ? 'normal' : '';
   $('sel').innerHTML = sels.length > 1 ? 'Сонгосон (' + sels.length + '): ' + sels.map(n => '<span class="node">' + esc(n.name) + '</span>').join(' ')
     : 'Сонгосон: <b>' + esc(sel ? sel.name : '— (файл даяар)') + '</b>'; }
-let newImgs = [];
-function showNewImgs() { let b = $('nimg'); if (!b) { b = document.createElement('div'); b.id = 'nimg'; b.className = 'thumbs'; $('box').insertBefore(b, $('txt')); }
-  b.innerHTML = newImgs.map((u, i) => '<img src="' + u + '" data-ni="' + i + '" title="хасах">').join(''); }
-$('txt').addEventListener('paste', (e) => pasteImgs(e, (u) => { newImgs.push(u); showNewImgs(); }));
-$('box').addEventListener('click', (e) => { if (e.target.dataset.ni !== undefined) { newImgs.splice(Number(e.target.dataset.ni), 1); showNewImgs(); } });
-function send(pick) { let text = $('txt').value.trim(); if (pick === true) { if (!sels.length) return; text = '✓ pick: ' + sels.map(n => n.name).join(', '); }
-  if ((!text && !newImgs.length) || !ws || ws.readyState !== 1) return;
-  ws.send(JSON.stringify({ newComment: { text: text || '🖼', node: sel, nodes: sels.length ? sels : undefined, images: newImgs.length ? newImgs : undefined } }));
-  $('txt').value = ''; newImgs = []; showNewImgs(); showSel(); render(); }
+$('txt').addEventListener('paste', (e) => pasteImgs(e, (u) => { D(K()).imgs.push(u); showAtt(); }));
+$('box').addEventListener('click', (e) => { const t = e.target, d = D(K());
+  if (t.dataset.an !== undefined) { d.nodes.splice(Number(t.dataset.an), 1); showAtt(); }
+  if (t.dataset.ai !== undefined) { d.imgs.splice(Number(t.dataset.ai), 1); showAtt(); }
+  if (t.id === 'af') { for (const n of sels) if (!d.nodes.some(x => x.id === n.id)) d.nodes.push({ id: n.id, name: n.name }); if (!sels.length) post({ notify: 'Figma дээр frame сонгоно уу' }); showAtt(); }
+  if (t.id === 'as') post({ snap: K() }); });
+function send(pick) { let text = $('txt').value.trim(); const d = D(K());
+  if (pick === true) { if (!sels.length) return; text = (text ? text + '\n' : '') + '✓ pick: ' + sels.map(n => n.name).join(', '); for (const n of sels) if (!d.nodes.some(x => x.id === n.id)) d.nodes.push({ id: n.id, name: n.name }); }
+  if ((!text && !d.imgs.length && !d.nodes.length) || !ws || ws.readyState !== 1) return;
+  const att = { nodes: d.nodes.length ? d.nodes : undefined, images: d.imgs.length ? d.imgs : undefined };
+  ws.send(JSON.stringify({ newComment: replyTo ? { text: text || (d.imgs.length ? '🖼' : '◎'), parent: replyTo, ...att }
+    : { text: text || '🖼', node: sel, nodes: att.nodes || (sels.length ? sels : undefined), images: att.images } }));
+  delete draft[K()]; $('txt').value = ''; showAtt(); showSel(); render(); }
 $('send').onclick = () => send(); $('pick').onclick = () => send(true); $('txt').onkeydown = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send(); };
 function connect() {
   ws = new WebSocket('ws://localhost:3055');
@@ -350,7 +365,7 @@ connect(); render();
 window.onmessage = (e) => { const m = e.data.pluginMessage; if (!m) return;
   if (m.uiState) { UI = { ...UI, ...m.uiState }; if (UI.collapsed) { document.body.classList.add('collapsed'); $('col').textContent = '▸'; } return; }
   if (m.info) { info = m.info; s.textContent = info.file; if (ws && ws.readyState === 1) ws.send(JSON.stringify({ hello: info })); return; }
-  if (m.snap) { const d = D(m.snap.rid); d.imgs.push('data:image/png;base64,' + m.snap.data); if (!d.nodes.some(x => x.id === m.snap.node.id)) d.nodes.push(m.snap.node); keepScroll = true; render(); return; }
+  if (m.snap) { const d = D(m.snap.rid); d.imgs.push('data:image/png;base64,' + m.snap.data); if (!d.nodes.some(x => x.id === m.snap.node.id)) d.nodes.push(m.snap.node); showAtt(); return; }
   if (m.sel !== undefined) { sel = m.sel; sels = m.sels || (m.sel ? [m.sel] : []); showSel(); return; }
   if (m.log !== undefined) { add(m.log, m.kind, m.t, m.node); return; }
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); };
