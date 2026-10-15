@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""fm_sidebar: publish one device's sidebar to the vault, plan the other device's renames/moves/missing/extra."""
+import importlib.util, json, tempfile
+from pathlib import Path
+S = Path(__file__).resolve().parents[1] / "plugins" / "fm" / "scripts" / "fm_sidebar.py"
+spec = importlib.util.spec_from_file_location("fm_sidebar", S); fs = importlib.util.module_from_spec(spec); spec.loader.exec_module(fs)
+
+
+def s(i, t, g):
+    return {"sessionId": i, "title": t, "group": {"name": g} if g else None}
+
+
+def test_publish_and_plan():
+    v = Path(tempfile.mkdtemp())
+    (v / "_system/fm").mkdir(parents=True)
+    (v / "_system/fm/registry.json").write_text(json.dumps({"sessions": {
+        "a": {"title": "📁 client-b", "role": "project", "project": "client-b"},
+        "b": {"title": "📁 Client B", "role": "project", "project": "client-b"}}}, ensure_ascii=False), encoding="utf-8")
+    pc = [s("p1", "📁 Client B", "Projects"), s("p2", "📥 GTD", "Areas"), s("p3", "📁 New", "Projects"),
+          s("p4", "x (fork)", "Areas"), s("p5", "old", "Archive")]
+    data = fs.publish(v, pc, "PC")
+    assert [e["title"] for e in data["sessions"]] == ["📁 Client B", "📥 GTD", "📁 New"]
+    mac = [s("m1", "📁 client-b", "Projects"), s("m2", "📥 GTD", "Resources"), s("m3", "📁 Extra", "Projects"), s("m4", "junk", None)]
+    a = fs.plan(v, mac, "Mac")
+    assert a["rename"] == [{"session_id": "m1", "from": "📁 client-b", "to": "📁 Client B"}], a
+    assert a["move"] == [{"session_id": "m2", "title": "📥 GTD", "to": "Areas"}], a
+    assert [m["title"] for m in a["missing"]] == ["📁 New"] and [x["title"] for x in a["extra"]] == ["📁 Extra"], a
+
+
+def test_plan_without_layout():
+    assert "error" in fs.plan(Path(tempfile.mkdtemp()), [], "Mac")
+
+
+if __name__ == "__main__":
+    n = 0
+    for k, f in list(globals().items()):
+        if k.startswith("test_"):
+            f(); n += 1; print("PASS ", k)
+    print("%d/%d passed" % (n, n))

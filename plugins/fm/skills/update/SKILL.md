@@ -123,6 +123,14 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 7. **Тойм атом** `04-Resources/Atomic/knowledge/YYYY-MM-DD - doloo-honogiin-toim-<YYYY-Www>.md` (`kind: weekly-review`, `confidence: medium`, `areas: [дүрийн note]`): `## Энэ долоо хоногт` (3-5 гол зүйл, холбоостой) · `## Хуучирсан` (тоо + холбоос) · `## Дараагийн долоо хоногийн гол 3`. Лог: `- **HH:MM** · <дүр> → weekly: [[...]]`.
 8. Хэрэглэгч баталсан засваруудыг л хий (task-ийн `status`/`due`, төслийн төлөв нь `/fm:project`-ээр).
 
+## (S) Sidebar-ийн sync — төхөөрөмж хооронд (daily горимд, эсвэл «sidebar sync», «сешнүүдээ тааруул»)
+
+Хоёр машины sidebar (бүлэг, сешний нэр) ижил байна. Загвар = `_system/fm/sidebar-layout.json` (Drive-аар).
+1. `mcp__ccd_session_mgmt__list_sessions` (limit 100)-ийн гаралтыг scratchpad-д `sessions.json` болгож хадгал; энэ сешнийг (`self`) өөрийн гарчиг, бүлгээр нь нэм.
+2. Sidebar-аа гишүүн өөрөө зассан бол (эсвэл primary төхөөрөмж — PC — дээр) → `python3 "$S/fm_sidebar.py" publish "<vault>" --device <төхөөрөмж> < sessions.json`, тэгээд #architect (эсвэл өөрийн суваг)-д «sidebar загвар шинэчлэгдлээ» гэж нэг мөр.
+3. Нөгөө төхөөрөмж дээр → `python3 "$S/fm_sidebar.py" plan "<vault>" --device <төхөөрөмж> < sessions.json` → `rename` бүрийг `set_session_title`, `move` бүрийг `mcp__ccd_sidebar__move_sessions` (бүлгийн id-г `list_groups`-оос)-аар асуулгүй хий; `missing` бүрийг «шинэ сешн нээгээд `/fm:role …`» гэж гишүүнд хэл; `extra`-г Archive руу зөөх эсэхийг асуу. Дэд (nested) сешнийг апп тусад нь зөөхгүй — гишүүнд гараар чирэхийг хэл.
+4. Тайланд нэг мөр: «Sidebar: N нэр, M бүлэг тааруулав · дутуу: … · илүү: …».
+
 ## 🔒 Хувийн дүр (Finance)
 
 - **(A) STATUS-д огт бүү бич.** Төлвийг дүрийн хувийн хавтасны `_state.md`-д (`03-Areas/Business/finances/private/_state.md`, `type: state`, `private: true`, `ai-first: true`) бич.
