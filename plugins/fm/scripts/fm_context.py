@@ -182,7 +182,7 @@ def recent_decisions(vault, slug):
     return (mine + other)[:DECISIONS_MAX]
 
 
-def build_context(vault, session_id):
+def build_context(vault, session_id, reserve=0):
     from fm_common import BOOT_REL, byte_len, read_text, rel_posix, truncate_utf8
 
     from fm_common import config_member
@@ -226,7 +226,7 @@ def build_context(vault, session_id):
     head_text = "\n".join(header) + "\n"
     boot_path = vault / BOOT_REL
     if boot_path.is_file():
-        budget = TOTAL_MAX_BYTES - byte_len(head_text) - byte_len(role_block) - 200
+        budget = TOTAL_MAX_BYTES - reserve - byte_len(head_text) - byte_len(role_block) - 200
         boot, cut = truncate_utf8(read_text(boot_path).replace("\r\n", "\n"), max(budget, 0))
         if cut:
             boot += "...(BOOT.md таслав - бүтнээр нь _system/BOOT.md-ээс унш)\n"
@@ -236,7 +236,7 @@ def build_context(vault, session_id):
                       "/fm:setup ажиллуулж vault-аа бэлдээрэй.")
 
     ctx = head_text + boot_block + "\n" + role_block
-    ctx, _ = truncate_utf8(ctx.strip() + "\n", TOTAL_MAX_BYTES)
+    ctx, _ = truncate_utf8(ctx.strip() + "\n", TOTAL_MAX_BYTES - reserve)
     return ctx
 
 
@@ -324,7 +324,7 @@ def main():
         return 0
     session_id = payload.get("session_id")
     session_id = session_id.strip() if isinstance(session_id, str) else ""
-    ctx = build_context(vault, session_id)
+    ctx = build_context(vault, session_id, 1024 if payload.get("source") == "startup" else 0)   # icon мөр төсөвт багтана
     if payload.get("source") == "startup":   # itge.e 2026-10-15: сешн icon-тойгоо төрнө (fork/spawn/Workflow ч мөн)
         icons = {"architect": "🏛️", "wiki": "📚", "creative": "🎨", "gtd": "📥", "project": "📁", "finance": "🔒", "research": "🔍"}
         try:

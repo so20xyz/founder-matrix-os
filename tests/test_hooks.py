@@ -243,7 +243,7 @@ def test_ctx_vault_from_fmos_config(v):
     # FM_VAULT (env) overrides the config file
     code, out, _ = run(CTX, ctx_payload(v.root), {"FMOS_CONFIG": str(cfg),
                                                   "FM_VAULT": str(v.outside)})
-    assert code == 0 and out == "", out
+    assert code == 0 and "ХУУЧИН VAULT" in context_of(out) and "config-boot-marker" not in context_of(out), out   # 0.9.71
 
 
 def test_ctx_project_dir_inside_vault(v):
