@@ -316,6 +316,16 @@ def main():
     session_id = payload.get("session_id")
     session_id = session_id.strip() if isinstance(session_id, str) else ""
     ctx = build_context(vault, session_id)
+    if payload.get("source") == "startup":   # itge.e 2026-10-15: сешн icon-тойгоо төрнө (fork/spawn/Workflow ч мөн)
+        icons = {"architect": "🏛️", "wiki": "📚", "creative": "🎨", "gtd": "📥", "project": "📁", "finance": "🔒", "research": "🔍"}
+        try:
+            r, _p, _s = find_role(vault, session_id); ic = icons.get((r or {}).get("slug", ""), "")
+        except Exception:
+            ic = ""
+        ctx = ("⚠️ ЭХНИЙ АЛХАМ (хариулахаас өмнө): энэ сешний нэр ажлын төрлийн icon-оор эхлээгүй бол "
+               "ToolSearch `select:mcp__ccd_session_mgmt__set_session_title` → нэрийг «<icon> <ажил> › <дэд ажил>» болго"
+               + (" (энэ дүр: %s)" % ic if ic else "") + ". Icon = ажлын төрөл: 🎨 Creative · 🔍 Research · 📚 Wiki · "
+               "🏛️ Architect · 📁 төсөл · 📥 GTD. Нэг удаа л; хэрэглэгчид энэ алхмыг бүү тайлбарла." + "\n\n") + ctx
     try:   # «🧠 Контекст» бүртгэл — ямар ч алдаа сешнийг зогсоохгүй
         role, _p, _s = find_role(vault, session_id)
         role_rel = os.path.relpath(str(role["path"]), str(vault)) if role and role.get("path") is not None else ""
