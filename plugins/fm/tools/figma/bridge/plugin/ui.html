@@ -1,7 +1,7 @@
 <style>
   /* Bridge панел · A · Фокус (itge.e 2026-10-16) — [[2026-10-16 - Bridge панел A · Фокус хувилбар]] */
   :root{--bg:#1e1e20;--sf:#2a2a2e;--el:#34343a;--bd:#3f3f47;--tx:#f2f2f4;--t2:#adadb8;--ac:#e4f25c;--ink:#1a1a1a;
-    --open:#9ecbff;--wait:#f0c650;--done:#8fd694;--err:#ff7b72;--work:#d97757;
+    --open:#9ecbff;--wait:#f0c650;--done:#8fd694;--err:#ff7b72;--work:#dd866a;
     --sans:Inter,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
   *{box-sizing:border-box}
   body{margin:0;font:12px/1.5 var(--sans);background:var(--bg);color:var(--tx);display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -47,12 +47,12 @@
   /* thread: зүүн 3px зураас + төлөвийн pill */
   .th{position:relative;background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--open);border-radius:10px;padding:10px 10px 8px 11px;margin:8px 0}
   .th.s-wait{border-left-color:var(--wait)}.th.s-done{border-left-color:var(--done)}
-  .th.done{opacity:.72}
+  .th.done{border-left-color:var(--done)}.th.done .msg{color:var(--t2)}
   .th.work{border-left-color:var(--work);box-shadow:0 0 0 1px rgba(217,119,87,.35)}
   .th.solo{border-color:var(--bd);border-left-color:var(--ac)}
   .pill{position:absolute;top:8px;right:8px;display:inline-flex;gap:4px;align-items:center;font-size:11px;line-height:1;padding:3px 7px;border-radius:999px;background:var(--el);color:var(--open)}
   .pill.wait{color:var(--wait)}.pill.done{color:var(--done)}.pill.work{color:var(--work)}
-  .th > .node:first-of-type{margin-right:76px}
+  .th > .pill + *{margin-right:96px}
   .msg{margin:6px 0;white-space:pre-wrap;color:var(--tx)}.msg .who{font-weight:600;margin-right:4px}
   .msg.user .who{color:var(--ac)}.msg.claude .who{color:var(--open)}
   .msg.re{margin-left:8px;padding-left:9px;border-left:2px solid var(--bd)}
@@ -81,7 +81,7 @@
   .ch::before{content:"САНАЛ · НЭГИЙГ СОНГО";font:500 10px var(--mono);letter-spacing:.06em;color:var(--t2)}
   .op{border:1px solid var(--bd);border-radius:9px;padding:8px 9px;background:var(--bg)}
   .ch .op:first-of-type:not(.on):not(.off){border-color:var(--ac)}
-  .op.on{border-color:var(--ac);background:rgba(228,242,92,.07)}.op.off{opacity:.45}
+  .op.on{border-color:var(--ac);background:rgba(228,242,92,.07)}
   .op .ol{font-weight:600;color:var(--tx)}.op .od{color:var(--t2);font-size:12px;margin:3px 0}
   .op .orow{display:flex;gap:8px;align-items:center;margin-top:4px}
   .op button{margin-left:auto;background:var(--el);color:var(--tx);border:1px solid var(--bd);border-radius:7px;padding:3px 10px;font:600 12px var(--sans);cursor:pointer}
