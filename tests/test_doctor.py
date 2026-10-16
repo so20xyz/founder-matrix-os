@@ -109,7 +109,8 @@ def test_mac_empty_everything_missing(c):
     assert ids[0] == "homebrew" and "winget" not in ids, ids
     assert ids[:3] == ["homebrew", "git", "gh"], ids
     for x in rep["items"]:
-        assert x["status"] == "missing", x
+        # playwright-core is found inside the plugin's own tools/browse/node_modules (not the mocked PATH)
+        assert x["status"] == "missing" or (x["id"] == "playwright" and "tools/browse/node_modules" in (x.get("path") or "")), x
         assert x["level"] in ("required", "recommended", "optional"), x
         assert set(x["install"]) == {"command", "interactive", "note"}, x
         for k in ("id", "name", "status", "version", "min_version", "level", "why", "skills",
