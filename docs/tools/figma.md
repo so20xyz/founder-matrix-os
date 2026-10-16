@@ -43,3 +43,4 @@
 
 - Харилцагчийн Figma файлын key, хуваалцсан имэйлийг repo-д commit хийхгүй. Төслийн өөрийн script-үүдийг тухайн төслийн vault хавтсанд хадгал, plugin-д биш.
 - Порт 3055 өөр программд эзлэгдсэн бол тэр программыг хаа эсвэл `FIGMA_BRIDGE_PORT`.
+- **«Locate missing manifest» (⚠ Claude Bridge).** Figma dev plugin-ийн manifest-ийн *үнэмлэхүй замыг* `settings.json`-д (Mac `~/Library/Application Support/Figma/`, Windows `%APPDATA%\Figma\`) санадаг. Хавтас зөөгдвөл (жишээ нь 2026-10-09-нд vault-ийн `_system/tools/figma` → repo-ийн `plugins/fm/tools/figma` болсон) plugin эвдэрнэ. Засах: Import plugin from manifest… → шинэ зам; хуучин ⚠ мөрийг Manage plugins in development-оос устга. `fig.py status` нь `plugin: False` үед зөв зам ба Figma-д үлдсэн хуучин замуудыг stderr-т хэвлэнэ. Plugin-ийн хавтсыг зөөхгүй байх нь хамгийн найдвартай.

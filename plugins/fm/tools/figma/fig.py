@@ -35,6 +35,33 @@ URL = "http://127.0.0.1:" + os.environ.get("FIGMA_BRIDGE_PORT", "3055")
 FILE = os.environ.get("FIG_FILE")
 
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+MANIFEST = os.path.join(HERE, "bridge", "plugin", "manifest.json")
+
+
+def figma_settings():
+    if sys.platform == "darwin":
+        return Path.home() / "Library/Application Support/Figma/settings.json"
+    return Path(os.environ.get("APPDATA", "")) / "Figma/settings.json"
+
+
+def plugin_hint():
+    """plugin: False үед зөв manifest ба Figma-д үлдсэн хуучин замыг stderr-т хэвлэнэ."""
+    err = lambda s: print(s, file=sys.stderr)
+    err("  → Figma desktop: Plugins → Development → Claude Bridge")
+    err(f"  → «missing manifest» бол: Import plugin from manifest… → {MANIFEST}")
+    try:
+        txt = figma_settings().read_text(encoding="utf-8")
+        import re
+        found = [q.replace("\\\\", "\\") for q in re.findall(r'"([^"]*bridge[/\\\\]plugin[/\\\\]manifest\.json)"', txt)]
+        stale = sorted({p for p in found
+                        if os.path.normpath(p) != os.path.normpath(MANIFEST) and not os.path.exists(p)})
+        for p in stale:
+            err(f"  ⚠ Figma хуучин (байхгүй) зам санаж байна: {p} — Manage plugins in development-оос устга")
+    except OSError:
+        pass
+
+
 def session_label():
     """Энэ сешний нэр: FIG_SESSION > CLAUDE_SESSION_TITLE > FM_ROLE > ~/.fmos/config.json member. Хоосон бол routing-гүй (хуучин зан)."""
     for k in ("FIG_SESSION", "CLAUDE_SESSION_TITLE", "CLAUDE_SESSION_NAME", "FM_ROLE"):
@@ -76,6 +103,9 @@ def main():
     rv = s.add_parser("review"); rv.add_argument("node"); rv.add_argument("findings", help="олдворууд (текст эсвэл @file.md)")
     rv.add_argument("--scale", type=float, default=1); rv.add_argument("--as", dest="session"); rv.add_argument("--out", help="PNG хадгалах зам")
     an = s.add_parser("answer"); an.add_argument("id"); an.add_argument("--wait", type=int, default=0)
+    wt = s.add_parser("watch", help="ШИНЭ хэрэглэгчийн мессеж (thread-ийн хариулт, зураг, ask-ийн сонголт ч орно) ирэх хүртэл хүлээгээд хэвлэж гарна")
+    wt.add_argument("--interval", type=int, default=5); wt.add_argument("--max", type=int, default=0, help="хамгийн ихдээ хүлээх сек (0 = хязгааргүй)")
+    wt.add_argument("--reset", action="store_true", help="одоо байгаа бүх мессежийг «харсан» гэж тэмдэглээд эхлэх")
     rs = s.add_parser("resolve"); rs.add_argument("id")
     pg = s.add_parser("progress"); pg.add_argument("id"); pg.add_argument("state", choices=["queued", "working", "done", "clear"]); pg.add_argument("text", nargs="?", default="")
     dl = s.add_parser("delete"); dl.add_argument("id")
@@ -89,17 +119,53 @@ def main():
     if a.cmd == "status":
         try:
             with urllib.request.urlopen(f"{URL}/status", timeout=3) as r:
-                print(json.load(r))
+                st = json.load(r)
+            print(st)
+            if not st.get("plugin"):
+                plugin_hint()
         except Exception:
             print({"server": False})
+            print(f"  → сервер асаа: node \"{os.path.join(HERE, 'bridge', 'server.mjs')}\"", file=sys.stderr)
         return
-    if a.cmd in ("comments", "reply", "resolve", "delete", "progress", "ask", "answer"):
+    if a.cmd in ("comments", "reply", "resolve", "delete", "progress", "ask", "answer", "watch"):
         def req(path, body=None, t=10):
             r = urllib.request.Request(URL + path, data=json.dumps(body).encode() if body else None, headers={"content-type": "application/json"})
             try:
                 with urllib.request.urlopen(r, timeout=t) as x: return json.load(x)
             except urllib.error.URLError:
                 sys.exit("Bridge сервер ажиллахгүй байна: node " + str(Path(__file__).resolve().parent / "bridge" / "server.mjs"))
+        if a.cmd == "watch":
+            import time, hashlib
+            tag = hashlib.md5(((FILE or "") + "|" + (session_label() or "")).encode()).hexdigest()[:10]
+            sp = Path.home() / ".fmos" / "figma" / f"seen-{tag}.json"; sp.parent.mkdir(parents=True, exist_ok=True)
+            def flat(cs, root=None):
+                for c in cs:
+                    yield c, (root or c)
+                    yield from flat(c.get("replies", []), root or c)
+            def snap():
+                q = "?all=1" + ("&file=" + urllib.parse.quote(FILE) if FILE else "")
+                res = []
+                for c, r in flat(req("/comments" + q)):
+                    if c.get("from") == "user": res.append((c, r))
+                    elif c.get("answer"):  # ask-ийн сонголт
+                        res.append(({"id": c["id"] + ":answer", "text": "сонголт: " + json.dumps(c["answer"], ensure_ascii=False), "node": c.get("node")}, c))
+                return res
+            seen = set(json.loads(sp.read_text())) if sp.exists() and not a.reset else None
+            if seen is None:
+                seen = {c["id"] for c, _ in snap()}; sp.write_text(json.dumps(sorted(seen)))
+                if a.reset: print(f"reset: {len(seen)} мессеж харсан гэж тэмдэглэв", file=sys.stderr)
+            t0 = time.time()
+            while True:
+                new = [(c, r) for c, r in snap() if c["id"] not in seen]
+                if new:
+                    out = []
+                    for c, r in new:
+                        seen.add(c["id"])
+                        out.append({"id": c["id"], "root": r["id"], "root_text": r.get("text", "")[:160], "node": (c.get("node") or r.get("node") or {}), "text": c.get("text", ""), "images": len(c.get("images", []))})
+                    sp.write_text(json.dumps(sorted(seen)))
+                    print(json.dumps(out, ensure_ascii=False, indent=1)); return
+                if a.max and time.time() - t0 > a.max: sys.exit(2)
+                time.sleep(a.interval)
         if a.cmd == "comments":
             q = "?file=" + urllib.parse.quote(FILE or "") + ("&all=1" if a.all else "") + ("&session=" + urllib.parse.quote(a.session or session_label()) if (a.session or session_label()) else "") + (f"&wait={a.wait}" if a.wait else "")
             if not FILE:

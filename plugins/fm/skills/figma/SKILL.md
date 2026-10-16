@@ -73,7 +73,7 @@ Timeline/scroll/parallax анимэйшн Figma-д боломжгүй - кодо
 
 ## 💬 Коммент (plugin панел)
 
-Хэрэглэгч plugin-ий 💬 табаас node сонгоод бичнэ. `fig.py comments [--wait 600]` (long-poll), `fig.py reply <id> "текст"` (урт бол файлаас: `"$(cat <file>)"`), `fig.py resolve <id>`. Хариултад зурсан зүйлээ `@[нэр](12:345)` гэж дурд - панелд дарвал тэр node руу очно. Хэрэглэгч Figma дотор ажиллаж байхад асуултаа коммент thread-д тавь.
+Хэрэглэгч plugin-ий 💬 табаас node сонгоод бичнэ. `fig.py comments [--wait 600]` (long-poll), `fig.py reply <id> "текст"` (урт бол файлаас: `"$(cat <file>)"`), `fig.py resolve <id>`. Хариултад зурсан зүйлээ `@[нэр](12:345)` гэж дурд - панелд дарвал тэр node руу очно. Хэрэглэгч Figma дотор ажиллаж байхад асуултаа коммент thread-д тавь. **Сонсох:** `fig.py watch` (background) — шинэ коммент, thread-ийн хариулт, зураг, ask-ийн сонголт бүгдийг барьж гарна; `comments --wait` thread-ийн хариултыг алгасдаг тул watcher-т бүү ашигла (itge.e 2026-10-16).
 
 **Олон коммент хүлээгдэж байвал (itge.e 2026-10-11) — контекстоо алдахгүй, зэрэг:**
 1. Бүх нээлттэй thread-ийг `fig.py progress <id> queued "<богино ажил>"` гэж тэмдэглэ — панелд comment бүрийн доор 🕐 дараалалд гарна.
@@ -115,3 +115,22 @@ python3 "$F/fig.py" --doc "<файл>" ask --title "Аль чиглэлийг ү
 - Token-ийг чат, vault, repo-д хэзээ ч бичихгүй. Харилцагчийн Figma файлын key, имэйлийг repo-д commit хийхгүй.
 - Library publish, хуваалцах эрх, төлбөр - хэрэглэгч өөрөө.
 - Зурж дууссан ажлыг vault-д холбо: төслийн note-д Figma линк + `/fm:save`-ээр шийдвэрийн атом.
+
+## 📐 Шинэ хувилбарын байрлал (itge.e 2026-10-16: «гаралт дахиад л эвдэрчлээ, зөв байрлуул»)
+
+`node.clone()` нь clone-ыг **page-ийн root**-д, эх frame-ийн **section доторх (relative)** x/y-тэй тавьдаг → section-ий гадна, өөр frame-ийн дээр унана. Тиймээс шинэ хувилбар зурах бүрд:
+1. `const sec = src.parent; sec.appendChild(v);` — **эхнийх нь parent (section) руу заавал хийнэ**, дараа нь `v.x = src.x + src.width + 240; v.y = src.y` (ижил координатын системд).
+2. Section-ий хүрээнээс гарвал `sec.resizeWithoutConstraints(...)`-ээр сунга.
+3. v_old → v_new **улбар шар сум + юу өөрчлөгдсөн бичвэр** (pipeline дүрэм).
+4. **Давхцлын шалгалт:** section-ий бусад хүүхдүүдтэй bbox огтлолцол = 0 байх ёстой; >0 бол хамгийн баруун хүүхдийн баруун талд зөө.
+5. `figma.viewport.scrollAndZoomIntoView([src, v])` — itge.e шууд харна.
+Шалгалтгүйгээр «зурлаа» гэж бүү хэл.
+
+## 🧩 Component first (itge.e 2026-10-16: «шинээр юм зуруулж байгаа л бол үүсгэж байх дүрэмтэй байх ёстой»)
+
+Шинэ дэлгэц, хэсэг, хувилбар зурах **бүрд** давтагдах элемент (band, box, карт, section толгой, товч, icon мөр, share rail, nav, footer…) **эхлээд төслийн component хуудсанд** (Inai → «🧩 Components · Inai») component болж үүснэ, дэлгэц дээр **зөвхөн instance** байна.
+1. Зурахаас өмнө: тухайн хуудсанд тохирох component байгаа эсэхийг хай (`figma.root.findAll(n=>n.type==='COMPONENT'||n.type==='COMPONENT_SET')`). Байвал instance ашигла, шинээр бүү зур.
+2. Байхгүй бол: component (эсвэл `Size=Desktop/Mobile` гэх мэт variant-тай component set) болгож үүсгээд дараа нь instance-аар байрлуул.
+3. Screen size солих = **variant солих**. Гараар хуулж дахин угсрахыг хориглоно.
+4. Нэг загварыг засвал component-оо засна — бүх дэлгэцэнд нэг дор орно.
+5. Тайлан/шалгалт: frame доторх raw frame vs instance харьцааг хэл; давтагдах элемент raw frame хэвээр бол «дууссан» гэж бүү хэл.
