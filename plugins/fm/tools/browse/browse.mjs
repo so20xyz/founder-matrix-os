@@ -131,7 +131,7 @@ async function nlmAdd(pg, urls) {
 }
 
 // Query box идэвхтэй (өмнөх хариу бичигдэж дууссан) болтол хүлээнэ — Wiki QA 2026-10-15: дараалсан ask «Query box disabled»-оор унадаг байв
-async function nlmIdle(pg, box, ms = 180000) {
+async function nlmIdle(pg, box, ms = 600000) {
   const t0 = Date.now()
   while (Date.now() - t0 < ms) {
     if (await box.isEnabled().catch(() => false)) return
