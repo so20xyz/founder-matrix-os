@@ -141,7 +141,7 @@ ROLE_GROUP = {"project": "Projects", "architect": "Areas", "gtd": "Areas", "crea
               "wiki": "Resources", "research": "Resources", "finance": "Finance"}
 ICON_GROUP = {"📁": "Projects", "🏛": "Areas", "📥": "Areas", "🎨": "Areas", "📚": "Resources", "🔍": "Resources",
               "🔒": "Finance", "💼": "Finance"}
-ROUTINE = ("harvester", "өглөөний тойм")
+ROUTINE = ("harvester", "өглөөний тойм", "долоо хоногийн тойм")
 
 
 def want_group(title, key):
