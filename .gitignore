@@ -9,3 +9,5 @@ dist/
 .vite/
 out/
 *.pem
+tools/fm-office/ub-map.local.json
+.superpowers/
