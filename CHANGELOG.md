@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- fm 0.9.98: relay watch/dispatch — сонсож эхэлснээс хойш нээгдсэн thread-ийг үүссэн мөчөөс нь уншина; бот нээсэн thread-д илрэхээс өмнө бичигдсэн хариу алгасагддаг байсныг засав (tests/test_thread_base.py).
+
 - fm 0.9.97: Figma bridge server `~/.fmos/figma/plugin`-ийн хуулбарыг 60 сек тутам repo-той тааруулна (өмнө нь зөвхөн асахдаа) — `git pull`/plugin update-ийн дараа Figma хуучин UI-тай үлддэг байв; одоо plugin-ийг дахин нээхэд л шинэ UI.
 
 - fm 0.9.96: `fm_sidebar.py check` — «📅 Долоо хоногийн тойм» routine сешнийг ч ажилласны дараа archive санал болгоно.

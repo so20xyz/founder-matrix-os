@@ -141,6 +141,19 @@ def _recent(message_id, window=None):
     return time.time() - ts < (window or THREAD_WINDOW)
 
 
+def _snow(t):
+    """Unix цаг → Discord snowflake (тэр мөчөөс хойшхи мессежийг after=-ээр авахад)."""
+    return (int(t * 1000) - 1420070400000) << 22
+
+
+def _thread_base(tid, t0):
+    """Шинээр илэрсэн thread-ийн суурь цэг. Сонсож эхэлснээс ХОЙШ нээгдсэн thread бол эхнээс нь (tid = үүссэн мөч) —
+    илрэхээс өмнө бичигдсэн хариу алгасагдахгүй (itge.e 2026-10-18: бот нээсэн thread-ийн хариу ирээгүй). Өмнө нь
+    байсан thread бол хамгийн сүүлийн мессеж (хуучныг дахин сэрээхгүй)."""
+    if int(tid) > _snow(t0): return tid
+    lm = dapi("GET", f"/channels/{tid}/messages?limit=1"); return lm[0]["id"] if lm else "0"
+
+
 def _threads(parent_ids):
     """itge.e 2026-10-06: one request = one Discord thread. Active threads whose parent is in parent_ids → {thread_id: parent_id}."""
     try:
@@ -333,6 +346,7 @@ def d_watch(sid, every=20):
     _watch_offers(offers)
     cmap = chmap()   # хоёр машинд ижил сешнтэй суваг → хүний мессежийг эхэлж claim хийсэн машин л хариулна (2026-10-15)
     shared = {c for s2, c in cmap.items() if reg["sessions"].get(s2, {}).get("device") not in (DEVICE, None, "")}
+    t0 = time.time()
     while True:
         time.sleep(every)
         st = load(STATE, {}); st.setdefault("_alive", {})[sid] = time.time(); save(STATE, st)   # dispatcher skips live sessions
@@ -341,7 +355,7 @@ def d_watch(sid, every=20):
         for tid, pid in thr.items():                                                            # replies inside my threads
             pn = next((k for k in names if ch.get(k) == pid), None)
             if pn and ("t:" + tid) not in last:
-                try: lm = dapi("GET", f"/channels/{tid}/messages?limit=1"); last["t:" + tid] = lm[0]["id"] if lm else "0"
+                try: last["t:" + tid] = _thread_base(tid, t0)
                 except Exception: continue
                 ch["t:" + tid] = tid; names.append("t:" + tid)
         for tn, tcid in team:

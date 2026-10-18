@@ -498,7 +498,7 @@ def d_dispatch(every=15):
                 time.sleep(min(60, 5 * (i + 1)))
     st = load(STATE, {}); st.pop("_dch", None); ch = _retry(lambda: dchannels(st)); save(STATE, st)
     watch = {n: ch[n] for n in local if n in ch}
-    bot_wakes = {}; last = {}; seen_threads = {}
+    bot_wakes = {}; last = {}; seen_threads = {}; t0 = time.time()
     for n, cid in watch.items():
         lm = _retry(lambda: dapi("GET", f"/channels/{cid}/messages?limit=1")); last[n] = lm[0]["id"] if lm else "0"
     print(json.dumps({"ready": len(watch), "channels": list(watch)}, ensure_ascii=False), flush=True)
@@ -513,7 +513,7 @@ def d_dispatch(every=15):
             pn = next((k for k, v in watch.items() if v == pid), None)
             if not pn: continue
             if "t:" + tid not in last:
-                try: lm = dapi("GET", f"/channels/{tid}/messages?limit=1"); last["t:" + tid] = lm[0]["id"] if lm else "0"
+                try: last["t:" + tid] = _thread_base(tid, t0)
                 except Exception: continue
                 if tid in seen_threads: last["t:" + tid] = seen_threads[tid]
             srcs.append(("t:" + tid, tid)); local.setdefault("t:" + tid, local.get(pn, [])); parent[("t:" + tid)] = pn
