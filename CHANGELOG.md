@@ -21,6 +21,7 @@
 
 ## Unreleased
 
+- fm 0.9.99: #gtd = зөвхөн itge.e-ийн мессеж. `relay.py status` самбар анхдагчаар унтраалттай (discord.json "status_channel" өгвөл л, pin хийхгүй, #gtd биш); BOOT: машин хоорондын чат `send architect`.
 - fm 0.9.98: relay watch/dispatch — сонсож эхэлснээс хойш нээгдсэн thread-ийг үүссэн мөчөөс нь уншина; бот нээсэн thread-д илрэхээс өмнө бичигдсэн хариу алгасагддаг байсныг засав (tests/test_thread_base.py).
 
 - fm 0.9.97: Figma bridge server `~/.fmos/figma/plugin`-ийн хуулбарыг 60 сек тутам repo-той тааруулна (өмнө нь зөвхөн асахдаа) — `git pull`/plugin update-ийн дараа Figma хуучин UI-тай үлддэг байв; одоо plugin-ийг дахин нээхэд л шинэ UI.

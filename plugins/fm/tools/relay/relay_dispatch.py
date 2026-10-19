@@ -672,7 +672,7 @@ def d_hub():
 def d_status(every=30, busy_s=90):
     """Live status (BD 2026-10-03): this device's sessions → 🟢 ажиллаж байна / ⚪ сул.
     Working = Claude transcript (.jsonl) written within busy_s. Shows as: ① one board message per device in
-    #03-sys-admin, edited in place; ② each session channel's topic (only on change, ≥5 min apart — Discord limit)."""
+    discord.json "status_channel" (unset = off; never #gtd), edited in place; ② each session channel's topic (only on change, ≥5 min apart — Discord limit)."""
     reg = load(REG, {"sessions": {}})["sessions"]; cm = chmap()
     st = load(STATE, {}); ch = dchannels(st); save(STATE, st)
     proj = Path.home() / ".claude" / "projects"
@@ -681,7 +681,8 @@ def d_status(every=30, busy_s=90):
     app = fmconfig.claude_app_sessions_dir()
     by_title = {(v.get("title") or "").strip(): sid for sid, v in reg.items()
                 if v.get("device") == DEVICE and not is_private(v) and cm.get(sid) in ch and v.get("title")}
-    board_key = f"_status_msg_{DEVICE}"; topic_t = {}; topic_s = {}
+    board_ch = fmconfig.dcfg("status_channel", None)   # discord.json "status_channel" өгвөл л самбар бичнэ (pin хийхгүй)
+    board_key = f"_status_msg_{DEVICE}_{board_ch}"; topic_t = {}; topic_s = {}
     while True:
         mine = {}
         for f in app.glob("*/*/local_*.json"):
@@ -702,15 +703,14 @@ def d_status(every=30, busy_s=90):
         txt = (f"{ICON} **{DEVICE} — ажилтнуудын төлөв** (шинэчлэгдсэн {datetime.datetime.now():%H:%M:%S})\n"
                + "\n".join(r[2] for r in rows))[:1990]
         st = load(STATE, {})
-        try:
-            mid = st.get(board_key)
-            if mid: dapi("PATCH", f"/channels/{ch[BROADCAST]}/messages/{mid}", {"content": txt})
-            else: raise KeyError
-        except Exception:
-            mid = dapi("POST", f"/channels/{ch[BROADCAST]}/messages", {"content": txt})["id"]
-            try: dapi("PUT", f"/channels/{ch[BROADCAST]}/pins/{mid}")
-            except Exception: pass
-            st[board_key] = mid; save(STATE, st)
+        if board_ch in ch:   # itge.e 2026-10-20: #gtd = зөвхөн itge.e-ийн мессеж → самбар анхдагчаар унтраалттай
+            try:
+                mid = st.get(board_key)
+                if mid: dapi("PATCH", f"/channels/{ch[board_ch]}/messages/{mid}", {"content": txt})
+                else: raise KeyError
+            except Exception:
+                mid = dapi("POST", f"/channels/{ch[board_ch]}/messages", {"content": txt})["id"]
+                st[board_key] = mid; save(STATE, st)
         for n, busy in per_ch.items():
             # sidebar = channel name (BD wants it in the list): 🟢 prefix while busy. Discord allows 2 renames/10 min.
             if topic_s.get(n) != busy and time.time() - topic_t.get(n, 0) > 300:
