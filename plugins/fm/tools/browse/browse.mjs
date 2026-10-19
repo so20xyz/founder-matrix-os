@@ -97,7 +97,8 @@ async function nlmOpen(ctx, ref) {
   const open = ctx.pages().find(p => p.url().includes('/notebook/' + ref))
   if (open) { await open.bringToFront(); await open.waitForSelector('textarea[aria-label="Query box"]', { timeout: 30000 }); return open }
   const list = await nlmList(ctx)
-  const hit = list.find(n => n.id === ref) || list.find(n => n.title.toLowerCase().includes(String(ref).toLowerCase()))
+  const hit = list.find(n => n.id === ref) || list.find(n => ref.length >= 6 && n.id.startsWith(ref)) ||   // UUID-ийн эхний хэсэг ч болно
+     list.find(n => n.title.toLowerCase().includes(String(ref).toLowerCase()))
   if (!hit) throw new Error('notebook олдсонгүй: ' + ref)
   const pg = await pageFor(ctx, NLM)
   // аль хэдийн тэр notebook дээр бол дахин навигац хийхгүй — зэрэг ажиллаж буй өөр ask-ийн хуудсыг таслахгүй (nlmIdle дараалалд оруулна)
@@ -121,13 +122,14 @@ async function nlmAdd(pg, urls) {
   await pg.getByRole('button', { name: /Websites/ }).first().click({ timeout: 10000 })
   await pg.getByRole('textbox', { name: 'Enter URLs' }).fill(urls.join('\n'))
   await pg.getByRole('button', { name: 'Insert' }).click()
-  for (let i = 0; i < 60; i++) {   // эх сурвалж боловсруулагдтал: spinner алга, гарчиг нь URL биш
+  const tries = 60 + 20 * urls.length   // 3 мин + эх сурвалж тутам 1 мин (INAI 2026-10-20: 8 эх сурвалжид 3 мин хүрэлцээгүй)
+  for (let i = 0; i < tries; i++) {   // эх сурвалж боловсруулагдтал: spinner алга, гарчиг нь URL биш
     await sleep(3000)
     const busy = await pg.locator('mat-progress-spinner, .mat-mdc-progress-spinner, [role=progressbar]').count()
     const titles = await pg.evaluate(() => [...document.querySelectorAll('[class*=source-title]')].map(e => e.innerText.replace(/^video_youtube|more_vert$/g, '').trim()))
     if (!busy && titles.length && !titles.some(t => /^https?:/.test(t))) return [...new Set(titles)]
   }
-  throw new Error('эх сурвалж боловсруулалт 3 минутаас удаан')
+  throw new Error('эх сурвалж боловсруулалт ' + Math.round(tries * 3 / 60) + ' минутаас удаан')
 }
 
 // Query box идэвхтэй (өмнөх хариу бичигдэж дууссан) болтол хүлээнэ — Wiki QA 2026-10-15: дараалсан ask «Query box disabled»-оор унадаг байв
