@@ -62,6 +62,7 @@ Vault: `04-Resources/Atomic/decisions/2026-10-09 - task-dispatch-discord-bus-in-
    - Файлын нэр 60 тэмдэгтийн замд багтахаар богиносно; бүтэн гарчиг `aliases`-д.
    - Буруу status/priority/огноо, байхгүй төсөл, үл мэдэх дүр → скрипт татгалзана (exit 1/2). Засаад давт.
    - **Агентын task = `inbox`** → дүрийн сул сешн автоматаар авна. `next-action` бол автомат авалтад орохгүй (гараар эхэлнэ). `--status` өгөхгүй бол анхдагч нь `next-action`.
+   - **Ажилбар (тогтсон урсгал, itge.e 2026-10-20):** ажил `_system/fm/workflows/<slug>.md`-ийн аль нэгэнд таарвал (journal, research-s, …) заавал `--workflow <slug>` — алхмын чеклист task-д хуулагдаж, сешн эхлэхэд дараагийн алхам харагдана. Байгаа task-д: `fm_task.py workflow <vault> "<task>" <slug>`. Алхам дуусвал `- [x]`, алгасвал мөрөнд «алгассан — яагаад».
    - **Судалгааны task:** `fm_task.py new`-д `--research` алга — `relay.py task "<Гарчиг>" --owner "<дүр, жишээ нь 📚 Wiki>" --status inbox --research "<судалгаа>"` (`/fm:relay`) ашигла. Сэдэв («Мөөгний зах зээл»), hub-ийн нэр («1 хувь») эсвэл vault зам → `research: "[[04-Resources/Research/<сэдэв>/<hub>]]"`. Бүх task дууссан эсэх, хаах санал: `relay.py research-status` (зөвхөн уншина; хаалтыг itge.e батална). Самбар: `Tasks.base` → «🔬 Судалгаагаар».
 4. `## Шаардлага`-д тодорхой «дууссан гэж юу вэ» байх ёстой. Хоосон бол гишүүнээс асуу.
 5. Мэдэгдэх: `inbox` task-ийг тэр дүрийн сешн `relay.py watch`-оор өөрөө харна (`relay.py task` мөн `#sys-dispatch`-д offer илгээнэ). Хүний сувагт 📌 мэдэгдэл зөвхөн `relay.py task ... --ping`-ээр, яаралтай үед.

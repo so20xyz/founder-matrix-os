@@ -452,6 +452,52 @@ def write(path: Path, text: str) -> None:
         fh.write(text if text.endswith("\n") else text + "\n")
 
 
+WORKFLOWS_REL = "_system/fm/workflows"
+WF_HEAD = "## Ажилбар"
+
+
+def workflow_steps(vault: Path, slug: str) -> List[str]:
+    """`_system/fm/workflows/<slug>.md`-ийн алхмын хүснэгт (| N | **Нэр:** ... |) → ["N. Нэр", ...] (itge.e 2026-10-20)."""
+    f = vault / WORKFLOWS_REL / (slug + ".md")
+    if not f.is_file():
+        _die("Ажилбар олдсонгүй: %s/%s.md" % (WORKFLOWS_REL, slug), 2)
+    out = []
+    for line in f.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^\|\s*(\d+)\s*\|\s*(.+?)\s*\|", line)
+        if m:
+            cell = m.group(2)
+            b = re.match(r"^\*\*(.+?):?\*\*:?", cell)   # «**Нэр:** тайлбар» → Нэр
+            name = b.group(1).rstrip(":") if b and (b.group(0).rstrip("*").endswith(":") or cell[b.end():b.end() + 1] == ":")                 else re.sub(r"\*\*", "", cell).split("(")[0].strip()
+            out.append("%s. %s" % (m.group(1), name))
+    if not out:
+        _die("Ажилбарт алхмын хүснэгт алга: %s" % f, 2)
+    return out
+
+
+def attach_workflow(vault: Path, fm: List[str], body: List[str], slug: str) -> Tuple[List[str], List[str]]:
+    """frontmatter `workflow:` + биед «## Ажилбар» чеклист (давхар нэмэхгүй)."""
+    fm = fm_set(fm, "workflow", slug)
+    if any(l.startswith(WF_HEAD) for l in body):
+        return fm, body
+    block = ["", "%s: [[%s/%s|%s]]" % (WF_HEAD, WORKFLOWS_REL, slug, slug), "",
+             "> Алхам бүрийн шалгуур ажилбарт. Алгасвал мөрөнд «алгассан — яагаад» гэж бич."] +             ["- [ ] %s" % st for st in workflow_steps(vault, slug)] + [""]
+    idx = next((i for i, l in enumerate(body) if l.strip() == "## Шаардлага"), None)
+    body = body + block if idx is None else body[:idx] + block[1:] + [""] + body[idx:]
+    return fm, body
+
+
+def cmd_workflow(vault: Path, args: List[str]) -> None:
+    """fm_task.py workflow <vault> "<task>" <slug> — байгаа task-д ажилбар холбоно."""
+    pos = _positional(args)
+    if len(pos) < 2:
+        _die("fm_task.py workflow <vault> \"<task>\" <slug>")
+    path = find_task(vault, pos[0])
+    fm, body = read_task(path)
+    fm, body = attach_workflow(vault, fm, body, pos[1].strip())
+    write(path, join_note(fm, body))
+    _out("ажилбар %s → %s" % (pos[1], path.relative_to(vault).as_posix()))
+
+
 def cmd_new(vault: Path, args: List[str]) -> None:
     pos = _positional(args)
     if not pos:
@@ -507,6 +553,9 @@ def cmd_new(vault: Path, args: List[str]) -> None:
             body += ["", "## Шаардлага", "", text_body]
         else:
             body = body[:idx + 1] + ["", text_body] + body[idx + 1:]
+    wf = _opt(args, "--workflow").strip()
+    if wf:
+        fm, body = attach_workflow(vault, fm, body, wf)
     body = append_progress(body, "- %s 📌 үүсгэв" % now_stamp())
     write(path, join_note(fm, body))
     _out("task → %s" % path.relative_to(vault).as_posix())
@@ -665,7 +714,8 @@ def main(argv: List[str]) -> None:
     cmd, vault = argv[1], Path(os.path.expanduser(argv[2]))
     if not vault.is_dir():
         _die("Vault олдсонгүй: %s" % vault)
-    handlers = {"new": cmd_new, "claim": cmd_claim, "done": cmd_done, "set": cmd_set, "list": cmd_list}
+    handlers = {"new": cmd_new, "claim": cmd_claim, "done": cmd_done, "set": cmd_set, "list": cmd_list,
+                "workflow": cmd_workflow}
     if cmd not in handlers:
         _die("Үл мэдэх команд: %s (new|claim|done|set|list)" % cmd)
     handlers[cmd](vault, argv[3:])

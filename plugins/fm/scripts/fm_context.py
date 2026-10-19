@@ -182,6 +182,30 @@ def recent_decisions(vault, slug):
     return (mine + other)[:DECISIONS_MAX]
 
 
+def open_workflows(vault, role, limit=3):
+    """Энэ дүрийн in-progress task-уудын ажилбарын дараагийн алхам (itge.e 2026-10-20: тогтсон урсгалыг алгасахгүй)."""
+    import re
+    keys = {k.lower() for k in (role.get("slug"), role["path"].stem if role.get("path") else None) if k}
+    out = []
+    for f in sorted((vault / "01-GTD" / "Tasks").glob("*.md")):
+        try:
+            t = f.read_text(encoding="utf-8").replace("\r\n", "\n")
+        except OSError:
+            continue
+        head = t.split("\n---", 1)[0]
+        if "\nworkflow:" not in head or not re.search(r"^status:\s*in-progress", head, re.M):
+            continue
+        own = (re.search(r"^owner:\s*(.*)$", head, re.M) or [None, ""])[1].lower()
+        if keys and not any(k in own for k in keys):
+            continue
+        todo = re.findall(r"^- \[ \] (.+)$", t, re.M)
+        if todo:
+            out.append("- [[01-GTD/Tasks/%s]]: дараагийн алхам **%s** (үлдсэн %d)" % (f.stem, todo[0], len(todo)))
+        if len(out) >= limit:
+            break
+    return out
+
+
 def build_context(vault, session_id, reserve=0):
     from fm_common import BOOT_REL, byte_len, read_text, rel_posix, truncate_utf8
 
@@ -222,6 +246,11 @@ def build_context(vault, session_id, reserve=0):
             body, _ = truncate_utf8("\n".join(lines), DECISIONS_MAX_BYTES)
             dec_block = ("\n## Сүүлийн шийдвэрүүд (өмнө нь шийдсэн эсэхийг эндээс эхэлж шалга)\n\n%s\n" % body)
     role_block += dec_block
+    if role and role.get("path") is not None and not private:
+        wf = open_workflows(vault, role)
+        if wf:
+            role_block += ("\n## Нээлттэй ажилбар (алхам алгасахгүй; алгасвал task-д «алгассан — яагаад»)\n\n%s\n"
+                           % "\n".join(wf))
 
     head_text = "\n".join(header) + "\n"
     boot_path = vault / BOOT_REL
