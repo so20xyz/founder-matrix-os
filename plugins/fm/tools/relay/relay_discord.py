@@ -323,7 +323,7 @@ class _Count:
     """stdout-ийг дамжуулж, бичигдсэн мөрийг тоолно (watch --once: мессеж ирмэгц гарахад)."""
     def __init__(self, s): self.s, self.n = s, 0
     def write(self, x):
-        if x.strip() and not x.startswith("[watch error]"): self.n += 1
+        if x.strip() and not x.startswith(("[watch error]", "[task-offer]")): self.n += 1   # offer процесс бүрд дахин хэвлэгддэг → гогцоо
         return self.s.write(x)
     def flush(self): self.s.flush()
     def __getattr__(self, k): return getattr(self.s, k)

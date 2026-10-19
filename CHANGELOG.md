@@ -21,6 +21,7 @@
 
 ## Unreleased
 
+- fm 0.9.101: watch --once [task-offer] мөрөнд гарахгүй (offer процесс бүрд дахин хэвлэгддэг тул дахин асаах бүрд гогцоо үүсдэг байв).
 - fm 0.9.100: `relay.py watch --once` — мессеж ирмэгц гарна; SessionStart hook сешн бүрд Bash run_in_background-оор сонсохыг заана (Monitor-ын 30 мин хязгааргүй). Dispatcher сешнд status самбар асаахыг хасав.
 - fm 0.9.99: #gtd = зөвхөн itge.e-ийн мессеж. `relay.py status` самбар анхдагчаар унтраалттай (discord.json "status_channel" өгвөл л, pin хийхгүй, #gtd биш); BOOT: машин хоорондын чат `send architect`.
 - fm 0.9.98: relay watch/dispatch — сонсож эхэлснээс хойш нээгдсэн thread-ийг үүссэн мөчөөс нь уншина; бот нээсэн thread-д илрэхээс өмнө бичигдсэн хариу алгасагддаг байсныг засав (tests/test_thread_base.py).

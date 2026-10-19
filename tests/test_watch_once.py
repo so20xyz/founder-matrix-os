@@ -11,6 +11,7 @@ class WatchOnce(unittest.TestCase):
         exec(src[src.index("class _Count"):src.index("def d_watch")], g)
         c = g["_Count"](io.StringIO())
         print("[watch error] x", file=c); self.assertEqual(c.n, 0)
+        print("[task-offer] 01-GTD/Tasks/x.md", file=c); self.assertEqual(c.n, 0)
         print("#gtd · bd: hi", file=c); self.assertEqual(c.n, 1)
 
 
