@@ -441,6 +441,7 @@ def _fm(p):
         m = _re.match(r"^([^\s#][^:]*):(?:\s+(.*))?$", ln)
         if not m: continue
         key, v = m.group(1).strip(), (m.group(2) or "").strip()
+        if not v.startswith(("'", '"')): v = _re.sub(r"(^|\s)#.*$", "", v).strip()   # YAML мөрийн тайлбар (`device:  # PC | Mac`) утга биш
         if v.startswith("[") and not v.startswith("[[") and v.endswith("]"):
             out[key] = [x.strip().strip("\"'") for x in v[1:-1].split(",") if x.strip()]
         else: out[key] = v.strip("\"'")
