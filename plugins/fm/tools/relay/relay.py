@@ -647,7 +647,7 @@ def main():
     if a[0] == "status":
         return d_status()
     if a[0] == "watch":
-        return d_watch(sid)
+        return d_watch(sid, once="--once" in a)
     if a[0] == "who":
         for k, v in load(REG, {"sessions": {}})["sessions"].items():
             print(f"{v['name']:<24} @{v['group']:<10} {v['device']:<4} {k}")

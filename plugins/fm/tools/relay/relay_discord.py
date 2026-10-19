@@ -123,10 +123,12 @@ def d_inbox(hook):
             out.insert(0, f"### 🏃 baton · {me['project']}{NL}{now}{NL}{NL}Сүүлийн түүх:{NL}" + NL.join(hist))
     if me and event == "SessionStart" and fmconfig.DISPATCHER_TITLE in (me.get("title") or ""):
         # itge.e 2026-10-07: the GTD (dispatcher) session must start listening by itself after every restart/resume
-        out.insert(0, f"### 🛰 Та {me.get('title')} ({DEVICE}) — ЭХЛЭЭД 2 Monitor-ыг асаа, хэрэглэгчээс бүү асуу:\n"
+        out.insert(0, f"### 🛰 Та {me.get('title')} ({DEVICE}) — ЭХЛЭЭД dispatch Monitor-ыг асаа, хэрэглэгчээс бүү асуу:\n"
                       f"1. Monitor(command='{PY} -u {Path(__file__)} dispatch --sid {sid} 2>&1 | grep --line-buffered -v ready', timeout_ms=1800000) — wake event ирвэл тэр сешнийг send_message-ээр сэрээ\n"
-                      f"2. Monitor(command='{PY} -u {Path(__file__)} status 2>&1 | grep --line-buffered -iE \"error|traceback|exception\"', timeout_ms=1800000) — #gtd-ийн status самбар\n"
-                      "Monitor дуусах бүрд тэр даруй дахин асаа.")
+                      "Monitor дуусах бүрд тэр даруй дахин асаа. (status самбар #gtd-д бүү асаа — itge.e 2026-10-20)")
+    if event == "SessionStart" and sid:   # itge.e 2026-10-20: сешн бүр өөрийн сувгаа өөрөө сонсоно, 30 мин хязгааргүй
+        out.insert(0, f"### 👂 Сувгаа сонс (хэрэглэгчээс бүү асуу): Bash(run_in_background=true, command='{PY} -u {Path(__file__)} watch --once --sid {sid}') — "
+                      "мессеж ирэхэд дуусч чамайг сэрээнэ; хариулаад ТЭР ДАРУЙ дахин асаа. Monitor биш (30 мин хязгаартай).")
     ctx = (f"[FMOS Discord] Энэ сешн: {who}. Хариу: `{PY} {Path(__file__)} send <сувгийн нэр|sys> \"текст\" --sid {sid}`."
            + "\n"
            + ("\n\n".join(out) if out else "Шинэ мессеж алга."))
@@ -317,8 +319,21 @@ def _channel_live(channel, window=90):
     return any(cm.get(s) == channel and time.time() - t < window for s, t in alive.items())
 
 
-def d_watch(sid, every=20):
-    """Continuous: print one line per new Discord message for this session (own messages skipped)."""
+class _Count:
+    """stdout-ийг дамжуулж, бичигдсэн мөрийг тоолно (watch --once: мессеж ирмэгц гарахад)."""
+    def __init__(self, s): self.s, self.n = s, 0
+    def write(self, x):
+        if x.strip() and not x.startswith("[watch error]"): self.n += 1
+        return self.s.write(x)
+    def flush(self): self.s.flush()
+    def __getattr__(self, k): return getattr(self.s, k)
+
+
+def d_watch(sid, every=20, once=False):
+    """Continuous: print one line per new Discord message for this session (own messages skipped).
+    once=True (itge.e 2026-10-20): мессеж хэвлэгдсэн тойргийн төгсгөлд гарна — Bash run_in_background-оор ажиллуулахад
+    Monitor-ын 30 минутын хязгааргүй, мессеж ирэхэд сешн сэрээд дахин асаана (курсор STATE-д хадгалагддаг)."""
+    if once: sys.stdout = _Count(sys.stdout)
     reg = load(REG, {"sessions": {}}); me = reg["sessions"].get(sid)
     names = list(dict.fromkeys([BROADCAST] + ([chmap().get(sid, chname(me))] if me else [])))
     tag = f"[{me['name']}]" if me else None
@@ -385,6 +400,8 @@ def d_watch(sid, every=20):
                     continue
                 print(f"#{n} · {who}: " + m["content"].replace("\n", " ⏎ ")[:600], flush=True)
         _watch_offers(offers)
+        if once and sys.stdout.n:
+            sys.stdout.flush(); return
 
 
 def _watch_offers(o):
