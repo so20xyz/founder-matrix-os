@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- fm 0.9.108: relay судалгааны мөчлөг — `relay.py research-advance [--hub] [--dry-run]`, `watch` 60 с тутам нэг алхам: hub `automation: relay` бол шат бүрийн task-ийг (spec → Research → Wiki → Architect + Creative → зөвлөгөөн) гинжлэн үүсгэнэ, Soyol-ийн 2 хаалга (spec, сонголт) автомат биш; нууцлалын хаалга (түүврийн домэйн, `_private` олдвол гинж зогсоно); task бүрийн model, token, wall-clock-ийг `_ledger` ба hub-ийн «Төлөв»-д бичнэ; `agents/research.md` (tests/test_research_cycle.py 27).
+  - Яагаад: `/fm:research`-ийн мөчлөгийн зам Wiki-ийн дараагийн round-ын task-ийг relay өөрөө үүсгэнэ гэж хүлээдэг · Дүрэм: [[01-GTD/Tasks/Судалгааны мөчлөгийг relay-ээр автоматжуулах]]
 - fm 0.9.107: `/fm:research` — 🔬 Research агентын orchestrator: асуултыг Товч/Сэдэв/Мөчлөг гэж ангилж, Soyol зөвхөн brief батална; auto-research-tools → last30days → deep-research дараалал; fact-check-ийг context-гүй шинэ subagent хийнэ (⚠️ > 30% бол 1 удаа дахин цуглуулна); Wiki-д атомын task (tests/test_tools.py 12+6, reference тест).
   - Яагаад: судалгааны чанар/итгэл, тодорхой урсгал, Soyol-ийн оролцоо 1 удаа · Дүрэм: [[03-Areas/AI Team/Spec - fm research skill]]
 - fm 0.9.106: fm:watch — faster-whisper-т `av<14` pin (av 14+ `metadata_errors` аргументыг хассанаас транскрипт унадаг байв).

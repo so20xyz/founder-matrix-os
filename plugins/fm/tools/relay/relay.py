@@ -16,6 +16,8 @@ Commands:
   relay.py gsend TO "title" [body]   old git transport: TO = all | @<group> | <session-name>
   relay.py who                       show registry
   relay.py research-status           read-only: each 04-Resources/Research hub's status + linked task counts, «✅ хаах санал»
+  relay.py research-advance [--hub T] [--dry-run]   one step of the relay research cycle (hubs with automation: relay):
+                                     next stage task, privacy gate, hub «Төлөв» + _ledger; watch runs it every 60s
   relay.py watch --sid SID           continuous: new Discord lines + «[task-offer] <task path>» (inbox task of this role)
   relay.py claim "<task path>" --sid SID   #sys-dispatch, first claim wins → prints WIN | LOSE <device>; WIN → in-progress
                                      (🔒 task: only from a private session, bus carries the opaque id «p:<hex>»)
@@ -317,6 +319,7 @@ def _relay_part(name):
 
 exec(_relay_part("relay_discord.py"), globals())
 exec(_relay_part("relay_dispatch.py"), globals())
+exec(_relay_part("relay_research.py"), globals())
 
 
 import re as _re
@@ -588,7 +591,7 @@ def main():
         try: return d_inbox(hook)
         except Exception as e:
             print(json.dumps({"hookSpecificOutput": {"hookEventName": hook.get("hook_event_name","UserPromptSubmit"), "additionalContext": f"[FMOS Discord] уншиж чадсангүй: {e}"}}, ensure_ascii=False)); return
-    if a[0] not in ("register", "dispatch", "hub", "status", "research-status"):
+    if a[0] not in ("register", "dispatch", "hub", "status", "research-status", "research-advance"):
         try: sid = _rekey(_full_sid(sid))
         except Exception: pass
     if a[0] == "register":
@@ -644,6 +647,8 @@ def main():
         return d_hub()
     if a[0] == "research-status":
         return d_research_status()
+    if a[0] == "research-advance":
+        return d_research_advance(a[1:])
     if a[0] == "status":
         return d_status()
     if a[0] == "watch":

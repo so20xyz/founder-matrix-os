@@ -365,6 +365,7 @@ def d_watch(sid, every=20, once=False):
     while True:
         time.sleep(every)
         st = load(STATE, {}); st.setdefault("_alive", {})[sid] = time.time(); save(STATE, st)   # dispatcher skips live sessions
+        _research_tick(lambda line: print(line, flush=True))   # relay research cycle (relay_research.py), throttled + locked
         try: thr = _threads({ch[n] for n in names if n in ch})
         except Exception: thr = {}
         for tid, pid in thr.items():                                                            # replies inside my threads
