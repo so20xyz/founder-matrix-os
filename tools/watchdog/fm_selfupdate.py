@@ -8,6 +8,7 @@ services started from it — on origin too:
   fetch → nothing new: done
         → fast-forward possible and no local edits: merge --ff-only, `npm ci` where a package-lock changed,
           restart the services whose files changed, one «🔄» post
+        → only unpushed local commits (origin is an ancestor): nothing to pull, no post
         → diverged history or local edits: touch nothing, one «⚠» post per new origin commit (Soyol decides)
 
 State: ~/.fmos/selfupdate.json · log: the watchdog log (PC) or ~/.fmos/logs/selfupdate.log (standalone). Never raises.
@@ -104,6 +105,8 @@ def _update(post, log, repo, force, restart, every):
             post(text); st["warned"] = f"{key}:{up}"; _save(st)
         log(f"selfupdate blocked ({key}) {head[:7]} vs {up[:7]}")
 
+    if git(repo, "merge-base", "--is-ancestor", "@{u}", "HEAD").returncode == 0:
+        return "ahead"  # only unpushed local commits: nothing to pull, nothing wrong (Mac 2026-10-20 false «⚠»)
     if git(repo, "merge-base", "--is-ancestor", "HEAD", "@{u}").returncode != 0:
         warn("diverged", f"⚠ {DEVICE} repo шинэчлэгдэхгүй байна: түүх origin-оос салсан ({head[:7]} ≠ {up[:7]}). "
                          "Relay, Figma bridge хуучин кодоор ажиллаж байна — Architect-аас clone-ийг origin руу шилжүүлэхийг хүс.")

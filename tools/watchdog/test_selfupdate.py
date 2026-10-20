@@ -38,6 +38,11 @@ check(len(posts) == n + 1, "dirty warning posted once per origin commit")
 sh("git","-C",str(pc),"checkout","-q","--","README.md")
 sh("git","-C",str(pc),"-c","user.email=t@t","-c","user.name=t","commit","-q","--allow-empty","-m","local only")
 check(su.update(P, L, pc, force=True, restart=R) == "diverged", "local-only commit → diverged, untouched")
+# only ahead (an unpushed commit, origin has nothing new): nothing to pull → no ⚠ (Mac 2026-10-20 14:29 false alarm)
+sh("git","-C",str(pc),"reset","-q","--hard","@{u}")
+sh("git","-C",str(pc),"-c","user.email=t@t","-c","user.name=t","commit","-q","--allow-empty","-m","unpushed")
+su._save({}); n = len(posts)
+check(su.update(P, L, pc, force=True, restart=R) == "ahead" and len(posts) == n, "unpushed commit only → ahead, no warning")
 
 # REPO without FMOS_REPO = the clone holding this file (tools/watchdog → repo root), wherever it lives (Mac: ~/Workspace)
 _env = {k: v for k, v in os.environ.items() if k != "FMOS_REPO"}
