@@ -23,7 +23,7 @@ IS_MAC = platform.system() == "Darwin"
 DEVICE = "Mac" if IS_MAC else "PC"
 _HERE = Path(__file__).resolve().parent
 REPO = Path(os.environ.get("FMOS_REPO")
-            or (_HERE.parent if (_HERE.parent / ".git").exists() else HOME / "founder-matrix-os"))
+            or (_HERE.parents[1] if (_HERE.parents[1] / ".git").exists() else HOME / "founder-matrix-os"))
 STATE = HOME / ".fmos" / "selfupdate.json"
 EVERY = 3600  # seconds between fetches
 NO_WINDOW = 0x08000000

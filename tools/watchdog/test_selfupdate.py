@@ -37,6 +37,12 @@ sh("git","-C",str(pc),"checkout","-q","--","README.md")
 sh("git","-C",str(pc),"-c","user.email=t@t","-c","user.name=t","commit","-q","--allow-empty","-m","local only")
 check(su.update(P, L, pc, force=True, restart=R) == "diverged", "local-only commit → diverged, untouched")
 
+# REPO without FMOS_REPO = the clone holding this file (tools/watchdog → repo root), wherever it lives (Mac: ~/Workspace)
+_env = {k: v for k, v in os.environ.items() if k != "FMOS_REPO"}
+_repo = subprocess.run([sys.executable, "-c", "import fm_selfupdate as s; print(s.REPO)"], cwd=str(Path(su.__file__).parent),
+                       env=_env, capture_output=True, text=True).stdout.strip()
+check(Path(_repo) == Path(su.__file__).resolve().parents[2], f"REPO = repo root without FMOS_REPO ({_repo})")
+
 # Mac: the Figma bridge LaunchAgent restarts, the dispatcher (no Mac service) is skipped, posts say «Mac»
 sh("git","-C",str(pc),"reset","-q","--hard","@{u}"); restarts.clear()
 su.IS_MAC, su.DEVICE = True, "Mac"
