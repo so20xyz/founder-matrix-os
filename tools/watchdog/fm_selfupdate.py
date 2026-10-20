@@ -1,30 +1,40 @@
-"""FMOS PC self-update — the watchdog calls update() every run; it acts at most once an hour (Soyol 2026-10-20).
+"""FMOS self-update for PC and Mac (Soyol 2026-10-20). PC: the watchdog calls update() every run and it acts at most
+once an hour. Mac: a LaunchAgent runs this file hourly (`python3 fm_selfupdate.py --install-mac` sets it up).
 
-The relay, the Discord dispatcher and the Figma bridge all run from the git clone
-C:\\Users\\PC\\founder-matrix-os. The fm plugin itself updates through Claude Code (marketplace autoUpdate); this
-keeps the clone — and the services started from it — on origin too:
+The relay, the Discord dispatcher and the Figma bridge run from the git clone ~/founder-matrix-os (env FMOS_REPO
+overrides). The fm plugin itself updates through Claude Code (marketplace autoUpdate); this keeps the clone — and the
+services started from it — on origin too:
 
   fetch → nothing new: done
         → fast-forward possible and no local edits: merge --ff-only, `npm ci` where a package-lock changed,
           restart the services whose files changed, one «🔄» post
         → diverged history or local edits: touch nothing, one «⚠» post per new origin commit (Soyol decides)
 
-State: ~/.fmos/selfupdate.json · log: the watchdog log. Never raises.
+State: ~/.fmos/selfupdate.json · log: the watchdog log (PC) or ~/.fmos/logs/selfupdate.log (standalone). Never raises.
+
+  python fm_selfupdate.py                one pass now (posts via relay `sys`)
+  python3 fm_selfupdate.py --install-mac LaunchAgent com.foundermatrix.selfupdate: hourly and at login
 """
-import json, os, subprocess, time
+import json, os, platform, subprocess, sys, time
 from pathlib import Path
 
 HOME = Path.home()
-REPO = Path(r"C:\Users\PC\founder-matrix-os")
+IS_MAC = platform.system() == "Darwin"
+DEVICE = "Mac" if IS_MAC else "PC"
+_HERE = Path(__file__).resolve().parent
+REPO = Path(os.environ.get("FMOS_REPO")
+            or (_HERE.parent if (_HERE.parent / ".git").exists() else HOME / "founder-matrix-os"))
 STATE = HOME / ".fmos" / "selfupdate.json"
 EVERY = 3600  # seconds between fetches
 NO_WINDOW = 0x08000000
-# changed path prefix → (scheduled task, node script it runs): restart the service when its code changed
+# changed path prefix → (PC scheduled task, Mac LaunchAgent label, node script it runs): restart the service when its
+# code changed; None = that service does not run on that OS
 SERVICES = [
-    (("plugins/fm/tools/figma/bridge/",), "FM Figma Bridge", "server.mjs"),
-    (("tools/relay/dispatcher/", "plugins/fm/tools/relay/dispatcher/"), "FM Relay Dispatcher", "dispatcher.mjs"),
+    (("plugins/fm/tools/figma/bridge/",), "FM Figma Bridge", "com.foundermatrix.figma-bridge", "server.mjs"),
+    (("tools/relay/dispatcher/", "plugins/fm/tools/relay/dispatcher/"), "FM Relay Dispatcher", None, "dispatcher.mjs"),
 ]
 NPM_DIRS = ["tools/relay/dispatcher", "plugins/fm/tools/relay/dispatcher", "plugins/fm/tools/figma/bridge"]
+MAC_PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"  # launchd starts with a bare PATH
 
 
 def _run(cmd, timeout=180, cwd=None):
@@ -40,8 +50,11 @@ def git(repo, *a, timeout=180):
 
 
 def restart_service(task, script):
-    """Stop the task, its launcher cmd and any leftover node process running its script (a second bridge would lose port 3055, a
-    second dispatcher would answer twice), then start the task again."""
+    """Mac: `launchctl kickstart -k` the LaunchAgent (kills and restarts it). PC: stop the task, its launcher cmd and
+    any leftover node process running its script (a second bridge would lose port 3055, a second dispatcher would
+    answer twice), then start the task again."""
+    if IS_MAC:
+        return _run(["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{task}"], timeout=60).returncode == 0
     _run(["schtasks", "/end", "/tn", task], timeout=30)
     # the launcher loop too (run-*.cmd): left without its console it restarts node many times a second
     launcher = {"server.mjs": "run-figma-bridge.cmd", "dispatcher.mjs": "run-dispatcher.cmd"}.get(script, script)
@@ -92,13 +105,13 @@ def _update(post, log, repo, force, restart, every):
         log(f"selfupdate blocked ({key}) {head[:7]} vs {up[:7]}")
 
     if git(repo, "merge-base", "--is-ancestor", "HEAD", "@{u}").returncode != 0:
-        warn("diverged", f"⚠ PC repo шинэчлэгдэхгүй байна: түүх origin-оос салсан ({head[:7]} ≠ {up[:7]}). "
+        warn("diverged", f"⚠ {DEVICE} repo шинэчлэгдэхгүй байна: түүх origin-оос салсан ({head[:7]} ≠ {up[:7]}). "
                          "Relay, Figma bridge хуучин кодоор ажиллаж байна — Architect-аас clone-ийг origin руу шилжүүлэхийг хүс.")
         return "diverged"
     dirty = git(repo, "status", "--porcelain", "--untracked-files=no").stdout.strip()
     if dirty:
         n = len(dirty.splitlines())
-        warn("dirty", f"⚠ PC repo шинэчлэгдэхгүй байна: commit хийгдээгүй {n} засвар бий. Architect-аас commit эсвэл хадгалахыг хүс.")
+        warn("dirty", f"⚠ {DEVICE} repo шинэчлэгдэхгүй байна: commit хийгдээгүй {n} засвар бий. Architect-аас commit эсвэл хадгалахыг хүс.")
         return "dirty"
 
     changed = git(repo, "diff", "--name-only", "HEAD", up).stdout.split()
@@ -111,11 +124,59 @@ def _update(post, log, repo, force, restart, every):
         if f"{d}/package-lock.json" in changed and (repo / d).is_dir():
             r = _run(["npm.cmd" if os.name == "nt" else "npm", "ci", "--omit=dev"], timeout=600, cwd=str(repo / d))
             notes.append(f"npm ci {d.split('/')[-1]}{'' if r.returncode == 0 else ' ⚠'}")
-    for prefixes, task, script in SERVICES:
-        if any(p.startswith(prefixes) for p in changed):
+    for prefixes, win_task, mac_label, script in SERVICES:
+        task = mac_label if IS_MAC else win_task
+        if task and any(p.startswith(prefixes) for p in changed):
             ok = restart(task, script)
             notes.append(f"{task} дахин асав" if ok else f"{task} дахин асаж чадсангүй ⚠")
     st.pop("warned", None); _save(st)
-    msg = f"🔄 PC repo шинэчлэгдлээ: {head[:7]} → {up[:7]} ({n} commit)" + (" · " + " · ".join(notes) if notes else "")
+    msg = f"🔄 {DEVICE} repo шинэчлэгдлээ: {head[:7]} → {up[:7]} ({n} commit)" + (" · " + " · ".join(notes) if notes else "")
     log(msg); post(msg)
     return "updated"
+
+
+def _log(line):
+    p = HOME / ".fmos" / "logs" / "selfupdate.log"
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh: fh.write(time.strftime("%Y-%m-%d %H:%M ") + line + "\n")
+    except Exception:
+        pass
+
+
+def _post(text):
+    r = _run([sys.executable, str(REPO / "tools" / "relay" / "relay.py"), "send", "sys", text,
+              "--sid", "selfupdate", "--no-thread"], timeout=60)
+    _log(f"post rc={r.returncode} {r.stdout.strip()[:120]} {r.stderr.strip()[:200]}")
+
+
+def install_mac():
+    """~/Library/LaunchAgents/com.foundermatrix.selfupdate.plist: this file, hourly and at login."""
+    label = "com.foundermatrix.selfupdate"
+    plist = HOME / "Library" / "LaunchAgents" / f"{label}.plist"
+    plist.parent.mkdir(parents=True, exist_ok=True)
+    (HOME / ".fmos" / "logs").mkdir(parents=True, exist_ok=True)
+    out = HOME / ".fmos" / "logs" / "selfupdate.out"
+    plist.write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>{label}</string>
+  <key>ProgramArguments</key><array><string>{sys.executable}</string><string>{Path(__file__).resolve()}</string></array>
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>{MAC_PATH}</string><key>FMOS_REPO</key><string>{REPO}</string></dict>
+  <key>StartInterval</key><integer>3600</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>{out}</string>
+  <key>StandardErrorPath</key><string>{out}</string>
+</dict></plist>
+""", encoding="utf-8")
+    _run(["launchctl", "unload", str(plist)], timeout=30)
+    r = _run(["launchctl", "load", str(plist)], timeout=30)
+    print(("installed " if r.returncode == 0 else f"launchctl load failed ({r.stderr.strip()}) ") + str(plist))
+
+
+if __name__ == "__main__":
+    if IS_MAC: os.environ["PATH"] = MAC_PATH + ":" + os.environ.get("PATH", "")
+    if "--install-mac" in sys.argv:
+        install_mac()
+    else:  # standalone (Mac LaunchAgent, or by hand): every run is a real pass, launchd already spaces them an hour
+        print(update(_post, _log, force=True))

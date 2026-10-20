@@ -36,4 +36,19 @@ check(len(posts) == n + 1, "dirty warning posted once per origin commit")
 sh("git","-C",str(pc),"checkout","-q","--","README.md")
 sh("git","-C",str(pc),"-c","user.email=t@t","-c","user.name=t","commit","-q","--allow-empty","-m","local only")
 check(su.update(P, L, pc, force=True, restart=R) == "diverged", "local-only commit → diverged, untouched")
+
+# Mac: the Figma bridge LaunchAgent restarts, the dispatcher (no Mac service) is skipped, posts say «Mac»
+sh("git","-C",str(pc),"reset","-q","--hard","@{u}"); restarts.clear()
+su.IS_MAC, su.DEVICE = True, "Mac"
+(work/"plugins/fm/tools/relay").mkdir(parents=True, exist_ok=True); (work/"tools/relay/dispatcher").mkdir(parents=True, exist_ok=True)
+(work/"tools/relay/dispatcher/dispatcher.mjs").write_text("d1"); sh("git","-C",str(work),"add","-A")
+(work/"plugins/fm/tools/figma/bridge/server.mjs").write_text("v3"); sh("git","-C",str(work),"commit","-qam","mac both")
+sh("git","-C",str(work),"push","-q","origin","main")
+check(su.update(P, L, pc, force=True, restart=R) == "updated", "Mac: update applied")
+check(restarts == ["com.foundermatrix.figma-bridge"], "Mac: bridge LaunchAgent restarted, dispatcher skipped")
+check(posts[-1].startswith("🔄 Mac repo"), "Mac: post names the device")
+su.HOME = T; su.install_mac()
+pl = T / "Library/LaunchAgents/com.foundermatrix.selfupdate.plist"
+check(pl.exists() and "<integer>3600</integer>" in pl.read_text() and "fm_selfupdate.py" in pl.read_text(), "Mac: LaunchAgent plist written (hourly)")
+su.IS_MAC, su.DEVICE = False, "PC"
 print("FAILS", fails); print(json.dumps(posts, ensure_ascii=False, indent=0))
