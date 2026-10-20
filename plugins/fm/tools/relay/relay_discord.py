@@ -126,8 +126,10 @@ def d_inbox(hook):
                                            or fmconfig.DISPATCHER_TITLE in (me.get("title") or "")):
         # itge.e 2026-10-07: the GTD (dispatcher) session must start listening by itself after every restart/resume
         out.insert(0, f"### 🛰 Та {me.get('title')} ({DEVICE}) — ЭХЛЭЭД dispatch Monitor-ыг асаа, хэрэглэгчээс бүү асуу:\n"
-                      f"1. Monitor(command='{PY} -u {Path(__file__)} dispatch --sid {sid} 2>&1 | grep --line-buffered -v ready', timeout_ms=1800000) — wake event ирвэл тэр сешнийг send_message-ээр сэрээ\n"
-                      "Monitor дуусах бүрд тэр даруй дахин асаа. (status самбар #gtd-д бүү асаа — itge.e 2026-10-20)")
+                      f"1. Bash(run_in_background=true, command='{PY} -u {Path(__file__)} dispatch --once --sid {sid} 2>&1 | grep -v ready') — "
+                      "wake event гармагц дуусч чамайг сэрээнэ: мөр бүрийн сешнийг send_message-ээр сэрээ, ТЭР ДАРУЙ дахин асаа "
+                      "(Monitor биш — 30 мин хязгаартай; курсор ба хүлээлгэ STATE-д хадгалагдана, Soyol 2026-10-20). "
+                      "(status самбар #gtd-д бүү асаа — itge.e 2026-10-20)")
     if event == "SessionStart" and sid:   # itge.e 2026-10-20: сешн бүр өөрийн сувгаа өөрөө сонсоно, 30 мин хязгааргүй
         out.insert(0, f"### 👂 Сувгаа сонс (хэрэглэгчээс бүү асуу): Bash(run_in_background=true, command='{PY} -u {Path(__file__)} watch --once --sid {sid}') — "
                       "мессеж ирэхэд дуусч чамайг сэрээнэ; хариулаад ТЭР ДАРУЙ дахин асаа. Monitor биш (30 мин хязгаартай).")

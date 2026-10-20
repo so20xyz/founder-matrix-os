@@ -18,6 +18,9 @@ Commands:
   relay.py research-status           read-only: each 04-Resources/Research hub's status + linked task counts, «✅ хаах санал»
   relay.py research-advance [--hub T] [--dry-run]   one step of the relay research cycle (hubs with automation: relay):
                                      next stage task, privacy gate, hub «Төлөв» + _ledger; watch runs it every 60s
+  relay.py agent-tick                one research step + warn on the broadcast channel if this device's dispatcher
+                                     heartbeat is > 5 min old (relay-agent LaunchAgent / scheduled task, every minute)
+  relay.py dispatch [--once]         wake events for local sessions; --once exits after the first wake (Bash background)
   relay.py watch --sid SID           continuous: new Discord lines + «[task-offer] <task path>» (inbox task of this role)
   relay.py claim "<task path>" --sid SID   #sys-dispatch, first claim wins → prints WIN | LOSE <device>; WIN → in-progress
                                      (🔒 task: only from a private session, bus carries the opaque id «p:<hex>»)
@@ -482,11 +485,14 @@ def rotate_log(p, max_bytes=5 * 1024 * 1024, keep=3):
         return False
 
 
-def d_dispatch(every=15):
+def d_dispatch(every=15, once=False):
     """Dispatcher (one per device, run by 03 Sys Admin via Monitor): watch every session channel;
     print one JSON line per message that should WAKE a local session: human (BD) messages, or other-device
     messages that address this device ('→ PC' / '@pc'). Own-device bot messages are skipped (no ping-pong).
-    Owner messages (author.id ∈ discord.json "owner_ids") carry "from_owner": true."""
+    Owner messages (author.id ∈ discord.json "owner_ids") carry "from_owner": true.
+    once=True (Soyol 2026-10-20): exit after the loop that printed a wake event — run with Bash run_in_background so the
+    GTD session wakes on exit (no 30-min Monitor limit). Cursors, deferred items and a heartbeat live in STATE, so a
+    restart resumes where it stopped and `agent-tick` can warn when no dispatcher ran for 5 min."""
     rotate_log(DISPATCH_LOG)
     reg = load(REG, {"sessions": {}})["sessions"]; cm = chmap()
     local = {}
@@ -507,18 +513,24 @@ def d_dispatch(every=15):
                 time.sleep(min(60, 5 * (i + 1)))
     st = load(STATE, {}); st.pop("_dch", None); ch = _retry(lambda: dchannels(st)); save(STATE, st)
     watch = {n: ch[n] for n in local if n in ch}
-    bot_wakes = {}; last = {}; seen_threads = {}; t0 = time.time(); pending = []
+    bot_wakes = {}; last = {}; seen_threads = {}; t0 = time.time()
+    saved = load(STATE, {}); pending = list(saved.get("_dispatch_pending") or [])
     for n, cid in watch.items():
+        if (saved.get("_dispatch_last") or {}).get(n): last[n] = saved["_dispatch_last"][n]; continue   # resume, lose nothing
         lm = _retry(lambda: dapi("GET", f"/channels/{cid}/messages?limit=1")); last[n] = lm[0]["id"] if lm else "0"
+    def _persist():
+        s = load(STATE, {}); s["_dispatch_alive"] = time.time(); s["_dispatch_pending"] = pending
+        s["_dispatch_last"] = {k: v for k, v in last.items() if not k.startswith("t:")}; save(STATE, s)
+    _persist()
     print(json.dumps({"ready": len(watch), "channels": list(watch)}, ensure_ascii=False), flush=True)
     tag = re.compile(r"(→\s*" + DEVICE + r"\b|@" + DEVICE.lower() + r"\b)", re.I)
     while True:
-        time.sleep(every)
+        time.sleep(every); woke = 0
         srcs = list(watch.items()); parent = {}
         wakes, pending = _deferred_wakes(pending)   # Soyol 2026-10-20: a live channel's message nobody ended up reading
         for it in wakes:
             if it.get("claim") and not msg_claim(it["id"]): continue
-            print(json.dumps(it["ev"], ensure_ascii=False), flush=True)
+            print(json.dumps(it["ev"], ensure_ascii=False), flush=True); woke += 1
         try: threads = _threads(set(watch.values()))
         except Exception as e:   # сүлжээ тасарсан — энэ тойргийг алгасаж, дараа нь дахин
             regstore.log(f"dispatch: threads ({type(e).__name__})"); threads = {}
@@ -550,7 +562,7 @@ def d_dispatch(every=15):
                     na = len(m.get("attachments") or [])
                     print(json.dumps({"wake": local[n], "channel": parent.get(n, n), "private": True,
                                       "text": f"🔒 санхүүгийн шинэ мессеж ({na} хавсралт) — тэр сешн `relay.py fetch {parent.get(n, n)}`-ээр өөрөө уншина"},
-                                     ensure_ascii=False), flush=True)
+                                     ensure_ascii=False), flush=True); woke += 1
                     continue
                 claim = not a.get("bot") and not fm and parent.get(n, n) in shared_ch
                 ev = {"wake": local[n], "channel": parent.get(n, n), **_author_fields(a), "text": txt[:1500]}
@@ -559,7 +571,28 @@ def d_dispatch(every=15):
                     pending.append({"channel": parent.get(n, n), "id": m["id"], "t": time.time(), "ev": ev, "claim": claim})
                     continue
                 if claim and not msg_claim(m["id"]): continue        # нөгөө машин түрүүлж авлаа
-                print(json.dumps(ev, ensure_ascii=False), flush=True)
+                print(json.dumps(ev, ensure_ascii=False), flush=True); woke += 1
+        _persist()
+        if once and woke: return
+
+
+def d_agent_tick(stale=300, send=None):
+    """relay.py agent-tick (Soyol 2026-10-20) — the device's relay-agent LaunchAgent / scheduled task, once a minute:
+    one research-cycle step (same lock as watch), and one warning on the broadcast channel when this device's dispatcher
+    heartbeat is older than `stale` s (each stop warned once). Never raises."""
+    out = []
+    try:
+        _RC_LAST[0] = 0; _research_tick(out.append)
+    except Exception as e: out.append(f"research tick: {e!r}")
+    try:
+        st = load(STATE, {}); t = st.get("_dispatch_alive")
+        if t and time.time() - t > stale and st.get("_dispatch_alerted") != t:
+            msg = (f"⚠ {DEVICE} dispatcher {int((time.time() - t) // 60)} минут ажиллаагүй: watch-гүй сешнүүд мессежээр сэрэхгүй. "
+                   f"{DEVICE}-ийн 📥 GTD сешнийг нээж dispatch-ийг асаа.")
+            (send or (lambda m: d_send("sys", m, "relay-agent")))(msg)
+            st = load(STATE, {}); st["_dispatch_alerted"] = t; save(STATE, st); out.append(msg)
+    except Exception as e: out.append(f"dispatcher check: {e!r}")
+    for line in out: print(line, flush=True)
 
 
 def d_fetch(chan, sid):
@@ -603,7 +636,7 @@ def main():
         try: return d_inbox(hook)
         except Exception as e:
             print(json.dumps({"hookSpecificOutput": {"hookEventName": hook.get("hook_event_name","UserPromptSubmit"), "additionalContext": f"[FMOS Discord] уншиж чадсангүй: {e}"}}, ensure_ascii=False)); return
-    if a[0] not in ("register", "dispatch", "hub", "status", "research-status", "research-advance"):
+    if a[0] not in ("register", "dispatch", "hub", "status", "research-status", "research-advance", "agent-tick"):
         try: sid = _rekey(_full_sid(sid))
         except Exception: pass
     if a[0] == "register":
@@ -640,7 +673,9 @@ def main():
         except Exception as e:  # Stop hook: never break the session
             regstore.log(f"baton: {e}"); return
     if a[0] == "dispatch":
-        return d_dispatch()
+        return d_dispatch(once="--once" in a)
+    if a[0] == "agent-tick":
+        return d_agent_tick()
     if a[0] == "fetch":
         return d_fetch(a[1], sid)
     if a[0] == "task":

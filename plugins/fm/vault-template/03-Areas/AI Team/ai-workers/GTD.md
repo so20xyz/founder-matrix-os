@@ -107,7 +107,7 @@ views:
 
 GTD нь Discord-оос ирсэн мессежийг хүлээн авч (барих) → ангилж → зөв сешн/task руу дамжуулна. Долоо хоногийн тойм зэрэг гүн GTD ажлыг dispatcher-ийн сешнээс тусад нь шинэ сешнд хий (context дүүрэхээс сэргийлж).
 
-1. `relay.py dispatch`-ийг Monitor-оор байнга ажиллуулна; Monitor дуусах бүрд тэр даруй дахин асаана (PC ба Mac тус бүр).
+1. `relay.py dispatch --once`-ийг Bash `run_in_background`-оор ажиллуулна: wake event гармагц дуусч сешнийг сэрээнэ — event-ийн сешнийг `send_message`-ээр сэрээгээд тэр даруй дахин асаана (Monitor биш, 30 мин хязгааргүй; PC ба Mac тус бүр, Soyol 2026-10-20). 5 минут ажиллаагүй бол relay-agent `#gtd`-д анхааруулна.
 2. {{fm:member}}-ийн Discord мессеж эсвэл `→ PC`/`@pc` хаягтай Mac мессеж ирвэл тухайн сешнийг `send_message`-ээр сэрээж дамжуулна.
 3. Агуулгыг өөрөө шийдэхгүй — зөвхөн дамжуулна. Хэн хариуцахыг [[_system/fm/registry.json]]-ээс харна.
 4. `sync-discord` ба dispatcher кодын засвар = [[03-Areas/AI Team/ai-workers/Architect|Architect]]. Дэлгэрэнгүй: founder-matrix-os `ARCHITECTURE.md` §4b–4c.

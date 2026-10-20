@@ -152,6 +152,49 @@ def t_dispatch_marks_owner():
     check(sp and "from_owner" not in sp[0], "dispatch event: spoofed display name → no from_owner", (out, err))
 
 
+def t_dispatch_once_resumes():
+    """Soyol 2026-10-20: dispatch --once exits after the loop that woke someone; the next start resumes from the saved
+    cursor (no message between the two runs is lost) and the heartbeat is saved for agent-tick."""
+    c = Ctx()
+    rc, out, err = c.py(MSGS + """
+relay.d_dispatch(once=True)
+st = relay.load(relay.STATE, {})
+print("STATE", json.dumps({"last": st.get("_dispatch_last"), "alive": bool(st.get("_dispatch_alive"))}))
+""")
+    evs = [l for l in out.splitlines() if l.startswith("{") and '"wake"' in l]
+    stl = [l for l in out.splitlines() if l.startswith("STATE ")]
+    s1 = json.loads(stl[-1][6:]) if stl else {}
+    check(rc == 0 and len(evs) == 2 and s1.get("last") == {"08-acme-website": "6"} and s1.get("alive"),
+          "dispatch --once: exits after the waking loop, cursor + heartbeat saved", (rc, out, err))
+    rc, out, err = c.py(MSGS + """
+paths = []
+_d = relay.dapi
+def rec(method, path, body=None):
+    paths.append(path); return _d(method, path, body)
+relay.dapi = rec
+MSGS[:] = [{"id": "7", "author": {"id": "1", "username": "bd"}, "content": "between runs", "timestamp": "2026-10-09T01:03:00"}]
+relay.d_dispatch(once=True)
+print("PATHS", json.dumps(paths))
+""")
+    pl = [l for l in out.splitlines() if l.startswith("PATHS ")]
+    paths = json.loads(pl[-1][6:]) if pl else []
+    check(any("after=6" in p for p in paths) and not any("limit=1" in p and "after" not in p for p in paths)
+          and "between runs" in out, "dispatch restart resumes from the saved cursor (message between runs delivered)", (rc, out, err))
+
+
+def t_agent_tick_warns_once():
+    c = Ctx()
+    rc, out, err = c.py("""
+sent = []
+st = relay.load(relay.STATE, {}); st["_dispatch_alive"] = relay.time.time() - 600; relay.save(relay.STATE, st)
+relay.d_agent_tick(send=sent.append); relay.d_agent_tick(send=sent.append)
+st = relay.load(relay.STATE, {}); st["_dispatch_alive"] = relay.time.time(); relay.save(relay.STATE, st)
+relay.d_agent_tick(send=sent.append)
+print("SENT", len(sent))
+""")
+    check("SENT 1" in out and "Traceback" not in err, "agent-tick: stale dispatcher warned once, fresh one not", (rc, out, err))
+
+
 def t_watch_and_inbox_mark_owner():
     c = Ctx()
     rc, out, err = c.py(MSGS + "relay.d_watch('sid-a', every=0)\n")
@@ -273,7 +316,7 @@ def t_log_rotation():
 
 
 def main():
-    for t in (t_send_file_and_stdin, t_send_unknown_channel, t_owner_fields, t_dispatch_marks_owner,
+    for t in (t_send_file_and_stdin, t_send_unknown_channel, t_owner_fields, t_dispatch_marks_owner, t_dispatch_once_resumes, t_agent_tick_warns_once,
               t_watch_and_inbox_mark_owner, t_baton_concurrent_and_safe, t_state_merge, t_log_rotation):
         try:
             t()
