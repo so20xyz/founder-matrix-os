@@ -21,7 +21,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SCRIPTS = HERE / "scripts"
-LAYOUTS = ("cover", "statement", "cards", "timeline", "before-after", "compare", "flow", "stats", "demo", "custom")
+LAYOUTS = ("cover", "statement", "cards", "timeline", "before-after", "compare", "flow", "stats", "demo", "hub", "custom")
 
 
 # ── yaml subset ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -225,6 +225,12 @@ def slide_plan(s, page, total):
         if not s.get("caption"): props.pop("caption", None); hide.append("caption")
     elif lay == "stats":
         _items(slots, hide, hl, "stat", 4, s.get("items") or [], ("title", "text"))
+    elif lay == "hub":                                                # ≤ 4 cards linked to one hub (Creative P3 2026-10-21)
+        items = (s.get("items") or [])[:4]
+        _items(slots, hide, hl, "item", 4, items, ("title", "text"))
+        hide += [f"link {i}" for i in range(len(items) + 1, 5)]
+        h = s.get("hub") or {}
+        props["hub title"], props["hub text"] = _t(h.get("title")), _t(h.get("text"))
     elif lay == "demo":
         b = s.get("bullets") or []
         _items(slots, hide, hl, "bullet", 4, [{"text": x} for x in b], ("text",))
@@ -235,8 +241,13 @@ def slide_plan(s, page, total):
         if k == "live" and lay != "demo": continue
         if not props.get(k): props.pop(k, None); hide.append(f"prop:{k}")
     name = f"{s['id']} · {s['name']}"
+    # screenshot source: image «<node id>» or the first of images [..] (v1 decks); true/false/missing → none
+    img = s.get("image") if isinstance(s.get("image"), str) else next((x for x in (s.get("images") or []) if isinstance(x, str)), None)
+    tone = {"subtitle": "accent"} if lay == "cover" and s.get("subtitle_tone") == "accent" else {}
     return {"id": s["id"], "name": name, "layout": lay, "component": f"Slide / {lay}", "props": props, "slots": slots,
             "hide": hide, "highlight": hl, "notes": s["notes"], "figma": str(s.get("figma") or ""),
+            "image": img if lay == "demo" else None, "tone": tone,
+            "links": min(len(s.get("items") or []), 4) if lay == "hub" else 0,
             "fallback": {"eyebrow": _t(s.get("eyebrow")), "title": _t(s.get("title"), True),
                          "lines": [_t(x.get("title") if isinstance(x, dict) else x) for x in (s.get("items") or s.get("bullets") or [])]}}
 

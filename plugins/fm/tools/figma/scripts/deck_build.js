@@ -128,6 +128,60 @@ function fillSlots(inst, s, main) {
   }
 }
 
+const warnings = [];
+
+// cover: subtitle_tone accent → subtitle-д accent хувьсагч; үгүй бол component-ийн өнгө (Creative P3 2026-10-21)
+function applyTone(inst, s, main) {
+  const sub = byName(inst, 'subtitle'); if (!sub) return;
+  const src = counterpart(main, sub);
+  const acc = s.tone && s.tone.subtitle === 'accent' ? paintVar('accent', sub) : null;
+  if (acc) sub.fills = [acc]; else if (src) sub.fills = src.fills;
+}
+
+// demo: image «<node id>» → тэр node-ийг PNG (screen-ийн 2× өргөн) болгож screen-ийн fill (FILL, булангийн радиус хэвээр),
+// «screen · hint»-ийг нууна. Эх node өөрчлөгдөөгүй бол (imgSrc) дахин export хийхгүй. Олдохгүй бол placeholder + warning.
+async function applyImage(fr, inst, s, main) {
+  const scr = byName(inst, 'screen'); if (!scr || s.hide.includes('screen')) return;
+  const hint = byName(inst, 'screen · hint');
+  if (!s.image) {
+    const src = counterpart(main, scr); if (src) scr.fills = src.fills;
+    if (hint) hint.visible = true; fr.setPluginData('imgSrc', ''); return;
+  }
+  const has = Array.isArray(scr.fills) && scr.fills.some(p => p.type === 'IMAGE');
+  if (!(fr.getPluginData('imgSrc') === s.image && has)) {
+    const node = await figma.getNodeByIdAsync(s.image);
+    if (!node || typeof node.exportAsync !== 'function') { warnings.push(s.id + ': image «' + s.image + '» энэ файлд олдсонгүй — placeholder үлдээв'); return; }
+    const bytes = await node.exportAsync({ format: 'PNG', constraint: { type: 'WIDTH', value: Math.round(scr.width * 2) } });
+    scr.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: figma.createImage(bytes).hash }];
+    fr.setPluginData('imgSrc', s.image);
+  }
+  if (hint) hint.visible = false;
+}
+
+// hub: component-ийн «link N» шугамыг нууж, слайдын frame дээр бодит байрлалаас шинээр зурна — картын доод төвөөс hub-ийн
+// дээд ирмэг (hub-ийн хүрээнээс 60 px дотор). Instance доторх vector-ын геометрийг найдвартай override хийх боломжгүй.
+function hubLinks(fr, inst, s, main) {
+  for (const n of fr.children.filter(n => n.getPluginData('deckLink'))) n.remove();
+  if (s.layout !== 'hub') return;
+  const hub = byName(inst, 'hub'); if (!hub) return;
+  const ref = main && main.findOne(n => n.name === 'link 1');
+  const fb = fr.absoluteBoundingBox, hb = hub.absoluteBoundingBox;
+  for (let i = 1; i <= 4; i++) {
+    const own = byName(inst, 'link ' + i); if (own) own.visible = false;
+    const card = byName(inst, 'item ' + i);
+    if (i > s.links || !card || !card.visible) continue;
+    const cb = card.absoluteBoundingBox, cx = cb.x + cb.width / 2;
+    const x0 = cx - fb.x, y0 = cb.y + cb.height - fb.y;
+    const x1 = Math.min(Math.max(cx, hb.x + 60), hb.x + hb.width - 60) - fb.x, y1 = hb.y - fb.y;
+    const L = Math.min(x0, x1), T = Math.min(y0, y1);
+    const v = figma.createVector();
+    v.vectorPaths = [{ windingRule: 'NONE', data: `M ${x0 - L} ${y0 - T} L ${x1 - L} ${y1 - T}` }];
+    if (ref) { v.strokes = ref.strokes; v.strokeWeight = ref.strokeWeight; v.strokeCap = ref.strokeCap; }
+    else { v.strokes = [paintVar('accent', v) || { type: 'SOLID', color: { r: 0.106, g: 0.361, b: 1 } }]; v.strokeWeight = 3; }
+    fr.appendChild(v); v.x = L; v.y = T; v.name = 'link ' + i; v.setPluginData('deckLink', String(i));
+  }
+}
+
 function fallback(frame, s) {                        // component алга: theme токеноор auto layout
   const f = figma.createFrame(); f.name = 'fallback · ' + s.layout;
   f.resize(P.w, P.h); f.layoutMode = 'VERTICAL'; f.itemSpacing = 40;
@@ -176,6 +230,9 @@ for (let i = 0; i < P.slides.length; i++) {
     await fonts(inst);
     setProps(inst, s.props, s.hide);
     fillSlots(inst, s, comp);
+    applyTone(inst, s, comp);
+    await applyImage(fr, inst, s, comp);
+    hubLinks(fr, inst, s, comp);
   } else {
     for (const c of [...fr.children]) c.remove();
     await figma.loadFontAsync({ family: 'Inter', style: 'Medium' }); await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
@@ -198,7 +255,6 @@ for (let i = 0; i < P.slides.length; i++) {
   out.push({ id: s.id, frame: fr.id, notes: nc ? nc.id : null, created: isNew });
 }
 wrap.resizeWithoutConstraints(maxX + PAD, maxY + PAD);
-const warnings = [];
 if (host.type === 'SECTION') {                       // зөвхөн доошоо томсгоно; өргөнийг хэзээ ч өөрчлөхгүй
   const b = host.children.reduce((m, n) => Math.max(m, n.y + n.height), 0) + 120;
   if (b > host.height) host.resizeWithoutConstraints(host.width, b);

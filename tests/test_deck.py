@@ -98,6 +98,48 @@ live: "site.app"
 image: true  # зураг
 ```
 
+## 07 · Hub
+
+```yaml
+id: "07"
+layout: hub
+title: "Second Brain = PARA"
+items:
+  - {title: "Projects", text: "дуусдаг ажил"}
+  - {title: "Areas", text: "тогтмол хариуцлага"}
+  - {title: "Archive", text: "дууссан зүйл"}
+hub: {title: "Atomic", text: "нэг баримт = нэг note"}
+```
+
+## 08 · Хаалт
+
+```yaml
+id: "08"
+layout: cover
+title: "Толгой бодоход."
+subtitle: "Season 2-т ийм бүтэц барина."
+subtitle_tone: accent
+```
+
+## 09 · Demo зурагтай
+
+```yaml
+id: "09"
+layout: demo
+title: "Demo"
+bullets: ["a"]
+image: "422:39578"  # эх node
+```
+
+## 10 · Demo images
+
+```yaml
+id: "10"
+layout: demo
+title: "Demo v1"
+images: ["264:34892", "1:2"]
+```
+
 ## 06 · Гар зураг
 
 ```yaml
@@ -124,7 +166,7 @@ def raises(text, word):
 def main():
     d = deck.parse_deck(DECK)
     S = {s["id"]: s for s in d["slides"]}
-    check(list(S) == ["01", "02", "03", "04", "05", "06"], "6 slides; a «## …» heading without yaml is not a slide", list(S))
+    check(list(S) == ["01", "02", "03", "04", "05", "07", "08", "09", "10", "06"], "10 slides; a «## …» heading without yaml is not a slide", list(S))
     check(d["meta"]["figma-section"] == "2007:2" and d["meta"]["grid"] == "5", "frontmatter: inline comment stripped", d["meta"])
     check(S["01"]["eyebrow"] == "it's · Season 2", "yaml: single-quoted with '' escape")
     check(S["02"]["items"][1] == {"title": "Atomic", "text": "нэг баримт, нэг note", "highlight": True},
@@ -146,7 +188,7 @@ def main():
         check(p["deck"] == "Тест" and p["version"] == "v2" and p["section"] == "2007:2" and p["grid"] == 5 and p["w"] == 1920,
               "plan: deck key without « - v2 demo», version, section, grid, format", {k: p[k] for k in ("deck", "version", "section", "grid")})
         c = Pl["01"]
-        check(c["props"]["title"] == "Толгой бодоход.\nСистем санахад." and c["props"]["page"] == "01 / 06",
+        check(c["props"]["title"] == "Толгой бодоход.\nСистем санахад." and c["props"]["page"] == "01 / 10",
               "plan: « / » → line break, page «NN / total»", c["props"])
         check("prop:subtitle" in c["hide"] and "prop:meta" in c["hide"], "plan: cover without subtitle/meta hides those layers", c["hide"])
         k = Pl["02"]
@@ -169,6 +211,16 @@ def main():
         check(d2["slots"]["bullet 1 · text"] == "HTML · TAM / SAM / SOM", "plan: « / » stays literal outside title/subtitle (slide 09)", d2["slots"])
         check("screen" in d2["hide"], "plan demo: image: false hides the screen panel (slides 08, 09)", d2["hide"])
         check(Pl["06"]["layout"] == "custom" and Pl["06"]["figma"] == "12:34", "plan custom: keeps its figma id")
+        hb = Pl["07"]
+        check(hb["component"] == "Slide / hub" and hb["props"]["hub title"] == "Atomic" and hb["props"]["hub text"] == "нэг баримт = нэг note"
+              and hb["slots"]["item 3 · title"] == "Archive" and "item 4" in hb["hide"] and "link 4" in hb["hide"]
+              and "link 3" not in hb["hide"] and hb["links"] == 3,
+              "plan hub (Creative P3): hub title/text props, 3 cards → item 4 + link 4 hidden, 3 links", hb)
+        check(Pl["08"].get("tone") == {"subtitle": "accent"} and Pl["01"].get("tone") == {},
+              "plan cover: subtitle_tone: accent → tone, default none (Creative P3)", (Pl["08"].get("tone"), Pl["01"].get("tone")))
+        check(Pl["09"]["image"] == "422:39578" and "screen" not in Pl["09"]["hide"] and Pl["05"]["image"] is None,
+              "plan demo: image «<node id>» → export source; image: true → no source (placeholder)", (Pl["09"]["image"], Pl["05"]["image"]))
+        check(Pl["10"]["image"] == "264:34892", "plan demo: images [..] → first one is the screen (v1 decks)", Pl["10"]["image"])
 
         changed = deck.write_ids(f, {"01": "900:1", "02": "900:2"}, mine=[])
         y = f.read_text(encoding="utf-8")
