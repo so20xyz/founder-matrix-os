@@ -22,6 +22,8 @@
   fig.py tree [nodeId|"Хуудас"] [--depth 3]  - бүтцийг id, төрөл, хэмжээтэйгээр харуулна
   fig.py find "нэр" [--page P]  - нэрээр node хайж id-г нь буцаана
   fig.py export <nodeId> [--format PNG|SVG|JPG|PDF] [--scale 2] [--out file]
+  fig.py --doc "Copy" deck build <deck.md> [--page "<нэр>"] [--dry-run] [--out-dir D]
+                                - deck.md → «Slide / <layout>» component-оор слайд, id-аар upsert, QA + contact sheet (deck.py)
   fig.py icons <prefix> [--filter solid] [--search x] [--names a,b] [--size 24] [--color 121212] [--page P] [--list]
                                 - Iconify icon set-ийг component болгож зурах (icons.py); --sets <үг> = set хайх
 
@@ -109,6 +111,9 @@ def main():
     rs = s.add_parser("resolve"); rs.add_argument("id")
     pg = s.add_parser("progress"); pg.add_argument("id"); pg.add_argument("state", choices=["queued", "working", "done", "clear"]); pg.add_argument("text", nargs="?", default="")
     dl = s.add_parser("delete"); dl.add_argument("id")
+    dk = s.add_parser("deck", help="deck.md → Figma слайд (deck.py)"); dk.add_argument("action", choices=["build"]); dk.add_argument("file")
+    dk.add_argument("--page", help="хуудас эсвэл section-ий нэр (default: frontmatter figma-page)"); dk.add_argument("--dry-run", action="store_true")
+    dk.add_argument("--out-dir", help="contact sheet PNG-ийн хавтас (default: deck.md-ийн хавтас)")
     ic = s.add_parser("icons"); ic.add_argument("prefix", nargs="?"); ic.add_argument("--sets", nargs="?", const="", help="icon set хайх")
     ic.add_argument("--filter", help="нэрийн төгсгөл: solid, line...  (ж: -solid)"); ic.add_argument("--search"); ic.add_argument("--names")
     ic.add_argument("--size", type=int, default=24); ic.add_argument("--color", default="121212"); ic.add_argument("--page"); ic.add_argument("--list", action="store_true")
@@ -240,6 +245,11 @@ def main():
         with urllib.request.urlopen(r, timeout=30) as x:
             c = json.load(x)
         print(json.dumps({"id": c["id"], "png": str(out)}, ensure_ascii=False))
+        return
+    if a.cmd == "deck":
+        sys.path.insert(0, HERE)
+        import deck
+        deck.run(a, call)
         return
     if a.cmd == "icons":
         import icons
