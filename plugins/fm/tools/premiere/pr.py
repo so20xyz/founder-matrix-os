@@ -123,9 +123,11 @@ def comments_cmd(cmd, a):
         wait = int(opt(a, "--wait", "1800"))
         seen = json.loads(SEEN.read_text(encoding="utf-8")) if SEEN.exists() else {}
         new = unseen(lst("/comments", timeout=10), seen)
-        if not new:
-            t0 = int(__import__("time").time() * 1000)
-            new = unseen(lst(f"/comments?wait={wait}&since={t0}", timeout=wait + 15), seen)
+        import time
+        end = time.time() + wait
+        while not new and time.time() < end:   # сервер ямар ч өөрчлөлтөөр сэрээдэг → жинхэнэ шинэ коммент хүртэл дахин хүлээнэ
+            left = max(1, int(end - time.time()))
+            new = unseen(lst(f"/comments?wait={left}&since={int(time.time() * 1000) - 2000}", timeout=left + 15), seen)
         for t in new:
             seen[t["id"]] = max([t["at"]] + [r["at"] for r in t.get("replies", [])])
             print(fmt_thread(t) + "\n")
