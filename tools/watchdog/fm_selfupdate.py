@@ -40,11 +40,14 @@ def git(repo, *a, timeout=180):
 
 
 def restart_service(task, script):
-    """Stop the task and any leftover node process running its script (a second bridge would lose port 3055, a
+    """Stop the task, its launcher cmd and any leftover node process running its script (a second bridge would lose port 3055, a
     second dispatcher would answer twice), then start the task again."""
     _run(["schtasks", "/end", "/tn", task], timeout=30)
-    ps = ("Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | "
-          f"Where-Object {{ $_.CommandLine -like '*{script}*' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force }}")
+    # the launcher loop too (run-*.cmd): left without its console it restarts node many times a second
+    launcher = {"server.mjs": "run-figma-bridge.cmd", "dispatcher.mjs": "run-dispatcher.cmd"}.get(script, script)
+    ps = ("Get-CimInstance Win32_Process | "
+          f"Where-Object {{ ($_.Name -in 'cmd.exe','conhost.exe' -and $_.CommandLine -like '*{launcher}*') -or ($_.Name -eq 'node.exe' -and $_.CommandLine -like '*{script}*') }} | "
+          "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }")
     _run(["powershell", "-NoProfile", "-Command", ps], timeout=60)
     time.sleep(2)
     return _run(["schtasks", "/run", "/tn", task], timeout=30).returncode == 0
