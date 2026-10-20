@@ -7,11 +7,11 @@ Dry-run is the default: it prints per-kind counts and skipped notes, no network.
 --apply reads ~/.fmos/goom.json ({"url","token","workspace_id"}) and posts batches of <= 500 items.
 Stdlib only. The token is never printed.
 
---full (deletion of notes that disappeared from the vault): the server soft-deletes, per kind present in
-a request, every row of that kind whose path is NOT in that same request. So full=true is sent only in the
-FINAL batch, and the final batch is built to contain at least one item of every kind being synced (the last
-item of each kind is moved to the tail). A kind with zero items cannot be expressed in a request, so its
-deletion is skipped with a warning.
+--full (deletion of notes that disappeared from the vault): all item batches are sent with full=false, then ONE
+final manifest request {items: [], full_paths: {kind: [every collected source_path of that kind]}} for every
+synced kind. The server soft-deletes each listed kind's rows whose path is not in the manifest. Skipped and
+private notes are not in the manifest, so they are deleted on the server if present. A kind with zero
+collected items gets an empty list, which deletes all of that kind on the server (warned).
 """
 import argparse, hashlib, json, re, sys, unicodedata, urllib.error, urllib.request
 from pathlib import Path
@@ -179,24 +179,17 @@ def collect(vault, kinds):
     return items, skipped
 
 
-def build_batches(items, full):
-    """Returns list of (full_flag, items). Non-full: chunks of BATCH. Full: only the last batch has full=true and
-    contains the last item of every kind present (see module docstring)."""
-    if not full:
-        return [(False, items[i:i + BATCH]) for i in range(0, len(items), BATCH)] if items else []
-    by_kind = {}
+def build_batches(items):
+    """Chunks of at most BATCH items, all with full=false."""
+    return [items[i:i + BATCH] for i in range(0, len(items), BATCH)]
+
+
+def build_manifest(items, kinds):
+    """full_paths for every synced kind: all collected source_paths of that kind (empty list = none)."""
+    manifest = {k: [] for k in KINDS if k in kinds}
     for it in items:
-        by_kind.setdefault(it["kind"], []).append(it)
-    if not by_kind:
-        return []
-    tails = [v[-1] for v in by_kind.values()]
-    body = [x for v in by_kind.values() for x in v[:-1]]
-    batches = []
-    while len(body) > BATCH - len(tails):
-        batches.append((False, body[:BATCH]))
-        body = body[BATCH:]
-    batches.append((True, body + tails))
-    return batches
+        manifest[it["kind"]].append(it["source_path"])
+    return manifest
 
 
 def _load_config():
@@ -263,10 +256,11 @@ def main(argv=None):
     if args.full:
         for k in KINDS:
             if k in kinds_set and not any(i["kind"] == k for i in items):
-                print(f"warning: full: kind '{k}' has 0 items, its server rows are not deleted", file=sys.stderr)
+                print(f"warning: full: kind '{k}' has 0 items, the manifest deletes all of its server rows", file=sys.stderr)
 
-    batches = build_batches(items, args.full)
-    print(f"batches: {len(batches)} (max {BATCH} items each)")
+    batches = [(False, chunk) for chunk in build_batches(items)]
+    manifest = build_manifest(items, kinds_set) if args.full else None
+    print(f"batches: {len(batches)} item batch(es) (max {BATCH} items each)" + (" + 1 manifest request" if manifest is not None else ""))
     if not args.apply:
         return 0
 
@@ -276,22 +270,29 @@ def main(argv=None):
         print(str(e), file=sys.stderr)
         return 2
 
+    if manifest is not None:
+        batches.append((None, []))
     totals = {"upserted": 0, "unchanged": 0, "deleted": 0}
     all_errors = []
-    for n, (is_full, chunk) in enumerate(batches, 1):
-        payload = {"workspace_id": ws, "full": is_full, "items": chunk}
+    for n, (is_manifest, chunk) in enumerate(batches, 1):
+        if is_manifest is None:
+            payload = {"workspace_id": ws, "full": False, "items": [], "full_paths": manifest}
+            label = f"manifest kinds={sorted(manifest)} paths={sum(len(v) for v in manifest.values())}"
+        else:
+            payload = {"workspace_id": ws, "full": False, "items": chunk}
+            label = f"items={len(chunk)}"
         try:
             res = _post(url, token, payload)
         except urllib.error.HTTPError as e:
-            print(f"batch {n}/{len(batches)} failed: HTTP {e.code}", file=sys.stderr)
+            print(f"batch {n}/{len(batches)} ({label}) failed: HTTP {e.code}", file=sys.stderr)
             return 1
         except (urllib.error.URLError, OSError, ValueError) as e:
-            print(f"batch {n}/{len(batches)} failed: {type(e).__name__}", file=sys.stderr)
+            print(f"batch {n}/{len(batches)} ({label}) failed: {type(e).__name__}", file=sys.stderr)
             return 1
         for key in totals:
             totals[key] += int(res.get(key, 0) or 0)
         all_errors.extend(res.get("errors") or [])
-        print(f"batch {n}/{len(batches)}: items={len(chunk)} full={is_full} upserted={res.get('upserted', 0)} "
+        print(f"batch {n}/{len(batches)}: {label} upserted={res.get('upserted', 0)} "
               f"unchanged={res.get('unchanged', 0)} deleted={res.get('deleted', 0)}")
     print(f"total: upserted {totals['upserted']}, unchanged {totals['unchanged']}, deleted {totals['deleted']}")
     for e in all_errors:

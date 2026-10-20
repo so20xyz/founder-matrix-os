@@ -127,16 +127,23 @@ class TestGoomSync(unittest.TestCase):
             server.shutdown()
             server.server_close()
         self.assertEqual(rc, 0)
-        self.assertEqual(len(requests), 3)
-        sizes = [len(r["body"]["items"]) for r in requests]
-        self.assertEqual(sum(sizes), 1201)
-        self.assertTrue(all(len(r["body"]["items"]) <= 500 for r in requests))
-        self.assertEqual([r["body"]["full"] for r in requests], [False, False, True])
+        # 1201 items -> 3 item POSTs (full=false) + 1 manifest POST as the final request.
+        self.assertEqual(len(requests), 4)
+        item_posts, manifest_post = requests[:3], requests[3]
+        self.assertEqual([len(r["body"]["items"]) for r in item_posts], [500, 500, 201])
+        self.assertTrue(all(r["body"]["full"] is False for r in requests))
+        self.assertTrue(all("full_paths" not in r["body"] for r in item_posts))
         self.assertTrue(all(r["path"] == "/api/web/private/vault/sync" for r in requests))
         self.assertTrue(all(r["auth"] == "Bearer tok-test" for r in requests))
         self.assertTrue(all(r["body"]["workspace_id"] == 7 for r in requests))
-        last_kinds = {i["kind"] for i in requests[-1]["body"]["items"]}
-        self.assertEqual(last_kinds, {"atom", "decision"})
+        # Manifest: no items, full_paths lists every collected path split by kind.
+        self.assertEqual(manifest_post["body"]["items"], [])
+        fp = manifest_post["body"]["full_paths"]
+        self.assertEqual(set(fp), {"atom", "decision"})
+        self.assertEqual(len(fp["atom"]), 1200)
+        self.assertEqual(fp["decision"], ["04-Resources/Atomic/decisions/Decision one.md"])
+        sent = {i["source_path"] for r in item_posts for i in r["body"]["items"]}
+        self.assertEqual(sent, set(fp["atom"]) | set(fp["decision"]))
 
 
 if __name__ == "__main__":
