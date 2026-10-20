@@ -149,7 +149,8 @@ def transcribe(work, engine, lang, model):
         return False
     pkg, code = ("mlx-whisper", TRANSCRIBE_MLX) if engine == "mlx" else ("faster-whisper", TRANSCRIBE_FASTER)
     say("· транскрипт (%s, %s, хэл=%s) - эхний удаа загвар татна (~1.5 GB)" % (pkg, model, lang))
-    r = run([uv, "run", "--with", pkg, "python", "-c", code, lang, model], cwd=str(work))
+    extra = ["--with", "av<14"] if engine != "mlx" else []   # Wiki 2026-10-20: av 14+ open(metadata_errors=) хассан → faster-whisper унадаг
+    r = run([uv, "run", "--with", pkg, *extra, "python", "-c", code, lang, model], cwd=str(work))
     tj = work / "transcript.json"
     if r.returncode != 0 or not tj.is_file():
         say("✗ транскрипт амжилтгүй: " + (r.stderr or r.stdout).strip()[-500:])
