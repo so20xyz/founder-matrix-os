@@ -21,6 +21,7 @@
 
 ## Unreleased
 
+- fm 0.9.112: `fig.py deck build`-ийн тайланд `duration_s` (зурах + QA + contact sheet + id буцааж бичих нийт секунд) — Creative-ийн P4 ledger-т build бүрийн хугацааг бичнэ. Тест: `run()`-ийг хуурамч bridge-ээр (tests/test_deck.py 31/31). v2 demo шинэчлэлт 2.1 с.
 - fm 0.9.111: `fig.py deck build` — Creative-ийн P3 засварууд: (1) `demo`-ийн `image: "<node id>"` (эсвэл `images: [..]`-ийн эхнийх) → тэр node-ийг PNG болгож дэлгэцийн самбарын fill (FILL, радиус хэвээр), эх нь өөрчлөгдөөгүй бол дахин export хийхгүй, олдохгүй бол placeholder + warning; (2) шинэ `hub` layout (≤ 4 карт → нэг төв): ашиглаагүй карт, шугамыг нууж, шугамыг картын бодит доод төвөөс hub-ийн дээд ирмэг (60 px дотор) рүү дахин зурна; (3) `cover`-ийн `subtitle_tone: accent`. tests/test_deck.py 30/30.
   - Яагаад: v2 demo-ийн дэлгэцийн зураг, PARA диаграм, хаалтын accent өнгө эх слайдтай ижил гарна · Дүрэм: [[03-Areas/Studio/deck-kit/README]]
 - fm 0.9.110: `fig.py --doc "Copy" deck build <deck.md>` — deck.md-ээс Figma слайд нэг командаар: layout бүр «Slide / <layout>» component-ийн instance (ашиглаагүй слотыг нууна, highlight = accent хувьсагч, `image: false` → текст бүтэн өргөнөөр), слайд бүрийн доор Notes card; `deckId`-аар upsert (2 дахь удаа `created: 0`), шинэ version хуучны баруун талд улбар шар сумтай, host section-ийг хэзээ ч өргөсгөхгүй (зөвхөн доошоо); QA (давхцал, contrast, creative) слайд бүр дээр + contact sheet PNG; `figma:` id-г deck.md-д буцааж бичнэ (гар зурсан эх id → `figma-orig:`). tests/test_deck.py 26/26. v2 demo (10 слайд): давхцал 0, contrast 0.

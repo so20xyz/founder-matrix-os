@@ -232,6 +232,25 @@ def main():
               "write-back: a renderer-drawn id is replaced, figma-orig not duplicated")
         check(not deck.write_ids(f, {"01": "900:9"}, mine=["900:9"]), "write-back: same id → file untouched")
 
+    # run() against a fake bridge: the report carries duration_s (Creative P4 ledger, 2026-10-21) and the QA counts
+    import base64, contextlib, io, json, types
+    with tempfile.TemporaryDirectory() as t:
+        f = Path(t) / "Тест - v1.md"; f.write_text(DECK, encoding="utf-8")
+        def call(code, timeout):
+            if code.startswith("const PLAN="):
+                return {"result": {"wrapper": "9:1", "created": 9, "updated": 0, "mine": [], "warnings": [],
+                                   "slides": [{"id": "01", "frame": "9:2"}]}}
+            if "check_layout" in code or "SAFE_SOCIAL" in code: return {"result": {"frames": 9, "problems": []}}
+            if "WCAG" in code or "ratio(" in code: return {"result": {"checked": 9, "fail": 0, "items": []}}
+            if "MIN_RATIO" in code: return {"result": {"frames": 9, "withIssues": 0, "report": []}}
+            return {"result": base64.b64encode(b"png").decode()}
+        a = types.SimpleNamespace(action="build", file=str(f), page=None, dry_run=False, out_dir=t)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf): deck.run(a, call)
+        rep = json.loads(buf.getvalue())
+        check(isinstance(rep.get("duration_s"), (int, float)) and rep["duration_s"] >= 0 and rep["created"] == 9
+              and rep["overlaps"] == 0 and rep["contrast"] == 0, "run: report has duration_s and QA counts (fake bridge)", rep)
+
     check(raises(DECK.replace('id: "02"', 'id: "01"'), "давхардсан"), "duplicate id rejected")
     check(raises(DECK.replace("layout: flow", "layout: grid"), "layout"), "unknown layout rejected")
     check(raises("---\ntype: deck\n---\n# x\n", "слайд"), "deck without slides rejected")

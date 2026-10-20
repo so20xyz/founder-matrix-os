@@ -16,7 +16,7 @@ workflow - spec (P2).
 
 Pure standard library. Кирилл текст: JS-д зөвхөн JSON inject-ээр (heredoc-гүй).
 """
-import json, re, sys, base64
+import json, re, sys, base64, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -302,6 +302,7 @@ def _qa(call, script, root):
 
 def run(a, call):
     if a.action != "build": sys.exit("deck: зөвхөн `build`")
+    t0 = time.monotonic()                     # duration_s: render + QA + contact sheet + write-back (Creative P4 ledger)
     plan = build_plan(a.file, a.page)
     if a.dry_run:
         print(json.dumps(plan, ensure_ascii=False, indent=1)); return
@@ -322,7 +323,8 @@ def run(a, call):
               "const b=await n.exportAsync({format:'PNG',constraint:{type:'SCALE',value:0.25}});return figma.base64Encode(b);", 300000)
     if "result" in ex: png.write_bytes(base64.b64decode(ex["result"]))
     write_ids(a.file, {s["id"]: s["frame"] for s in r["slides"] if s.get("frame")}, r.get("mine", []))
-    report = {"slides": len(r["slides"]), "created": r["created"], "updated": r["updated"], "overlaps": overlaps,
+    report = {"slides": len(r["slides"]), "created": r["created"], "updated": r["updated"],
+              "duration_s": round(time.monotonic() - t0, 1), "overlaps": overlaps,
               "contrast": contrast, "issues": issues, "wrapper": r["wrapper"], "warnings": r.get("warnings", []), "contact_sheet": str(png) if "result" in ex else None,
               "qa": {"layout": lay, "contrast": con, "creative": cre}}
     print(json.dumps(report, ensure_ascii=False, indent=1))
