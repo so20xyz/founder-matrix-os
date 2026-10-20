@@ -247,6 +247,8 @@ def slide_plan(s, page, total):
     return {"id": s["id"], "name": name, "layout": lay, "component": f"Slide / {lay}", "props": props, "slots": slots,
             "hide": hide, "highlight": hl, "notes": s["notes"], "figma": str(s.get("figma") or ""),
             "image": img if lay == "demo" else None, "tone": tone,
+            # custom: the hand-drawn original to clone — figma-orig once a build has put the clone's id in figma
+            "source": str(s.get("figma-orig") or s.get("figma") or "") if lay == "custom" else "",
             "links": min(len(s.get("items") or []), 4) if lay == "hub" else 0,
             "fallback": {"eyebrow": _t(s.get("eyebrow")), "title": _t(s.get("title"), True),
                          "lines": [_t(x.get("title") if isinstance(x, dict) else x) for x in (s.get("items") or s.get("bullets") or [])]}}

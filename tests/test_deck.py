@@ -210,7 +210,13 @@ def main():
         d2 = {s["id"]: s for s in deck.build_plan(f2)["slides"]}["05"]
         check(d2["slots"]["bullet 1 · text"] == "HTML · TAM / SAM / SOM", "plan: « / » stays literal outside title/subtitle (slide 09)", d2["slots"])
         check("screen" in d2["hide"], "plan demo: image: false hides the screen panel (slides 08, 09)", d2["hide"])
-        check(Pl["06"]["layout"] == "custom" and Pl["06"]["figma"] == "12:34", "plan custom: keeps its figma id")
+        check(Pl["06"]["layout"] == "custom" and Pl["06"]["figma"] == "12:34" and Pl["06"]["source"] == "12:34"
+              and Pl["06"]["props"]["page"] == "10 / 10", "plan custom: clone source = its figma id, page number kept", Pl["06"])
+        f3 = Path(t) / "Тест3 - v1.md"
+        f3.write_text(DECK.replace('figma: "12:34"', 'figma: "900:7"\nfigma-orig: "12:34"'), encoding="utf-8")
+        c3 = {s["id"]: s for s in deck.build_plan(f3)["slides"]}["06"]
+        check(c3["source"] == "12:34" and c3["figma"] == "900:7",
+              "plan custom after a build: clone source = figma-orig (never clone the clone)", c3)
         hb = Pl["07"]
         check(hb["component"] == "Slide / hub" and hb["props"]["hub title"] == "Atomic" and hb["props"]["hub text"] == "нэг баримт = нэг note"
               and hb["slots"]["item 3 · title"] == "Archive" and "item 4" in hb["hide"] and "link 4" in hb["hide"]

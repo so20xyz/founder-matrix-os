@@ -47,7 +47,8 @@ const paintVar = (name, node) => {
 };
 
 // ── wrapper (deck + version) ──
-const wrappers = host.children.filter(n => n.getPluginData('deckKey') === KEY);
+// wrapper = deckVersion-тэй node; сум ч deckKey-тэй тул шүүхгүй бол «version 0» болж хуучин гэж тооцогддог байв
+const wrappers = host.children.filter(n => n.getPluginData('deckKey') === KEY && n.getPluginData('deckVersion'));
 let wrap = wrappers.find(n => n.getPluginData('deckVersion') === VER);
 const mine = [];
 // Байршил (2026-10-21): host section-ийг ХЭЗЭЭ Ч өргөсгөхгүй — баруун талд нь өөр section (Posters, Boards…) байдаг,
@@ -56,25 +57,30 @@ const mine = [];
 const cols = Math.min(P.grid, P.slides.length), rows = Math.ceil(P.slides.length / P.grid);
 const WRAP_W = 2 * P.pad + cols * P.w + (cols - 1) * P.gap;
 const hostW = host.type === 'SECTION' ? host.width : Infinity;
+// Хувилбарын дараалал: «v2 demo» → 2. Сум үргэлж хуучнаас шинэ рүү. Хуучин хувилбарыг (v2-ийн дараа v1-ийг) сүүлд
+// зурахад баруун талд биш, доор шинэ мөрөнд тавина — эс бөгөөс v2 → v1 гэж буруу түүх харагдана (2026-10-21).
+const verNum = v => parseInt(String(v).replace(/^\D*/, ''), 10) || 0;
+function arrow(from, to, name) {                     // улбар шар сум: хуучин wrapper → шинэ wrapper
+  const same = Math.abs(from.y - to.y) < 1;
+  const x0 = same ? from.x + from.width + 40 : from.x + from.width / 2, y0 = same ? from.y + 540 : (from.y > to.y ? from.y - 40 : from.y + from.height + 40);
+  const x1 = same ? to.x - 40 : to.x + Math.min(to.width / 2, 2000), y1 = same ? to.y + 540 : (from.y > to.y ? to.y + to.height + 40 : to.y - 40);
+  const ar = figma.createVector();
+  ar.vectorPaths = [{ windingRule: 'NONE', data: `M ${x0 - Math.min(x0, x1)} ${y0 - Math.min(y0, y1)} L ${x1 - Math.min(x0, x1)} ${y1 - Math.min(y0, y1)}` }];
+  ar.strokes = [{ type: 'SOLID', color: ORANGE }]; ar.strokeWeight = 12; ar.strokeCap = 'ARROW_EQUILATERAL';
+  host.appendChild(ar); ar.x = Math.min(x0, x1); ar.y = Math.min(y0, y1); ar.name = name;
+  ar.setPluginData('deckKey', KEY); ar.setPluginData('deckArrow', VER);
+}
+const older = wrappers.filter(w => verNum(w.getPluginData('deckVersion')) < verNum(VER)).sort((a, b) => verNum(b.getPluginData('deckVersion')) - verNum(a.getPluginData('deckVersion')))[0];
+const newer = wrappers.filter(w => verNum(w.getPluginData('deckVersion')) > verNum(VER)).sort((a, b) => verNum(a.getPluginData('deckVersion')) - verNum(b.getPluginData('deckVersion')))[0];
 if (!wrap) {
   const others = host.children.slice();
   const bottom = others.reduce((m, n) => Math.max(m, n.y + n.height), 0);
-  const prev = wrappers.sort((a, b) => b.x - a.x)[0];
   let x = 120, y = others.length ? bottom + 400 : 120;
-  if (prev && prev.x + prev.width + 400 + WRAP_W <= hostW - 120) { x = prev.x + prev.width + 400; y = prev.y; }
+  if (older && !newer && older.x + older.width + 400 + WRAP_W <= hostW - 120) { x = older.x + older.width + 400; y = older.y; }
   wrap = figma.createSection();                     // section: QA script-үүд слайд frame бүрийг тусад нь шалгана
   wrap.name = '🎤 ' + P.title;
   wrap.setPluginData('deckKey', KEY); wrap.setPluginData('deckVersion', VER);
   host.appendChild(wrap); wrap.x = x; wrap.y = y;
-  if (prev) {                                        // өмнөх version → энэ: улбар шар сум (prev баруун дунд → wrap зүүн дунд)
-    const x0 = prev.x + prev.width + 40, y0 = prev.y + Math.min(prev.height / 2, 540);
-    const x1 = wrap.x - 40, y1 = wrap.y + 540;
-    const ar = figma.createVector();
-    ar.vectorPaths = [{ windingRule: 'NONE', data: `M ${Math.max(0, x0 - x1)} ${Math.max(0, y0 - y1)} L ${Math.max(0, x1 - x0)} ${Math.max(0, y1 - y0)}` }];
-    ar.strokes = [{ type: 'SOLID', color: ORANGE }]; ar.strokeWeight = 12; ar.strokeCap = 'ARROW_EQUILATERAL';
-    host.appendChild(ar); ar.x = Math.min(x0, x1); ar.y = Math.min(y0, y1); ar.name = '→ ' + VER;
-    ar.setPluginData('deckKey', KEY); ar.setPluginData('deckArrow', VER);
-  }
 }
 
 // ── текст ──
@@ -98,7 +104,10 @@ function setProps(inst, props, hide) {
   for (const k of Object.keys(defs)) {
     const base = k.split('#')[0];
     const layer = inst.findOne(n => n.componentPropertyReferences && n.componentPropertyReferences.characters === k);
-    if (layer) layer.visible = !hide.includes('prop:' + base) && !hide.includes(base);
+    const show = !hide.includes('prop:' + base) && !hide.includes(base);
+    if (layer) layer.visible = show;
+    // its container of the same name too (demo «live» pill): an empty pill would stay as a blue blob (v1 08, 13)
+    if (layer && layer.parent && layer.parent !== inst && layer.parent.name === base) layer.parent.visible = show;
   }
 }
 
@@ -151,7 +160,9 @@ async function applyImage(fr, inst, s, main) {
   if (!(fr.getPluginData('imgSrc') === s.image && has)) {
     const node = await figma.getNodeByIdAsync(s.image);
     if (!node || typeof node.exportAsync !== 'function') { warnings.push(s.id + ': image «' + s.image + '» энэ файлд олдсонгүй — placeholder үлдээв'); return; }
-    const bytes = await node.exportAsync({ format: 'PNG', constraint: { type: 'WIDTH', value: Math.round(scr.width * 2) } });
+    // 2× the panel width, but Figma refuses images over 4096 px on either side (a tall source hit it, v1 2026-10-21)
+    const k = Math.min(2 * scr.width / node.width, 4000 / node.width, 4000 / node.height);
+    const bytes = await node.exportAsync({ format: 'PNG', constraint: { type: 'SCALE', value: k } });
     scr.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: figma.createImage(bytes).hash }];
     fr.setPluginData('imgSrc', s.image);
   }
@@ -208,36 +219,61 @@ for (let i = 0; i < P.slides.length; i++) {
   const col = i % P.grid, row = Math.floor(i / P.grid);
   const x = PAD + col * (W + GAP), y = PAD + row * ROW_H;
   maxX = Math.max(maxX, x + W); maxY = Math.max(maxY, y + H + 40 + NOTES_H);
-  if (s.layout === 'custom') { out.push({ id: s.id, frame: s.figma || null, custom: true }); continue; }
-
   let fr = kids().find(n => n.getPluginData('deckId') === s.id);
   const isNew = !fr;
-  if (isNew) {
-    fr = figma.createFrame(); fr.resize(W, H); fr.fills = []; fr.clipsContent = true;
-    fr.setPluginData('deckId', s.id); wrap.appendChild(fr); created++;
-  } else updated++;
-  fr.name = s.name; fr.x = x; fr.y = y;
-  mine.push(fr.id);
-  const comp = comps[s.component];
-  let inst = fr.children.find(n => n.type === 'INSTANCE');
-  if (comp) {
-    const cur = inst ? await inst.getMainComponentAsync() : null;
-    if (!inst || !cur || cur.id !== comp.id) {
-      for (const c of [...fr.children]) c.remove();
-      inst = comp.createInstance(); fr.appendChild(inst);
+  if (s.layout === 'custom') {
+    // Creative 2026-10-21: гар зурсан эх frame-ийг (figma-orig, үгүй бол figma) grid-ийн байранд нь clone хийнэ; эхийг хөндөхгүй.
+    // Дахин ажиллахад clone-ийг deckId-аар олно — дизайныг нь дахин хуулахгүй, зөвхөн байрлал ба хуудасны дугаар.
+    if (isNew) {
+      const src = s.source ? await figma.getNodeByIdAsync(s.source) : null;
+      if (!src || typeof src.clone !== 'function') {
+        warnings.push(s.id + ': custom эх «' + s.source + '» олдсонгүй — алгасав');
+        out.push({ id: s.id, frame: null, custom: true }); continue;
+      }
+      let c = src.type === 'COMPONENT' ? src.createInstance() : src.clone();
+      if (c.type !== 'FRAME') {                      // group / instance / section → QA шалгадаг FRAME-д хийнэ
+        const f = figma.createFrame(); f.resize(W, H); f.fills = []; f.clipsContent = true;
+        f.appendChild(c); c.x = 0; c.y = 0; c = f;
+      }
+      wrap.appendChild(c); fr = c; fr.setPluginData('deckId', s.id); created++;
+    } else updated++;
+    fr.name = s.name; fr.x = x; fr.y = y;
+    if (Math.round(fr.width) !== W || Math.round(fr.height) !== H) {
+      fr.rescale(Math.min(W / fr.width, H / fr.height));
+      if (Math.round(fr.width) !== W || Math.round(fr.height) !== H)
+        warnings.push(s.id + ': custom ' + Math.round(fr.width) + '×' + Math.round(fr.height) + ' — харьцаа ' + W + '×' + H + '-тэй таарахгүй');
     }
-    inst.x = 0; inst.y = 0;
-    await fonts(inst);
-    setProps(inst, s.props, s.hide);
-    fillSlots(inst, s, comp);
-    applyTone(inst, s, comp);
-    await applyImage(fr, inst, s, comp);
-    hubLinks(fr, inst, s, comp);
+    const pg = fr.findOne(n => n.type === 'TEXT' && (n.name === 'page' || /^\d{1,2} \/ \d{1,2}$/.test(n.characters.trim())));
+    if (pg && pg.characters !== s.props.page) { await fonts(pg); pg.characters = s.props.page; }
+    mine.push(fr.id);
   } else {
-    for (const c of [...fr.children]) c.remove();
-    await figma.loadFontAsync({ family: 'Inter', style: 'Medium' }); await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
-    await figma.loadFontAsync({ family: 'Spectral', style: 'SemiBold' });
-    fallback(fr, s);
+    if (isNew) {
+      fr = figma.createFrame(); fr.resize(W, H); fr.fills = []; fr.clipsContent = true;
+      fr.setPluginData('deckId', s.id); wrap.appendChild(fr); created++;
+    } else updated++;
+    fr.name = s.name; fr.x = x; fr.y = y;
+    mine.push(fr.id);
+    const comp = comps[s.component];
+    let inst = fr.children.find(n => n.type === 'INSTANCE');
+    if (comp) {
+      const cur = inst ? await inst.getMainComponentAsync() : null;
+      if (!inst || !cur || cur.id !== comp.id) {
+        for (const c of [...fr.children]) c.remove();
+        inst = comp.createInstance(); fr.appendChild(inst);
+      }
+      inst.x = 0; inst.y = 0;
+      await fonts(inst);
+      setProps(inst, s.props, s.hide);
+      fillSlots(inst, s, comp);
+      applyTone(inst, s, comp);
+      await applyImage(fr, inst, s, comp);
+      hubLinks(fr, inst, s, comp);
+    } else {
+      for (const c of [...fr.children]) c.remove();
+      await figma.loadFontAsync({ family: 'Inter', style: 'Medium' }); await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
+      await figma.loadFontAsync({ family: 'Spectral', style: 'SemiBold' });
+      fallback(fr, s);
+    }
   }
 
   // Notes card (QA алгасна: «_» угтвар)
@@ -255,6 +291,11 @@ for (let i = 0; i < P.slides.length; i++) {
   out.push({ id: s.id, frame: fr.id, notes: nc ? nc.id : null, created: isNew });
 }
 wrap.resizeWithoutConstraints(maxX + PAD, maxY + PAD);
+// сумыг wrapper эцсийн хэмжээтэй болсны дараа зурна; энэ version-ийн сумыг build бүрд шинээр (өөрөө засагдана)
+for (const n of host.children.filter(n => n.getPluginData('deckKey') === KEY && n.getPluginData('deckArrow')
+                                         && n.name.split(' → ').includes(VER))) n.remove();
+if (older) arrow(older, wrap, older.getPluginData('deckVersion') + ' → ' + VER);
+if (newer) arrow(wrap, newer, VER + ' → ' + newer.getPluginData('deckVersion'));
 if (host.type === 'SECTION') {                       // зөвхөн доошоо томсгоно; өргөнийг хэзээ ч өөрчлөхгүй
   const b = host.children.reduce((m, n) => Math.max(m, n.y + n.height), 0) + 120;
   if (b > host.height) host.resizeWithoutConstraints(host.width, b);

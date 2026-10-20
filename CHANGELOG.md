@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- fm 0.9.114: `fig.py deck build` — `layout: custom` слайдыг (гар зурсан эх frame, `figma-orig` эсвэл `figma`) grid-ийн байранд нь clone хийж, доор нь Notes card; эхийг хөндөхгүй, дахин ажиллахад clone-ийг `deckId`-аар олно (зөвхөн байрлал ба хуудасны дугаар шинэчлэгдэнэ). Хуучин version-ийг (v2-ийн дараа v1) доор шинэ мөрөнд тавьж, сум үргэлж хуучнаас шинэ рүү; сумыг build бүрд шинээр зурна. Засвар: 4096 px-ээс том зураг (scale хязгаар), `live`-гүй demo-гийн хоосон pill, сумыг wrapper гэж андуурах. v1 (20 слайд, 4 custom): давхцал 0, contrast 0, шинэчлэлт 3.9 с. tests/test_deck.py 32/32.
+  - Яагаад: гараар зурсан диаграм бүхий deck-ийг ч нэг командаар бүрэн зурна, хувилбарын түүх зөв харагдана · Дүрэм: [[03-Areas/Studio/deck-kit/README]]
 - fm 0.9.113: «Өөрчлөлтийн түүх» hook (`fm_changelog.py`) task note-ийг хэзээ ч хоосон үлдээхгүй: өмнө нь `open("w")`-ээр эхлээд хоосолдог, Drive upload-тай давхцаж бичилт бүтэлгүйтэхэд алдааг дуугүй өнгөрөөж note 0 байт болдог байв (2026-10-21, deck renderer task). Одоо temp файл → `os.replace` → уншиж шалгана; 0 байт note-ийг `~/.fmos/task-backup`-аас сэргээнэ; амжилттай бичилт бүр нөөцийг шинэчилнэ (🔒 хувийн task-ийг нөөцлөхгүй). tests/test_changelog.py 6/6 (Drive-ийн race-ийг дуурайж, хуучин код дээр RED).
   - Яагаад: task дээр ажиллаж байх үед note-ийн агуулга (шаардлага, явц, үр дүн) алга болохгүй · Дүрэм: [[01-GTD/Tasks/fig.py deck build - deck.md-ээс Figma слайд зурах renderer]]
 - fm 0.9.112: `fig.py deck build`-ийн тайланд `duration_s` (зурах + QA + contact sheet + id буцааж бичих нийт секунд) — Creative-ийн P4 ledger-т build бүрийн хугацааг бичнэ. Тест: `run()`-ийг хуурамч bridge-ээр (tests/test_deck.py 31/31). v2 demo шинэчлэлт 2.1 с.
