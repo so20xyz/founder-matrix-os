@@ -2,7 +2,7 @@
 """
 ptt.py - монгол push-to-talk: товч дарж байх хооронд ярина → бичвэр идэвхтэй цонхонд (Claude Code) буух. Enter дарахгүй.
 
-  python ptt.py run [--key "right ctrl"] [--backend local|azure]   сонсож эхэлнэ (загвар нэг удаа ачаалагдана)
+  python ptt.py run [--key "ctrl+alt"] [--backend local|azure]   сонсож эхэлнэ (загвар нэг удаа ачаалагдана)
   python ptt.py transcribe FILE.wav... [--backend ..]               файлуудыг бичвэр болгоно (тест, хэмжилт; мөр бүр нэг файл)
 
 Backend (2026-10-20 харьцуулалт: vault «04-Resources/Atomic/knowledge/2026-10-20 - Монгол дуут команд, STT TTS сонголт»):
@@ -30,6 +30,40 @@ def clean(text):
     return t.rstrip(".。 ")
 
 
+# --- монгол + англи холимог: whisper англи нэр томьёог кириллээр бичдэг («клауд код») → буцааж англи болгоно.
+# Өөрийн үгсийг ~/.fmos/ptt-glossary.json-д {"кирилл": "English"} нэмнэ (дефолттой нийлнэ).
+GLOSSARY = {
+    "клауд код": "Claude Code", "клауд": "Claude", "коммит": "commit", "пүш": "push", "бранч": "branch",
+    "мерж": "merge", "гит": "git", "гитхаб": "GitHub", "фигма": "Figma", "фреймер": "Framer", "премьер": "Premiere",
+    "ноушн": "Notion", "обсидиан": "Obsidian", "дискорд": "Discord", "скилл": "skill", "хук": "hook", "скрипт": "script",
+    "таск": "task", "сешн": "session", "агент": "agent", "промпт": "prompt", "апи": "API", "фронтмэттэр": "frontmatter",
+    "воулт": "vault", "релей": "relay", "бридж": "bridge", "фрейм": "frame", "деплой": "deploy",
+    "тест": "test", "фикс": "fix", "рефактор": "refactor", "питон": "Python", "жаваскрипт": "JavaScript",
+    "файл": "file", "фолдер": "folder", "сиквенс": "sequence", "таймлайн": "timeline", "маркер": "marker", "клип": "clip",
+}
+STOP_TRANSLIT = {"тест", "файл"}   # монголд ч хэрэглэгддэг — дефолтоор хөрвүүлэхгүй (хүсвэл glossary-д нэм)
+
+
+def load_glossary(path=Path.home() / ".fmos" / "ptt-glossary.json"):
+    import json
+    gl = {k: v for k, v in GLOSSARY.items() if k not in STOP_TRANSLIT}
+    if path and Path(path).exists():
+        gl.update(json.loads(Path(path).read_text(encoding="utf-8")))
+    return gl
+
+
+def apply_glossary(text, gl):
+    """кирилл хувилбарыг англи нэрээр солино: үгийн эхнээс таарна, монгол нөхцөл (-д, -ууд) наалдсан хэвээр; урт нь түрүүнд."""
+    for k in sorted(gl, key=len, reverse=True):
+        text = re.sub(r"(?<![\w])" + re.escape(k), gl[k].replace("\\", "\\\\"), text, flags=re.I)
+    return text
+
+
+def prompt_text(gl):
+    """whisper-ийн initial prompt: англи нэр томьёог латинаар үлдээхэд түлхэнэ."""
+    return "Монгол, English холимог. " + ", ".join(sorted(set(gl.values())))
+
+
 def _local():
     import torch
     from transformers import pipeline
@@ -38,6 +72,8 @@ def _local():
                  dtype=torch.float16 if dev == 0 else torch.float32)
     # BuzzASR-ийн generation config-д lang_to_id алга (language= унана, large-v3-ийн config vocab зөрж CUDA алдаа) → хэлийг загвар өөрөө
     gk = {"language": "mn", "task": "transcribe"} if getattr(p.model.generation_config, "lang_to_id", None) else {}
+    if os.environ.get("FM_STT_PROMPT", "1") == "1":   # англи нэр томьёог латинаар үлдээх түлхэц
+        gk["prompt_ids"] = torch.tensor(p.tokenizer.get_prompt_ids(prompt_text(load_glossary()))).to(p.device)
     return lambda audio: p({"raw": audio, "sampling_rate": SR}, generate_kwargs=gk)["text"]
 
 
@@ -57,7 +93,8 @@ def _azure():
 
 
 def backend(name):
-    return {"local": _local, "azure": _azure}[name]()
+    stt, gl = {"local": _local, "azure": _azure}[name](), load_glossary()
+    return lambda audio: apply_glossary(stt(audio), gl)
 
 
 def transcribe(paths, name):
@@ -113,7 +150,7 @@ def main(a):
     if a[0] == "transcribe":
         transcribe([x for x in a[1:] if not x.startswith("--") and x != name], name)
     elif a[0] == "run":
-        run(_opt(a, "--key", "right ctrl"), name)
+        run(_opt(a, "--key", "ctrl+alt"), name)
     else:
         sys.exit("тодорхойгүй команд: " + a[0])
 

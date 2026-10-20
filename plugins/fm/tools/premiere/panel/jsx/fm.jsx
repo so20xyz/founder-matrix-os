@@ -156,6 +156,38 @@ FM.placeRange = function (path, inSec, outSec, seqName, at, track) {
   return { item: name, 'in': inSec, out: outSec, sequence: s.name, at: at || 0 };
 };
 
+// --- voice-over (panel/vo.js): playhead, playback, <project folder>/VO, place on «MN VO» (else A1)
+FM.voTrack = function (s) {
+  for (var i = 0; i < s.audioTracks.numTracks; i++) if (s.audioTracks[i].name === 'MN VO') return { t: s.audioTracks[i], name: 'MN VO' };
+  return { t: s.audioTracks[0], name: 'A1' };
+};
+FM.voPrepare = function () {
+  var s = app.project.activeSequence; if (!s) throw new Error('идэвхтэй sequence алга');
+  return { sequence: s.name, at: FM.sec(s.getPlayerPosition()), track: FM.voTrack(s).name };
+};
+FM.voPlay = function (on) {   // QE-ийн тоглуулалт; бүтэхгүй бол false (хэрэглэгч Space дарна)
+  try {
+    app.enableQE();
+    if (on) { if (qe.startPlayback) { qe.startPlayback(); return true; } qe.project.getActiveSequence().player.play(1); return true; }
+    if (qe.stopPlayback) { qe.stopPlayback(); return true; } qe.project.getActiveSequence().player.stop(); return true;
+  } catch (e) { return false; }
+};
+FM.voFolder = function () {
+  var p = app.project.path; if (!p) throw new Error('төсөл хадгалагдаагүй');
+  var f = new Folder(new File(p).parent.fsName + '/VO'); if (!f.exists) f.create();
+  return f.fsName.replace(/\\/g, '/');
+};
+FM.voPlace = function (path, at) {
+  var s = app.project.activeSequence; if (!s) throw new Error('идэвхтэй sequence алга');
+  var bin = FM.bin('VO'), name = String(path).split('/').pop();
+  app.project.importFiles([path], true, bin, false);
+  var it = null;
+  for (var i = bin.children.numItems - 1; i >= 0 && !it; i--) if (bin.children[i].name === name) it = bin.children[i];
+  if (!it) throw new Error('импорт бүтсэнгүй: ' + name);
+  var tr = FM.voTrack(s); tr.t.overwriteClip(it, at);
+  return { item: name, track: tr.name, at: at, sequence: s.name };
+};
+
 // --- trim a clip: new in/out (source seconds) and/or move its start
 FM.trim = function (kind, track, clip, opts, seqName) {
   var s = FM.seq(seqName), cl = (kind === 'A' ? s.audioTracks : s.videoTracks)[track].clips[clip];

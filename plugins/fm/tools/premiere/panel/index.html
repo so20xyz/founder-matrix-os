@@ -31,7 +31,12 @@
 <div class="row">
   <button id="join" title="Төслийн хавтасны бүх бичлэг цагийн дарааллаар нэг sequence-д; дахин дарахад зөвхөн шинэ бичлэгийг төгсгөлд нэмнэ">⇢ Бүгдийг нэг sequence-д</button>
 </div>
+<div class="lbl">Voice-over · <span id="vost">«MN VO» эсвэл A1 зам, playhead-ээс</span></div>
+<div class="row"><select id="voin" style="flex:1;min-width:0;background:#1a1a1a;color:#ddd;border:1px solid #444;border-radius:4px;padding:4px"></select></div>
+<div class="row"><div style="flex:1;height:6px;background:#1a1a1a;border-radius:3px;overflow:hidden"><div id="vometer" style="height:100%;width:0;background:#2d8ceb"></div></div></div>
+<div class="row"><button id="vorec" title="3 сек тоолоод playhead-ээс тоглуулж бичнэ; дахин дарахад WAV → <төсөл>/VO → sequence">● VO бичих</button></div>
 <div id="log"></div>
+<script src="vo.js"></script>
 <script>
 // Polls the local bridge (tools/premiere/bridge/server.mjs) and runs each job as ExtendScript in Premiere;
 // the buttons run the same FM.* helpers directly (no terminal needed).
@@ -141,6 +146,7 @@ function tick() {
   }).catch(function () { state("bridge сервер ажиллахгүй (кнопууд ажиллана)", false); setTimeout(tick, 1500); });
 }
 tick();
+voInit();
 // heartbeat: a long ExtendScript job blocks tick() (2026-10-20 «not connected»); the CEF thread keeps pinging meanwhile
 setInterval(function () { fetch(BRIDGE + "/ping").catch(function () {}); }, 1000);
 </script>
