@@ -16,6 +16,13 @@ pr.py - drive Adobe Premiere Pro from the terminal through the FM Bridge (bridge
   python pr.py volume TRACK CLIP DB [--seq S] set an audio clip's level (dB); DB '-' just reads it
   python pr.py export OUT.mp4 PRESET.epr [--seq S] [--direct]
   python pr.py run -f script.jsx | -e "return FM.info()"   any ExtendScript (FM.* helpers available)
+
+  💬 panel-ийн коммент (Figma bridge-ийн fig.py-тай ижил логик; itge.e panel-д бичнэ, Claude эндээс):
+  python pr.py watch [--wait 1800]          хүргэгдээгүй/шинэ коммент ирэх хүртэл хүлээгээд хэвлэнэ (background-оор асаалттай байлга)
+  python pr.py comments [--all]             хариулаагүй thread-ууд (context: sequence, playhead, сонгосон клип, In/Out)
+  python pr.py reply ID "текст" [--seek S]  хариулах; --seek = panel-д «▶ S сек» товч (playhead тийш)
+  python pr.py status ID "текст" | clear    «⏱ ажиллаж байна» төлөв
+  python pr.py resolve ID                   шийдсэн
 """
 import io
 import json, os, shutil, subprocess, sys, urllib.request
@@ -79,6 +86,67 @@ def recordings(d=REC_DIR, n=5):
     return [str(p).replace("\\", "/") for p in sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)[:n]]
 
 
+SEEN = Path.home() / ".fmos" / "premiere" / "watch_seen.json"   # watch-оор хүргэгдсэн (id, сүүлийн at)
+
+
+def unseen(threads, seen):
+    """хүргэгдээгүй thread: шинэ, эсвэл сүүлд хүргэснээс хойш user дахин бичсэн."""
+    out = []
+    for t in threads:
+        last = max([t["at"]] + [r["at"] for r in t.get("replies", [])])
+        if seen.get(t["id"], 0) < last:
+            out.append(t)
+    return out
+
+
+def fmt_thread(t):
+    c = t.get("ctx") or {}
+    head = f'[{t["id"]}] {t["text"]}'
+    ctx = ""
+    if c:
+        ctx = f'    ⟶ {c.get("seq")} @ {c.get("playhead")}s'
+        if c.get("selection"):
+            ctx += " · сонгосон: " + json.dumps(c["selection"], ensure_ascii=False)
+        if c.get("inPoint") is not None:
+            ctx += f' · In/Out {c["inPoint"]}–{c["outPoint"]}'
+    reps = [f'    {"✦" if r["from"] == "claude" else "›"} {r["text"]}' for r in t.get("replies", [])]
+    return "\n".join([head] + ([ctx] if ctx else []) + reps)
+
+
+def comments_cmd(cmd, a):
+    def lst(path, **kw):
+        r = http(path, **kw)
+        if not isinstance(r, list):   # хуучин bridge (/comments-гүй) → `pr.py serve`-ээр дахин асаа
+            sys.exit("✗ bridge коммент дэмжихгүй байна: " + str(r.get("error", r)) + " — bridge серверийг дахин асаа")
+        return r
+    if cmd == "watch":
+        wait = int(opt(a, "--wait", "1800"))
+        seen = json.loads(SEEN.read_text(encoding="utf-8")) if SEEN.exists() else {}
+        new = unseen(lst("/comments", timeout=10), seen)
+        if not new:
+            t0 = int(__import__("time").time() * 1000)
+            new = unseen(lst(f"/comments?wait={wait}&since={t0}", timeout=wait + 15), seen)
+        for t in new:
+            seen[t["id"]] = max([t["at"]] + [r["at"] for r in t.get("replies", [])])
+            print(fmt_thread(t) + "\n")
+        SEEN.parent.mkdir(parents=True, exist_ok=True); SEEN.write_text(json.dumps(seen), encoding="utf-8")
+        if not new:
+            print("(шинэ коммент алга)")
+    elif cmd == "comments":
+        ts = lst("/comments?all=1") if flag(a, "--all") else lst("/comments")
+        if ts and "replies" not in ts[0]:   # --all: түүхий жагсаалт
+            print(json.dumps(ts, ensure_ascii=False, indent=1))
+        else:
+            print("\n\n".join(map(fmt_thread, ts)) or "(хариулаагүй коммент алга)")
+    elif cmd == "reply":
+        seek = opt(a, "--seek")
+        print(js(http("/comments", {"from": "claude", "parent": a[0], "text": a[1], "seek": float(seek) if seek else None})))
+    elif cmd == "status":
+        print(js(http("/comments", {"status": a[0], "state": "" if a[1] == "clear" else "working", "text": "" if a[1] == "clear" else a[1]})))
+    elif cmd == "resolve":
+        print(js(http("/comments", {"resolve": a[0]})))
+
+
 def main(argv):
     if not argv or argv[0] in ("-h", "--help"):
         print(__doc__); return
@@ -123,6 +191,8 @@ def main(argv):
         f = opt(a, "-f"); e = opt(a, "-e")
         src = open(f, encoding="utf-8").read() if f else e
         print(js(run(src, int(opt(a, "-t", "120")))))
+    elif cmd in ("watch", "comments", "reply", "status", "resolve"):
+        comments_cmd(cmd, a)
     else:
         sys.exit("unknown command: " + cmd)
 

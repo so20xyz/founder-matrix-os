@@ -204,6 +204,24 @@ FM.promptMarkers = function () {
   return o;
 };
 
+// --- 💬 comments: what itge.e is looking at (sequence, playhead, selected clips, in/out) and «▶» seek
+FM.context = function () {
+  var s = app.project.activeSequence; if (!s) return null;
+  var sel = s.getSelection(), o = [];
+  for (var i = 0; i < sel.length && i < 20; i++) {
+    var c = sel[i], kind = c.mediaType === 'Audio' ? 'A' : 'V', tr = -1, ci = -1, list = kind === 'A' ? s.audioTracks : s.videoTracks;
+    for (var t = 0; t < list.numTracks && tr < 0; t++) for (var k = 0; k < list[t].clips.numItems; k++) if (list[t].clips[k].nodeId === c.nodeId) { tr = t; ci = k; }
+    o.push({ track: kind + (tr + 1), clip: ci, name: c.name, start: +FM.sec(c.start).toFixed(3), end: +FM.sec(c.end).toFixed(3), 'in': +FM.sec(c.inPoint).toFixed(3) });
+  }
+  var inP = FM.sec(s.getInPointAsTime ? s.getInPointAsTime() : 0), outP = FM.sec(s.getOutPointAsTime ? s.getOutPointAsTime() : 0);
+  var io = inP >= 0 && outP > inP;   // тавиагүй үед Premiere −400000 / 0 буцаадаг
+  return { seq: s.name, playhead: +FM.sec(s.getPlayerPosition()).toFixed(3), selection: o, inPoint: io ? +inP.toFixed(3) : null, outPoint: io ? +outP.toFixed(3) : null };
+};
+FM.seek = function (sec) {
+  var s = app.project.activeSequence; if (!s) throw new Error('идэвхтэй sequence алга');
+  s.setPlayerPosition(String(Math.round(sec * 254016000000))); return FM.sec(s.getPlayerPosition());
+};
+
 // --- trim a clip: new in/out (source seconds) and/or move its start
 FM.trim = function (kind, track, clip, opts, seqName) {
   var s = FM.seq(seqName), cl = (kind === 'A' ? s.audioTracks : s.videoTracks)[track].clips[clip];

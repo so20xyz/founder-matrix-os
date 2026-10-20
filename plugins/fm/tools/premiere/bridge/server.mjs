@@ -4,6 +4,20 @@
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+// ---- comments (itge.e ↔ Claude, FM Bridge panel 💬) — Figma bridge-ийн логикоор: thread, context, status, resolve, watch
+const CDIR = process.env.PREMIERE_BRIDGE_STATE || path.join(os.homedir(), '.fmos', 'premiere');
+const CFILE = path.join(CDIR, 'comments.json');
+let comments = []; try { comments = JSON.parse(fs.readFileSync(CFILE, 'utf8')); } catch {}
+let cseq = comments.reduce((m, c) => Math.max(m, Number(String(c.id).replace(/\D/g, '')) || 0), 0);
+const cwaiters = new Set();
+const saveC = () => { fs.mkdirSync(CDIR, { recursive: true }); fs.writeFileSync(CFILE, JSON.stringify(comments, null, 1)); for (const f of cwaiters) f(); cwaiters.clear(); };
+// хариулаагүй thread: эх нь user-ийнх, шийдээгүй, сүүлийн мессеж нь user-ийнх
+const openThreads = () => comments.filter(c => !c.parent && !c.resolved).map(c => ({ ...c, replies: comments.filter(r => r.parent === c.id) }))
+  .filter(t => (t.replies.length ? t.replies.at(-1).from : t.from) === 'user');
 
 const PORT = Number(process.env.PREMIERE_BRIDGE_PORT || 3056);
 const queue = [];              // jobs waiting for the panel: { id, script }
@@ -48,6 +62,26 @@ http.createServer(async (req, res) => {
       if (waiting.get(id) === res) { waiting.delete(id); send(res, 504, { id, error: 'timeout' }); }
     }, timeout * 1000);
     return;
+  }
+  if (url.pathname === '/comments') {
+    if (req.method === 'GET') {
+      if (url.searchParams.get('all')) return send(res, 200, comments);
+      const wait = Number(url.searchParams.get('wait') || 0), since = Number(url.searchParams.get('since') || 0);
+      const fresh = () => openThreads().filter(t => Math.max(t.at, ...(t.replies.map(r => r.at))) > since);
+      if (wait && !fresh().length) await new Promise(r => { cwaiters.add(r); setTimeout(() => { cwaiters.delete(r); r(); }, wait * 1000); });
+      return send(res, 200, fresh());
+    }
+    const b = JSON.parse((await body(req)) || '{}');
+    if (b.resolve) { const t = comments.find(c => c.id === b.resolve); if (t) { t.resolved = true; t.status = null; saveC(); } return send(res, 200, { ok: !!t }); }
+    if (b.status) { const t = comments.find(c => c.id === b.status); if (t) { t.status = b.state ? { state: b.state, text: b.text || '', at: Date.now() } : null; saveC(); } return send(res, 200, { ok: !!t }); }
+    if (b.delete) { const n = comments.length; comments = comments.filter(c => c.id !== b.delete && c.parent !== b.delete); saveC(); return send(res, 200, { deleted: n - comments.length }); }
+    if (!b.text || !['user', 'claude'].includes(b.from)) return send(res, 400, { error: 'from (user|claude), text хэрэгтэй' });
+    if (b.parent && !comments.some(c => c.id === b.parent)) return send(res, 404, { error: 'thread алга: ' + b.parent });
+    const c = { id: 'p' + (++cseq), at: Date.now(), from: b.from, text: String(b.text), parent: b.parent || null,
+      ctx: b.ctx || null, seek: typeof b.seek === 'number' ? b.seek : null, session: b.session || null };
+    comments.push(c);
+    if (c.parent && c.from === 'claude') { const t = comments.find(x => x.id === c.parent); if (t) t.status = null; }   // хариулсан → төлөв цэвэрлэнэ
+    saveC(); return send(res, 200, c);
   }
   if (url.pathname === '/vomaster' && req.method === 'POST') {  // panel ■ Зогсоох → батлагдсан VO master (зөвхөн энэ script)
     const { wav, seq } = JSON.parse((await body(req)) || '{}');

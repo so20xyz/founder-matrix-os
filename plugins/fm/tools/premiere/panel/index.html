@@ -11,9 +11,21 @@
   button:disabled { opacity: .5; cursor: default; }
   #log { margin-top: 8px; color: #999; font-size: 11px; white-space: pre-wrap; max-height: 120px; overflow: auto; }
   .lbl { color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; margin-top: 10px; }
+  /* 💬 chat (chat.js) */
+  #chat { margin-top: 6px; max-height: 46vh; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+  .ct { background: #1b1b1b; border: 1px solid #3a3a3a; border-radius: 6px; padding: 6px; }
+  .cm { margin: 3px 0; line-height: 1.35; } .cm b { color: #888; font-weight: 600; } .cm.claude b { color: #e8b73a; }
+  .cctx { color: #6d8fb3; font-size: 10px; margin-top: 2px; } .cst { color: #e8b73a; font-size: 11px; margin-top: 3px; }
+  .cempty { color: #777; font-size: 11px; } .crow { display: flex; gap: 4px; margin-top: 5px; }
+  .crow input { flex: 1; } .cres, .seek { flex: 0 0 auto; padding: 3px 7px; font-size: 11px; }
+  textarea#cin { width: 100%; box-sizing: border-box; min-height: 44px; background: #1a1a1a; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 5px 6px; font: inherit; resize: vertical; }
 </style></head>
 <body>
 <div><span id="dot"></span><b>FM Bridge</b> · <span id="state">холбогдож байна…</span></div>
+<div class="lbl">💬 Claude-тай · сонгосон клип, playhead автоматаар хавсарна</div>
+<textarea id="cin" placeholder="ж: энэ клипийг 2 кадраар богиносгоод cross dissolve нэм (Ctrl+Enter)"></textarea>
+<div class="row"><button id="csend">Илгээх</button></div>
+<div id="chat"></div>
 <div class="lbl">OBS бичлэг · <span id="obsst">холбогдоогүй</span></div>
 <div class="row">
   <button id="rec" title="OBS бичлэг эхлүүлэх / зогсоох (төслийн хавтас руу бичнэ)">● Бичих</button>
@@ -37,6 +49,7 @@
 <div class="row"><button id="vorec" title="3 сек тоолоод playhead-ээс тоглуулж бичнэ; дахин дарахад WAV → <төсөл>/VO → sequence">● VO бичих</button></div>
 <div id="log"></div>
 <script src="vo.js"></script>
+<script src="chat.js"></script>
 <script>
 // Polls the local bridge (tools/premiere/bridge/server.mjs) and runs each job as ExtendScript in Premiere;
 // the buttons run the same FM.* helpers directly (no terminal needed).
@@ -147,6 +160,7 @@ function tick() {
 }
 tick();
 voInit();
+chatInit();
 // heartbeat: a long ExtendScript job blocks tick() (2026-10-20 «not connected»); the CEF thread keeps pinging meanwhile
 setInterval(function () { fetch(BRIDGE + "/ping").catch(function () {}); }, 1000);
 </script>
