@@ -544,7 +544,11 @@ def d_dispatch(every=15, once=False):
             srcs.append(("t:" + tid, tid)); local.setdefault("t:" + tid, local.get(pn, [])); parent[("t:" + tid)] = pn
         for n, cid in srcs:
             try: msgs = sorted(dapi("GET", f"/channels/{cid}/messages?after={last[n]}&limit=20"), key=lambda m: int(m["id"]))
-            except Exception as e: continue
+            except Exception as e:
+                # Mac GTD 2026-10-20: сүлжээ тасарсан (DNS, timeout) — бусад сувгийг ч бүү оролд, heartbeat-аа хадгалаад дараагийн тойрогт
+                if isinstance(e, OSError) and not isinstance(e, urllib.error.HTTPError):
+                    regstore.log(f"dispatch: сүлжээ ({type(e).__name__}) — тойргийг алгаслаа"); break
+                continue
             for m in msgs:
                 last[n] = m["id"]; a = m["author"]; txt = m["content"]
                 fm = FOR.search(txt)  # BD 2026-10-03: «for mac» → зөвхөн Mac, «for pc» → зөвхөн PC хариулна

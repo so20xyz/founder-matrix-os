@@ -182,6 +182,49 @@ print("PATHS", json.dumps(paths))
           and "between runs" in out, "dispatch restart resumes from the saved cursor (message between runs delivered)", (rc, out, err))
 
 
+def t_dispatch_network_down_keeps_heartbeat():
+    """Mac GTD 2026-10-20: DNS outage (Errno 8) — the dispatcher stayed alive but its heartbeat went stale, because every
+    channel of a pass was tried against the dead network. Now the first network error ends the pass: one request per
+    tick, heartbeat saved, and polling resumes by itself once the network is back."""
+    sessions = {f"sid-{i}": {"name": f"PC-P{i}", "group": "projects", "project": f"p{i}", "title": f"P{i}", "device": "PC"}
+                for i in range(3)}
+    c = Ctx(sessions)
+    rc, out, err = c.py("""
+import urllib.error
+calls = []; down = [True]; back = []
+def dapi(method, path, body=None):
+    if "after=" in path:
+        calls.append(path)
+        if down[0]: raise urllib.error.URLError(OSError(8, "nodename nor servname provided, or not known"))
+        if back: return []
+        back.append(1); return [{"id": "9", "author": {"id": "1", "username": "bd"}, "content": "back online", "timestamp": "2026-10-20T21:00:00"}]
+    return [{"id": "1"}]
+relay.dapi = dapi
+relay.dchannels = lambda st, *a: {"c0": "C0", "c1": "C1", "c2": "C2", "03-sys-admin": "C3"}
+relay.chmap = lambda: {"sid-0": "c0", "sid-1": "c1", "sid-2": "c2"}
+relay._threads = lambda ids: {}
+relay._channel_live = lambda ch, window=90: False
+beats = []
+_save = relay.save
+def save(p, d):
+    if p == relay.STATE and d.get("_dispatch_alive"): beats.append(d["_dispatch_alive"])
+    return _save(p, d)
+relay.save = save
+n = [0]
+def sleep(s):
+    n[0] += 1
+    if n[0] == 3: print("PASS2", len(calls), len(beats)); down[0] = False
+    if n[0] > 6: raise SystemExit(0)
+relay.time.sleep = sleep
+relay.d_dispatch(once=True)
+print("CALLS", len(calls))
+""")
+    p2 = [l.split() for l in out.splitlines() if l.startswith("PASS2 ")]
+    check(p2 and p2[0][1] == "2" and int(p2[0][2]) >= 3 and "back online" in out and "Traceback" not in err,
+          "dispatch: network error ends the pass (1 request/tick), heartbeat saved, resumes when the network is back",
+          (rc, out, err))
+
+
 def t_agent_tick_warns_once():
     c = Ctx()
     rc, out, err = c.py("""
@@ -316,7 +359,7 @@ def t_log_rotation():
 
 
 def main():
-    for t in (t_send_file_and_stdin, t_send_unknown_channel, t_owner_fields, t_dispatch_marks_owner, t_dispatch_once_resumes, t_agent_tick_warns_once,
+    for t in (t_send_file_and_stdin, t_send_unknown_channel, t_owner_fields, t_dispatch_marks_owner, t_dispatch_once_resumes, t_dispatch_network_down_keeps_heartbeat, t_agent_tick_warns_once,
               t_watch_and_inbox_mark_owner, t_baton_concurrent_and_safe, t_state_merge, t_log_rotation):
         try:
             t()
