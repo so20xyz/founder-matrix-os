@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fm_selfupdate as su
 T = Path(tempfile.mkdtemp(prefix="su-")); su.STATE = T / "state.json"
+(T / "tpl").mkdir(); os.environ["GIT_TEMPLATE_DIR"] = str(T / "tpl")   # no global template hooks in fixture repos
 su.IS_MAC, su.DEVICE = False, "PC"  # the first block checks the PC path on any OS (Mac ran it as Mac and failed)
 def sh(*a, cwd=None): return subprocess.run(a, cwd=cwd, capture_output=True, text=True, check=True).stdout
 origin, work, pc = T/"origin.git", T/"work", T/"pc"
