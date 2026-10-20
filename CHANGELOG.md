@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- fm 0.9.113: «Өөрчлөлтийн түүх» hook (`fm_changelog.py`) task note-ийг хэзээ ч хоосон үлдээхгүй: өмнө нь `open("w")`-ээр эхлээд хоосолдог, Drive upload-тай давхцаж бичилт бүтэлгүйтэхэд алдааг дуугүй өнгөрөөж note 0 байт болдог байв (2026-10-21, deck renderer task). Одоо temp файл → `os.replace` → уншиж шалгана; 0 байт note-ийг `~/.fmos/task-backup`-аас сэргээнэ; амжилттай бичилт бүр нөөцийг шинэчилнэ (🔒 хувийн task-ийг нөөцлөхгүй). tests/test_changelog.py 6/6 (Drive-ийн race-ийг дуурайж, хуучин код дээр RED).
+  - Яагаад: task дээр ажиллаж байх үед note-ийн агуулга (шаардлага, явц, үр дүн) алга болохгүй · Дүрэм: [[01-GTD/Tasks/fig.py deck build - deck.md-ээс Figma слайд зурах renderer]]
 - fm 0.9.112: `fig.py deck build`-ийн тайланд `duration_s` (зурах + QA + contact sheet + id буцааж бичих нийт секунд) — Creative-ийн P4 ledger-т build бүрийн хугацааг бичнэ. Тест: `run()`-ийг хуурамч bridge-ээр (tests/test_deck.py 31/31). v2 demo шинэчлэлт 2.1 с.
 - fm 0.9.111: `fig.py deck build` — Creative-ийн P3 засварууд: (1) `demo`-ийн `image: "<node id>"` (эсвэл `images: [..]`-ийн эхнийх) → тэр node-ийг PNG болгож дэлгэцийн самбарын fill (FILL, радиус хэвээр), эх нь өөрчлөгдөөгүй бол дахин export хийхгүй, олдохгүй бол placeholder + warning; (2) шинэ `hub` layout (≤ 4 карт → нэг төв): ашиглаагүй карт, шугамыг нууж, шугамыг картын бодит доод төвөөс hub-ийн дээд ирмэг (60 px дотор) рүү дахин зурна; (3) `cover`-ийн `subtitle_tone: accent`. tests/test_deck.py 30/30.
   - Яагаад: v2 demo-ийн дэлгэцийн зураг, PARA диаграм, хаалтын accent өнгө эх слайдтай ижил гарна · Дүрэм: [[03-Areas/Studio/deck-kit/README]]

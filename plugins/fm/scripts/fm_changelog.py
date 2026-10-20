@@ -7,13 +7,20 @@ fm_changelog.py - PostToolUse hook: нэг урсгал = нэг task (itge.e 20
   - Write / Edit / MultiEdit → «засвар» · файлын зам
   - Bash → командын тайлбар (description) · `cwd`; тайлбаргүй команд бичигдэхгүй
 Алгасна: task нь in-progress биш, task файл өөрөө, өмнөх мөртэй ижил (юу+хаана), _system/logs, .obsidian.
-Ямар ч алдаа гарсан чимээгүй гарна (hook ажлыг хэзээ ч зогсоохгүй).
+Ямар ч алдаа гарсан ажлыг зогсоохгүй (hook сешнийг хэзээ ч эвдэхгүй), гэхдээ task note-ийг хэзээ ч хоосон үлдээхгүй
+(PC 2026-10-21: open("w") эхлээд файлыг хоосолдог, Drive upload-тай давхцаж бичилт бүтэлгүйтэхэд note 0 байт болсон):
+  - temp файлд бичээд os.replace, дараа нь уншиж шалгана; бүтэлгүйтвэл хуучин note хэвээр үлдэнэ
+  - 0 байт task-ийг дарж бичихгүй — ~/.fmos/task-backup-аас сэргээнэ (relay claim-ийн нөөцтэй ижил зам)
+  - амжилттай бичилт бүр нөөцийг шинэчилнэ (🔒 хувийн task-ийг хэзээ ч нөөцлөхгүй)
 """
 import datetime
+import hashlib
 import json
 import os
 import re
 import sys
+import time
+import unicodedata
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools" / "relay"))
@@ -82,6 +89,34 @@ def add_row(text, row):
     return nl.join(lines)
 
 
+def backup_path(task):
+    """~/.fmos/task-backup/<sha256(NFC name)[:16]>.md — the same file relay.py claim writes (_task_backup)."""
+    h = hashlib.sha256(unicodedata.normalize("NFC", Path(task).name).encode("utf-8")).hexdigest()[:16]
+    return Path.home() / ".fmos" / "task-backup" / (h + ".md")
+
+
+def is_private(task, data):
+    p = Path(task)
+    return b"private: true" in data[:2000] or "private" in [s.lower() for s in p.parts] or "🔒" in p.name
+
+
+def safe_write(task, data, tries=5):
+    """temp file next to the task → os.replace → read back. Never truncates the note itself; False → note unchanged."""
+    task = Path(task); tmp = task.with_name(f".{task.name}.{os.getpid()}.tmp")
+    try:
+        for i in range(tries):
+            try:
+                tmp.write_bytes(data); os.replace(str(tmp), str(task))
+                if task.read_bytes() == data: return True
+            except OSError as e:
+                sys.stderr.write(f"fm_changelog: «{task.name}» бичигдсэнгүй ({e}), дахин оролдоно\n")
+            time.sleep(0.2 * (i + 1))
+        return False
+    finally:
+        try: tmp.unlink()
+        except OSError: pass
+
+
 def main():
     try:
         ev = json.load(sys.stdin)
@@ -105,15 +140,25 @@ def main():
         return
     if any(s in probe for s in SKIP) or not where:
         return
-    text = task.read_text(encoding="utf-8")
+    raw = task.read_bytes()
+    bak = backup_path(task)
+    if not raw.strip():                       # 0-byte note (an earlier crash / Drive race): restore, never write over
+        if bak.is_file() and bak.stat().st_size and safe_write(task, bak.read_bytes()):
+            sys.stderr.write(f"fm_changelog: «{task.name}» 0 байт байсан — ~/.fmos/task-backup-аас сэргээв\n")
+        return
+    text = raw.decode("utf-8")
     m = re.search(r"^status:\s*(\S+)", text, re.M)
     if not m or m.group(1).strip("\"'") != "in-progress":
         return
     row = f"| {datetime.datetime.now():%H:%M} | {cell(what)} | `{cell(where, 120)}` |"
     out = add_row(text, row)
     if out is not None:
-        with open(task, "w", encoding="utf-8", newline="") as fh:
-            fh.write(out)
+        data = out.encode("utf-8")
+        if safe_write(task, data) and not is_private(task, data):
+            try:
+                bak.parent.mkdir(parents=True, exist_ok=True); bak.write_bytes(data)
+            except OSError:
+                pass
 
 
 if __name__ == "__main__":
