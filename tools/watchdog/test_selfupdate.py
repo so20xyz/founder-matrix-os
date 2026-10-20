@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fm_selfupdate as su
 T = Path(tempfile.mkdtemp(prefix="su-")); su.STATE = T / "state.json"
+su.IS_MAC, su.DEVICE = False, "PC"  # the first block checks the PC path on any OS (Mac ran it as Mac and failed)
 def sh(*a, cwd=None): return subprocess.run(a, cwd=cwd, capture_output=True, text=True, check=True).stdout
 origin, work, pc = T/"origin.git", T/"work", T/"pc"
 sh("git","init","-q","--bare","-b","main",str(origin)); sh("git","clone","-q",str(origin),str(work))
@@ -53,7 +54,11 @@ sh("git","-C",str(work),"push","-q","origin","main")
 check(su.update(P, L, pc, force=True, restart=R) == "updated", "Mac: update applied")
 check(restarts == ["com.foundermatrix.figma-bridge"], "Mac: bridge LaunchAgent restarted, dispatcher skipped")
 check(posts[-1].startswith("🔄 Mac repo"), "Mac: post names the device")
-su.HOME = T; su.install_mac()
+# never touch the real launchd: record the launchctl calls instead of running them
+calls, real_run = [], su._run
+su._run = lambda cmd, *a, **k: calls.append(cmd) or subprocess.CompletedProcess(cmd, 0, "", "")
+su.HOME = T; su.install_mac(); su._run = real_run
+check([c[:2] for c in calls] == [["launchctl", "unload"], ["launchctl", "load"]], "Mac: plist reloaded via launchctl (stubbed)")
 pl = T / "Library/LaunchAgents/com.foundermatrix.selfupdate.plist"
 check(pl.exists() and "<integer>3600</integer>" in pl.read_text() and "fm_selfupdate.py" in pl.read_text(), "Mac: LaunchAgent plist written (hourly)")
 su.IS_MAC, su.DEVICE = False, "PC"
