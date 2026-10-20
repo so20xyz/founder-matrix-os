@@ -6,7 +6,7 @@ ptt.py - монгол push-to-talk: товч дарж байх хооронд я
   python ptt.py transcribe FILE.wav... [--backend ..]               файлуудыг бичвэр болгоно (тест, хэмжилт; мөр бүр нэг файл)
 
 Backend (2026-10-20 харьцуулалт: vault «04-Resources/Atomic/knowledge/2026-10-20 - Монгол дуут команд, STT TTS сонголт»):
-  local  BuzzASR/mongolian (Whisper large-v3 + монгол fine-tune, WER ~25% зохиогчийн хэмжилт) — GPU, үнэгүй, интернетгүй
+  local  BuzzASR/mongolian — PC хэмжилт 2026-10-20: CER 6.7%, WER 22%, 0.5–1 сек (3080 Ti); GPU, үнэгүй, интернетгүй
   azure  Azure Speech mn-MN (AZURE_SPEECH_KEY, AZURE_SPEECH_REGION) — REST, богино аудио
 Код бичихгүй сонголт: Duudlaga Flow (Ctrl+Alt, duudlaga.dev) — энэ скрипт түүний локал/үнэгүй хувилбар.
 Хамаарал (uv-аар): python ptt.py ... → өөрөө `uv run --with ...`-ээр дахин ачаална.
@@ -65,16 +65,28 @@ def prompt_text(gl):
 
 
 def _local():
+    """Whisper-ийг шууд generate-ээр: BuzzASR өөрийн vocab-тай (хэлний токен <|zh|><|kk|>), pipeline үүнийг хоосон буцаадаг
+    (2026-10-20) — тиймээс хэлийг хүчлэхгүй, загварт өөрт нь үлдээнэ."""
     import torch
-    from transformers import pipeline
-    dev = 0 if torch.cuda.is_available() else -1
-    p = pipeline("automatic-speech-recognition", model=MODEL, device=dev,
-                 dtype=torch.float16 if dev == 0 else torch.float32)
-    # BuzzASR-ийн generation config-д lang_to_id алга (language= унана, large-v3-ийн config vocab зөрж CUDA алдаа) → хэлийг загвар өөрөө
-    gk = {"language": "mn", "task": "transcribe"} if getattr(p.model.generation_config, "lang_to_id", None) else {}
-    if os.environ.get("FM_STT_PROMPT", "1") == "1":   # англи нэр томьёог латинаар үлдээх түлхэц
-        gk["prompt_ids"] = torch.tensor(p.tokenizer.get_prompt_ids(prompt_text(load_glossary()))).to(p.device)
-    return lambda audio: p({"raw": audio, "sampling_rate": SR}, generate_kwargs=gk)["text"]
+    from transformers import WhisperForConditionalGeneration, WhisperProcessor
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    dt = torch.float16 if dev == "cuda" else torch.float32
+    proc = WhisperProcessor.from_pretrained(MODEL)
+    model = WhisperForConditionalGeneration.from_pretrained(MODEL, dtype=dt).to(dev).eval()
+    gk = {"language": "mn", "task": "transcribe"} if getattr(model.generation_config, "lang_to_id", None) else {}
+
+    def stt(audio):
+        x = proc(audio, sampling_rate=SR, return_tensors="pt").input_features.to(dev, dt)
+        with torch.no_grad():
+            o = model.generate(x, max_new_tokens=440, **gk)
+        return proc.batch_decode(o, skip_special_tokens=True)[0]
+    stt(np_zeros())   # warmup: эхний дуудлагын CUDA эхлүүлэлтийг товч дарахаас өмнө
+    return stt
+
+
+def np_zeros():
+    import numpy as np
+    return np.zeros(SR, dtype="float32")
 
 
 def _azure():
