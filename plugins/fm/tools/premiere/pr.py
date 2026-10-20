@@ -46,7 +46,8 @@ def http(path, data=None, timeout=130):
 
 
 def run(script, timeout=120):
-    out = http("/run", {"script": script, "timeout": timeout, "reload": RELOAD}, timeout + 10)
+    # wait: the bridge waits up to 15 s for the panel to (re)connect instead of failing at once
+    out = http("/run", {"script": script, "timeout": timeout, "reload": RELOAD, "wait": 15}, timeout + 30)
     if out.get("error"):
         sys.exit("✗ " + out["error"])
     return out.get("result")

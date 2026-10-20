@@ -142,6 +142,20 @@ FM.place = function (itemName, track, at, kind, insert, seqName) {
   return FM.timeline(seqName);
 };
 
+// --- place a source range (kino library hit from ed.py search) at `at` on video track; imports the file into «Ed library» if needed.
+// Wiki session sequences (sei · …, «Second Brain Season 2 · Бүгд») are refused here too (ed.py checks first).
+FM.placeRange = function (path, inSec, outSec, seqName, at, track) {
+  if (/^sei\b|Second Brain Season 2 · Бүгд/i.test(seqName || '')) throw new Error('protected sequence: ' + seqName);
+  var s = FM.seq(seqName); if (!s) throw new Error('no sequence: ' + seqName);
+  var name = String(path).split(/[\/\\]/).pop(), it = FM.findItem(name);
+  if (!it) { app.project.importFiles([path], true, FM.bin('Ed library'), false); it = FM.findItem(name); }
+  if (!it) throw new Error('import failed: ' + path);
+  it.setInPoint(inSec, 4); it.setOutPoint(outSec, 4);   // 4 = video + audio
+  s.videoTracks[track || 0].overwriteClip(it, at || 0);
+  it.clearInPoint(4); it.clearOutPoint(4);
+  return { item: name, 'in': inSec, out: outSec, sequence: s.name, at: at || 0 };
+};
+
 // --- trim a clip: new in/out (source seconds) and/or move its start
 FM.trim = function (kind, track, clip, opts, seqName) {
   var s = FM.seq(seqName), cl = (kind === 'A' ? s.audioTracks : s.videoTracks)[track].clips[clip];

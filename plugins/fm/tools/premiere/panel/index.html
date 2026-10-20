@@ -141,5 +141,7 @@ function tick() {
   }).catch(function () { state("bridge сервер ажиллахгүй (кнопууд ажиллана)", false); setTimeout(tick, 1500); });
 }
 tick();
+// heartbeat: a long ExtendScript job blocks tick() (2026-10-20 «not connected»); the CEF thread keeps pinging meanwhile
+setInterval(function () { fetch(BRIDGE + "/ping").catch(function () {}); }, 1000);
 </script>
 </body></html>
