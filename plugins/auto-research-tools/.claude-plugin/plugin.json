@@ -1,0 +1,17 @@
+{
+  "name": "auto-research-tools",
+  "version": "0.1.0",
+  "description": "Судалгааны шат бүрт (literature review, idea, experiment, paper writing, review) тохирох нээлттэй эхийн AI research tool-ийг сонгох skill: 52 tool-ийн каталог, live star, Claude Code нийцтэй эсэх. / Pick open-source auto-research tools per research stage from a 52-tool catalog with live stars and Claude Code compatibility. Catalog source: https://github.com/handsome-rich/Awesome-Auto-Research-Tools (CC0-1.0, credit handsome-rich); see NOTICE.md.",
+  "author": {
+    "name": "itge.e / Founder Matrix"
+  },
+  "license": "CC0-1.0",
+  "keywords": [
+    "research",
+    "auto-research",
+    "ai-scientist",
+    "literature-review",
+    "paper-writing",
+    "mongolian"
+  ]
+}

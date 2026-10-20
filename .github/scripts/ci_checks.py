@@ -25,6 +25,7 @@ TESTS = [
     "tests/test_doctor.py",
     "tests/test_tools.py",
     "tests/test_migrate.py",
+    "plugins/auto-research-tools/tests/test_refresh_catalog.py",
     "tools/relay/tests/test_relay_config.py",
 ]
 
