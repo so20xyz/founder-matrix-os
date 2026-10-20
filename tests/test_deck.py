@@ -217,6 +217,19 @@ def main():
         c3 = {s["id"]: s for s in deck.build_plan(f3)["slides"]}["06"]
         check(c3["source"] == "12:34" and c3["figma"] == "900:7",
               "plan custom after a build: clone source = figma-orig (never clone the clone)", c3)
+        f4 = Path(t) / "Тест4 - v1.md"
+        over = DECK.replace('columns: ["", "Өмнө", "Одоо"]', 'columns: ["Анх (08-19)", "Одоо (10-10)"]').replace(
+            '  - {title: "Note"}\n  - {title: "Graph", highlight: true}',
+            "\n".join(f'  - {{title: "s{i}"}}' for i in range(1, 9)) + '\n  - {title: "PRINT READY", highlight: true}')
+        f4.write_text(over, encoding="utf-8")
+        p4 = deck.build_plan(f4); P4 = {s["id"]: s for s in p4["slides"]}
+        check(P4["04"]["slots"]["head · c2"] == "Анх (08-19)" and P4["04"]["slots"]["head · c3"] == "Одоо (10-10)",
+              "plan compare: 2 columns → c2 = columns[0], c3 = columns[1] (v1 slide 09 off-by-one)", P4["04"]["slots"])
+        w = " ".join(p4.get("warnings", []))
+        check("03" in w and "9" in w and "5" in w and "PRINT READY" in w,
+              "plan flow: 9 items > 5 slots → a warning naming the dropped items (v1 slide 12, no silent loss)", p4.get("warnings"))
+        check(P4["03"]["highlight"] == [], "plan flow: a highlight on a dropped item is not moved onto another step", P4["03"]["highlight"])
+        check(not deck.build_plan(f)["warnings"], "plan: no warnings when everything fits")
         hb = Pl["07"]
         check(hb["component"] == "Slide / hub" and hb["props"]["hub title"] == "Atomic" and hb["props"]["hub text"] == "нэг баримт = нэг note"
               and hb["slots"]["item 3 · title"] == "Archive" and "item 4" in hb["hide"] and "link 4" in hb["hide"]

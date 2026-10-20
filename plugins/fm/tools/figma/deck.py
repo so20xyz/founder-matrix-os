@@ -195,12 +195,28 @@ def _items(slots, hide, hl, prefix, n_max, items, fields):
         if it.get("highlight"): hl.append(f"{prefix} {i}")
 
 
+SLOTS = {"cards": ("items", 6), "timeline": ("rows", 6), "compare": ("rows", 4), "flow": ("items", 5),
+         "stats": ("items", 4), "hub": ("items", 4), "demo": ("bullets", 4)}
+
+
+def _overflow(s):
+    """More items/rows than the component has slots → a warning naming what is dropped (Creative 2026-10-21: v1 slide 12
+    lost 4 of 9 flow steps silently). Never silent."""
+    key, n = SLOTS.get(s["layout"], (None, 0))
+    got = s.get(key) or [] if key else []
+    if len(got) <= n: return []
+    name = lambda x: str(x.get("title") or x.get("date") or x.get("text") or "") if isinstance(x, dict) else (" / ".join(map(str, x)) if isinstance(x, list) else str(x))
+    return [f"{s['id']}: {s['layout']}-д {len(got)} {key} > {n} слот — хасагдав: {', '.join(name(x) for x in got[n:])}"
+            " (layout: custom эсвэл слайдыг хуваа)"]
+
+
 def slide_plan(s, page, total):
     """One slide → the renderer's instructions (component name, text props, slots, hidden layers, highlights)."""
     lay = s["layout"]
     props = {k: _t(s.get(k), k in ("title", "subtitle")) for k in ("eyebrow", "title", "subtitle", "meta", "caption", "live") if k in s}
     props["page"] = f"{page:02d} / {total:02d}"
     slots, hide, hl = {}, [], []
+    warn = _overflow(s)
     if lay == "cards":
         items = s.get("items") or []
         _items(slots, hide, hl, "item", 6, items, ("title", "text"))
@@ -212,8 +228,12 @@ def slide_plan(s, page, total):
             d = s.get(side) or {}
             for f in ("label", "text"): slots[f"{side} · {f}"] = _t(d.get(f))
     elif lay == "compare":
+        # columns: [A, B] → c2 = A, c3 = B (c1 = the row-label column, no head); [label, A, B] → the label is skipped.
+        # The old index read columns[1] for both heads when there were 2 (v1 slide 09, 2026-10-21).
         cols = s.get("columns") or []
-        for j, c in enumerate(("c2", "c3")): slots[f"head · {c}"] = _t(cols[j + 1] if j + 1 < len(cols) else (cols[j] if j < len(cols) and len(cols) == 2 else ""))
+        heads = cols[1:3] if len(cols) >= 3 else cols[:2]
+        for j, c in enumerate(("c2", "c3")): slots[f"head · {c}"] = _t(heads[j] if j < len(heads) else "")
+        if len(cols) > 3: warn.append(f"{s['id']}: compare-д {len(cols)} багана > 3 — хасагдав: {', '.join(map(str, cols[3:]))}")
         rows = s.get("rows") or []
         for i in range(1, 5):
             if i > len(rows): hide.append(f"row {i}"); continue
@@ -249,7 +269,7 @@ def slide_plan(s, page, total):
             "image": img if lay == "demo" else None, "tone": tone,
             # custom: the hand-drawn original to clone — figma-orig once a build has put the clone's id in figma
             "source": str(s.get("figma-orig") or s.get("figma") or "") if lay == "custom" else "",
-            "links": min(len(s.get("items") or []), 4) if lay == "hub" else 0,
+            "links": min(len(s.get("items") or []), 4) if lay == "hub" else 0, "warnings": warn,
             "fallback": {"eyebrow": _t(s.get("eyebrow")), "title": _t(s.get("title"), True),
                          "lines": [_t(x.get("title") if isinstance(x, dict) else x) for x in (s.get("items") or s.get("bullets") or [])]}}
 
@@ -263,10 +283,11 @@ def build_plan(path, page=None):
     d = parse_deck(Path(path).read_text(encoding="utf-8"))
     m, ss = d["meta"], d["slides"]
     fmt = str(m.get("format") or "1920x1080").lower().split("x")
+    slides = [slide_plan(s, i + 1, len(ss)) for i, s in enumerate(ss)]
     return {"deck": deck_key(path, m), "version": str(m.get("version") or "v1"), "title": Path(path).stem,
             "page": page or str(m.get("figma-page") or ""), "section": str(m.get("figma-section") or ""),
             "grid": int(m.get("grid") or 5), "w": int(fmt[0]), "h": int(fmt[1]), "gap": 120, "pad": 120,
-            "slides": [slide_plan(s, i + 1, len(ss)) for i, s in enumerate(ss)]}
+            "slides": slides, "warnings": [w for s in slides for w in s["warnings"]]}
 
 
 # ── write back figma ids ─────────────────────────────────────────────────────────────────────────────────────────
@@ -307,6 +328,7 @@ def run(a, call):
     t0 = time.monotonic()                     # duration_s: render + QA + contact sheet + write-back (Creative P4 ledger)
     plan = build_plan(a.file, a.page)
     if a.dry_run:
+        for w in plan["warnings"]: sys.stderr.write("⚠ " + w + "\n")
         print(json.dumps(plan, ensure_ascii=False, indent=1)); return
     code = "const PLAN=" + json.dumps(plan, ensure_ascii=False) + ";\n" + (SCRIPTS / "deck_build.js").read_text(encoding="utf-8")
     res = call(code, 600000)
@@ -327,7 +349,7 @@ def run(a, call):
     write_ids(a.file, {s["id"]: s["frame"] for s in r["slides"] if s.get("frame")}, r.get("mine", []))
     report = {"slides": len(r["slides"]), "created": r["created"], "updated": r["updated"],
               "duration_s": round(time.monotonic() - t0, 1), "overlaps": overlaps,
-              "contrast": contrast, "issues": issues, "wrapper": r["wrapper"], "warnings": r.get("warnings", []), "contact_sheet": str(png) if "result" in ex else None,
+              "contrast": contrast, "issues": issues, "wrapper": r["wrapper"], "warnings": plan["warnings"] + r.get("warnings", []), "contact_sheet": str(png) if "result" in ex else None,
               "qa": {"layout": lay, "contrast": con, "creative": cre}}
     print(json.dumps(report, ensure_ascii=False, indent=1))
     if overlaps or contrast: sys.exit(1)

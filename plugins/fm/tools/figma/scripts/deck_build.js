@@ -220,6 +220,14 @@ for (let i = 0; i < P.slides.length; i++) {
   const x = PAD + col * (W + GAP), y = PAD + row * ROW_H;
   maxX = Math.max(maxX, x + W); maxY = Math.max(maxY, y + H + 40 + NOTES_H);
   let fr = kids().find(n => n.getPluginData('deckId') === s.id);
+  // layout солигдвол (v1 12: flow → custom) хуучин frame-ийг шинээр орлуулна — deckId-аар олдоод алгасагдаж болохгүй.
+  // deckKind = «comp» эсвэл «custom:<эх id>»; өмнөх build-ийн frame-д байхгүй бол агуулгаас нь таана.
+  const want = s.layout === 'custom' ? 'custom:' + s.source : 'comp';
+  if (fr) {
+    const one = fr.children.length === 1 ? fr.children[0] : null;
+    const has = fr.getPluginData('deckKind') || (one && one.type === 'INSTANCE' && one.name.startsWith('Slide /') ? 'comp' : 'custom:' + s.source);
+    if (has !== want) { warnings.push(s.id + ': ' + has + ' → ' + want + ' — frame-ийг шинээр зурав'); fr.remove(); fr = null; }
+  }
   const isNew = !fr;
   if (s.layout === 'custom') {
     // Creative 2026-10-21: гар зурсан эх frame-ийг (figma-orig, үгүй бол figma) grid-ийн байранд нь clone хийнэ; эхийг хөндөхгүй.
@@ -237,7 +245,7 @@ for (let i = 0; i < P.slides.length; i++) {
       }
       wrap.appendChild(c); fr = c; fr.setPluginData('deckId', s.id); created++;
     } else updated++;
-    fr.name = s.name; fr.x = x; fr.y = y;
+    fr.name = s.name; fr.x = x; fr.y = y; fr.setPluginData('deckKind', want);
     if (Math.round(fr.width) !== W || Math.round(fr.height) !== H) {
       fr.rescale(Math.min(W / fr.width, H / fr.height));
       if (Math.round(fr.width) !== W || Math.round(fr.height) !== H)
@@ -251,7 +259,7 @@ for (let i = 0; i < P.slides.length; i++) {
       fr = figma.createFrame(); fr.resize(W, H); fr.fills = []; fr.clipsContent = true;
       fr.setPluginData('deckId', s.id); wrap.appendChild(fr); created++;
     } else updated++;
-    fr.name = s.name; fr.x = x; fr.y = y;
+    fr.name = s.name; fr.x = x; fr.y = y; fr.setPluginData('deckKind', want);
     mine.push(fr.id);
     const comp = comps[s.component];
     let inst = fr.children.find(n => n.type === 'INSTANCE');
