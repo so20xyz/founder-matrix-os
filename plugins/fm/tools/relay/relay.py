@@ -337,7 +337,10 @@ def chname(v):
 
 def chmap():
     """session_id → numbered Discord channel. Same project slug on PC & Mac → ONE channel (named by the first titled session)."""
-    regs = [(sid, v) for sid, v in load(REG, {"sessions": {}})["sessions"].items() if not is_private(v)]  # finance/tax/gold too: no Discord channel
+    # finance/tax/gold: no Discord channel. Soyol 2026-10-20: an unbound session (no role, no project — fm_role unbind)
+    # is dead: it must not keep a channel alive, or Discord stops mirroring the sidebar.
+    regs = [(sid, v) for sid, v in load(REG, {"sessions": {}})["sessions"].items()
+            if not is_private(v) and (v.get("role") or v.get("project"))]
     key = lambda v: v.get("project") or chname(v)
     first = {}
     for sid, v in regs:
@@ -389,9 +392,12 @@ def d_sync():
     text = {c["name"]: c for c in allc if c["type"] == 0}
     CHF = fmconfig.CHANNELS; prev = load(CHF, {})  # project → last channel name (for in-place rename)
     want = {}
+    R = load(REG, {"sessions": {}}); roles = R.get("roles") if isinstance(R.get("roles"), dict) else {}
     for sid, name in chmap().items():
-        v = load(REG, {"sessions": {}})["sessions"][sid]
-        want.setdefault(name, (v["group"], v.get("project")))
+        v = R["sessions"][sid]
+        # Soyol 2026-10-20: the role decides the category (= sidebar group), not a stale per-session group
+        grp = ((roles.get(v.get("role")) or {}).get("group") if v.get("role") else None) or v["group"]
+        want.setdefault(name, (grp, v.get("project")))
     need = sync_needed_cats(want, text)  # only categories that will actually hold a channel (no empty ones)
     fin = sorted(set(finmap().values()))
     if fin: need.add("finance")

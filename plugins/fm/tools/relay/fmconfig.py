@@ -166,7 +166,12 @@ def claude_app_sessions_dir():
     """Claude desktop app's session index (title ↔ cliSessionId)."""
     if IS_MAC:
         return HOME / "Library" / "Application Support" / "Claude" / "claude-code-sessions"
-    return Path(os.environ.get("APPDATA", str(HOME))) / "Claude" / "claude-code-sessions"
+    d = Path(os.environ.get("APPDATA", str(HOME))) / "Claude" / "claude-code-sessions"
+    if d.is_dir(): return d
+    # MSIX-installed app (2026-10-16): its AppData is virtualized; a process outside the package sees it only here
+    pk = sorted(Path(os.environ.get("LOCALAPPDATA", str(HOME / "AppData" / "Local"))).glob(
+        "Packages/Claude_*/LocalCache/Roaming/Claude/claude-code-sessions"))
+    return pk[0] if pk else d
 
 
 def is_private(entry):

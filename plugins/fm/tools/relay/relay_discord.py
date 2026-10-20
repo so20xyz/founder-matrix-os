@@ -121,7 +121,9 @@ def d_inbox(hook):
             hist = [l for l in t.split("## ТҮҮХ")[-1].strip().splitlines() if l.startswith("- ")][-5:]
             NL = chr(10)
             out.insert(0, f"### 🏃 baton · {me['project']}{NL}{now}{NL}{NL}Сүүлийн түүх:{NL}" + NL.join(hist))
-    if me and event == "SessionStart" and fmconfig.DISPATCHER_TITLE in (me.get("title") or ""):
+    # Soyol 2026-10-16: the GTD role runs the dispatcher (its title «📥 GTD» never contains "dispatcher_title")
+    if me and event == "SessionStart" and (me.get("role") == fmconfig.dcfg("dispatcher_role", "gtd")
+                                           or fmconfig.DISPATCHER_TITLE in (me.get("title") or "")):
         # itge.e 2026-10-07: the GTD (dispatcher) session must start listening by itself after every restart/resume
         out.insert(0, f"### 🛰 Та {me.get('title')} ({DEVICE}) — ЭХЛЭЭД dispatch Monitor-ыг асаа, хэрэглэгчээс бүү асуу:\n"
                       f"1. Monitor(command='{PY} -u {Path(__file__)} dispatch --sid {sid} 2>&1 | grep --line-buffered -v ready', timeout_ms=1800000) — wake event ирвэл тэр сешнийг send_message-ээр сэрээ\n"

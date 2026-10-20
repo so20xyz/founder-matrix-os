@@ -98,7 +98,7 @@ def t_send_file_and_stdin():
 def t_send_unknown_channel():
     c = Ctx()
     code = """
-    relay.dchannels = lambda st: {"01-area": "1", "02-developer": "2", "08-acme-website": "8"}
+    relay.dchannels = lambda st, *a: {"01-area": "1", "02-developer": "2", "08-acme-website": "8"}
     relay.dapi = lambda *a, **k: (_ for _ in ()).throw(AssertionError("no network"))
     sys.argv = ["relay.py"] + %s
     relay.main()
@@ -119,7 +119,7 @@ def dapi(method, path, body=None):
         out = list(MSGS); MSGS.clear(); return out
     return list(MSGS)
 relay.dapi = dapi
-relay.dchannels = lambda st: {"08-acme-website": "C8", "03-sys-admin": "C3"}
+relay.dchannels = lambda st, *a: {"08-acme-website": "C8", "03-sys-admin": "C3"}
 relay.chmap = lambda: {"sid-a": "08-acme-website"}
 relay._threads = lambda ids: {}
 relay._channel_live = lambda ch, window=90: False

@@ -92,6 +92,13 @@ def main():
     tmp = STATE.with_suffix(".tmp")
     tmp.write_text(json.dumps(now, ensure_ascii=False), encoding="utf-8")
     os.replace(tmp, STATE)
+    # Soyol 2026-10-20: keep the repo clone (relay, dispatcher, Figma bridge) on origin — at most once an hour
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import fm_selfupdate
+        fm_selfupdate.update(post, log)
+    except Exception as e:
+        log(f"selfupdate import error: {e!r}")
 
 
 if __name__ == "__main__":
