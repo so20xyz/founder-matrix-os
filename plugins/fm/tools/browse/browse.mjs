@@ -123,11 +123,19 @@ async function nlmAdd(pg, urls) {
   await pg.getByRole('textbox', { name: 'Enter URLs' }).fill(urls.join('\n'))
   await pg.getByRole('button', { name: 'Insert' }).click()
   const tries = 60 + 20 * urls.length   // 3 мин + эх сурвалж тутам 1 мин (INAI 2026-10-20: 8 эх сурвалжид 3 мин хүрэлцээгүй)
+  let idle = 0
   for (let i = 0; i < tries; i++) {   // эх сурвалж боловсруулагдтал: spinner алга, гарчиг нь URL биш
     await sleep(3000)
     const busy = await pg.locator('mat-progress-spinner, .mat-mdc-progress-spinner, [role=progressbar]').count()
     const titles = await pg.evaluate(() => [...document.querySelectorAll('[class*=source-title]')].map(e => e.innerText.replace(/^video_youtube|more_vert$/g, '').trim()))
     if (!busy && titles.length && !titles.some(t => /^https?:/.test(t))) return [...new Set(titles)]
+    // Wiki 2026-10-20: алдаатай (улаан) эх сурвалж URL гарчигтай үлддэг → spinner алга 5 удаа дараалан бол алгасаад үргэлжлүүлнэ
+    idle = busy ? 0 : idle + 1
+    if (idle >= 5 && titles.length) {
+      const bad = titles.filter(t => /^https?:/.test(t))
+      if (bad.length) console.error('⚠️ боловсруулагдаагүй эх сурвалж алгасав: ' + bad.join(', '))
+      return [...new Set(titles.filter(t => !/^https?:/.test(t)))]
+    }
   }
   throw new Error('эх сурвалж боловсруулалт ' + Math.round(tries * 3 / 60) + ' минутаас удаан')
 }

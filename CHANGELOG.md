@@ -21,6 +21,7 @@
 
 ## Unreleased
 
+- fm 0.9.105: browse nlm — алдаатай эх сурвалж (URL гарчигтай үлдсэн) байхад гацахгүй: spinner 15 с алга бол түүнийг алгасаж (stderr-д ⚠️) үргэлжлүүлнэ.
 - fm 0.9.104: relay `_fm` — YAML мөрийн тайлбарыг (`device:  # PC | Mac`) утга гэж уншдаг байсныг засав; Task загвараас үүссэн task claim хийхэд LOSE буцаадаг байв.
 - fm 0.9.103: browse nlm — эх сурвалж боловсруулах хүлээлт эх сурвалжийн тоогоор уртасна (3 мин + 1 мин/эх сурвалж); `nlm ask <id>` UUID-ийн эхний хэсгээр ч олно.
 - fm 0.9.102: ажилбар (`_system/fm/workflows/<slug>.md`) — `fm_task.py new --workflow <slug>` ба `fm_task.py workflow` алхмын чеклистийг task-д хуулна; SessionStart context дүрийн in-progress task-ийн дараагийн алхмыг харуулна (tests/test_workflow.py).
