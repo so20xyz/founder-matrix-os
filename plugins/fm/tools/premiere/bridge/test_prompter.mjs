@@ -11,4 +11,6 @@ ok(Math.abs(sp[0][0] - 2.22) < 1e-9 && Math.abs(sp.at(-1)[1] - 3.72) < 1e-9, 'ү
 ok(sp[1][1] - sp[1][0] < sp[2][1] - sp[2][0], 'урт үг («хамгийн») богино үгээс («бол») удаан');
 ok(P.fill(2.22, sp[0]) === 0 && P.fill(99, sp[0]) === 1 && P.fill((sp[0][0] + sp[0][1]) / 2, sp[0]) === 0.5, 'дүүргэлт 0→1');
 ok(P.sentences([[0,4,'01 HOOK · микроскоп'],[4,1,'02 ЭРГЭЛТ · that is the biggest lie'],[0.5,2,'Суут ухааныг төрөлхийн зүйл гэж боддог уу?'],[3,1,'']]).length === 1, 'scene шошго, хоосон marker алгасагдана');
+ok(P.isStory('13 TYPE FX · THAT IS WHAT'), 'олон үгтэй шошго');
+ok(P.sentences([[0,2,'Суут ухаан',"MN VO"],[1,1,'Өөр marker','x']]).length === 1, 'MN VO comment байвал зөвхөн тэд');
 process.exit(fails ? 1 : 0);

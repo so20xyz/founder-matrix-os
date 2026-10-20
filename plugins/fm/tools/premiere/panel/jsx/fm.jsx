@@ -192,7 +192,7 @@ FM.voPlace = function (path, at) {
 FM.promptMarkers = function () {
   var s = app.project.activeSequence; if (!s) return [];
   var m = s.markers, n = m.numMarkers, k = m.getFirstMarker(), o = [];
-  for (var i = 0; i < n && k; i++) { o.push([FM.sec(k.start), FM.sec(k.end) - FM.sec(k.start), String(k.name || k.comments || '')]); k = m.getNextMarker(k); }
+  for (var i = 0; i < n && k; i++) { o.push([FM.sec(k.start), FM.sec(k.end) - FM.sec(k.start), String(k.name || ''), String(k.comments || '')]); k = m.getNextMarker(k); }
   for (var a = 1; a < o.length; a++) for (var b = a; b > 0 && o[b - 1][0] > o[b][0]; b--) { var x = o[b]; o[b] = o[b - 1]; o[b - 1] = x; }
   return o;
 };

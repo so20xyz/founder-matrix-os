@@ -2,8 +2,12 @@
 // Цэвэр хэсгийг node-оор тестлэнэ (bridge/test_prompter.mjs).
 (function (root) {
   // ed.py-ийн scene шошго («01 HOOK · микроскоп») өгүүлбэр биш → алгасна
-  function isStory(name) { return /^\d{2}\s+\S+\s+·/.test(String(name)); }
-  function sentences(ms) { return ms.filter(function (m) { return m[2] && !isStory(m[2]); }); }
+  function isStory(name) { return /^\d{2}\s+[^·]+·/.test(String(name)); }
+  // «MN VO» comment-той marker байвал зөвхөн тэд (Wiki 2026-10-20), эс бол шошго биш бүх marker
+  function sentences(ms) {
+    var vo = ms.filter(function (m) { return /MN VO/.test(m[3] || ''); });
+    return (vo.length ? vo : ms.filter(function (m) { return m[2] && !isStory(m[2]); })).map(function (m) { return [m[0], m[1], m[2]]; });
+  }
   function words(s) { return String(s).split(/\s+/).filter(Boolean); }
   // одоогийн өгүүлбэр: 0.15 сек эрт асна; эхний marker-аас өмнө бол 0
   function curIndex(lines, t) { var i = 0; for (var k = 0; k < lines.length; k++) if (t >= lines[k][0] - 0.15) i = k; return i; }
