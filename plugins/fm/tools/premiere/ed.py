@@ -14,6 +14,7 @@ ed.py - найруулагч (itge.e) + Claude засварын урсгал: т
   python ed.py search "өгүүлбэр" [--db DB] [--k 8] [--w 0.3]                 вектор + caption-ы түлхүүр үгийн hybrid эрэмбэ → timecode
   python ed.py place FILE START END --seq S [--at T] [--track N]             кино хэсгийг (START–END сек) sequence-д тавина
                                                                              (sei / «Second Brain Season 2 · Бүгд»-д хориотой)
+  python ed.py vomaster VO.wav [--seq S] [--dry]                             батлагдсан «INAI VO master v1»-ийг VO бичлэгт (vomaster.py)
   python ed.py captions DIR/words.json [--out F.html]                        HyperFrames хадмал: үгээр, blur-in, түлхүүр үг 2.5×
 
 Хэв маягийн ДНХ: Second Brain vault «03-Areas/Studio/Social saves/Дуртай reel - 2026-10-20/Хэв маягийн задаргаа.md».
@@ -458,6 +459,8 @@ def main(a):
             cmd_place(arg, float(a[2]), float(a[3]), seq, float(_opt(a, "--at", 0)), int(_opt(a, "--track", 0)))
         except ValueError as e:
             sys.exit(str(e))
+    elif cmd == "vomaster":
+        sys.exit(subprocess.call([sys.executable, "-X", "utf8", str(HERE / "vomaster.py")] + a[1:]))
     elif cmd == "captions":
         cmd_captions(arg, Path(_opt(a, "--out", Path(arg).parent / "captions.html")))
     elif cmd == "all":

@@ -82,17 +82,30 @@
     });
   }
   function stop() {
+    var path = '';
     rec = false; var b = $('vorec'); b.disabled = true; b.textContent = 'хадгалж байна…'; b.style.background = '';
     runJsx('return FM.voPlay(false)', false);
     var sr = ctx.sampleRate, sec = chunks.reduce(function (a, c) { return a + c.length; }, 0) / sr;
     runJsx('return FM.voFolder()', false).then(function (f) {
       if (f.error) throw new Error(f.error);
-      var path = f.result + '/' + voName(new Date());
+      path = f.result + '/' + voName(new Date());
       var w = window.cep.fs.writeFile(path, toBase64(encodeWav(chunks, sr)), window.cep.encoding.Base64);
       if (w.err) throw new Error('WAV бичиж чадсангүй (' + w.err + ')');
-      return runJsx('return FM.voPlace(' + JSON.stringify(path) + ', ' + startAt + ')', false);
+      return runJsx('return FM.voOverlap(' + startAt + ', ' + sec + ')', false);
+    }).then(function (ov) {
+      var old = (ov.result || []), replace = false;
+      if (old.length) {   // itge.e-ээс асууна: хуучныг солих уу
+        replace = window.confirm('VO замд хуучин бичлэг байна: ' + old.join(', ') + '. OK = хуучныг устгаад шинийг тавих, Cancel = шинийг тавихгүй (WAV хадгалагдсан)');
+        if (!replace) { log('• WAV хадгалагдсан, timeline-д тавиагүй: ' + path.split('/').pop()); return null; }
+      }
+      return runJsx('return FM.voPlace(' + JSON.stringify(path) + ', ' + startAt + ', ' + replace + ', ' + sec + ')', false);
     }).then(function (r) {
-      log(r.error ? '✗ ' + r.error : '■ VO ' + sec.toFixed(1) + 's → ' + r.result.track + ' @ ' + r.result.at.toFixed(2) + 's');
+      if (!r) return;
+      if (r.error) return log('✗ ' + r.error);
+      log('■ VO ' + sec.toFixed(1) + 's → ' + r.result.track + ' @ ' + r.result.at.toFixed(2) + 's · master…');
+      return fetch(BRIDGE + '/vomaster', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ wav: path, seq: r.result.sequence }) }).then(function (x) { return x.json(); })
+        .then(function (m) { log(m.error ? '✗ master: ' + m.error : '✓ INAI VO master: ' + m.result); });
     }).catch(function (e) { log('✗ ' + e.message); }).then(function () { b.disabled = false; b.textContent = '● VO бичих'; chunks = []; });
   }
   root.voInit = function () {

@@ -1,0 +1,83 @@
+{
+ "name": "INAI VO master v1 (itge.e батлав 2026-10-20)",
+ "vo_fx": {
+  "Highpass": [
+   true,
+   0.2
+  ],
+  "DeNoise": [
+   true,
+   0.4,
+   0,
+   0,
+   0,
+   0
+  ],
+  "Single-band Compressor": [
+   false,
+   0.5,
+   0.82,
+   0.025,
+   0.04,
+   0.25,
+   1
+  ],
+  "DeEsser": [
+   false,
+   0.55,
+   0.1998,
+   0.1837,
+   0.3913,
+   0.3919,
+   0,
+   1
+  ],
+  "Hard Limiter": [
+   false,
+   0.97,
+   0.72,
+   0.1333,
+   0.375,
+   1,
+   1,
+   0
+  ]
+ },
+ "vo_fx_note": "Highpass, DeNoise = bypass(true). Comp 0.82/0.025 attack .04 release .25; DeEsser thr .55; Limiter boost .72",
+ "vo": {
+  "open_db": -1.83,
+  "closed_db": -61.83,
+  "fade_s": 0.04,
+  "detect": {
+   "noise_db": -45,
+   "min_gap_s": 0.12
+  },
+  "ref_LUFS": -34.1
+ },
+ "music": {
+  "intro_outro_db": 0.66,
+  "speech_db": -4.34,
+  "gap_swell_db": -1.84,
+  "intro_ramp_s": 0.38,
+  "outro_ramp_s": 0.46,
+  "speech_detect": {
+   "noise_db": -38,
+   "min_gap_s": 0.35
+  }
+ },
+ "sfx_db": {
+  "hit.wav": -7,
+  "whoosh.wav": -11
+ },
+ "tracks": {
+  "vo": 0,
+  "music": 1,
+  "sfx": 2
+ },
+ "result": {
+  "mix_LUFS": -16.6,
+  "LRA": 6.5,
+  "peak_dB": -1.9
+ },
+ "vo_note_ref": "ref_LUFS = батлагдсан бичлэг «VO 2026-10-20 191958.wav»-ийн integrated; шинэ бичлэгийг үүгээр тэнцүүлнэ"
+}

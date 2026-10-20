@@ -2,6 +2,8 @@
 // The panel polls GET /next for an ExtendScript job, runs it with evalScript and POSTs the result to /result.
 // The CLI POSTs /run {script} and waits (long-poll) for that job's result. No dependencies, localhost only.
 import http from 'node:http';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const PORT = Number(process.env.PREMIERE_BRIDGE_PORT || 3056);
 const queue = [];              // jobs waiting for the panel: { id, script }
@@ -45,6 +47,16 @@ http.createServer(async (req, res) => {
       const q = queue.findIndex(j => j.id === id); if (q >= 0) queue.splice(q, 1);   // never picked up → don't run it later
       if (waiting.get(id) === res) { waiting.delete(id); send(res, 504, { id, error: 'timeout' }); }
     }, timeout * 1000);
+    return;
+  }
+  if (url.pathname === '/vomaster' && req.method === 'POST') {  // panel ■ Зогсоох → батлагдсан VO master (зөвхөн энэ script)
+    const { wav, seq } = JSON.parse((await body(req)) || '{}');
+    if (!/\.wav$/i.test(wav || '')) return send(res, 400, { error: 'wav алга' });
+    const py = process.platform === 'win32' ? 'python' : 'python3';
+    const args = ['-X', 'utf8', fileURLToPath(new URL('../vomaster.py', import.meta.url)), wav].concat(seq ? ['--seq', seq] : []);
+    const p = spawn(py, args); let out = '';
+    p.stdout.on('data', d => (out += d)); p.stderr.on('data', d => (out += d));
+    p.on('close', code => send(res, code ? 500 : 200, code ? { error: out.trim().slice(-400) } : { result: out.trim().split(String.fromCharCode(10)).pop() }));
     return;
   }
   send(res, 404, { error: 'not found' });

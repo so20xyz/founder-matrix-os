@@ -1,0 +1,78 @@
+ffmpeg version 8.1.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers
+  built with gcc 16.1.0 (Rev2, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-cairo --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enable-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvvenc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libaom --enable-libjxl --enable-libsvtjpegxs --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libshaderc --enable-vulkan --enable-libplacebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint --enable-whisper
+  libavutil      60. 26.102 / 60. 26.102
+  libavcodec     62. 28.102 / 62. 28.102
+  libavformat    62. 12.102 / 62. 12.102
+  libavdevice    62.  3.102 / 62.  3.102
+  libavfilter    11. 14.102 / 11. 14.102
+  libswscale      9.  5.102 /  9.  5.102
+  libswresample   6.  3.102 /  6.  3.102
+[aist#0:0/pcm_s16le @ 000001f860bfc4c0] Guessed Channel Layout: mono
+Input #0, wav, from 'E:/OBS Recordings/VO/VO 2026-10-20 191958.wav':
+  Duration: 00:00:41.81, bitrate: 768 kb/s
+  Stream #0:0: Audio: pcm_s16le ([1][0][0][0] / 0x0001), 48000 Hz, mono, s16, 768 kb/s
+Stream mapping:
+  Stream #0:0 -> #0:0 (pcm_s16le (native) -> pcm_s16le (native))
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf62.12.102
+  Stream #0:0: Audio: pcm_s16le, 48000 Hz, mono, s16, 768 kb/s
+    Metadata:
+      encoder         : Lavc62.28.102 pcm_s16le
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 0
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 1.066667 | silence_duration: 1.066667
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 2.814667
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 2.97225 | silence_duration: 0.157583
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 4.262146
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 4.565521 | silence_duration: 0.303375
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 5.695229
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 5.921729 | silence_duration: 0.2265
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 6.729625
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 6.893625 | silence_duration: 0.164
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 6.893646
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 7.061333 | silence_duration: 0.167687
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 10.076812
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 10.428125 | silence_duration: 0.351312
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 11.03375
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 11.231813 | silence_duration: 0.198063
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 12.651042
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 12.832646 | silence_duration: 0.181604
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 14.743458
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 15.076917 | silence_duration: 0.333458
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 16.344521
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 16.672667 | silence_duration: 0.328146
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 18.525979
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 18.734437 | silence_duration: 0.208458
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 21.072146
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 21.293646 | silence_duration: 0.2215
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 22.212062
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 22.4025 | silence_duration: 0.190437
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 25.4815
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 25.639417 | silence_duration: 0.157917
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 26.436646
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 26.669833 | silence_duration: 0.233187
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 30.153604
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 30.446687 | silence_duration: 0.293083
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 31.324667
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 31.571292 | silence_duration: 0.246625
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 32.582729
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 32.750458 | silence_duration: 0.167729
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 32.767375
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 32.974187 | silence_duration: 0.206812
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 34.326604
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 34.504875 | silence_duration: 0.178271
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 35.735312
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 35.886958 | silence_duration: 0.151646
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 37.676167
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 37.907042 | silence_duration: 0.230875
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 38.889896
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 39.116167 | silence_duration: 0.226271
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 39.349062
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 39.538771 | silence_duration: 0.189708
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 40.017542
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 41.010896 | silence_duration: 0.993354
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_start: 41.012521
+[Parsed_silencedetect_0 @ 000001f860c108c0] silence_end: 41.813333 | silence_duration: 0.800812
+[out#0/null @ 000001f860bb7580] video:0KiB audio:3920KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+size=N/A time=00:00:41.81 bitrate=N/A speed=3.21e+03x elapsed=0:00:00.01    

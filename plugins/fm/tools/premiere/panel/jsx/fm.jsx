@@ -177,8 +177,15 @@ FM.voFolder = function () {
   var f = new Folder(new File(p).parent.fsName + '/VO'); if (!f.exists) f.create();
   return f.fsName.replace(/\\/g, '/');
 };
-FM.voPlace = function (path, at) {
+FM.voOverlap = function (at, dur) {   // VO замд [at, at+dur]-тай давхцах клипүүд
+  var s = app.project.activeSequence, t = FM.voTrack(s).t, o = [];
+  for (var i = 0; i < t.clips.numItems; i++) { var c = t.clips[i]; if (FM.sec(c.start) < at + dur && FM.sec(c.end) > at) o.push(c.name); }
+  return o;
+};
+FM.voPlace = function (path, at, replace, dur) {
   var s = app.project.activeSequence; if (!s) throw new Error('идэвхтэй sequence алга');
+  if (replace) { var t0 = FM.voTrack(s).t;   // хуучин давхцах VO-г бүхэлд нь хасна (хойноос нь, индекс шилжихгүй)
+    for (var r = t0.clips.numItems - 1; r >= 0; r--) { var oc = t0.clips[r]; if (FM.sec(oc.start) < at + dur && FM.sec(oc.end) > at) oc.remove(false, false); } }
   var bin = FM.bin('VO'), name = String(path).split('/').pop();
   app.project.importFiles([path], true, bin, false);
   var it = null;

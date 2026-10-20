@@ -1,0 +1,44 @@
+ffmpeg version 8.1.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers
+  built with gcc 16.1.0 (Rev2, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-cairo --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enable-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvvenc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libaom --enable-libjxl --enable-libsvtjpegxs --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libshaderc --enable-vulkan --enable-libplacebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint --enable-whisper
+  libavutil      60. 26.102 / 60. 26.102
+  libavcodec     62. 28.102 / 62. 28.102
+  libavformat    62. 12.102 / 62. 12.102
+  libavdevice    62.  3.102 / 62.  3.102
+  libavfilter    11. 14.102 / 11. 14.102
+  libswscale      9.  5.102 /  9.  5.102
+  libswresample   6.  3.102 /  6.  3.102
+[aist#0:0/pcm_s16le @ 0000027b4e2ed340] Guessed Channel Layout: mono
+Input #0, wav, from 'E:/OBS Recordings/VO/VO 2026-10-20 191958.wav':
+  Duration: 00:00:41.81, bitrate: 768 kb/s
+  Stream #0:0: Audio: pcm_s16le ([1][0][0][0] / 0x0001), 48000 Hz, mono, s16, 768 kb/s
+Stream mapping:
+  Stream #0:0 -> #0:0 (pcm_s16le (native) -> pcm_s16le (native))
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf62.12.102
+  Stream #0:0: Audio: pcm_s16le, 48000 Hz, mono, s16, 768 kb/s
+    Metadata:
+      encoder         : Lavc62.28.102 pcm_s16le
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 0
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 1.082 | silence_duration: 1.082
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 6.724833
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 7.144833 | silence_duration: 0.42
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 10.057292
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 10.435187 | silence_duration: 0.377896
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 12.355625
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 12.838958 | silence_duration: 0.483333
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 16.265042
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 16.682813 | silence_duration: 0.417771
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 20.867896
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 21.296 | silence_duration: 0.428104
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 25.169104
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 25.642646 | silence_duration: 0.473542
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 28.355187
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 28.833667 | silence_duration: 0.478479
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 32.57725
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 32.992458 | silence_duration: 0.415208
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_start: 39.986583
+[Parsed_silencedetect_0 @ 0000027b4e301840] silence_end: 41.813333 | silence_duration: 1.82675
+[out#0/null @ 0000027b4e2a84c0] video:0KiB audio:3920KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+size=N/A time=00:00:41.81 bitrate=N/A speed=3.15e+03x elapsed=0:00:00.01    
