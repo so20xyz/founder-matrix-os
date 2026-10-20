@@ -259,6 +259,9 @@ def main():
             if code.startswith("const PLAN="):
                 return {"result": {"wrapper": "9:1", "created": 9, "updated": 0, "mine": [], "warnings": [],
                                    "slides": [{"id": "01", "frame": "9:2"}]}}
+            if "midword" in code and "wordWidth" in code:      # deck_text_check (its header names check_layout too)
+                return {"result": {"frames": 9, "midword": 1, "overflow": 1, "report": [{"frame": "n04 · x", "id": "9:4",
+                        "issues": ["midword «Component» 317px > 306px (item 1 · title)", "overflow «a» доод бүс рүү 40px (row 2 · c2)"]}]}}
             if "check_layout" in code or "SAFE_SOCIAL" in code: return {"result": {"frames": 9, "problems": []}}
             if "WCAG" in code or "ratio(" in code: return {"result": {"checked": 9, "fail": 0, "items": []}}
             if "MIN_RATIO" in code: return {"result": {"frames": 9, "withIssues": 0, "report": []}}
@@ -269,6 +272,9 @@ def main():
         rep = json.loads(buf.getvalue())
         check(isinstance(rep.get("duration_s"), (int, float)) and rep["duration_s"] >= 0 and rep["created"] == 9
               and rep["overlaps"] == 0 and rep["contrast"] == 0, "run: report has duration_s and QA counts (fake bridge)", rep)
+        check(rep.get("midword") == 1 and rep.get("text_overflow") == 1
+              and any("n04 · x: midword «Component»" in w for w in rep["warnings"]) and any("overflow" in w for w in rep["warnings"]),
+              "run: deck_text_check → midword / text_overflow counts + one warning line per issue (Creative 2026-10-21)", rep)
 
     check(raises(DECK.replace('id: "02"', 'id: "01"'), "давхардсан"), "duplicate id rejected")
     check(raises(DECK.replace("layout: flow", "layout: grid"), "layout"), "unknown layout rejected")

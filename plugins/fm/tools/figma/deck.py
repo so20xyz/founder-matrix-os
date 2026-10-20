@@ -337,6 +337,8 @@ def run(a, call):
     lay = _qa(call, "check_layout.js", r["wrapper"])
     con = _qa(call, "contrast_check.js", r["wrapper"])
     cre = _qa(call, "creative_check.js", r["wrapper"])
+    txt = _qa(call, "deck_text_check.js", r["wrapper"])   # midword + overflow (Creative 2026-10-21: QA missed both)
+    tw = [f"{x['frame']}: {i}" for x in (txt.get("report", []) if isinstance(txt, dict) else []) for i in x.get("issues", [])]
     probs = lay.get("problems", []) if isinstance(lay, dict) else [lay]
     overlaps = sum(len(p.get("overlap", [])) + len(p.get("outside", [])) if isinstance(p, dict) else 1 for p in probs)
     contrast = con.get("fail", 0) if isinstance(con, dict) else None
@@ -349,7 +351,10 @@ def run(a, call):
     write_ids(a.file, {s["id"]: s["frame"] for s in r["slides"] if s.get("frame")}, r.get("mine", []))
     report = {"slides": len(r["slides"]), "created": r["created"], "updated": r["updated"],
               "duration_s": round(time.monotonic() - t0, 1), "overlaps": overlaps,
-              "contrast": contrast, "issues": issues, "wrapper": r["wrapper"], "warnings": plan["warnings"] + r.get("warnings", []), "contact_sheet": str(png) if "result" in ex else None,
-              "qa": {"layout": lay, "contrast": con, "creative": cre}}
+              "contrast": contrast, "issues": issues,
+              "midword": txt.get("midword") if isinstance(txt, dict) else None,
+              "text_overflow": txt.get("overflow") if isinstance(txt, dict) else None,
+              "wrapper": r["wrapper"], "warnings": plan["warnings"] + r.get("warnings", []) + tw, "contact_sheet": str(png) if "result" in ex else None,
+              "qa": {"layout": lay, "contrast": con, "creative": cre, "text": txt}}
     print(json.dumps(report, ensure_ascii=False, indent=1))
     if overlaps or contrast: sys.exit(1)
