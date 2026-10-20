@@ -64,6 +64,24 @@ def main():
     check(out.strip().splitlines()[-1] == "[true, false]" if rc == 0 else False,
           "dispatcher skips a channel whose session is listening, wakes a stale one", out)
 
+    deferred = """
+    relay.chmap = lambda: {"sid-acme": "📁-01-acme"}
+    now = time.time()
+    def put(alive_age, cursor):
+        st = relay.load(relay.STATE, {}); st["_alive"] = {"sid-acme": now - alive_age}
+        st["_watch_sid-acme"] = {"📁-01-acme": cursor}; relay.save(relay.STATE, st)
+    def item(age): return {"channel": "📁-01-acme", "id": "500", "t": now - age, "ev": {"wake": ["📁 Acme"]}}
+    out = []
+    put(5, "500");  w, k = relay._deferred_wakes([item(30)], now); out.append([len(w), len(k)])   # watch read it → drop
+    put(300, "400"); w, k = relay._deferred_wakes([item(30)], now); out.append([len(w), len(k)])  # watch died, unread → wake
+    put(5, "400");  w, k = relay._deferred_wakes([item(200)], now); out.append([len(w), len(k)])  # live but unread too long → wake
+    put(5, "400");  w, k = relay._deferred_wakes([item(30)], now); out.append([len(w), len(k)])   # live, give it time → keep
+    print(json.dumps(out))
+    """
+    rc, out = child(deferred, env)
+    check(out.strip().splitlines()[-1] == "[[0, 0], [1, 0], [1, 0], [0, 1]]" if rc == 0 else False,
+          "dispatcher defers a live channel's message and wakes when the watch never read it", out)
+
     start = """
     relay.git = lambda *a, **k: None
     relay.dchannels = lambda st: {}

@@ -507,7 +507,7 @@ def d_dispatch(every=15):
                 time.sleep(min(60, 5 * (i + 1)))
     st = load(STATE, {}); st.pop("_dch", None); ch = _retry(lambda: dchannels(st)); save(STATE, st)
     watch = {n: ch[n] for n in local if n in ch}
-    bot_wakes = {}; last = {}; seen_threads = {}; t0 = time.time()
+    bot_wakes = {}; last = {}; seen_threads = {}; t0 = time.time(); pending = []
     for n, cid in watch.items():
         lm = _retry(lambda: dapi("GET", f"/channels/{cid}/messages?limit=1")); last[n] = lm[0]["id"] if lm else "0"
     print(json.dumps({"ready": len(watch), "channels": list(watch)}, ensure_ascii=False), flush=True)
@@ -515,6 +515,10 @@ def d_dispatch(every=15):
     while True:
         time.sleep(every)
         srcs = list(watch.items()); parent = {}
+        wakes, pending = _deferred_wakes(pending)   # Soyol 2026-10-20: a live channel's message nobody ended up reading
+        for it in wakes:
+            if it.get("claim") and not msg_claim(it["id"]): continue
+            print(json.dumps(it["ev"], ensure_ascii=False), flush=True)
         try: threads = _threads(set(watch.values()))
         except Exception as e:   # сүлжээ тасарсан — энэ тойргийг алгасаж, дараа нь дахин
             regstore.log(f"dispatch: threads ({type(e).__name__})"); threads = {}
@@ -548,11 +552,13 @@ def d_dispatch(every=15):
                                       "text": f"🔒 санхүүгийн шинэ мессеж ({na} хавсралт) — тэр сешн `relay.py fetch {parent.get(n, n)}`-ээр өөрөө уншина"},
                                      ensure_ascii=False), flush=True)
                     continue
-                if _channel_live(parent.get(n, n)): continue        # itge.e 2026-10-07: that session hears it itself
-                if not a.get("bot") and not fm and parent.get(n, n) in shared_ch and not msg_claim(m["id"]):
-                    continue                                          # нөгөө машин түрүүлж авлаа
+                claim = not a.get("bot") and not fm and parent.get(n, n) in shared_ch
                 ev = {"wake": local[n], "channel": parent.get(n, n), **_author_fields(a), "text": txt[:1500]}
                 if n.startswith("t:"): ev["thread"] = n[2:]; seen_threads[n[2:]] = m["id"]
+                if _channel_live(parent.get(n, n)):   # itge.e 2026-10-07: that session hears it itself — keep it until read
+                    pending.append({"channel": parent.get(n, n), "id": m["id"], "t": time.time(), "ev": ev, "claim": claim})
+                    continue
+                if claim and not msg_claim(m["id"]): continue        # нөгөө машин түрүүлж авлаа
                 print(json.dumps(ev, ensure_ascii=False), flush=True)
 
 

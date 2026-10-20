@@ -321,6 +321,21 @@ def _channel_live(channel, window=90):
     return any(cm.get(s) == channel and time.time() - t < window for s, t in alive.items())
 
 
+def _deferred_wakes(pending, now=None, wait=120):
+    """Dispatcher messages skipped because the channel's session was listening (Soyol 2026-10-20: a watch that stops
+    right after its heartbeat — Monitor expiry, `watch --once` exit — left the message unread by anyone).
+    Each item {"channel", "id", "t", "ev"}: drop it once a local watch cursor reached the id; wake when no watch is
+    live any more, or it stayed unread `wait` s. Returns (items to wake, items to keep)."""
+    now = now or time.time(); st = load(STATE, {}); cm = chmap(); wakes, keep = [], []
+    for it in pending:
+        read = any(cm.get(s) == it["channel"] and int((st.get("_watch_" + s) or {}).get(it["channel"]) or 0) >= int(it["id"])
+                   for s in cm)
+        if read: continue
+        if not _channel_live(it["channel"]) or now - it["t"] >= wait: wakes.append(it)
+        else: keep.append(it)
+    return wakes, keep
+
+
 class _Count:
     """stdout-ийг дамжуулж, бичигдсэн мөрийг тоолно (watch --once: мессеж ирмэгц гарахад)."""
     def __init__(self, s): self.s, self.n = s, 0
