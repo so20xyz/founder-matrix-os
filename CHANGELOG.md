@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- fm 0.9.107: `/fm:research` — 🔬 Research агентын orchestrator: асуултыг Товч/Сэдэв/Мөчлөг гэж ангилж, Soyol зөвхөн brief батална; auto-research-tools → last30days → deep-research дараалал; fact-check-ийг context-гүй шинэ subagent хийнэ (⚠️ > 30% бол 1 удаа дахин цуглуулна); Wiki-д атомын task (tests/test_tools.py 12+6, reference тест).
+  - Яагаад: судалгааны чанар/итгэл, тодорхой урсгал, Soyol-ийн оролцоо 1 удаа · Дүрэм: [[03-Areas/AI Team/Spec - fm research skill]]
 - fm 0.9.106: fm:watch — faster-whisper-т `av<14` pin (av 14+ `metadata_errors` аргументыг хассанаас транскрипт унадаг байв).
 - fm 0.9.105: browse nlm — алдаатай эх сурвалж (URL гарчигтай үлдсэн) байхад гацахгүй: spinner 15 с алга бол түүнийг алгасаж (stderr-д ⚠️) үргэлжлүүлнэ.
 - fm 0.9.104: relay `_fm` — YAML мөрийн тайлбарыг (`device:  # PC | Mac`) утга гэж уншдаг байсныг засав; Task загвараас үүссэн task claim хийхэд LOSE буцаадаг байв.

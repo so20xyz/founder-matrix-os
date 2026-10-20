@@ -144,7 +144,7 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 
 ---
 
-## Skill-ууд (11 + 6)
+## Skill-ууд (12 + 6)
 
 | Үндсэн skill | Юу | Хэрэгслийн skill | Юу |
 |---|---|---|---|
@@ -159,6 +159,7 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 | `/fm:vault` | Vault-ийн дүрэм, синтакс | | |
 | `/fm:setup` | Суулгалт, онбординг | | |
 | `/fm:log` | Task-ийн «Өөрчлөлтийн түүх»-д мөр + Google Calendar | | |
+| `/fm:research` | 🔬 Судалгаа: ангилах → brief → цуглуулах → fact-check → тайлан → Wiki | | |
 
 Хэрэгсэл бүрийн заавар (юу, суулгах, token, аль Agent): [docs/tools/](docs/tools/). Bridge, routine, Discord-ийн дүрэм, нэмэлт хэрэгслийг нэг дор: **[docs/GUIDE.md](docs/GUIDE.md)**.
 

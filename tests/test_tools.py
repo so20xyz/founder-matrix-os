@@ -23,7 +23,7 @@ REPO = Path(__file__).resolve().parents[1]
 PLUGIN = REPO / "plugins" / "fm"
 TOOLS = PLUGIN / "tools"
 TOOL_SKILLS = ["figma", "notion", "relay", "post", "watch", "framer"]
-CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance", "log"]
+CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance", "log", "research"]
 # client names, spelled in pieces so a history scrub (git filter-repo --replace-text) never rewrites the guard itself
 CLIENT_WORDS = re.compile("|".join(["proba" + "itsaa", "проба" + "йцаа", r"\bb" + r"yd\b", "way " + "academy", "opus" + "_ep"]), re.I)
 
@@ -45,11 +45,19 @@ def child_env(home):
 
 # ------------------------------------------------------------------ skills
 
-def test_skill_lineup_is_11_plus_6():
+def test_skill_lineup_is_12_plus_6():
     have = sorted(p.parent.name for p in (PLUGIN / "skills").glob("*/SKILL.md"))
     assert have == sorted(CORE_SKILLS + TOOL_SKILLS), have
     for gone in ("track", "clip", "daily", "spawn", "bases", "canvas", "vault-cli"):
         assert not (PLUGIN / "skills" / gone).exists(), gone
+
+
+def test_skill_relative_references_exist():
+    """Every (references/x.md) link inside a skill points at a real file next to that SKILL.md."""
+    pat = re.compile(r"\]\((references/[A-Za-z0-9_.-]+\.md)\)")
+    for skill in sorted((PLUGIN / "skills").glob("*/SKILL.md")):
+        for rel in pat.findall(skill.read_text(encoding="utf-8")):
+            assert (skill.parent / rel).is_file(), (skill.parent.name, rel)
 
 
 def test_skill_paths_exist():
