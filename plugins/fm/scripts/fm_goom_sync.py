@@ -232,9 +232,9 @@ def _load_config():
     return url.rstrip("/"), token.strip(), ws
 
 
-def _post(url, token, payload):
+def _post(url, token, payload, endpoint=ENDPOINT):
     req = urllib.request.Request(
-        url + ENDPOINT,
+        url + endpoint,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         headers={"Content-Type": "application/json", "Authorization": "Bearer " + token},
         method="POST",
