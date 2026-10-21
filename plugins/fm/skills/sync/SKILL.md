@@ -17,8 +17,8 @@ argument-hint: "[--hours 48]"
 2. **sidebar** — `/fm:update`-ийн (S) хэсгийн 1–5-р алхам (`fm_sidebar.py plan` → rename/move/folder/missing, `check`). Extra сешнийг асуулгүй бүү архивла.
 3. **drive** — `drive_running: false` эсвэл `warn` бол бусдыг үргэлжлүүлэхээс өмнө хэл: «Drive ажиллахгүй/гүйцээгүй — нөгөө машины өөрчлөлт бүрэн ирээгүй байж магадгүй». `dupes_7d`-д файл байвал нэрийг нь тайланд (устгахгүй, нэгтгэхийг санал болго).
 4. **digest** — `since`-ээс хойшхи `log`, `decisions`, `tasks`-ийг 5–10 мөрийн тойм болго: юу хийгдсэн → юу шийдэгдсэн → юу хүлээж байна. Техник үгийг хас, холбоосоор (`[[…]]`).
-5. **сешн сэрээх** — `hooks.wake_sessions` (PC Architect хөгжүүлнэ). `null` бол алгас; `claimed` нь нөгөө машин бол хүрэхгүй.
-6. **harvest** — `hooks.harvest` (PC Architect). `null` бол алгас.
+5. **сешн сэрээх** — `hooks.wake_sessions.sessions`-ийн сешн бүрт (зөвхөн сул/idle, 🔒 ба routine-гүй) `hooks.wake_sessions.message`-ийг `SendMessage(to=<id>)`-ээр нэг удаа явуул. Ажиллаж буй, асуулттай сешнийг таслахгүй; мессеж дотор өөр машины claim-тэй task-ийг «бүү хүр» гэж заасан. `null` бол (сешний төлөв уншигдаагүй) алгас.
+6. **harvest** — `hooks.harvest.how`: энэ машины `fm-harvester` routine-ийг `mcp__scheduled-tasks__run_scheduled_task`-аар нэг удаа ажиллуул (бүртгэлгүй бол алгасаад тайланд хэл).
 7. **Тэмдэг** — бүгд дуусмагц `python3 "$S/fm_sync.py" mark "<V>" --device <…>` (дараагийн sync эндээс эхэлнэ).
 
 ## 3. Тайлан (нэг блок, ≤10 мөр)

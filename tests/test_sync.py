@@ -45,3 +45,35 @@ def test_drive_other_line(tmp_path):
         "- **10:00** · X (PC) → pc line\n- **11:00** · Y (Mac) → mentions PC but is mac\n", encoding="utf-8")
     d = fm_sync.step_drive(v, "Mac")
     assert "pc line" in d["last_other_line"]
+
+
+def _digest():
+    return {"since": "2026-10-19T08:00", "log_count": 3,
+            "log": [{"at": "2026-10-20T10:00", "text": "Architect (PC) → [[A]]"}],
+            "decisions": ["2026-10-20 - Шийдвэр"],
+            "tasks": {"completed": [{"title": "Done", "claimed": None}], "new": [],
+                      "in_progress": [{"title": "PC-ийн ажил", "claimed": "PC · Tool Developer (PC)"},
+                                      {"title": "Mac ажил", "claimed": "Mac"}], "changed": []},
+            "task_counts": {"completed": 1, "new": 0, "in_progress": 2, "changed": 0}}
+
+
+def test_wake_sessions_picks_idle_public_only():
+    ss = [{"id": "a", "title": "📚 Wiki", "state": "idle", "private": False, "routine": False, "since_s": 9000},
+          {"id": "b", "title": "busy", "state": "working", "private": False, "routine": False, "since_s": 5},
+          {"id": "c", "title": "🔒 Personal", "state": "idle", "private": True, "routine": False, "since_s": 9000},
+          {"id": "d", "title": "🧠 Harvester", "state": "idle", "private": False, "routine": True, "since_s": 9000},
+          {"id": "e", "title": "asks", "state": "needs_you", "private": False, "routine": False, "since_s": 9000}]
+    w = fm_sync.hook_wake_sessions(_digest(), "Mac", sessions=ss)
+    assert [s["id"] for s in w["sessions"]] == ["a"]
+    m = w["message"]
+    assert "Mac" in m and "PC-ийн ажил" in m and "бүү хүр" in m and "Шинэ ажил бүү эхлүүл" in m
+    assert "Mac ажил" not in m.split("бүү хүр")[1]
+
+
+def test_wake_sessions_none_when_state_unavailable():
+    assert fm_sync.hook_wake_sessions(_digest(), "Mac", sessions=None, loader=lambda: None) is None
+
+
+def test_harvest_hook():
+    h = fm_sync.hook_harvest("PC")
+    assert h["task_id"] == "fm-harvester" and "run_scheduled_task" in h["how"]

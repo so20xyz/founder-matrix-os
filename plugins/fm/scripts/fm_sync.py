@@ -8,7 +8,8 @@ check-ийн алхамууд (skill нь JSON-ийг уншаад үйлдли�
   1 repo   — git fetch, хэдэн commit хоцорсон, суусан plugin ↔ repo-гийн хувилбар → хийх командууд
   3 drive  — Google Drive ажиллаж байгаа эсэх, нөгөө машины сүүлийн бичлэг (лог, sidebar загвар) хэр шинэ, «(1)» давхардал
   4 digest — last-seen-<device>.json-оос хойшхи лог мөр, шийдвэр атом, task өөрчлөлт (🔒 private хасна)
-  5, 6     — сешн сэрээх (wake) ба harvest: PC Architect-ийн hook цэг (`hooks` түлхүүр), энд зөвхөн байр
+  5 wake   — сул (idle) сешн бүрт тойм + «хаана зогссон»-оо шинэчил мессеж (ажиллаж буй, 🔒, routine-д хүрэхгүй)
+  6 harvest — энэ машины fm-harvester routine-ийг нэг удаа ажиллуулах заавар
 Sidebar (2) нь fm_sidebar.py plan-аар, тайлан (7) нь skill-д.
 """
 import json
@@ -179,12 +180,57 @@ def step_digest(vault, since, limit=12):
             "task_counts": {k: len(v_) for k, v_ in tasks.items()}}
 
 
+def _load_sessions():
+    """FM Office-ийн control_state.build()-ийн сешнүүд (энэ машины Claude апп). Олдохгүй бол None."""
+    try:
+        import importlib.util
+        f = FM.parents[1] / "tools" / "fm-office" / "control_state.py"
+        spec = importlib.util.spec_from_file_location("fm_control_state", f)
+        mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+        return mod.build()["sessions"]
+    except Exception:
+        return None
+
+
+def hook_wake_sessions(digest, device, sessions=None, loader=_load_sessions):
+    """5 — сул (idle) байгаа, хувийн биш, routine биш сешн бүрт илгээх «хаана зогссон» сэрээлт.
+
+    Ажиллаж буй / асуулттай сешнийг таслахгүй. Мессежийг skill SendMessage-ээр сешн бүрт явуулна.
+    """
+    if sessions is None:
+        sessions = loader()
+    if sessions is None:
+        return None
+    pick = [{"id": s["id"], "title": s.get("title", ""), "since_s": s.get("since_s")} for s in sessions
+            if s.get("state") == "idle" and not s.get("private") and not s.get("routine")]
+    t = digest.get("tasks", {})
+    other = [r["title"] for k in t.values() for r in k
+             if r.get("claimed") and device.lower() not in str(r["claimed"]).lower()]
+    lines = [f"🔄 /fm:sync ({device}): {digest.get('since', '?')}-аас хойш {digest.get('log_count', 0)} лог мөр, "
+             f"{len(digest.get('decisions', []))} шийдвэр, task {digest.get('task_counts', {})}."]
+    lines += ["- " + x["text"] for x in digest.get("log", [])[-5:]]
+    done = [r["title"] for r in t.get("completed", [])]
+    if done:
+        lines.append("Дууссан: " + ", ".join(done[:8]))
+    lines.append("Өөрийн дүрийн baton, өнөөдрийн лог, task-аа уншиж «хаана зогссон»-оо шинэчил. Шинэ ажил бүү эхлүүл.")
+    if other:
+        lines.append("Өөр машин claim хийсэн тул бүү хүр: " + ", ".join(other[:8]))
+    return {"sessions": pick, "message": "\n".join(lines),
+            "how": "SendMessage(to=<session id>, message) — сешн бүрт нэг удаа"}
+
+
+def hook_harvest(device):
+    """6 — энэ машины Harvester routine-ийг (per-device, fm-harvester) шууд нэг удаа ажиллуулна."""
+    return {"task_id": "fm-harvester", "device": device,
+            "how": "mcp__scheduled-tasks__run_scheduled_task(taskId='fm-harvester'); байхгүй бол алгас"}
+
+
 def check(vault, device, repo, hours):
     since = since_of(vault, device, hours)
+    digest = step_digest(vault, since)
     return {"device": device, "now": datetime.now().isoformat(timespec="minutes"),
-            "repo": step_repo(repo), "drive": step_drive(vault, device), "digest": step_digest(vault, since),
-            # 5 (идэвхтэй сешнүүдийг сэрээх) ба 6 (harvest) — PC Architect-ийн hook цэг (task «fm:sync …»)
-            "hooks": {"wake_sessions": None, "harvest": None}}
+            "repo": step_repo(repo), "drive": step_drive(vault, device), "digest": digest,
+            "hooks": {"wake_sessions": hook_wake_sessions(digest, device), "harvest": hook_harvest(device)}}
 
 
 def mark(vault, device):
