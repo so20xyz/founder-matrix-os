@@ -23,9 +23,9 @@ REPO = Path(__file__).resolve().parents[1]
 PLUGIN = REPO / "plugins" / "fm"
 TOOLS = PLUGIN / "tools"
 TOOL_SKILLS = ["figma", "notion", "relay", "post", "watch", "framer"]
-CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance", "log", "research"]
+CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance", "log", "research", "sync"]
 # client names, spelled in pieces so a history scrub (git filter-repo --replace-text) never rewrites the guard itself
-CLIENT_WORDS = re.compile("|".join(["proba" + "itsaa", "проба" + "йцаа", r"\bb" + r"yd\b", "way " + "academy", "opus" + "_ep"]), re.I)
+CLIENT_WORDS = re.compile("|".join(["proba" + "itsaa", "проба" + "йцаа", r"\bb" + r"yd\b", "way " + "academy", "opus" + "_ep", "mag" + "god", "go" + "pay", "ochir" + "suren", "очир" + "сүрэн", "river " + "garden", "galaxy " + "tower"]), re.I)
 
 
 def load_module(name, path):
@@ -45,7 +45,7 @@ def child_env(home):
 
 # ------------------------------------------------------------------ skills
 
-def test_skill_lineup_is_12_plus_6():
+def test_skill_lineup_is_13_plus_6():
     have = sorted(p.parent.name for p in (PLUGIN / "skills").glob("*/SKILL.md"))
     assert have == sorted(CORE_SKILLS + TOOL_SKILLS), have
     for gone in ("track", "clip", "daily", "spawn", "bases", "canvas", "vault-cli"):
