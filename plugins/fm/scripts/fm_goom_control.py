@@ -18,6 +18,7 @@ ROOT = HERE.parents[2]
 SNAPSHOT_ENDPOINT = "/api/web/private/vault/control/snapshot"
 STATES = ("needs_you", "shell", "working", "idle")
 DEVICE_MAX = 40
+PRIVATE_TITLE = "🔒 Хаалттай сешн"
 
 
 def _load(name, path):
@@ -49,7 +50,7 @@ def build_payload(state, workspace_id, device):
     ids = {s["id"] for s in sessions}
     for s in sessions:
         if s.get("private"):
-            s.update(cwd="", tools=[], ask=None, subagents=[], last_text="", tokens=0)
+            s.update(title=PRIVATE_TITLE, model="", cwd="", tools=[], ask=None, subagents=[], last_text="", tokens=0)
         if s.get("parent") not in ids:
             s["parent"] = None
     counts = {k: 0 for k in STATES}
@@ -89,14 +90,22 @@ def main(argv=None):
     except gs.SystemExit_ as e:
         print(str(e), file=sys.stderr)
         return 2
-    body = build_payload(_build_state(), ws, device)
     try:
-        gs._post(url, token, body, endpoint=SNAPSHOT_ENDPOINT)
+        state = _build_state()
+    except Exception as e:
+        print(f"control state build failed: {type(e).__name__}", file=sys.stderr)
+        return 1
+    body = build_payload(state, ws, device)
+    try:
+        res = gs._post(url, token, body, endpoint=SNAPSHOT_ENDPOINT)
     except urllib.error.HTTPError as e:
         print(f"snapshot failed: HTTP {e.code}", file=sys.stderr)
         return 1
     except (urllib.error.URLError, OSError, ValueError) as e:
         print(f"snapshot failed: {type(e).__name__}", file=sys.stderr)
+        return 1
+    if not isinstance(res, dict) or res.get("ok") is not True:
+        print("snapshot failed: server did not acknowledge (ok != true)", file=sys.stderr)
         return 1
     print(f"snapshot sent: {body['payload']['total']} session(s) as {device}")
     return 0

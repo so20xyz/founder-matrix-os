@@ -71,6 +71,8 @@ class TestGoomControl(unittest.TestCase):
     def test_private_stripped_client_side(self):
         body = gc.build_payload(_state(), 7, "pc1")
         p = next(s for s in body["payload"]["sessions"] if s["id"] == "p")
+        self.assertEqual(p["title"], "🔒 Хаалттай сешн")
+        self.assertEqual(p["model"], "")
         self.assertEqual(p["cwd"], "")
         self.assertEqual(p["tools"], [])
         self.assertIsNone(p["ask"])
@@ -119,6 +121,23 @@ class TestGoomControl(unittest.TestCase):
         self.assertEqual(args[2]["device"], "pc1")
         self.assertEqual(kwargs.get("endpoint"), "/api/web/private/vault/control/snapshot")
         self.assertNotIn(TOKEN, out + err)
+
+    def test_unacknowledged_post_returns_1(self):
+        self._config("http://goom.test")
+        with mock.patch.object(gc.gs, "_post", return_value={"ok": False}):
+            rc, _, err = self._run(["--device", "pc1"])
+        self.assertEqual(rc, 1)
+        self.assertIn("did not acknowledge", err)
+
+    def test_state_build_failure_returns_1(self):
+        self._config("http://goom.test")
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(gc, "_build_state", side_effect=RuntimeError("boom")), \
+                mock.patch.object(gc.gs, "_post") as post, redirect_stdout(out), redirect_stderr(err):
+            rc = gc.main(["--device", "pc1"])
+        self.assertEqual(rc, 1)
+        post.assert_not_called()
+        self.assertIn("state build failed", err.getvalue())
 
     def test_post_failure_returns_1(self):
         self._config("http://goom.test")
