@@ -100,6 +100,10 @@
   .ch.done .op{cursor:default}
   .cha{color:var(--done);font-size:12px}
   /* thread дотрох хариулт */
+  .fc{display:inline-block;font-size:10px;line-height:1.5;color:var(--t2);background:var(--el);border-radius:5px;padding:0 6px;cursor:pointer;margin:0 3px 2px 0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}.fc:hover{color:var(--tx);background:var(--bd)}
+  .qr{display:flex;gap:6px;margin-top:8px;border-top:1px solid var(--bd);padding-top:7px}
+  .qr input{flex:1;min-width:0;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:7px;padding:4px 8px;font:12px var(--sans)}
+  .qr button{background:var(--ac);color:var(--ink);border:0;border-radius:7px;padding:3px 10px;font:600 12px var(--sans);cursor:pointer}
   .rbox{margin-top:8px;border-top:1px solid var(--bd);padding-top:8px}
   .rbox textarea{height:46px}
   .rrow{display:flex;gap:10px;align-items:center;margin-top:5px;font-size:12px}.rrow a{color:var(--t2);cursor:pointer}.rrow a:hover{color:var(--tx)}
@@ -239,12 +243,17 @@ function msgHtml(m, isReply) {
     meta = '<div class="mt" data-m="' + m.id + '">▸ ' + metrics(t) + ' · <u data-m="' + m.id + '">Цааш унших</u></div>'; }
   else if (long) meta = '<div class="mt" data-m="' + m.id + '">▴ <u data-m="' + m.id + '">Хураах</u></div>';
   const who = isReply ? (m.from === 'user' ? '<span class="who">' + esc(ME) + ':</span>' : '<span class="spk">✦</span><span class="who">Claude:</span>') : '';
-  return '<div class="msg ' + m.from + (isReply ? ' re' : ' root') + (long && !open ? ' clp' : '') + '"' + (isReply ? ' title="' + hhmm(m.at) + (m.session ? ' · ' + esc(m.session) : '') + '"' : '') + '>' + who +
+  const fn = m.nodes && m.nodes.length ? m.nodes : m.node ? [m.node] : [];
+  const chips = isReply && fn.length ? '<div>' + fn.map(n => '<span class="fc" data-n="' + esc(n.id) + '" title="frame руу очих">◎ ' + esc(n.name || n.id) + '</span>').join('') + '</div>' : '';
+  return '<div class="msg ' + m.from + (isReply ? ' re' : ' root') + (long && !open ? ' clp' : '') + '"' + (isReply ? ' title="' + hhmm(m.at) + (m.session ? ' · ' + esc(m.session) : '') + '"' : '') + '>' + chips + who +
     body + meta +
-    (isReply && m.nodes && m.nodes.length ? '<div>' + m.nodes.map(n => '<span class="node" data-n="' + esc(n.id) + '">◎ ' + esc(n.name) + '</span>').join(' ') + '</div>' : '') +
     (m.images && m.images.length ? '<div class="thumbs">' + m.images.map(i => '<img src="http://localhost:3055/cimg?f=' + encodeURIComponent(i.f) + '" data-big="' + esc(i.f) + '">').join('') + '</div>' : '') + '</div>';
 }
 function render() {
+  const fa = document.activeElement, fq = fa && fa.dataset && fa.dataset.qi, fp = fq ? fa.selectionStart : 0;
+  try { renderInner(); } finally { if (fq) { const el = C.querySelector('[data-qi="' + fq + '"]'); if (el) { el.focus(); el.setSelectionRange(fp, fp); } } }
+}
+function renderInner() {
   const roots = all.filter(c => !c.parent);
   const open = roots.filter(r => !r.resolved).length; $('n').textContent = open || '';
   if (!roots.length) { C.innerHTML = '<div class="empty"><i>◎</i><b>Коммент алга</b>Figma-д frame сонгоод доор бичвэл энд thread үүснэ.</div>'; return; }
@@ -267,6 +276,7 @@ function render() {
       shown.map(m => msgHtml(m, true)).join('') + (r.choice && kids.length ? choiceHtml(r) : '') +
       (r.status && r.status.state && r.status.state !== 'done' && !r.resolved ? '<div class="st ' + r.status.state + '">' + (r.status.state === 'working' ? '⏳ ажиллаж байна' : '🕐 дараалалд') + (r.status.text ? ' · ' + esc(r.status.text) : '') + ' · ' + hhmm(r.status.at) + '</div>' : '') +
       (work ? '<div class="msg re claude live"><span class="who">Claude</span><span class="wsp">✳</span> <b class="lvt"></b> <span class="lvd"></span><div class="lvm"></div></div>' : '') +
+      (replyTo ? '' : '<div class="qr"><input data-qi="' + r.id + '" placeholder="Хариулах… (Enter)" value="' + esc(D(r.id).text).replace(/"/g, '&quot;') + '"><button data-qs="' + r.id + '">Илгээх</button></div>') +
       '</div>';
   }).join('');
   const bk = $('back'); if (bk) bk.onclick = () => { replyTo = null; showSel(); render(); };
@@ -288,7 +298,10 @@ function sendReply(id) { const d = D(id), ta = C.querySelector('[data-rt="' + id
 function readImg(file, cb) { const fr = new FileReader(); fr.onload = () => cb(fr.result); fr.readAsDataURL(file); }
 function pasteImgs(e, cb) { const it = [...((e.clipboardData || {}).items || [])].filter(x => x.type.indexOf('image/') === 0); if (!it.length) return false;
   e.preventDefault(); it.forEach(x => readImg(x.getAsFile(), cb)); return true; }
-C.addEventListener('input', (e) => { const t = e.target; if (t.dataset && t.dataset.rt) D(t.dataset.rt).text = t.value; });
+C.addEventListener('input', (e) => { const t = e.target; if (t.dataset && t.dataset.rt) D(t.dataset.rt).text = t.value; if (t.dataset && t.dataset.qi) D(t.dataset.qi).text = t.value; });
+function quickReply(id) { const el = C.querySelector('[data-qi="' + id + '"]'), text = (el ? el.value : D(id).text).trim(); if (!text) return;
+  const root = all.find(c => c.id === id); wsSend(({ newComment: { text, parent: id, ...(root && root.node ? { node: root.node } : {}) } })); D(id).text = ''; if (el) el.value = ''; }
+C.addEventListener('keydown', (e) => { const t = e.target; if (t.dataset && t.dataset.qi && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); quickReply(t.dataset.qi); } });
 C.addEventListener('paste', (e) => { const t = e.target; if (t.dataset && t.dataset.rt) pasteImgs(e, (u) => { D(t.dataset.rt).imgs.push(u); render(); }); });
 // сонголт: мөр дээр дарж сонгоно (анхдагч = 1-р санал), гол товч «Сонголтоо илгээх» илгээнэ; бичсэн текст = тайлбар
 const chosen = {};
@@ -298,7 +311,8 @@ function choiceHtml(r) { const A = r.answer, cur = A ? A.pick : (chosen[r.id] !=
     (o.desc ? ' title="' + esc(o.desc).replace(/"/g, '&quot;') + '"' : '') + '><span class="no">' + (i + 1) + '</span><span class="ol">' + esc(o.label) + '</span>' +
     (o.node ? '<span class="lk" data-n="' + esc(o.node) + '" title="frame руу очих">◎</span>' : '') + '</div>').join('') +
     (A ? '<div class="cha">✓ ' + (A.label ? esc(A.label) : 'тайлбар') + (A.note ? ' — ' + esc(A.note) : '') + ' · ' + hhmm(A.at) + '</div>' : '') + '</div>'; }
-C.onclick = (e) => { const t = e.target.closest('[data-ch],[data-n],[data-e],[data-m],[data-r],[data-rsend],[data-ra],[data-rs],[data-dn],[data-di],[data-big],[data-d],[data-x]') || e.target;
+C.onclick = (e) => { const t = e.target.closest('[data-qs],[data-ch],[data-n],[data-e],[data-m],[data-r],[data-rsend],[data-ra],[data-rs],[data-dn],[data-di],[data-big],[data-d],[data-x]') || e.target;
+  if (t.dataset.qs) return quickReply(t.dataset.qs);
   if (t.dataset.n) { parent.postMessage({ pluginMessage: { focus: t.dataset.n } }, '*'); return; }
   if (t.dataset.ch) { chosen[t.dataset.ch] = Number(t.dataset.i); keepScroll = true; const y = C.scrollTop; render(); C.scrollTop = y; sendLabel(); return; }
   if (t.dataset.e) { expanded[t.dataset.e] = true; keepScroll = true; render(); }
