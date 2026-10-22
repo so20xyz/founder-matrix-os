@@ -6,7 +6,8 @@
   python fm_goom_chat.py watch [--sid S] [--after <id>]         # itge.e-ийн шинэ мессеж ирэхэд хэвлээд гарна (сешнийг сэрээнэ)
   python fm_goom_chat.py bind --sid S [--role r] [--title t]   # сешнд чат оноох/үүсгэх (нэрийг title-тай тааруулна)
   python fm_goom_chat.py ensure-agents                         # дүр бүрийн локал туршилтын агент хэрэглэгч (idempotent)
-  python fm_goom_chat.py sync-sessions [--dry-run]             # registry-ийн амьд сешн бүрд чат (goom-tick-ээс)
+  python fm_goom_chat.py sync-sessions [--dry-run]             # registry-ийн амьд сешн бүрд чат (goom-tick-ээс);
+                                                               #   хаагдсан сешний чатыг ижил дүрийн амьд сешн рүү шилжүүлнэ
 
 Сешн → чат: ~/.fmos/goom-sessions.json {sid: {chat_id, role, title, seen}}. Хуучин ~/.fmos/goom-chat.json (Architect · PC = чат 1)
 энэ файлд шилжинэ. Агентын нэвтрэх эрх: goomnet/backend/dev-login.txt-ийн «agent <role>» хэсэг (git-ээс хасагдсан, зөвхөн
@@ -166,8 +167,10 @@ def _legacy_chat_id(api, token):
 
 def bind(api, sid, role=None, title=None, sessions=None, pin=False):
     """sid-д чат оноож/үүсгэнэ; title өөрчлөгдсөн бол нэрийг шинэчилнэ. pin=True (гараар --title) → sync-sessions нэрийг солихгүй."""
+    if not is_sid(sid):
+        raise ValueError(f"{sid[:14]} sid биш (desktop local id?) — transcript UUID өг")
     s = sessions if sessions is not None else load_sessions()
-    e = s.get(sid)
+    e = s.get(sid)   # байгаа бол дахин ашиглана — давхар чат үүсгэхгүй
     if e and pin:
         e["pinned"] = True
     role = role or (e or {}).get("role") or "project"
@@ -251,17 +254,68 @@ def _registry():
 LIVE_DAYS = 3
 
 
-def live_sids(root=None, days=LIVE_DAYS, now=None):
-    """~/.claude/projects/*/<sid>.jsonl — сүүлийн `days` хоногт бичигдсэн transcript = амьд сешн."""
+def live_mtimes(root=None, days=LIVE_DAYS, now=None):
+    """~/.claude/projects/*/<sid>.jsonl — сүүлийн `days` хоногт бичигдсэн transcript = амьд сешн → {sid: mtime}."""
     root = Path(root or Path.home() / ".claude" / "projects"); now = now or time.time()
-    out = set()
+    out = {}
     for f in root.glob("*/*.jsonl"):
         try:
-            if now - f.stat().st_mtime < days * 86400:
-                out.add(f.stem)
+            m = f.stat().st_mtime
+            if now - m < days * 86400:
+                out[f.stem] = max(m, out.get(f.stem, 0))
         except OSError:
             pass
     return out
+
+
+def live_sids(root=None, days=LIVE_DAYS, now=None):
+    return set(live_mtimes(root, days, now))
+
+
+def is_sid(sid):
+    """Transcript sid = UUID. Desktop app-ийн «local_…» (SendMessage хаяг) sid биш — чат оноохгүй."""
+    return bool(re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", sid or ""))
+
+
+def plan_rebinds(reg, device, sessions, live=None):
+    """Хаагдсан сешнд (registry-д алга эсвэл transcript > LIVE_DAYS) уясан чатыг ижил title/дүртэй, чатгүй амьд сешн рүү
+    шилжүүлэх → [(old_sid, new_sid)]. Ижил дүртэй хоёр амьд сешн байвал хамгийн сүүлд идэвхтэй нь хуучин чатыг авна,
+    нөгөө нь plan_sessions-ээр шинэ чат авна. live = {sid: mtime} эсвэл set."""
+    def alive(sid):
+        return sid in reg and (live is None or sid in live)
+    stale = [sid for sid in sessions if not alive(sid)]
+    if not stale:
+        return []
+    act = live if isinstance(live, dict) else {}
+    cands = []
+    for sid, v in reg.items():
+        if not is_sid(sid) or (v.get("device") or device) != device or sid in sessions or not alive(sid):
+            continue
+        role = role_of(v)
+        if role:
+            cands.append((act.get(sid, 0), sid, role, v.get("title") or v.get("name") or ROLES[role]))
+    moves, used = [], set()
+    for _, sid, role, title in sorted(cands, reverse=True):
+        free = [o for o in stale if o not in used and sessions[o].get("role") == role]
+        hit = next((o for o in free if sessions[o].get("title") == title), None)
+        if hit is None and role != "project":   # төсөл бүр өөр — зөвхөн нэрээр
+            hit = next(iter(free), None)
+        if hit is not None:
+            used.add(hit); moves.append((hit, sid))
+    return moves
+
+
+def apply_rebinds(sessions, moves):
+    """chat_id-г хадгалж sid түлхүүрийг солино."""
+    for old, new in moves:
+        sessions[new] = sessions.pop(old)
+    return sessions
+
+
+def pending_itge(msgs):
+    """Агентын сүүлийн хариунаас хойшхи itge.e-ийн мессежүүд (хэн ч хариулаагүй)."""
+    last = max((_msg_id(m) for m in msgs if _sender(m) and _sender(m) != ITGE_ID), default=0)
+    return new_from_itge(msgs, last)
 
 
 def plan_sessions(reg, device, sessions, live=None):
@@ -269,7 +323,7 @@ def plan_sessions(reg, device, sessions, live=None):
     Гараар --title-аар bind хийсэн (pinned) чатын нэрийг хөндөхгүй."""
     todo = []
     for sid, v in reg.items():
-        if (v.get("device") or device) != device or (live is not None and sid not in live):
+        if not is_sid(sid) or (v.get("device") or device) != device or (live is not None and sid not in live):
             continue
         if (sessions.get(sid) or {}).get("pinned"):
             continue
@@ -286,8 +340,24 @@ def plan_sessions(reg, device, sessions, live=None):
 def sync_sessions(api, dry=False):
     reg, dev = _registry()
     s = load_sessions()
-    todo = plan_sessions(reg, dev, s, live_sids())
+    live = live_mtimes()
     done = []
+    moves = plan_rebinds(reg, dev, s, live)
+    for old, new in moves:
+        e = s[old]
+        info = {"moved_from": old[:8], "chat_id": e["chat_id"]}
+        if not dry:
+            try:
+                tok = agent_token(api, e["role"])
+                info["pending"] = [m.get("content") for m in pending_itge(_messages(api, tok, e["chat_id"]))]
+            except Exception as ex:
+                info["pending_error"] = type(ex).__name__
+        done.append((new, e["role"], e.get("title"), info))
+    if not dry:
+        apply_rebinds(s, moves)
+    else:
+        s = apply_rebinds(dict(s), moves)
+    todo = plan_sessions(reg, dev, s, set(live))
     for sid, role, title in todo:
         if dry:
             done.append((sid, role, title, "dry")); continue
