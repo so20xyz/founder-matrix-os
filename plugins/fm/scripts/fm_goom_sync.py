@@ -187,7 +187,7 @@ def collect(vault, kinds):
             if kind == "task" and str(fm.get("type", "")).strip() != "task":
                 skip("not-task")
                 continue
-            slug = _project_slug(fm.get("project"))
+            slug = _project_slug(fm.get("project") or fm.get("projects"))
             topics = fm.get("tags", fm.get("topics"))
             if isinstance(topics, str):
                 topics = [topics]
