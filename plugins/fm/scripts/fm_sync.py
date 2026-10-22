@@ -192,6 +192,10 @@ def _load_sessions():
         return None
 
 
+WAKE_MAX_AGE_S = 3 * 24 * 3600   # 3 хоногоос удаан хөдлөөгүй сешнийг сэрээхгүй (Mac 10-22: 40 хоногийн сешн орж байсан)
+WAKE_LIMIT = 10
+
+
 def hook_wake_sessions(digest, device, sessions=None, loader=_load_sessions):
     """5 — сул (idle) байгаа, хувийн биш, routine биш сешн бүрт илгээх «хаана зогссон» сэрээлт.
 
@@ -202,7 +206,9 @@ def hook_wake_sessions(digest, device, sessions=None, loader=_load_sessions):
     if sessions is None:
         return None
     pick = [{"id": s["id"], "title": s.get("title", ""), "since_s": s.get("since_s")} for s in sessions
-            if s.get("state") == "idle" and not s.get("private") and not s.get("routine")]
+            if s.get("state") == "idle" and not s.get("private") and not s.get("routine") and not s.get("archived")
+            and s.get("since_s") is not None and s["since_s"] <= WAKE_MAX_AGE_S]
+    pick = sorted(pick, key=lambda x: x["since_s"])[:WAKE_LIMIT]
     t = digest.get("tasks", {})
     other = [r["title"] for k in t.values() for r in k
              if r.get("claimed") and device.lower() not in str(r["claimed"]).lower()]
@@ -221,8 +227,11 @@ def hook_wake_sessions(digest, device, sessions=None, loader=_load_sessions):
 
 def hook_harvest(device):
     """6 — энэ машины Harvester routine-ийг (per-device, fm-harvester) шууд нэг удаа ажиллуулна."""
+    harvest = FM.parents[1] / "tools" / "relay" / "harvest.py"
     return {"task_id": "fm-harvester", "device": device,
-            "how": "mcp__scheduled-tasks__run_scheduled_task(taskId='fm-harvester'); байхгүй бол алгас"}
+            "how": "mcp__scheduled-tasks__run_scheduled_task(taskId='fm-harvester')",
+            "fallback": f'python3 "{harvest.as_posix()}"' if harvest.exists() else None,
+            "fallback_how": "scheduled task байхгүй бол (Mac г.м.) fallback командыг ажиллуулаад гарсан digest-ийг plugins/fm/routines/harvester.md-ийн 2–4-р алхмаар атом болго"}
 
 
 def check(vault, device, repo, hours):

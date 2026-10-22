@@ -72,6 +72,7 @@ def main(argv=None):
     s = sub.add_parser("say"); s.add_argument("board", type=int); s.add_argument("text"); s.add_argument("--as", dest="who", default="")
     r = sub.add_parser("read"); r.add_argument("board", type=int); r.add_argument("--after", type=int, default=0)
     d = sub.add_parser("add"); d.add_argument("board", type=int); d.add_argument("--kind", choices=ADD_KINDS, required=True); d.add_argument("--text", required=True)
+    st = sub.add_parser("status"); st.add_argument("board", type=int); st.add_argument("--match", default="wiki|creative|architect|gtd")
     w = sub.add_parser("watch"); w.add_argument("board", type=int); w.add_argument("--after", type=int, default=0); w.add_argument("--every", type=int, default=5)
     a = ap.parse_args(argv)
     url, token, _ws = gs._load_config()
@@ -84,6 +85,36 @@ def main(argv=None):
         res = add_node(f"{url}/api/web/private/vault/boards/{a.board}", token, a.kind, a.text)
         print(json.dumps({"ok": True, **res}, ensure_ascii=False))
         return 0
+    if a.cmd == "status":
+        # «👥 Одоо хэн юу хийж байна» карт — энэ машины сешнүүдийн төлвийг board дээр шинэчилнэ (goom-tick 2 мин тутам)
+        import importlib.util, re, time
+        f = Path(__file__).resolve().parents[3] / "tools" / "fm-office" / "control_state.py"
+        spec = importlib.util.spec_from_file_location("fm_control_state", f); mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+        icon = {"needs_you": "✋", "shell": "⏳", "working": "🟢", "idle": "💤"}
+        word = {"needs_you": "чамайг хүлээж байна", "shell": "ажиллуулж байна", "working": "ажиллаж байна", "idle": "сул"}
+        rows = []
+        for x in mod.build()["sessions"]:
+            if x.get("private") or x.get("routine") or not re.search(a.match, x.get("title", ""), re.I):
+                continue
+            last = (x.get("tools") or [{}])[-1]
+            doing = (last.get("tool", "") + " · " + last.get("arg", "")).strip(" ·") if x["state"] != "idle" else ""
+            ago = x.get("since_s")
+            ago = f"{ago // 60} мин" if ago and ago >= 60 else (f"{ago} с" if ago else "")
+            rows.append(f"{icon[x['state']]} **{x['title'][:40]}** — {word[x['state']]}{' · ' + doing[:70] if doing else ''}{' · ' + ago + ' өмнө' if ago else ''}")
+        text = "**👥 Одоо хэн юу хийж байна**\n\n" + ("\n\n".join(rows) or "Идэвхтэй сешн алга") + f"\n\n_{time.strftime('%H:%M')} шинэчлэв_"
+        bu = f"{url}/api/web/private/vault/boards/{a.board}"
+        for _ in range(2):
+            cur = _req("GET", bu, token); doc = cur["doc"]; nodes = doc.setdefault("nodes", [])
+            n = next((n for n in nodes if n.get("id") == "live-status"), None)
+            if not n:
+                n = {"id": "live-status", "type": "card", "position": {"x": 1200, "y": 220}, "width": 420, "height": 300, "data": {"kind": "card", "title": "", "color": "blue"}}
+                nodes.append(n)
+            n["data"]["text"] = text
+            try:
+                _req("PUT", bu, token, {"doc": doc, "version": cur["version"]}); print(json.dumps({"ok": True, "rows": len(rows)})); return 0
+            except Exception:
+                continue
+        return 1
     if a.cmd == "watch":
         # itge.e-ийн (агентын «[..]» угтваргүй) шинэ мессеж ирэхэд хэвлээд гарна — сешнийг сэрээх background команд
         import time

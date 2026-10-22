@@ -77,3 +77,16 @@ def test_wake_sessions_none_when_state_unavailable():
 def test_harvest_hook():
     h = fm_sync.hook_harvest("PC")
     assert h["task_id"] == "fm-harvester" and "run_scheduled_task" in h["how"]
+
+
+def test_wake_skips_old_and_archived_and_limits():
+    ss = [{"id": f"s{i}", "title": f"S{i}", "state": "idle", "private": False, "routine": False, "since_s": 60 * i} for i in range(15)]
+    ss += [{"id": "old", "title": "Old", "state": "idle", "private": False, "routine": False, "since_s": 40 * 86400},
+           {"id": "arc", "title": "Arc", "state": "idle", "private": False, "routine": False, "since_s": 10, "archived": True}]
+    w = fm_sync.hook_wake_sessions(_digest(), "Mac", sessions=ss)
+    ids = [s["id"] for s in w["sessions"]]
+    assert "old" not in ids and "arc" not in ids and len(ids) == fm_sync.WAKE_LIMIT and ids[0] == "s0"
+
+
+def test_harvest_has_fallback_key():
+    assert "fallback" in fm_sync.hook_harvest("Mac")
