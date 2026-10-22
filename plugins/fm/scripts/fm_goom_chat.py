@@ -396,7 +396,9 @@ def watch(api, sid, after, every):
         mine = new_from_itge(msgs, after)
         if mine:
             for m in mine:
-                print(json.dumps({"id": _msg_id(m), "text": m.get("content"), "at": m.get("created_at")}, ensure_ascii=False))
+                att = [a.get("url") for a in (m.get("attachments") or []) if a.get("url")]
+                print(json.dumps({"id": _msg_id(m), "text": m.get("content"), "at": m.get("created_at"),
+                                  **({"attachments": att} if att else {})}, ensure_ascii=False))
             nxt = _msg_id(mine[-1])
             print(json.dumps({"next_after": nxt}))
             s = load_sessions()
