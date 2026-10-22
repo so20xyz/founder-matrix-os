@@ -22,7 +22,7 @@ from pathlib import Path
 
 KINDS = ("project", "task", "reference", "atom", "decision", "note")
 # kind note: every other note under these top folders (folder dashboards in Goomnet). Private ones are skipped.
-NOTE_ROOTS = ("00-Soul", "03-Areas", "99-Archive")
+NOTE_ROOTS = ("00-Soul", "01-GTD/Inbox", "03-Areas", "99-Archive")
 BATCH = 500
 ENDPOINT = "/api/web/private/vault/sync"
 CONFIG_REL = (".fmos", "goom.json")
