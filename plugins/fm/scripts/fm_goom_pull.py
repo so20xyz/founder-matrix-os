@@ -18,8 +18,10 @@ token хэвлэхгүй. Stdlib.
 """
 import argparse
 import json
+import os
 import re
 import sys
+import tempfile
 import unicodedata
 import urllib.error
 import urllib.request
@@ -35,9 +37,19 @@ DECISIONS = "04-Resources/Atomic/decisions"
 HISTORY = "## Өөрчлөлтийн түүх"
 _BAD = re.compile(r'[/\\:*?"<>|\r\n\t]')
 _TRUE = ("true", "yes", "on", "1")
+# GTD statuses the vault accepts (mirrors goomnet change.AllowedStatuses).
+STATUSES = frozenset({"inbox", "next-action", "in-progress", "waiting", "someday", "completed", "cancelled"})
 
 
-class PrivatePathError(Exception):
+class RejectedError(Exception):
+    """A request the PC refuses to apply; it is closed on Goomnet with the reason, not retried."""
+
+
+class PrivatePathError(RejectedError):
+    pass
+
+
+class BadStatusError(RejectedError):
     pass
 
 
@@ -108,13 +120,18 @@ def _note_is_private(text, path):
     return priv is True or str(priv if priv is not None else "").strip().lower() in _TRUE or "🔒" in str(title)
 
 
+def _read_note(path):
+    """Note text with CR removed, so CRLF files (Windows editors, Drive) match LF-based checks."""
+    return path.read_text(encoding="utf-8").replace("\r", "")
+
+
 def _find_by_change(folder, change_id):
     if not folder.is_dir():
         return None
     marker = f"goomnet_change: {change_id}\n"
     for f in sorted(folder.glob("*.md")):
         try:
-            if marker in f.read_text(encoding="utf-8"):
+            if marker in _read_note(f):
                 return f
         except (OSError, UnicodeDecodeError):
             continue
@@ -131,9 +148,21 @@ def _free_path(folder, stem):
 
 
 def _write(path, text):
+    """Temp file in the same folder, then os.replace: a crash leaves the old note or the new one, never half."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(text)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 # ---------- capture ----------
@@ -210,10 +239,12 @@ def plan_status(vault, change, now):
     target = str(p.get("status") or "").strip()
     if not target or "\n" in target:
         raise ValueError("status missing")
+    if target not in STATUSES:
+        raise BadStatusError(f"status not allowed: {target!r}")
     path, _rel = _resolve(vault, p.get("source_path"))
     if not path.is_file():
         raise FileNotFoundError(f"task not found: {_rel}")
-    text = path.read_text(encoding="utf-8")
+    text = _read_note(path)
     if _note_is_private(text, path):
         raise PrivatePathError(f"private note: {_rel}")
     return path, edit_status(text, target, now)
@@ -317,17 +348,26 @@ def process(vault, changes, apply, client=None, now=None):
                     except Exception as e:  # atom is written; the board just keeps ⏳
                         res["warning"] = f"board write-back failed: {type(e).__name__}: {e}"
                 if client is not None:
-                    client.call("POST", f"/api/web/private/vault/changes/{cid}/applied", {})
-                res["applied"] = True
-        except PrivatePathError as e:
+                    _close(client, cid, res)
+        except RejectedError as e:
             res.update(action="rejected", error=str(e))
             if apply and client is not None:
-                client.call("POST", f"/api/web/private/vault/changes/{cid}/applied", {"error": str(e)})
-                res["applied"] = True
+                _close(client, cid, res, error=str(e))
         except Exception as e:  # left pending; next run retries
             res.update(action="error", error=f"{type(e).__name__}: {e}")
         results.append(res)
     return results
+
+
+def _close(client, cid, res, error=None):
+    """Mark a change applied on Goomnet. A failure is recorded on the result and never stops the batch;
+    the note is already written, so the next run sees it as noop and retries only the close."""
+    body = {"error": error} if error else {}
+    try:
+        client.call("POST", f"/api/web/private/vault/changes/{cid}/applied", body)
+        res["applied"] = True
+    except Exception as e:
+        res.update(action="error", error=f"mark applied failed: {type(e).__name__}: {e}")
 
 
 def main(argv=None):

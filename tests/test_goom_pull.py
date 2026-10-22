@@ -136,6 +136,58 @@ class TestGoomPull(unittest.TestCase):
         self.assertFalse((self.vault / "01-GTD" / "Inbox").exists())
         self.assertFalse((self.vault / "04-Resources").exists())
 
+    def test_status_outside_allowlist_is_rejected(self):
+        before = self.task.read_text(encoding="utf-8")
+        client = FakeClient()
+        res = gp.process(self.vault, [self.status_change(target="todo")], True, client, NOW)
+        self.assertEqual(res[0]["action"], "rejected")
+        self.assertEqual(self.task.read_text(encoding="utf-8"), before)
+        posted = [c for c in client.calls if c[0] == "POST"]
+        self.assertEqual(len(posted), 1)
+        self.assertTrue(posted[0][2].get("error"))
+
+    def test_crlf_note_status_update_writes_lf(self):
+        self.task.write_bytes(TASK.replace("\n", "\r\n").encode("utf-8"))
+        _path, text = gp.plan_status(self.vault, self.status_change(), NOW)
+        self.assertNotIn("\r", text)
+        self.assertIn("status: in-progress\n", text)
+        self.assertEqual(text.count("Goomnet-оос төлөв"), 1)
+
+    def test_crlf_capture_is_idempotent(self):
+        inbox = self.vault / "01-GTD" / "Inbox"
+        inbox.mkdir(parents=True)
+        (inbox / "old.md").write_bytes("---\r\ntype: inbox\r\ngoomnet_change: 11\r\n---\r\n\r\nx\r\n".encode("utf-8"))
+        ch = {"change_id": 11, "kind": "capture", "payload": {"text": "санаа"}}
+        res = gp.process(self.vault, [ch], True, FakeClient(), NOW)
+        self.assertEqual(res[0]["action"], "noop")
+        self.assertEqual(len(list(inbox.glob("*.md"))), 1)
+
+    def test_one_failed_close_does_not_stop_batch(self):
+        class FlakyClient(FakeClient):
+            def call(self, method, path, body=None):
+                if method == "POST" and path.endswith("/changes/11/applied"):
+                    raise OSError("network down")
+                return super().call(method, path, body)
+
+        client = FlakyClient()
+        chs = [{"change_id": 11, "kind": "capture", "payload": {"text": "first"}},
+               {"change_id": 12, "kind": "capture", "payload": {"text": "second"}}]
+        res = gp.process(self.vault, chs, True, client, NOW)
+        self.assertEqual(res[0]["action"], "error")
+        self.assertIn("mark applied failed", res[0]["error"])
+        self.assertEqual(res[1]["action"], "write")
+        self.assertTrue(res[1].get("applied"))
+        self.assertEqual(len(list((self.vault / "01-GTD" / "Inbox").glob("*.md"))), 2)
+
+    def test_failed_write_keeps_old_note_and_leaves_no_temp(self):
+        from unittest import mock
+        before = self.task.read_text(encoding="utf-8")
+        with mock.patch.object(gp.os, "replace", side_effect=OSError("disk full")):
+            res = gp.process(self.vault, [self.status_change()], True, FakeClient(), NOW)
+        self.assertEqual(res[0]["action"], "error")
+        self.assertEqual(self.task.read_text(encoding="utf-8"), before)
+        self.assertEqual(list(self.task.parent.glob("*.tmp")), [])
+
     def test_pull_decision_writes_atom(self):
         board = {"board_id": 5, "version": 3, "doc": {"nodes": [
             {"id": "n1", "type": "decision", "data": {"kind": "decision", "text": "Т", "approved": True, "atom_pending": True}}],
