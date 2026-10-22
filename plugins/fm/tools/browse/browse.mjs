@@ -16,6 +16,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { chromium } from 'playwright-core'
+import { RawCDP } from './cdp.mjs'
 
 const PORT = Number(process.env.FM_BROWSE_PORT || 9333)
 // анхдагч Chrome (itge.e 2026-10-14); FM_BROWSE_BROWSER=edge бол Edge. Browser бүр өөрийн профайлтай.
@@ -51,11 +52,16 @@ async function launch(url) {
   if (!(await alive())) throw new Error('browser асахгүй байна (порт ' + PORT + ')')
 }
 
-async function connect() {
+// Playwright-ийг ~8с хүлээнэ; олон extension/worker target-тай Chrome дээр connectOverCDP гацдаг (2026-10-23) → null буцааж raw CDP руу шилжинэ
+async function connect(ms = Number(process.env.FM_BROWSE_PW_TIMEOUT || 8000)) {
   await launch()
-  const b = await chromium.connectOverCDP(`http://127.0.0.1:${PORT}`)
-  return { b, ctx: b.contexts()[0] }
+  if (process.env.FM_BROWSE_RAW) return null
+  try {
+    const b = await chromium.connectOverCDP(`http://127.0.0.1:${PORT}`, { timeout: ms })
+    return { b, ctx: b.contexts()[0] }
+  } catch (e) { console.error('… Playwright холбогдсонгүй (' + e.message.split(String.fromCharCode(10))[0].slice(0, 80) + ') → raw CDP'); return null }
 }
+const rawCDP = () => new RawCDP(PORT)
 
 async function pageFor(ctx, url) {
   const host = new URL(url).host, ok = HOSTS[host] || [host]
@@ -194,6 +200,25 @@ async function pinCollect(ctx, query, n) {
   return [...seen.values()].slice(0, n)
 }
 
+// raw CDP хувилбар: өөрийн шинэ табд хайж, дуусмагц тэр табаа л хаана
+async function pinCollectRaw(cdp, query, n) {
+  const url = /^https?:/.test(query) ? query : 'https://www.pinterest.com/search/pins/?q=' + encodeURIComponent(query)
+  const pg = await cdp.newPage('about:blank')
+  try {
+    await pg.navigate(url)
+    await pg.waitFor('a[href^="/pin/"] img')
+    const seen = new Map()
+    for (let i = 0; i < 40 && seen.size < n; i++) {
+      const batch = await pg.evaluate(`[...document.querySelectorAll('a[href^="/pin/"]')].map(a => {
+        const img = a.querySelector('img'); return img && img.src.includes('pinimg') ? { href: 'https://www.pinterest.com' + a.getAttribute('href'), img: img.src.replace(/\\/\\d+x\\//, '/736x/'), alt: img.alt || '' } : null
+      }).filter(Boolean)`)
+      for (const p of batch) if (!seen.has(p.href)) seen.set(p.href, p)
+      await pg.evaluate('window.scrollBy(0, 2200)'); await sleep(1300)
+    }
+    return [...seen.values()].slice(0, n)
+  } finally { await cdp.closeOwn(pg) }
+}
+
 async function pinSave(ctx, pins, outDir, query) {
   fs.mkdirSync(outDir, { recursive: true })
   const rows = []
@@ -207,12 +232,18 @@ async function pinSave(ctx, pins, outDir, query) {
   // contact sheet: дугаартай grid-ийг тусдаа табд зурж screenshot авна (Pillow шаардахгүй)
   const html = `<html><body style="margin:0;background:#fff;display:grid;grid-template-columns:repeat(5,300px);gap:6px;padding:6px;font:bold 14px sans-serif">${rows.map((p, i) => `<div style="position:relative;height:400px;background:#eee;display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="${p.file}" style="max-width:100%;max-height:100%"><span style="position:absolute;left:0;top:0;background:#000;color:#fff;padding:2px 6px">${i + 1}</span></div>`).join('')}</body></html>`
   const htmlPath = path.join(outDir, '_moodboard.html'); fs.writeFileSync(htmlPath, html, 'utf-8')
-  const tab = await ctx.newPage()
-  try {
-    await tab.setViewportSize({ width: 1542, height: 900 })
-    await tab.goto('file:///' + htmlPath.replace(/\\/g, '/'), { waitUntil: 'load' })
-    await tab.screenshot({ path: path.join(outDir, '_moodboard.png'), fullPage: true })
-  } finally { await tab.close() }
+  const fileUrl = 'file:///' + htmlPath.replace(/\\/g, '/')
+  if (ctx instanceof RawCDP) {   // raw CDP: өөрийн табд зурж, тэр табаа хаана
+    const tab = await ctx.newPage('about:blank')
+    try { await tab.navigate(fileUrl); await sleep(800); fs.writeFileSync(path.join(outDir, '_moodboard.png'), await tab.screenshot({ width: 1542 })) } finally { await ctx.closeOwn(tab) }
+  } else {
+    const tab = await ctx.newPage()
+    try {
+      await tab.setViewportSize({ width: 1542, height: 900 })
+      await tab.goto(fileUrl, { waitUntil: 'load' })
+      await tab.screenshot({ path: path.join(outDir, '_moodboard.png'), fullPage: true })
+    } finally { await tab.close() }
+  }
   fs.unlinkSync(htmlPath)
   return rows.length
 }
@@ -222,15 +253,18 @@ const out = o => console.log(typeof o === 'string' ? o : JSON.stringify(o, null,
 try {
   if (cmd === 'open') {
     const url = SITES[a[0]] || a[0] || NLM
-    if (await alive()) { const { b, ctx } = await connect(); await pageFor(ctx, url); await b.close() } else await launch(url)
+    if (await alive()) { const c = await connect(); if (c) { await pageFor(c.ctx, url); await c.b.close() } else { const cdp = rawCDP(); (await cdp.newPage(url)).ws.close() } } else await launch(url)
     out(`✓ нээлттэй: ${url} — анх удаа бол тэр цонхонд өөрөө нэвтэр`)
   } else if (cmd === 'status') {
     if (!(await alive())) { out({ running: false, port: PORT, browser: KIND }); process.exit(0) }
-    const { b, ctx } = await connect()
-    out({ running: true, port: PORT, browser: KIND, tabs: ctx.pages().map(p => p.url()) }); await b.close()
+    const c = await connect()
+    if (c) { out({ running: true, port: PORT, browser: KIND, via: 'playwright', tabs: c.ctx.pages().map(p => p.url()) }); await c.b.close() }
+    else out({ running: true, port: PORT, browser: KIND, via: 'raw-cdp', tabs: (await rawCDP().pages()).map(t => t.url) })
   } else if (cmd === 'nlm') {
     const [sub, ...r] = a
-    const { b, ctx } = await connect()
+    const c = await connect()
+    if (!c) throw new Error('nlm нь Playwright locator шаарддаг, гэтэл connectOverCDP энэ Chrome-д гацлаа — FM_BROWSE_PORT-оор цэвэр профайлтай (extension-гүй) browser асаагаад дахин оролд')
+    const { b, ctx } = c
     try {
       if (sub === 'list') out((await nlmList(ctx)).map(n => `${n.id}  ${n.title}  · ${n.meta}`).join('\n'))
       else if (sub === 'new') { const pg = await nlmNew(ctx); out({ id: pg.url().split('/notebook/')[1].split('?')[0] }) }
@@ -247,9 +281,13 @@ try {
     const n = Number(opt('--n', 30)), outDir = path.resolve(opt('--out', path.join(os.homedir(), '.fmos', 'browser', 'moodboards', 'pins')))
     const query = a.join(' ')
     if (!query) throw new Error('pin "<хайлт>" | <board/хайлтын URL> --out <хавтас> [--n 30]')
-    const { b, ctx } = await connect()
-    try { const pins = await pinCollect(ctx, query, n); out({ query, saved: await pinSave(ctx, pins, outDir, query), out: outDir }) } finally { await b.close() }
+    const c = await connect()
+    if (!c) { const cdp = rawCDP(); const pins = await pinCollectRaw(cdp, query, n); out({ query, via: 'raw-cdp', saved: await pinSave(cdp, pins, outDir, query), out: outDir }) }
+    else { const { b, ctx } = c
+    try { const pins = await pinCollect(ctx, query, n); out({ query, saved: await pinSave(ctx, pins, outDir, query), out: outDir }) } finally { await b.close() } }
   } else {
     out('commands: open [notebooklm|pinterest|url] · status · nlm list|new|add|ask|run · pin "<хайлт>" --out <хавтас> [--n 30]')
   }
 } catch (e) { console.error('✗ ' + e.message); process.exit(1) }
+// тасарсан connectOverCDP-ийн websocket процессыг амьд үлдээдэг — ажил дуусмагц гарна (шууд exit нь Windows-д libuv assertion өгдөг тул 200мс)
+setTimeout(() => process.exit(0), 200)
