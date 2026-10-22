@@ -133,6 +133,11 @@ def d_inbox(hook):
     if event == "SessionStart" and sid:   # itge.e 2026-10-20: сешн бүр өөрийн сувгаа өөрөө сонсоно, 30 мин хязгааргүй
         out.insert(0, f"### 👂 Сувгаа сонс (хэрэглэгчээс бүү асуу): Bash(run_in_background=true, command='{PY} -u {Path(__file__)} watch --once --sid {sid}') — "
                       "мессеж ирэхэд дуусч чамайг сэрээнэ; хариулаад ТЭР ДАРУЙ дахин асаа. Monitor биш (30 мин хязгаартай).")
+        # itge.e 2026-10-23: сешн бүр өөрийн Goom чаттай (fm_goom_chat.py bind / sync-sessions) — тэр чатыг ч сонсоно
+        if sid in load(Path.home() / ".fmos" / "goom-sessions.json", {}):
+            gc = Path(__file__).resolve().parents[2] / "scripts" / "fm_goom_chat.py"
+            out.insert(1, f"### 💬 Goom чатаа сонс (хэрэглэгчээс бүү асуу): Bash(run_in_background=true, command='{PY} -u {gc} watch --sid {sid}') — "
+                          f"itge.e Goom-д бичихэд дуусч чамайг сэрээнэ; хариулаад ТЭР ДАРУЙ дахин асаа. Goom-д хариулах: `{PY} {gc} say \"текст\" --sid {sid}`.")
     ctx = (f"[FMOS Discord] Энэ сешн: {who}. Хариу: `{PY} {Path(__file__)} send <сувгийн нэр|sys> \"текст\" --sid {sid}`."
            + "\n"
            + ("\n\n".join(out) if out else "Шинэ мессеж алга."))

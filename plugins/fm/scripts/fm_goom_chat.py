@@ -1,64 +1,341 @@
 #!/usr/bin/env python3
-"""fm_goom_chat — Goomnet-ийн өөрийн чатаар (баруун доод 💬) агент itge.e-тэй шууд ярина (itge.e 2026-10-22).
+"""fm_goom_chat — Goomnet-ийн чатаар агент itge.e-тэй ярина (2026-10-22); Claude сешн бүр = нэг Goom чат (2026-10-23).
 
-  python fm_goom_chat.py open                       # itge.e ↔ агентын DIRECT чатыг олох/үүсгэх → chat_id
-  python fm_goom_chat.py say  "<текст>"             # агентын нэрээр бичнэ
-  python fm_goom_chat.py watch [--after <id>]       # itge.e-ийн шинэ мессеж ирэхэд хэвлээд гарна (сешнийг сэрээнэ)
+  python fm_goom_chat.py open                                  # (хуучин) Architect ↔ itge.e DIRECT чат → chat_id
+  python fm_goom_chat.py say  "<текст>" [--sid S]               # агентын нэрээр бичнэ (--sid бол тэр сешний чатад)
+  python fm_goom_chat.py watch [--sid S] [--after <id>]         # itge.e-ийн шинэ мессеж ирэхэд хэвлээд гарна (сешнийг сэрээнэ)
+  python fm_goom_chat.py bind --sid S [--role r] [--title t]   # сешнд чат оноох/үүсгэх (нэрийг title-тай тааруулна)
+  python fm_goom_chat.py ensure-agents                         # дүр бүрийн локал туршилтын агент хэрэглэгч (idempotent)
+  python fm_goom_chat.py sync-sessions [--dry-run]             # registry-ийн амьд сешн бүрд чат (goom-tick-ээс)
 
-Агентын нэвтрэх эрх: goomnet/backend/dev-login.txt-ийн «agent architect» хэсэг (зөвхөн локал dev). URL: ~/.fmos/goom.json.
-Нууц үг, token хэвлэхгүй. Stdlib.
+Сешн → чат: ~/.fmos/goom-sessions.json {sid: {chat_id, role, title, seen}}. Хуучин ~/.fmos/goom-chat.json (Architect · PC = чат 1)
+энэ файлд шилжинэ. Агентын нэвтрэх эрх: goomnet/backend/dev-login.txt-ийн «agent <role>» хэсэг (git-ээс хасагдсан, зөвхөн
+локал dev). Нууц үг, token хэвлэхгүй. Stdlib.
 """
 import argparse
+import base64
+import hashlib
 import json
+import os
 import re
+import secrets
+import subprocess
 import sys
 import time
 import urllib.request
 from pathlib import Path
 
-LOGIN = Path("D:/CodeBase/goomnet/backend/dev-login.txt")
-STATE = Path.home() / ".fmos" / "goom-chat.json"
+LOGIN = Path(os.environ.get("FM_GOOM_LOGIN", "D:/CodeBase/goomnet/backend/dev-login.txt"))
+FMOS = Path.home() / ".fmos"
+STATE = FMOS / "goom-chat.json"            # хуучин (нэг чат)
+SESSIONS = FMOS / "goom-sessions.json"     # sid → {chat_id, role, title, seen}
+TOKENS = FMOS / "goom-agent-tokens.json"   # role → JWT кэш (Stop hook хурдан байх)
 ITGE_EMAIL = "bd@inai.local"
+ITGE_ID = 199                               # локал dev: itge.e = user 199
+WORKSPACE_ID = 1                            # «Inai»
+LEGACY_SID = "6a1a3d03-66a3-4e80-8a4a-86fed2e7e058"   # 🏛 Architect · PC — чат 1-ийн эзэн
+ROLES = {"architect": "🏛 Architect", "creative": "🎨 Creative", "wiki": "📚 Wiki",
+         "gtd": "📥 GTD", "project": "📁 Project", "research": "🔍 Research"}   # 🔒 finance — хасагдсан
+EXCLUDED = {"finance"}
+PG = ["docker", "exec", "-i", "postgres_db", "psql", "-U", "postgres", "-d", "goomnet_db", "-v", "ON_ERROR_STOP=1", "-tA"]
+
+
+# ---------- цэвэр хэсгүүд (тест) ----------
+def role_of(entry):
+    """registry entry → Goom агентын дүр (None = чатгүй)."""
+    r = (entry.get("role") or "").lower()
+    if r in EXCLUDED or entry.get("private"):
+        return None
+    if r in ROLES:
+        return r
+    return "project" if entry.get("project") or r else None
+
+
+def migrate_legacy(sessions, legacy):
+    """goom-chat.json {chat_id} → sessions[LEGACY_SID] (байгаа бол хөндөхгүй)."""
+    if legacy and legacy.get("chat_id") and LEGACY_SID not in sessions:
+        sessions[LEGACY_SID] = {"chat_id": legacy["chat_id"], "role": "architect", "title": "🏛 Architect · PC", "pinned": True}
+    return sessions
+
+
+def msg_key(sid, text):
+    return hashlib.sha256((sid + "\0" + text.strip()).encode("utf-8")).hexdigest()[:16]
+
+
+def remember(seen_list, key, keep=50):
+    """dedupe: key шинэ бол True ба жагсаалтад нэмнэ."""
+    if key in seen_list:
+        return False
+    seen_list.append(key)
+    del seen_list[:-keep]
+    return True
+
+
+def login_section(text, role):
+    """dev-login.txt → (email, password) «agent <role>» хэсгээс, эсвэл None."""
+    i = text.find("agent " + role)
+    if i < 0:
+        return None
+    sec = text[i:]
+    nxt = re.search(r"\n\s*\n", sec)
+    sec = sec[: nxt.start()] if nxt else sec
+    e, p = re.search(r"email:\s*(\S+)", sec), re.search(r"password:\s*(\S+)", sec)
+    return (e.group(1), p.group(1)) if e and p else None
+
+
+def _msg_id(m):
+    return int(m.get("message_id") or m.get("id") or 0)
+
+
+def _sender(m):
+    return int(m.get("sender_id") or m.get("user_id") or (m.get("sender") or {}).get("user_id") or 0)
+
+
+def new_from_itge(msgs, after):
+    return sorted((m for m in msgs if _msg_id(m) > after and _sender(m) == ITGE_ID), key=_msg_id)
+
+
+# ---------- I/O ----------
+def _load(p, d):
+    try:
+        return json.loads(Path(p).read_text(encoding="utf-8"))
+    except Exception:
+        return d
+
+
+def _save(p, data):
+    p = Path(p); p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, p)
+
+
+def load_sessions():
+    s = _load(SESSIONS, {})
+    if LEGACY_SID not in s and STATE.exists():
+        s = migrate_legacy(s, _load(STATE, {})); _save(SESSIONS, s)
+    return s
 
 
 def _cfg_url():
-    return json.loads((Path.home() / ".fmos" / "goom.json").read_text(encoding="utf-8"))["url"].rstrip("/")
+    return json.loads((FMOS / "goom.json").read_text(encoding="utf-8"))["url"].rstrip("/")
 
 
-def _req(method, url, token=None, body=None):
+def _req(method, url, token=None, body=None, timeout=30):
     r = urllib.request.Request(url, data=json.dumps(body, ensure_ascii=False).encode() if body is not None else None, method=method,
                                headers={"Content-Type": "application/json", **({"Authorization": "Bearer " + token} if token else {})})
-    with urllib.request.urlopen(r, timeout=30) as resp:
+    with urllib.request.urlopen(r, timeout=timeout) as resp:
         raw = resp.read()
         return json.loads(raw.decode()) if raw else {}
 
 
-def _agent_token(api):
-    t = LOGIN.read_text(encoding="utf-8")
-    sec = t[t.index("agent architect"):]
-    email = re.search(r"email:\s*(\S+)", sec).group(1)
-    pw = re.search(r"password:\s*(\S+)", sec).group(1)
-    return _req("POST", api + "/api/web/public/login/", body={"email": email, "password": pw})["JWT"]
+def _jwt_exp(tok):
+    try:
+        p = tok.split(".")[1]; p += "=" * (-len(p) % 4)
+        return json.loads(base64.urlsafe_b64decode(p))["exp"]
+    except Exception:
+        return 0
 
 
-def _itge_id(api, token):
-    me = _req("GET", api + "/api/web/private/users/search?q=" + urllib.request.quote(ITGE_EMAIL), token) if False else None
-    return 199  # локал dev: itge.e = user 199 (bd@inai.local)
+def agent_token(api, role="architect", timeout=30, fresh=False):
+    cache = _load(TOKENS, {})
+    t = cache.get(role)
+    if t and not fresh and _jwt_exp(t) - time.time() > 300:
+        return t
+    cred = login_section(LOGIN.read_text(encoding="utf-8"), role)
+    if not cred:
+        raise RuntimeError(f"dev-login.txt-д «agent {role}» алга — ensure-agents ажиллуул")
+    t = _req("POST", api + "/api/web/public/login/", body={"email": cred[0], "password": cred[1]}, timeout=timeout)["JWT"]
+    cache[role] = t; _save(TOKENS, cache)
+    return t
 
 
-def _chat_id(api, token):
-    if STATE.exists():
-        return json.loads(STATE.read_text())["chat_id"]
-    res = _req("POST", api + "/api/web/private/chat/", token, {"chat_type": "DIRECT", "participant_ids": [_itge_id(api, token)]})
-    cid = res.get("chat_id") or res.get("id") or (res.get("chat") or {}).get("chat_id")
-    STATE.write_text(json.dumps({"chat_id": cid}))
+def _cid(res):
+    return res.get("chat_id") or res.get("id") or (res.get("chat") or {}).get("chat_id") or (res.get("data") or {}).get("chat_id")
+
+
+def _legacy_chat_id(api, token):
+    s = load_sessions()
+    if LEGACY_SID in s:
+        return s[LEGACY_SID]["chat_id"]
+    cid = _cid(_req("POST", api + "/api/web/private/chat/", token, {"chat_type": "DIRECT", "participant_ids": [ITGE_ID]}))
+    s[LEGACY_SID] = {"chat_id": cid, "role": "architect", "title": "🏛 Architect · PC"}; _save(SESSIONS, s)
+    _save(STATE, {"chat_id": cid})
     return cid
 
 
+def bind(api, sid, role=None, title=None, sessions=None, pin=False):
+    """sid-д чат оноож/үүсгэнэ; title өөрчлөгдсөн бол нэрийг шинэчилнэ. pin=True (гараар --title) → sync-sessions нэрийг солихгүй."""
+    s = sessions if sessions is not None else load_sessions()
+    e = s.get(sid)
+    if e and pin:
+        e["pinned"] = True
+    role = role or (e or {}).get("role") or "project"
+    title = title or (e or {}).get("title") or ROLES.get(role, role)
+    tok = agent_token(api, role)
+    if not e:
+        cid = _cid(_req("POST", api + "/api/web/private/chat/", tok, {"chat_type": "GROUP", "name": title[:200], "participant_ids": [ITGE_ID]}))
+        e = {"chat_id": cid, "role": role, "title": title, **({"pinned": True} if pin else {})}
+    elif e.get("title") != title:
+        try:
+            _req("PUT", f"{api}/api/web/private/chat/{e['chat_id']}/name", tok, {"name": title[:200]})
+        except Exception:
+            pass  # DIRECT чатын нэр солигдохгүй байж болно — mapping-ийн нэр л шинэчлэгдэнэ
+        e["title"] = title
+    s[sid] = e
+    if sessions is None:
+        _save(SESSIONS, s)
+    return e
+
+
+def say(api, sid, text, timeout=30):
+    s = load_sessions()
+    e = s.get(sid)
+    if not e:
+        raise RuntimeError(f"sid {sid[:8]} чатгүй — bind хий")
+    tok = agent_token(api, e["role"], timeout=timeout)
+    _req("POST", f"{api}/api/web/private/chat/{e['chat_id']}/message", tok, {"content": text, "message_type": "TEXT"}, timeout=timeout)
+
+
+# ---------- агент хэрэглэгч (зөвхөн локал dev) ----------
+def _psql(sql):
+    return subprocess.run(PG, input=sql, capture_output=True, text=True, encoding="utf-8", check=True).stdout.strip()
+
+
+def _q(s):
+    return "'" + s.replace("'", "''") + "'"
+
+
+def ensure_agents(api):
+    if not re.match(r"https?://(localhost|127\.0\.0\.1)(:\d+)?$", api):
+        raise SystemExit("ensure-agents зөвхөн локал dev Goomnet-д (localhost)")
+    text = LOGIN.read_text(encoding="utf-8") if LOGIN.exists() else ""
+    out = []
+    for role, name in ROLES.items():
+        email = f"{role}@inai.local"
+        uid = _psql(f"select user_id from users where email={_q(email)};")
+        cred = login_section(text, role)
+        if uid and cred:
+            out.append((role, int(uid), "бэлэн")); continue
+        pw = secrets.token_urlsafe(18)
+        h = hashlib.sha256(pw.encode()).hexdigest()   # goomnet utils.HashPassword = sha256 hex
+        if uid:
+            _psql(f"update users set password={_q(h)}, is_one_time_password=false where user_id={uid};")
+        else:
+            uid = _psql(
+                "with u as (insert into users(email,password,type,status,is_one_time_password) "
+                f"values ({_q(email)},{_q(h)},'EMPLOYEE','ACTIVE',false) returning user_id) select user_id from u;").splitlines()[0]
+        _psql(f"insert into user_emp(user_id,first_name,last_name,emp_position,emp_level,emp_status,job_start_date,org_id,cr_by,md_by) "
+              f"select {uid},{_q(name)},'','AI agent',2,'ACTIVE',current_date,org_id,{uid},{uid} from user_emp where user_id=200 "
+              f"and not exists (select 1 from user_emp where user_id={uid});")
+        _psql(f"insert into workspace_member(workspace_id,user_id,role,is_scoped,added_by,cr_by,md_by) "
+              f"select {WORKSPACE_ID},{uid},'EDITOR',false,{ITGE_ID},{ITGE_ID},{ITGE_ID} "
+              f"where not exists (select 1 from workspace_member where workspace_id={WORKSPACE_ID} and user_id={uid});")
+        if not cred:
+            with LOGIN.open("a", encoding="utf-8") as f:
+                f.write(f"\n\nagent {role} (local only)\nemail: {email}\npassword: {pw}\n")
+        else:  # хэрэглэгч байсан ч нууц үг таарахгүй байж болзошгүй — шинээр бичнэ
+            LOGIN.write_text(text.replace(f"password: {cred[1]}", f"password: {pw}", 1), encoding="utf-8")
+        text = LOGIN.read_text(encoding="utf-8")
+        out.append((role, int(uid), "үүсгэв"))
+    return out
+
+
+# ---------- registry → чат ----------
+def _registry():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "relay"))
+    import fmconfig  # noqa
+    return _load(fmconfig.REG, {"sessions": {}}).get("sessions", {}), fmconfig.DEVICE
+
+
+LIVE_DAYS = 3
+
+
+def live_sids(root=None, days=LIVE_DAYS, now=None):
+    """~/.claude/projects/*/<sid>.jsonl — сүүлийн `days` хоногт бичигдсэн transcript = амьд сешн."""
+    root = Path(root or Path.home() / ".claude" / "projects"); now = now or time.time()
+    out = set()
+    for f in root.glob("*/*.jsonl"):
+        try:
+            if now - f.stat().st_mtime < days * 86400:
+                out.add(f.stem)
+        except OSError:
+            pass
+    return out
+
+
+def plan_sessions(reg, device, sessions, live=None):
+    """registry-ийн энэ төхөөрөмжийн амьд сешн → [(sid, role, title)] bind хийх/нэр шинэчлэх шаардлагатай нь.
+    Гараар --title-аар bind хийсэн (pinned) чатын нэрийг хөндөхгүй."""
+    todo = []
+    for sid, v in reg.items():
+        if (v.get("device") or device) != device or (live is not None and sid not in live):
+            continue
+        if (sessions.get(sid) or {}).get("pinned"):
+            continue
+        role = role_of(v)
+        if not role:
+            continue
+        title = v.get("title") or v.get("name") or ROLES[role]
+        e = sessions.get(sid)
+        if not e or e.get("title") != title:
+            todo.append((sid, (e or {}).get("role") or role, title))
+    return todo
+
+
+def sync_sessions(api, dry=False):
+    reg, dev = _registry()
+    s = load_sessions()
+    todo = plan_sessions(reg, dev, s, live_sids())
+    done = []
+    for sid, role, title in todo:
+        if dry:
+            done.append((sid, role, title, "dry")); continue
+        try:
+            e = bind(api, sid, role, title, sessions=s); done.append((sid, role, title, e["chat_id"]))
+        except Exception as ex:
+            done.append((sid, role, title, f"алдаа: {type(ex).__name__}"))
+    if not dry:
+        _save(SESSIONS, s)
+    return done
+
+
+# ---------- watch ----------
 def _messages(api, token, cid):
     res = _req("GET", f"{api}/api/web/private/chat/{cid}/messages", token)
-    msgs = res if isinstance(res, list) else (res.get("messages") or res.get("data") or [])
-    return msgs
+    return res if isinstance(res, list) else (res.get("messages") or res.get("data") or [])
+
+
+def watch(api, sid, after, every):
+    s = load_sessions()
+    e = s.get(sid) or {}
+    role = e.get("role", "architect")
+    cid = e.get("chat_id")
+    after = after or int(e.get("seen") or 0)
+    token = None
+    while True:
+        try:
+            token = token or agent_token(api, role)
+            if cid is None:
+                cid = _legacy_chat_id(api, token)
+            msgs = _messages(api, token, cid)
+        except Exception:
+            msgs, token = [], None
+            time.sleep(10)  # backend restart — дахин оролдоно
+            continue
+        mine = new_from_itge(msgs, after)
+        if mine:
+            for m in mine:
+                print(json.dumps({"id": _msg_id(m), "text": m.get("content"), "at": m.get("created_at")}, ensure_ascii=False))
+            nxt = _msg_id(mine[-1])
+            print(json.dumps({"next_after": nxt}))
+            s = load_sessions()
+            if sid in s:
+                s[sid]["seen"] = nxt; _save(SESSIONS, s)
+            return 0
+        if msgs and not after:
+            after = max(_msg_id(m) for m in msgs)
+        time.sleep(every)
 
 
 def main(argv=None):
@@ -66,42 +343,32 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("open")
-    s = sub.add_parser("say"); s.add_argument("text")
-    w = sub.add_parser("watch"); w.add_argument("--after", type=int, default=0); w.add_argument("--every", type=int, default=4)
+    s = sub.add_parser("say"); s.add_argument("text"); s.add_argument("--sid")
+    w = sub.add_parser("watch"); w.add_argument("--after", type=int, default=0); w.add_argument("--every", type=int, default=4); w.add_argument("--sid")
+    b = sub.add_parser("bind"); b.add_argument("--sid", required=True); b.add_argument("--role", choices=list(ROLES)); b.add_argument("--title")
+    sub.add_parser("ensure-agents")
+    y = sub.add_parser("sync-sessions"); y.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     api = _cfg_url()
-    for i in range(60):  # backend restart үед хүлээнэ (watch унахгүй)
-        try:
-            token = _agent_token(api); break
-        except Exception:
-            if a.cmd != "watch" or i == 59:
-                raise
-            time.sleep(10)
-    cid = _chat_id(api, token)
+    if a.cmd == "ensure-agents":
+        for role, uid, st in ensure_agents(api):
+            print(f"{ROLES[role]}: user {uid} — {st}")
+        return 0
+    if a.cmd == "sync-sessions":
+        for sid, role, title, r in sync_sessions(api, a.dry_run):
+            print(json.dumps({"sid": sid[:8], "role": role, "title": title, "chat": r}, ensure_ascii=False))
+        return 0
+    if a.cmd == "bind":
+        print(json.dumps(bind(api, a.sid, a.role, a.title, pin=bool(a.title)), ensure_ascii=False)); return 0
+    if a.cmd == "watch":
+        return watch(api, a.sid or LEGACY_SID, a.after, a.every)
+    sid = getattr(a, "sid", None) or LEGACY_SID
     if a.cmd == "open":
-        print(json.dumps({"chat_id": cid})); return 0
+        cid = _legacy_chat_id(api, agent_token(api)); print(json.dumps({"chat_id": cid})); return 0
     if a.cmd == "say":
-        _req("POST", f"{api}/api/web/private/chat/{cid}/message", token, {"content": a.text, "message_type": "TEXT"})
-        print(json.dumps({"ok": True})); return 0
-    after = a.after
-    while True:
-        try:
-            msgs = _messages(api, token, cid)
-        except Exception:
-            msgs = []
-            try:
-                token = _agent_token(api)
-            except Exception:
-                time.sleep(10)  # backend restart — дахин оролдоно
-        mine = [m for m in msgs if int(m.get("message_id") or m.get("id") or 0) > after and int(m.get("sender_id") or m.get("user_id") or 0) == 199]
-        if mine:
-            for m in sorted(mine, key=lambda m: int(m.get("message_id") or m.get("id"))):
-                print(json.dumps({"id": m.get("message_id") or m.get("id"), "text": m.get("content"), "at": m.get("created_at")}, ensure_ascii=False))
-            print(json.dumps({"next_after": max(int(m.get("message_id") or m.get("id")) for m in mine)}))
-            return 0
-        if msgs and not after:
-            after = max(int(m.get("message_id") or m.get("id") or 0) for m in msgs)
-        time.sleep(a.every)
+        if sid == LEGACY_SID:
+            _legacy_chat_id(api, agent_token(api))
+        say(api, sid, a.text); print(json.dumps({"ok": True})); return 0
 
 
 if __name__ == "__main__":
