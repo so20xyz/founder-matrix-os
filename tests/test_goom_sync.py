@@ -234,5 +234,27 @@ class TestGoomSync(unittest.TestCase):
         self.assertNotIn(TOKEN, out + err)
 
 
+class TestNoteKind(unittest.TestCase):
+    def test_collect_note_kind_excludes_private(self):
+        v = Path(tempfile.mkdtemp())
+        w(v / "00-Soul" / "SOUL.md", "---\ntype: soul\n---\nбие\n")
+        w(v / "03-Areas" / "Studio" / "Studio.md", "---\ntype: area\nstatus: active\n---\nx\n")
+        w(v / "99-Archive" / "old.md", "хуучин\n")
+        w(v / "03-Areas" / "Business" / "finances" / "private" / "bills.md", "x\n")
+        w(v / "03-Areas" / "Fin" / "🔒 secret.md", "x\n")
+        w(v / "03-Areas" / "🔒 vault" / "a.md", "x\n")
+        w(v / "03-Areas" / "Flag.md", "---\nprivate: true\n---\nx\n")
+        w(v / "03-Areas" / "Tag.md", "---\ntags: [private]\n---\nx\n")
+        w(v / "03-Areas" / ".obsidian" / "h.md", "x\n")
+        w(v / "02-Projects" / "P" / "other.md", "x\n")
+        items, skipped = gs.collect(v, {"note"})
+        paths = sorted(i["source_path"] for i in items)
+        self.assertEqual(paths, ["00-Soul/SOUL.md", "03-Areas/Studio/Studio.md", "99-Archive/old.md"])
+        self.assertTrue(all(i["kind"] == "note" for i in items))
+        self.assertEqual(sum(1 for s in skipped if s["reason"] == "private"), 5)
+        manifest = gs.build_manifest(items, skipped, {"note"})
+        self.assertEqual(sorted(manifest["note"]), paths)
+
+
 if __name__ == "__main__":
     unittest.main()

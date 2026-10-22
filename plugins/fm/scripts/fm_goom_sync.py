@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """fm_goom_sync: vault -> Goomnet sync (POST {url}/api/web/private/vault/sync).
 
-Usage: fm_goom_sync.py <vault> [--apply] [--full] [--allow-empty-kind] [--kinds project,task,reference,atom,decision]
+Usage: fm_goom_sync.py <vault> [--apply] [--full] [--allow-empty-kind] [--kinds project,task,reference,atom,decision,note]
 
 Dry-run is the default: it prints per-kind counts and skipped notes, no network.
 --apply reads ~/.fmos/goom.json ({"url","token","workspace_id"}) and posts batches of <= 500 items.
@@ -20,7 +20,9 @@ content_hash = sha256(kind + "\\n" + project_slug + "\\n" + raw frontmatter text
 import argparse, hashlib, json, re, sys, unicodedata, urllib.error, urllib.request
 from pathlib import Path
 
-KINDS = ("project", "task", "reference", "atom", "decision")
+KINDS = ("project", "task", "reference", "atom", "decision", "note")
+# kind note: every other note under these top folders (folder dashboards in Goomnet). Private ones are skipped.
+NOTE_ROOTS = ("00-Soul", "03-Areas", "99-Archive")
 BATCH = 500
 ENDPOINT = "/api/web/private/vault/sync"
 CONFIG_REL = (".fmos", "goom.json")
@@ -128,6 +130,14 @@ def _sources(vault, kind):
         return [f for f in sorted(vault.glob("02-Projects/*/*.md")) if f.stem == f.parent.name]
     if kind == "task":
         return sorted(vault.glob("01-GTD/Tasks/*.md"))
+    if kind == "note":
+        out = []
+        for root in NOTE_ROOTS:
+            d = vault / root
+            if d.is_dir():
+                out += [f for f in d.rglob("*.md")
+                        if not any(part.startswith(".") or part == "_trash" for part in f.relative_to(vault).parts)]
+        return sorted(out)
     folder = {"reference": "04-Resources/references",
               "atom": "04-Resources/Atomic/knowledge",
               "decision": "04-Resources/Atomic/decisions"}[kind]
@@ -149,7 +159,7 @@ def collect(vault, kinds):
             def skip(reason):
                 skipped.append({"path": rel, "reason": reason, "kind": kind})
 
-            if "finances/private" in rel.lower():
+            if "finances/private" in rel.lower() or "🔒" in rel:
                 skip("private")
                 continue
             try:
@@ -165,6 +175,11 @@ def collect(vault, kinds):
                 continue
             title = fm.get("title") if isinstance(fm.get("title"), str) and fm.get("title").strip() else f.stem
             priv = fm.get("private")
+            tags = fm.get("tags")
+            tags = [tags] if isinstance(tags, str) else (tags if isinstance(tags, list) else [])
+            if any(str(t).strip().lower() == "private" for t in tags) and kind == "note":
+                skip("private")
+                continue
             if priv is True or str(priv if priv is not None else "").strip().lower() in _TRUE \
                     or "🔒" in title or "🔒" in f.stem:
                 skip("private")
