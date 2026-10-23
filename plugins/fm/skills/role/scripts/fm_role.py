@@ -271,7 +271,7 @@ def cmd_show(vault: Path, args: List[str]) -> None:
 def cmd_bind(vault: Path, args: List[str]) -> None:
     pos = [a for i, a in enumerate(args) if not a.startswith("--") and (i == 0 or not args[i - 1].startswith("--"))]
     if not pos:
-        _die("Хэрэглээ: fm_role.py bind <vault> <slug> [--sid SID] [--device D] [--title T] [--project <slug> --folder <хавтас>]")
+        _die("Хэрэглээ: fm_role.py bind <vault> <slug> [--sid SID] [--device D] [--title T] [--project <slug> --folder <хавтас>] [--baton <key>]")
     query = pos[0]
     roles = load_roles(vault)
     role = find_role(roles, query)
@@ -286,26 +286,31 @@ def cmd_bind(vault: Path, args: List[str]) -> None:
     proj, folder = _opt(args, "--project").strip(), _opt(args, "--folder").strip().strip("/")
     if folder and not (vault / folder).is_dir():
         _die("--folder олдсонгүй: %s" % folder, 2)
+    # 2026-10-19 (Oji): a sub-session of a role («🏛️ Architect › Danista») gets its own baton state/<baton>.md,
+    # so its request / where-it-stopped / task never shows up in the role's other sessions
+    baton = _opt(args, "--baton").strip()
     with registry_lock():
-        reg, entry, path = _bind_locked(vault, role, sid, device, title, proj, folder)
+        reg, entry, path = _bind_locked(vault, role, sid, device, title, proj, folder, baton)
     sessions = reg["sessions"]
     others = [s for s, v in sessions.items() if s != sid and isinstance(v, dict)
               and v.get("role") == role["slug"] and v.get("device") == device]
     _out(json.dumps({
         "ok": True, "sid": sid, "role": role["slug"], "name": role["name"], "device": device,
         "title": title, "private": bool(entry.get("private")), "note": role["note"],
-        "registry": path.as_posix(), "same_role_same_device": others,
+        "registry": path.as_posix(), "same_role_same_device": others, "baton": entry.get("baton") or entry.get("project"),
     }, ensure_ascii=False, indent=2))
 
 
 def _bind_locked(vault: Path, role: Dict[str, object], sid: str, device: str, title: str,
-                 proj: str = "", folder: str = ""):
+                 proj: str = "", folder: str = "", baton: str = ""):
     """load -> modify -> save; the caller holds registry_lock(). proj/folder: the project scope of a Project session."""
     reg = load_registry(vault)
     sessions = reg["sessions"]
     prev = sessions.get(sid) if isinstance(sessions.get(sid), dict) else {}
     entry = dict(prev)
     entry.update({"role": role["slug"], "device": device, "title": title, "project": proj or role["slug"]})
+    if baton:
+        entry["baton"] = baton
     if folder:
         entry["folder"] = folder
     elif not proj:

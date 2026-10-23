@@ -2,7 +2,7 @@ import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { CalItem, InboxItem, RoleInfo, SkillPin, ToolStatus, VaultTask } from '../types'
 import type { ClaimVerdict } from './parse'
-import { agentsReport, applyStatus, canonRole, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planOf, planWindow, privateKeys, privateNote, privateOwner, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
+import { agentsReport, applyStatus, canonRole, cellWidth, classifyCapture, clockOf, core, doneOn, fit, fmGet, fmList, fmSet, fmtAgo, fmtSpan, isDone, isPrivateSession, isRequeue, matchesSession, nextOpenStatus, normStatus, OPEN_ORDER, ownerMatches, ownersOf, parseClaim, parseOffer, lastHistoryLine, parseRelease, parseTask, planBlock, planOf, planWindow, privateKeys, privateNote, privateOwner, projectKey, projectOf, rank, roleLabel, roleOf, sanitizeDesc, SECRET_UNKNOWN, segLit, sessionScope, shortTitle, stampMs, stripSkill, sup, timesOf } from './parse'
 
 // Task band (itge.e 2026-10-09): above the prompt, the open vault tasks this session's role owns.
 // Area agents match `owner`/`responsible` against their role's names, device-agnostic ("📚 Wiki" is every Wiki session, PC or Mac);
@@ -459,7 +459,7 @@ async function drainOffers($: EngineInterface, configured: string) {
 async function reloadTasks($: EngineInterface, configured: string) {
   const ctx = await resolveContext($, configured)
   if (!ctx) return
-  const { vault, names, project, devices, priv, secret } = ctx
+  const { vault, names, project, devices, priv, secret, taken } = ctx
   let dir = `${vault}/01-GTD/Tasks`
   if (!(await $.fs.exists(dir))) dir = `${vault}/00-GTD/Tasks`
   const entries = await $.fs.list(dir).catch(() => [])
@@ -481,6 +481,7 @@ async function reloadTasks($: EngineInterface, configured: string) {
     .filter((t): t is VaultTask => !!t)
     .map(t => (!t.private && privateOwner(t.owners ?? [t.owner], secret, devices) ? { ...t, private: true } : t))
     .filter(t => (t.private ? priv : matchesSession(t, names, project, devices)))
+    .filter(t => project || !taken.includes(projectKey(t.project ?? '')))
   await $.state.set(TASKS, rank(mine, today))
 }
 
@@ -879,7 +880,7 @@ async function openTsaglabar($: EngineInterface, configured = '') {
  * names / project scope, kept in state; `devices` = this device + every registry session's device, the words a role key drops
  * (as the relay's `_reg_devices` + DEVICE). `configured` = the plugin option `vault_path`, the vault when given.
  */
-async function resolveContext($: EngineInterface, configured: string): Promise<{ vault: string; names: string[]; project: string; devices: string[]; priv: boolean; secret: string[] } | null> {
+async function resolveContext($: EngineInterface, configured: string): Promise<{ vault: string; names: string[]; project: string; devices: string[]; priv: boolean; secret: string[]; taken: string[] } | null> {
   const vault = await vaultOf($, configured)
   if (!vault) return null
   await $.state.set(VAULT, vault)
@@ -892,6 +893,10 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
   let priv = false
   let secret: string[] = []
   let regOk = false
+  // 2026-10-19 (Oji): projects that another session is scoped to (a 📁 project session, a sub-session «🏛️ Architect › Danista»
+  // bound with --folder) — an unscoped role session (GTD, Architect) leaves those projects' tasks to that session, even when
+  // it owns them (owner: gtd), instead of listing them in every session
+  let taken: string[] = []
   const roles: RoleInfo[] = []
   const devices = [await deviceOf($)]
   try {
@@ -915,6 +920,14 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
       names = [s.title, role?.agent, s.role].filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
       // 🔒 relay fmconfig.is_private (+ the role's own private flag): this session lists and claims private tasks
       priv = isPrivateSession(s, role)
+      if (!project) {
+        for (const [osid, ov] of Object.entries((reg.sessions ?? {}) as Record<string, Record<string, unknown>>)) {
+          // only same-role sub-sessions that hold a baton take a project off this pane (not other machines' / stale sessions)
+          if (osid === sid || !ov || !ov.baton || ov.role !== s.role) continue
+          const k = projectKey(sessionScope(ov, reg.roles?.[ov.role as string] ?? {}))
+          if (k && !taken.includes(k)) taken.push(k)
+        }
+      }
     }
     secret = privateKeys(reg, devices)
     regOk = true
@@ -942,6 +955,8 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
     const { value: lastProj = '' } = await $.state.get(PROJ)
     const { value: lastRole = '' } = await $.state.get({ plugin: 'fm', key: 'role' })
     const { value: lastDir = '' } = await $.state.get({ plugin: 'fm', key: 'projDir' })
+    const { value: lastTaken = [] } = await $.state.get({ plugin: 'fm', key: 'taken' })
+    taken = lastTaken as string[]
     names = lastNames
     project = lastProj
     roleSlug = lastRole
@@ -955,7 +970,8 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
   await $.state.set(PROJ, project)
   await $.state.set({ plugin: 'fm', key: 'projDir' }, folder)
   await $.state.set(DEVICES, devices)
-  return { vault, names, project, devices, priv, secret }
+  await $.state.set({ plugin: 'fm', key: 'taken' }, taken)
+  return { vault, names, project, devices, priv, secret, taken }
 }
 
 /**

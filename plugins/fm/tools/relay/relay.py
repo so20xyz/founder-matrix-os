@@ -274,12 +274,13 @@ def cmd_register(name, group, sid, project=None):
     git("pull", "-q", "--rebase", "--autostash")
     try:
         with reg_edit() as reg:
-            keep = {k: v for k, v in reg["sessions"].get(sid, {}).items() if k in ("project", "title", "private", "role")}
+            keep = {k: v for k, v in reg["sessions"].get(sid, {}).items() if k in ("project", "title", "private", "role", "baton")}
             reg["sessions"][sid] = {**keep, "name": name, "group": group, "device": DEVICE,
                                     "host": socket.gethostname(), "since": datetime.date.today().isoformat()}
             if project: reg["sessions"][sid]["project"] = project
             if "--private" in sys.argv: reg["sessions"][sid]["private"] = True
             if "--title" in sys.argv: reg["sessions"][sid]["title"] = sys.argv[sys.argv.index("--title") + 1]
+            if "--baton" in sys.argv: reg["sessions"][sid]["baton"] = sys.argv[sys.argv.index("--baton") + 1]  # sub-session: own state/<baton>.md
     except regstore.RegistryReadError as e:
         sys.exit(f"registry.json уншигдсангүй — бүртгэл хийсэнгүй, файлыг хөндөөгүй ({e}). {REG.name}.bak-аас сэргээ.")
     (RELAY / "s").mkdir(parents=True, exist_ok=True)

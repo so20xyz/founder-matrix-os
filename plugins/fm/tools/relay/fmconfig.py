@@ -72,6 +72,16 @@ else:
     STATE_DIR = REPO / "state"
 
 REG = DATA / "registry.json"
+
+
+def baton_key(me):
+    """Baton file key for a session: its own `baton` (a sub-session sharing a role, e.g. «🏛️ Architect › Danista»)
+    or else its project. Without this every sub-session of one role wrote and read the same state/<role>.md."""
+    return (me or {}).get("baton") or (me or {}).get("project")
+
+
+def baton_file(me):
+    return STATE_DIR / f"{baton_key(me)}.md"
 CHANNELS = DATA / "channels.json"
 DISCORD_CFG = DATA / "discord.json"
 NOTION_LINKS = DATA / "notion_links.json"

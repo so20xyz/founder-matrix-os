@@ -780,21 +780,21 @@ def _d_baton(hook, push_every):
     if is_private(me): return  # privacy (itge.e 2026-10-05): finance/private chat never leaves the machine
     user, asst = _last_turn(hook.get("transcript_path", ""))
     if not asst: return
-    f = STATE_DIR / f"{me['project']}.md"; f.parent.mkdir(parents=True, exist_ok=True)
+    f = fmconfig.baton_file(me); f.parent.mkdir(parents=True, exist_ok=True)
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     first = asst.split("\n")[0][:140]
     with regstore.file_lock(BATON_LOCK, what="baton lock"):   # parallel Stop hooks: never drop each other's ТҮҮХ lines
         old = f.read_text(encoding="utf-8") if f.exists() else ""
         hist = old.split("## ТҮҮХ", 1)[1].strip() if "## ТҮҮХ" in old else ""
         nxt = [l for l in old.split("## ТҮҮХ")[0].splitlines() if l.startswith("**Дараагийн алхам")]
-        now = (f"# {me['project']}\n\n## ОДОО · {ts} · {me['name']} ({DEVICE})\n"
+        now = (f"# {fmconfig.baton_key(me)}\n\n## ОДОО · {ts} · {me['name']} ({DEVICE})\n"
                + (nxt[0] + "\n" if nxt else "") + f"**{fmconfig.MEMBER_LABEL}-ийн сүүлийн хүсэлт:** {user[:500]}\n\n**Хаана зогссон (сүүлийн хариу):**\n{asst[:2500]}\n")
         line = f"- {ts} · {DEVICE} · {me['name']} · {first}"
         _write_text_atomic(f, now + "\n## ТҮҮХ\n" + (hist + "\n" if hist else "") + line + "\n")
     if VAULT_MODE: return  # vault file written; Drive syncs it — no git
-    st = load(STATE, {}); k = "_baton_push_" + me["project"]
+    st = load(STATE, {}); k = "_baton_push_" + fmconfig.baton_key(me)
     if time.time() - st.get(k, 0) > push_every:
-        try: safe_sync([f], f"baton {me['project']} · {me['name']} ({DEVICE})")
+        try: safe_sync([f], f"baton {fmconfig.baton_key(me)} · {me['name']} ({DEVICE})")
         except TimeoutError: return
         st[k] = time.time(); save(STATE, st)
 
@@ -814,15 +814,15 @@ def d_next(text, sid):
     me = load(REG, {"sessions": {}})["sessions"].get(sid)
     if not me or not me.get("project"): print("project алга"); return
     if is_private(me): print("private — baton бичихгүй"); return  # same rule as d_baton: never written/pushed
-    f = STATE_DIR / f"{me['project']}.md"; f.parent.mkdir(parents=True, exist_ok=True)
+    f = fmconfig.baton_file(me); f.parent.mkdir(parents=True, exist_ok=True)
     with regstore.file_lock(BATON_LOCK, what="baton lock"):
-        old = f.read_text(encoding="utf-8") if f.exists() else f"# {me['project']}\n\n## ТҮҮХ\n"
+        old = f.read_text(encoding="utf-8") if f.exists() else f"# {fmconfig.baton_key(me)}\n\n## ТҮҮХ\n"
         head, _, tail = old.partition("## ТҮҮХ")
         lines = [l for l in head.splitlines() if not l.startswith("**Дараагийн алхам")]
         i = next((k + 1 for k, l in enumerate(lines) if l.startswith("## ОДОО")), len(lines))
         ts = datetime.datetime.now().strftime("%m-%d %H:%M")
         lines.insert(i, f"**Дараагийн алхам ({me['name']}, {ts}):** {text}")
         _write_text_atomic(f, "\n".join(lines).rstrip() + "\n\n## ТҮҮХ" + tail)
-    safe_sync([f], f"baton next {me['project']}")
+    safe_sync([f], f"baton next {fmconfig.baton_key(me)}")
     print("pinned")
 

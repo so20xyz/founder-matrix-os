@@ -79,7 +79,7 @@ def _auto_pair(hook):
         return None  # already logged to stderr; never write over an unreadable registry
     git("add", str(REG)); git("commit", "-qm", f"relay: auto-pair {src.get('title')} ({DEVICE})"); git("push", "-q")
     grp = {"tasks": "Tasks", "projects": "Projects", "areas": "Areas", "resources": "Resources", "research": "Research", "development": "Development"}.get(src["group"], src["group"])
-    sf = STATE_DIR / f"{src.get('project')}.md"
+    sf = fmconfig.baton_file(src)
     baton = sf.read_text(encoding="utf-8").split("## ТҮҮХ")[0].strip() if src.get("project") and sf.exists() else "(baton алга)"
     return (f"[FMOS] {fmconfig.MEMBER_LABEL} энэ шинэ сешнийг «{src['title']}»-ийн {DEVICE} хос болгон нээв — бүртгэгдлээ (@{src['group']}, project {src.get('project')}). "
             f"Одоо: 0) cwd vault биш бол mcp__ccd_directory__change_directory → «{fmconfig.vault_dir()}». 1) ccd_session_mgmt set_session_title self → «{src['title']}». 2) ccd_sidebar list_groups → «{grp}» групп руу move_sessions self. "
@@ -115,12 +115,12 @@ def d_inbox(hook):
     if not out and event != "SessionStart": return
     who = f"{me['name']} · @{me['group']} · {DEVICE}" if me else f"бүртгэлгүй ({DEVICE}, sid {sid[:8]})"
     if me and me.get("project") and event == "SessionStart":
-        sf = STATE_DIR / f"{me['project']}.md"
+        sf = fmconfig.baton_file(me)
         if sf.exists():
             t = sf.read_text(encoding="utf-8"); now = t.split("## ТҮҮХ")[0].strip()
             hist = [l for l in t.split("## ТҮҮХ")[-1].strip().splitlines() if l.startswith("- ")][-5:]
             NL = chr(10)
-            out.insert(0, f"### 🏃 baton · {me['project']}{NL}{now}{NL}{NL}Сүүлийн түүх:{NL}" + NL.join(hist))
+            out.insert(0, f"### 🏃 baton · {fmconfig.baton_key(me)}{NL}{now}{NL}{NL}Сүүлийн түүх:{NL}" + NL.join(hist))
     # Soyol 2026-10-16: the GTD role runs the dispatcher (its title «📥 GTD» never contains "dispatcher_title")
     if me and event == "SessionStart" and (me.get("role") == fmconfig.dcfg("dispatcher_role", "gtd")
                                            or fmconfig.DISPATCHER_TITLE in (me.get("title") or "")):
