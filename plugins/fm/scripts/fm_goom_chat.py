@@ -205,8 +205,9 @@ def _legacy_chat_id(api, token):
     return cid
 
 
-def bind(api, sid, role=None, title=None, sessions=None, pin=False):
-    """sid-д чат оноож/үүсгэнэ; title өөрчлөгдсөн бол нэрийг шинэчилнэ. pin=True (гараар --title) → sync-sessions нэрийг солихгүй."""
+def bind(api, sid, role=None, title=None, sessions=None, pin=False, chat=None):
+    """sid-д чат оноож/үүсгэнэ; title өөрчлөгдсөн бол нэрийг шинэчилнэ. pin=True (гараар --title) → sync-sessions нэрийг солихгүй.
+    chat=<id> → шинээр үүсгэхгүй, байгаа чатад холбоно (буруу холбогдсоныг засах)."""
     if not is_sid(sid):
         raise ValueError(f"{sid[:14]} sid биш (desktop local id?) — transcript UUID өг")
     s = sessions if sessions is not None else load_sessions()
@@ -216,6 +217,8 @@ def bind(api, sid, role=None, title=None, sessions=None, pin=False):
     role = role or (e or {}).get("role") or "project"
     title = title or (e or {}).get("title") or ROLES.get(role, role)
     tok = agent_token(api, role)
+    if chat:
+        e = {**(e or {}), "chat_id": int(chat), "role": role, "title": title}
     if not e:
         cid = _cid(_req("POST", api + "/api/web/private/chat/", tok, {"chat_type": "GROUP", "name": title[:200], "participant_ids": [ITGE_ID]}))
         e = {"chat_id": cid, "role": role, "title": title, **({"pinned": True} if pin else {})}
@@ -522,7 +525,7 @@ def main(argv=None):
     sub.add_parser("open")
     s = sub.add_parser("say"); s.add_argument("text"); s.add_argument("--sid")
     w = sub.add_parser("watch"); w.add_argument("--after", type=int, default=0); w.add_argument("--every", type=int, default=4); w.add_argument("--sid")
-    b = sub.add_parser("bind"); b.add_argument("--sid", required=True); b.add_argument("--role", choices=list(ROLES)); b.add_argument("--title")
+    b = sub.add_parser("bind"); b.add_argument("--sid", required=True); b.add_argument("--role", choices=list(ROLES)); b.add_argument("--title"); b.add_argument("--chat", type=int, help="байгаа чатын id-д холбох")
     sub.add_parser("ensure-agents")
     y = sub.add_parser("sync-sessions"); y.add_argument("--dry-run", action="store_true")
     c = sub.add_parser("stall-check"); c.add_argument("--threshold", type=int, default=180); c.add_argument("--no-notify", action="store_true")
@@ -544,7 +547,7 @@ def main(argv=None):
             print(json.dumps(r, ensure_ascii=False))
         return 0
     if a.cmd == "bind":
-        print(json.dumps(bind(api, a.sid, a.role, a.title, pin=bool(a.title)), ensure_ascii=False)); return 0
+        print(json.dumps(bind(api, a.sid, a.role, a.title, pin=bool(a.title), chat=a.chat), ensure_ascii=False)); return 0
     if a.cmd == "watch":
         return watch(api, a.sid or LEGACY_SID, a.after, a.every)
     sid = getattr(a, "sid", None) or LEGACY_SID
