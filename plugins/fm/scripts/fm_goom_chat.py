@@ -5,6 +5,8 @@
   python fm_goom_chat.py say  "<текст>" [--sid S]               # агентын нэрээр бичнэ (--sid бол тэр сешний чатад)
   python fm_goom_chat.py watch [--sid S] [--after <id>]         # itge.e-ийн шинэ мессеж ирэхэд хэвлээд гарна (сешнийг сэрээнэ)
   python fm_goom_chat.py bind --sid S [--role r] [--title t]   # сешнд чат оноох/үүсгэх (нэрийг title-тай тааруулна)
+  python fm_goom_chat.py stall-check [--threshold 180]         # хариугүй ≥3 мин чат → ~/.fmos/goom-stalled.json + Discord (goom-tick)
+  python fm_goom_chat.py stall-hint                            # hook: энэ сешний чат гацсан бол сануулга
   python fm_goom_chat.py ensure-agents                         # дүр бүрийн локал туршилтын агент хэрэглэгч (idempotent)
   python fm_goom_chat.py sync-sessions [--dry-run]             # registry-ийн амьд сешн бүрд чат (goom-tick-ээс);
                                                                #   хаагдсан сешний чатыг ижил дүрийн амьд сешн рүү шилжүүлнэ
@@ -94,6 +96,44 @@ def _sender(m):
 
 def new_from_itge(msgs, after):
     return sorted((m for m in msgs if _msg_id(m) > after and _sender(m) == ITGE_ID), key=_msg_id)
+
+
+def _ts(m):
+    """created_at (ISO «…Z»/offset эсвэл epoch) → epoch секунд; уншигдахгүй бол None."""
+    v = m.get("created_at") or m.get("at")
+    if isinstance(v, (int, float)):
+        return float(v) / (1000 if v > 1e12 else 1)
+    if not isinstance(v, str) or not v:
+        return None
+    from datetime import datetime, timezone
+    try:
+        d = datetime.fromisoformat(v.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return (d if d.tzinfo else d.replace(tzinfo=timezone.utc)).timestamp()
+
+
+def stalled_chats(messages, now, threshold=180):
+    """Нэг чатын мессежүүд → хариулаагүй itge.e-ийн мессежүүд (хамгийн сүүлийн мессеж itge.e-ийнх, хамгийн эхний
+    хариулаагүй нь ≥ threshold секунд хүлээсэн бол), эс бөгөөс []. Цаг уншигдахгүй бол гацсан гэж үзэхгүй."""
+    if not messages:
+        return []
+    last = max(messages, key=_msg_id)
+    if _sender(last) != ITGE_ID:
+        return []
+    pend = pending_itge(messages)
+    t0 = _ts(pend[0]) if pend else None
+    return pend if t0 is not None and now - t0 >= threshold else []
+
+
+def stall_hint(stalled, sid):
+    """stall файл + энэ сешний sid → hook-ийн additionalContext текст эсвэл ''."""
+    e = (stalled or {}).get(sid)
+    if not e:
+        return ""
+    return (f"[Second Brain] «{e.get('title') or 'чат'}» чатад (chat {e.get('chat_id')}) itge.e-ийн {e.get('count', 1)} "
+            f"мессеж хариугүй байна. Хариулаад (fm_goom_chat.py say --sid {sid}) дараа нь "
+            f"`fm_goom_chat.py watch --sid {sid}`-г background-оор дахин асаа.")
 
 
 # ---------- I/O ----------
@@ -410,6 +450,71 @@ def watch(api, sid, after, every):
         time.sleep(every)
 
 
+# ---------- stall (сешн сонсохоо больсон) ----------
+STALLED = FMOS / "goom-stalled.json"     # sid → {chat_id, title, msg_id, count, notified}
+RELAY_PY = Path(__file__).resolve().parents[1] / "tools" / "relay" / "relay.py"
+
+
+def _discord_wake(sid, text):
+    """Сешний өөрийн Discord сувагт мэдэгдэл (relay chmap → d_send). Алдааг залгина."""
+    import runpy, contextlib, io as _io
+    try:
+        with contextlib.redirect_stdout(_io.StringIO()), contextlib.redirect_stderr(_io.StringIO()):
+            ns = runpy.run_path(str(RELAY_PY), run_name="fm_relay_lib")
+            ch = (ns["chmap"]() or {}).get(sid)
+            if not ch:
+                return "суваггүй"
+            ns["d_send"](ch, text, sid)
+        return f"#{ch}"
+    except BaseException as ex:   # d_send sys.exit хийж болно
+        return f"алдаа: {type(ex).__name__}"
+
+
+def stall_check(api, threshold=180, now=None, notify=True):
+    """bind хийгдсэн чат бүрийг шалгаж гацсаныг STALLED-д бичнэ; шинэ гацалт бүрд нэг удаа Discord мэдэгдэл.
+    → [{sid, chat_id, title, count, new, discord}] (goom-tick.ps1 toast-д)."""
+    now = now or time.time()
+    s = load_sessions(); old = _load(STALLED, {}); cur, out = {}, []
+    for sid, e in s.items():
+        cid = e.get("chat_id")
+        if not cid:
+            continue
+        try:
+            pend = stalled_chats(_messages(api, agent_token(api, e.get("role", "architect")), cid), now, threshold)
+        except Exception:
+            if sid in old: cur[sid] = old[sid]
+            continue
+        if not pend:
+            continue
+        mid = _msg_id(pend[0]); prev = old.get(sid) or {}
+        r = {"chat_id": cid, "title": e.get("title"), "msg_id": mid, "count": len(pend),
+             "notified": prev.get("notified") if prev.get("msg_id") == mid else None}
+        new = r["notified"] is None
+        dis = None
+        if new and notify:
+            dis = _discord_wake(sid, f"⏰ Second Brain: «{r['title'] or 'чат'}» чатад itge.e-ийн {len(pend)} мессеж "
+                                     f"{int((now - (_ts(pend[0]) or now)) // 60)} минут хариугүй — сешн сонсохоо больсон. "
+                                     f"Хариулаад watch-оо дахин асаа.")
+            r["notified"] = int(now)
+        cur[sid] = r
+        out.append({"sid": sid, "chat_id": cid, "title": r["title"], "count": len(pend), "new": new, "discord": dis})
+    _save(STALLED, cur)
+    return out
+
+
+def stall_hint_hook():
+    """SessionStart/UserPromptSubmit hook: энэ сешний чат гацсан бол сануулга. Хэзээ ч унахгүй."""
+    try:
+        hook = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace") or "{}")
+        t = stall_hint(_load(STALLED, {}), hook.get("session_id", ""))
+        if t:
+            print(json.dumps({"hookSpecificOutput": {"hookEventName": hook.get("hook_event_name", "UserPromptSubmit"),
+                                                     "additionalContext": t}}, ensure_ascii=False))
+    except Exception:
+        pass
+    return 0
+
+
 def main(argv=None):
     getattr(sys.stdout, "reconfigure", lambda **k: None)(encoding="utf-8")
     ap = argparse.ArgumentParser()
@@ -420,7 +525,11 @@ def main(argv=None):
     b = sub.add_parser("bind"); b.add_argument("--sid", required=True); b.add_argument("--role", choices=list(ROLES)); b.add_argument("--title")
     sub.add_parser("ensure-agents")
     y = sub.add_parser("sync-sessions"); y.add_argument("--dry-run", action="store_true")
+    c = sub.add_parser("stall-check"); c.add_argument("--threshold", type=int, default=180); c.add_argument("--no-notify", action="store_true")
+    sub.add_parser("stall-hint")
     a = ap.parse_args(argv)
+    if a.cmd == "stall-hint":
+        return stall_hint_hook()
     api = _cfg_url()
     if a.cmd == "ensure-agents":
         for role, uid, st in ensure_agents(api):
@@ -429,6 +538,10 @@ def main(argv=None):
     if a.cmd == "sync-sessions":
         for sid, role, title, r in sync_sessions(api, a.dry_run):
             print(json.dumps({"sid": sid[:8], "role": role, "title": title, "chat": r}, ensure_ascii=False))
+        return 0
+    if a.cmd == "stall-check":
+        for r in stall_check(api, a.threshold, notify=not a.no_notify):
+            print(json.dumps(r, ensure_ascii=False))
         return 0
     if a.cmd == "bind":
         print(json.dumps(bind(api, a.sid, a.role, a.title, pin=bool(a.title)), ensure_ascii=False)); return 0
