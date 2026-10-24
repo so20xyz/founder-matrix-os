@@ -326,7 +326,7 @@ def plan_rebinds(reg, device, sessions, live=None):
     нөгөө нь plan_sessions-ээр шинэ чат авна. live = {sid: mtime} эсвэл set."""
     def alive(sid):
         return sid in reg and (live is None or sid in live)
-    stale = [sid for sid in sessions if not alive(sid)]
+    stale = [sid for sid in sessions if not alive(sid) and sessions[sid].get("backend") != "vault"]
     if not stale:
         return []
     act = live if isinstance(live, dict) else {}
@@ -368,7 +368,7 @@ def plan_sessions(reg, device, sessions, live=None):
     for sid, v in reg.items():
         if not is_sid(sid) or (v.get("device") or device) != device or (live is not None and sid not in live):
             continue
-        if (sessions.get(sid) or {}).get("pinned"):
+        if (sessions.get(sid) or {}).get("pinned") or (sessions.get(sid) or {}).get("backend") == "vault":
             continue
         role = role_of(v)
         if not role:
@@ -464,10 +464,38 @@ def vault_lib():
     if not root or not (Path(root) / "tools" / "chat" / "store.py").exists():
         raise SystemExit("Vault чатын сан олдсонгүй: SB_TOOLS орчны хувьсагч эсвэл ~/.fmos/goom.json-ий «sb_repo» "
                          "нь second-brain repo-ийн үндсийг (tools/chat/store.py байх) заах ёстой.")
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
-    from tools.chat import store, runs
-    return store, runs
+    return _vault_mods(Path(root))
+
+
+_VMODS = {}
+
+
+def _vault_mods(root):
+    """tools/chat/store.py, runs.py-ийг файлын замаар ачаална (fm-ийн өөрийн tools/ багцтай мөргөлдөхгүй)."""
+    import importlib.util
+    key = str(root)
+    if key in _VMODS:
+        return _VMODS[key]
+
+    saved = {n: sys.modules.get(n) for n in ("tools", "tools.chat", "tools.chat.store", "tools.chat.runs")}
+    import types
+    for n, sub in (("tools", ""), ("tools.chat", "chat")):
+        m = types.ModuleType(n); m.__path__ = [str(root / "tools" / sub) if sub else str(root / "tools")]
+        sys.modules[n] = m
+    try:
+        out = []
+        for n in ("store", "runs"):
+            spec = importlib.util.spec_from_file_location(f"tools.chat.{n}", root / "tools" / "chat" / f"{n}.py")
+            mod = importlib.util.module_from_spec(spec); sys.modules[f"tools.chat.{n}"] = mod; spec.loader.exec_module(mod)
+            out.append(mod)
+    finally:
+        for n, v in saved.items():
+            if v is None:
+                sys.modules.pop(n, None)
+            else:
+                sys.modules[n] = v
+    _VMODS[key] = tuple(out)
+    return _VMODS[key]
 
 
 def vault_path():
@@ -493,10 +521,14 @@ def vault_channel(sid):
 
 def vault_bind(sid, channel):
     store, _ = vault_lib()
-    store._check_channel(channel)
+    try:
+        store._check_channel(channel)
+    except ValueError as ex:
+        raise SystemExit(f"Буруу суваг: {ex}")
     s = load_sessions()
     e = s.setdefault(sid, {"role": "project", "title": ROLES["project"]})
     e["channel"] = channel
+    e["backend"] = "vault"
     _save(SESSIONS, s)
     return e
 
@@ -514,30 +546,37 @@ def _now_iso():
 
 
 def vault_watch(sid, timeout=None, every=3):
-    _, runs = vault_lib()
+    store, runs = vault_lib()
     ch, _e = vault_channel(sid)
     vault = vault_path()
     t0 = time.time()
     while True:
-        q = runs.list_runs(vault, ch, "queued")
-        if q:
-            r = q[0]
+        for r in runs.list_runs(vault, ch, "queued"):
+            cur = next((x for x in runs.list_runs(vault, ch, "queued") if x.id == r.id), None)   # claim-ийн өмнө дахин шалга
+            if cur is None:
+                continue   # өөр watcher авчээ
+            try:
+                runs.update_run(vault, r.id, status="running", started=_now_iso())
+            except ValueError:
+                continue
             mid = r.id[len("run-"):]
-            store, _ = vault_lib()
             text = next((m.text for m in store.read_messages(vault, ch) if m.id == mid), "")
-            runs.update_run(vault, r.id, status="running", started=_now_iso())
             print(json.dumps({"run_id": r.id, "channel": ch, "message_text": text, "context": r.context}, ensure_ascii=False))
             return 0
-        if timeout is not None and time.time() - t0 >= timeout:
+        left = None if timeout is None else timeout - (time.time() - t0)
+        if left is not None and left <= 0:
             print(json.dumps({"timeout": True}))
             return 0
-        time.sleep(every)
+        time.sleep(every if left is None else min(every, left))
 
 
 def vault_run_done(run_id, outputs=None, tokens=0, failed=False):
     _, runs = vault_lib()
-    r = runs.update_run(vault_path(), run_id, status="failed" if failed else "done", completed=_now_iso(),
-                        outputs=outputs or [], tokens=tokens)
+    try:
+        r = runs.update_run(vault_path(), run_id, status="failed" if failed else "done", completed=_now_iso(),
+                            outputs=outputs or [], tokens=tokens)
+    except ValueError as ex:
+        raise SystemExit(f"run-done алдаа: {ex}")
     return {"run_id": r.id, "status": r.status}
 
 
@@ -616,7 +655,7 @@ def main(argv=None):
     w = sub.add_parser("watch"); w.add_argument("--after", type=int, default=0); w.add_argument("--every", type=int, default=4); w.add_argument("--sid"); w.add_argument("--backend", **BK); w.add_argument("--timeout", type=float)
     b = sub.add_parser("bind"); b.add_argument("--sid", required=True); b.add_argument("--role", choices=list(ROLES)); b.add_argument("--title"); b.add_argument("--chat", type=int, help="байгаа чатын id-д холбох")
     b.add_argument("--backend", **BK); b.add_argument("--channel", help="vault суваг (--backend vault)")
-    d = sub.add_parser("run-done"); d.add_argument("--run", required=True); d.add_argument("--outputs", default="")
+    d = sub.add_parser("run-done"); d.add_argument("--run", required=True); d.add_argument("--output", action="append", default=[], dest="outputs")
     d.add_argument("--tokens", type=int, default=0); d.add_argument("--failed", action="store_true")
     sub.add_parser("ensure-agents")
     y = sub.add_parser("sync-sessions"); y.add_argument("--dry-run", action="store_true")
@@ -626,8 +665,7 @@ def main(argv=None):
     if a.cmd == "stall-hint":
         return stall_hint_hook()
     if a.cmd == "run-done":
-        out = [x for x in a.outputs.split(",") if x]
-        print(json.dumps(vault_run_done(a.run, out, a.tokens, a.failed), ensure_ascii=False)); return 0
+        print(json.dumps(vault_run_done(a.run, a.outputs, a.tokens, a.failed), ensure_ascii=False)); return 0
     if getattr(a, "backend", "api") == "vault":
         sid = a.sid or LEGACY_SID
         if a.cmd == "bind":

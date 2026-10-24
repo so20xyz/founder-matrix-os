@@ -14,6 +14,7 @@ def _load():
     m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
 
 
+@unittest.skipUnless((Path(SB) / "tools" / "chat" / "store.py").exists(), "second-brain repo алга")
 class VaultBackend(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -25,9 +26,7 @@ class VaultBackend(unittest.TestCase):
         self.gc._save(self.gc.SESSIONS, {SID: {"chat_id": 1, "role": "architect", "title": "Architect PC"}})
         self.env = {k: os.environ.get(k) for k in ("SB_TOOLS", "FM_VAULT", "FM_DEVICE")}
         os.environ.update(SB_TOOLS=SB, FM_VAULT=str(self.vault), FM_DEVICE="pc")
-        sys.path.insert(0, SB)
-        from tools.chat import store, runs
-        self.store, self.runs = store, runs
+        self.store, self.runs = self.gc.vault_lib()
 
     def tearDown(self):
         for k, v in self.env.items():
@@ -49,8 +48,9 @@ class VaultBackend(unittest.TestCase):
         self.assertEqual(self.gc.load_sessions()[SID]["channel"], "proj")
 
     def test_bind_rejects_bad_channel(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(SystemExit) as c:
             self.bind("a/b")
+        self.assertIn("суваг", str(c.exception))
 
     def test_say_appends(self):
         self.bind()
@@ -86,7 +86,7 @@ class VaultBackend(unittest.TestCase):
         self.bind()
         m = self.store.append_message(self.vault, "proj", "itge.e", "хий", "pc")
         run = self.runs.create_run(self.vault, m, [])
-        rc, _ = self.run_main("run-done", "--run", run.id, "--outputs", "a,b", "--tokens", "42")
+        rc, _ = self.run_main("run-done", "--run", run.id, "--output", "a", "--output", "b", "--tokens", "42")
         self.assertEqual(rc, 0)
         r = self.runs.list_runs(self.vault, "proj")[0]
         self.assertEqual((r.status, r.outputs, r.tokens), ("done", ["a", "b"], 42))
@@ -95,10 +95,33 @@ class VaultBackend(unittest.TestCase):
         self.assertEqual(self.runs.list_runs(self.vault, "proj")[0].status, "failed")
 
     def test_vault_mode_makes_no_network_call(self):
-        self.bind()
         def boom(*a, **k): raise AssertionError("network")
-        self.gc._req = boom; self.gc._cfg_url = boom
-        self.run_main("say", "--backend", "vault", "--sid", SID, "x")
+        self.gc._req = boom; self.gc._cfg_url = boom; self.gc.agent_token = boom
+        sid2 = "99999999-2222-3333-4444-555555555555"
+        self.run_main("bind", "--backend", "vault", "--sid", sid2, "--channel", "proj")
+        self.run_main("watch", "--backend", "vault", "--sid", sid2, "--timeout", "0")
+        self.run_main("say", "--backend", "vault", "--sid", sid2, "x")
+
+    def test_watch_skips_run_claimed_by_other(self):
+        self.bind()
+        m = self.store.append_message(self.vault, "proj", "itge.e", "хий", "pc")
+        run = self.runs.create_run(self.vault, m, [])
+        self.runs.update_run(self.vault, run.id, status="running")
+        rc, out = self.run_main("watch", "--backend", "vault", "--sid", SID, "--timeout", "0")
+        self.assertEqual(json.loads(out.strip()), {"timeout": True})
+
+    def test_vault_entries_ignored_by_sync(self):
+        sid2 = "99999999-2222-3333-4444-555555555555"
+        self.run_main("bind", "--backend", "vault", "--sid", sid2, "--channel", "proj")
+        s = self.gc.load_sessions()
+        self.assertEqual(s[sid2]["backend"], "vault")
+        self.assertEqual(self.gc.plan_rebinds({}, "pc", s, {}), [])
+        reg = {sid2: {"role": "creative", "device": "pc"}}
+        self.assertEqual(self.gc.plan_sessions(reg, "pc", s, {sid2: 1}), [])
+        self.gc.STALLED = Path(self.tmp.name) / "stalled.json"
+        self.gc.agent_token = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("api"))
+        self.assertEqual(self.gc.stall_check("http://x", notify=False), [])
+        self.assertEqual(self.gc.stall_hint({}, sid2), "")
 
     def test_api_default_still_api(self):
         called = []
