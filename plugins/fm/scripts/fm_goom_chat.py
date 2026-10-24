@@ -453,6 +453,94 @@ def watch(api, sid, after, every):
         time.sleep(every)
 
 
+# ---------- vault backend (2026-10-25): сервергүй, vault файлаар чат ----------
+def _goom_cfg():
+    return _load(FMOS / "goom.json", {})
+
+
+def vault_lib():
+    """second-brain repo (SB_TOOLS эсвэл goom.json sb_repo) → (store, runs) модуль."""
+    root = os.environ.get("SB_TOOLS") or _goom_cfg().get("sb_repo")
+    if not root or not (Path(root) / "tools" / "chat" / "store.py").exists():
+        raise SystemExit("Vault чатын сан олдсонгүй: SB_TOOLS орчны хувьсагч эсвэл ~/.fmos/goom.json-ий «sb_repo» "
+                         "нь second-brain repo-ийн үндсийг (tools/chat/store.py байх) заах ёстой.")
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from tools.chat import store, runs
+    return store, runs
+
+
+def vault_path():
+    v = os.environ.get("FM_VAULT") or _goom_cfg().get("vault")
+    if not v:
+        raise SystemExit("Vault зам алга: FM_VAULT орчны хувьсагч эсвэл ~/.fmos/goom.json-ий «vault» тохируул.")
+    return Path(v)
+
+
+def vault_device():
+    d = os.environ.get("FM_DEVICE")
+    if d:
+        return d
+    return "pc" if sys.platform.startswith("win") else "mac" if sys.platform == "darwin" else "pc"
+
+
+def vault_channel(sid):
+    e = load_sessions().get(sid) or {}
+    if not e.get("channel"):
+        raise SystemExit(f"sid {sid[:8]}-д channel алга — `bind --backend vault --sid {sid} --channel <нэр>` хий")
+    return e["channel"], e
+
+
+def vault_bind(sid, channel):
+    store, _ = vault_lib()
+    store._check_channel(channel)
+    s = load_sessions()
+    e = s.setdefault(sid, {"role": "project", "title": ROLES["project"]})
+    e["channel"] = channel
+    _save(SESSIONS, s)
+    return e
+
+
+def vault_say(sid, text):
+    store, _ = vault_lib()
+    ch, e = vault_channel(sid)
+    m = store.append_message(vault_path(), ch, e.get("title") or ROLES.get(e.get("role"), "agent"), text, vault_device())
+    return {"ok": True, "id": m.id, "channel": ch}
+
+
+def _now_iso():
+    from datetime import datetime
+    return datetime.now().replace(microsecond=0).isoformat()
+
+
+def vault_watch(sid, timeout=None, every=3):
+    _, runs = vault_lib()
+    ch, _e = vault_channel(sid)
+    vault = vault_path()
+    t0 = time.time()
+    while True:
+        q = runs.list_runs(vault, ch, "queued")
+        if q:
+            r = q[0]
+            mid = r.id[len("run-"):]
+            store, _ = vault_lib()
+            text = next((m.text for m in store.read_messages(vault, ch) if m.id == mid), "")
+            runs.update_run(vault, r.id, status="running", started=_now_iso())
+            print(json.dumps({"run_id": r.id, "channel": ch, "message_text": text, "context": r.context}, ensure_ascii=False))
+            return 0
+        if timeout is not None and time.time() - t0 >= timeout:
+            print(json.dumps({"timeout": True}))
+            return 0
+        time.sleep(every)
+
+
+def vault_run_done(run_id, outputs=None, tokens=0, failed=False):
+    _, runs = vault_lib()
+    r = runs.update_run(vault_path(), run_id, status="failed" if failed else "done", completed=_now_iso(),
+                        outputs=outputs or [], tokens=tokens)
+    return {"run_id": r.id, "status": r.status}
+
+
 # ---------- stall (сешн сонсохоо больсон) ----------
 STALLED = FMOS / "goom-stalled.json"     # sid → {chat_id, title, msg_id, count, notified}
 RELAY_PY = Path(__file__).resolve().parents[1] / "tools" / "relay" / "relay.py"
@@ -523,9 +611,13 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("open")
-    s = sub.add_parser("say"); s.add_argument("text"); s.add_argument("--sid")
-    w = sub.add_parser("watch"); w.add_argument("--after", type=int, default=0); w.add_argument("--every", type=int, default=4); w.add_argument("--sid")
+    BK = dict(choices=["api", "vault"], default="api", help="api (анхдагч) | vault")
+    s = sub.add_parser("say"); s.add_argument("text"); s.add_argument("--sid"); s.add_argument("--backend", **BK)
+    w = sub.add_parser("watch"); w.add_argument("--after", type=int, default=0); w.add_argument("--every", type=int, default=4); w.add_argument("--sid"); w.add_argument("--backend", **BK); w.add_argument("--timeout", type=float)
     b = sub.add_parser("bind"); b.add_argument("--sid", required=True); b.add_argument("--role", choices=list(ROLES)); b.add_argument("--title"); b.add_argument("--chat", type=int, help="байгаа чатын id-д холбох")
+    b.add_argument("--backend", **BK); b.add_argument("--channel", help="vault суваг (--backend vault)")
+    d = sub.add_parser("run-done"); d.add_argument("--run", required=True); d.add_argument("--outputs", default="")
+    d.add_argument("--tokens", type=int, default=0); d.add_argument("--failed", action="store_true")
     sub.add_parser("ensure-agents")
     y = sub.add_parser("sync-sessions"); y.add_argument("--dry-run", action="store_true")
     c = sub.add_parser("stall-check"); c.add_argument("--threshold", type=int, default=180); c.add_argument("--no-notify", action="store_true")
@@ -533,6 +625,19 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.cmd == "stall-hint":
         return stall_hint_hook()
+    if a.cmd == "run-done":
+        out = [x for x in a.outputs.split(",") if x]
+        print(json.dumps(vault_run_done(a.run, out, a.tokens, a.failed), ensure_ascii=False)); return 0
+    if getattr(a, "backend", "api") == "vault":
+        sid = a.sid or LEGACY_SID
+        if a.cmd == "bind":
+            if not a.channel:
+                raise SystemExit("--channel шаардлагатай")
+            print(json.dumps(vault_bind(a.sid, a.channel), ensure_ascii=False)); return 0
+        if a.cmd == "say":
+            print(json.dumps(vault_say(sid, a.text), ensure_ascii=False)); return 0
+        if a.cmd == "watch":
+            return vault_watch(sid, a.timeout)
     api = _cfg_url()
     if a.cmd == "ensure-agents":
         for role, uid, st in ensure_agents(api):
