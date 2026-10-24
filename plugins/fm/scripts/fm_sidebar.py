@@ -4,6 +4,7 @@
   python3 fm_sidebar.py publish <vault> --device PC < sessions.json   # энэ төхөөрөмжийн sidebar → vault-ийн загвар
   python3 fm_sidebar.py plan    <vault> --device Mac < sessions.json   # загвартай тулгаж хийх алхмууд (JSON)
 
+  python3 fm_sidebar.py plan --from-vault <vault> < sessions.json   # vault PARA-аас алхмууд (rename/move/create_group/unknown)
   python3 fm_sidebar.py check   <vault> < sessions.json                # дүрмийн зөрчил: буруу бүлэг, nested төсөл, routine
 
 sessions.json =`mcp__ccd_session_mgmt__list_sessions`-ийн гаралт (title, group{name}, sessionId, cwd).
@@ -250,6 +251,98 @@ def plan(vault, sessions, device):
     return acts
 
 
+# --- plan --from-vault (spec 2026-10-25 «PARA нэг бүтэц»): загвар биш, vault-ийн PARA-аас хүссэн бүлэг, гарчиг ---
+ROLE_ICON = {"creative": "🎨", "research": "🔍", "architect": "🏛", "project": "📁", "gtd": "📥", "wiki": "📚", "finance": "🔒"}
+ROLE_NAME = {"creative": "Creative", "research": "Research", "architect": "Architect", "gtd": "GTD", "wiki": "Wiki"}
+KNOWN_ICONS = set(ROLE_ICON.values())
+FINANCE_ROOTS = ("d:/vaults/founder.matrix",)
+ROUTINE_FV = ROUTINE + ("calendar sync",)
+
+
+def _split(title):
+    """«🏗 Architect › видео» -> ('🏗', 'Architect', 'видео'); icon = эхний үсэг биш тэмдэгтүүд."""
+    t = (title or "").strip()
+    m = re.match(r"^([^\w\s]+)\s*", t)
+    icon = m.group(1).replace("\ufe0f", "") if m else ""
+    rest = t[m.end():] if m else t
+    head, _, work = rest.partition("›")
+    return icon, head.strip(), work.strip() or None
+
+
+def _under(cwd, root):
+    c, r = (cwd or "").replace("\\", "/").rstrip("/").lower(), root.replace("\\", "/").rstrip("/").lower()
+    return c == r or c.startswith(r + "/")
+
+
+def _para_child(vault, cwd, top):
+    rel = rel_folder(vault, cwd)
+    if rel is None:
+        return None
+    parts = rel.split("/")
+    if len(parts) >= 2 and parts[0] == top:
+        real = {d.name.lower(): d.name for d in (vault / top).iterdir() if d.is_dir()} if (vault / top).is_dir() else {}
+        return real.get(parts[1].lower(), parts[1])
+    return None
+
+
+def classify(vault, s, keys, projects):
+    """-> (group, icon, item) эсвэл (None, None, reason)."""
+    t, cwd = s.get("title") or "", s.get("cwd") or ""
+    icon, head, work = _split(t)
+    rel = rel_folder(vault, cwd) or ""
+    if "🔒" in t or any(_under(cwd, r) for r in FINANCE_ROOTS) or rel.startswith("03-Areas/Business/finances"):
+        return "Finance", "🔒", head
+    key = keys.get(norm(t)) or keys.get(norm(head)) or ""
+    role, _, proj = key.partition("/")
+    p = _para_child(vault, cwd, "02-Projects")
+    if p is None:
+        cand = [proj, head] if role == "project" else [head]
+        p = next((projects[norm(c)] for c in cand if c and norm(c) in projects), None)
+    if p is not None:
+        return "Projects", "📁", p
+    hl = head.lower()
+    if role not in ROLE_NAME:
+        role = next((r for r, n in ROLE_NAME.items() if hl == n.lower() or hl.startswith(n.lower() + " ")), None)
+    if role:
+        n = ROLE_NAME[role]
+        return ROLE_GROUP[role], ROLE_ICON[role], n + head[len(n):]
+    a = _para_child(vault, cwd, "03-Areas")
+    if a is not None:
+        return "Areas", icon if icon in KNOWN_ICONS else "📥", a if not head else head
+    return None, None, "PARA зүйл олдсонгүй (cwd: %s)" % (cwd or "—")
+
+
+def plan_from_vault(vault, sessions):
+    keys = reg_keys(vault)
+    pdir = vault / "02-Projects"
+    projects = {norm(d.name): d.name for d in pdir.iterdir() if d.is_dir()} if pdir.is_dir() else {}
+    groups = {(s.get("group") or {}).get("name") for s in sessions} - {None}
+    steps, unknown, made = [], [], set()
+    for s in sessions:
+        t = s.get("title") or ""
+        if s.get("isArchived") or t.strip().lower().startswith("side chat") or s.get("scheduledTaskId") \
+                or any(r in t.lower() for r in ROUTINE_FV):
+            continue
+        sid = s.get("sessionId")
+        g, icon, item = classify(vault, s, keys, projects)
+        if g is None:
+            unknown.append({"op": "unknown", "sessionId": sid, "title": t, "reason": item})
+            continue
+        cur_icon, _, work = _split(t)
+        sub = work is not None
+        if sub and g == "Projects" and cur_icon in KNOWN_ICONS:
+            icon = cur_icon                      # дэд сешний ажлын icon (🎨 <Т> › …) хэвээр
+        want = "%s %s › %s" % (icon, item, work) if sub else "%s %s" % (icon, item)
+        if t != want:
+            steps.append({"op": "rename", "sessionId": sid, "from": t, "to": want})
+        if (s.get("group") or {}).get("name") != g:
+            if g not in groups and g not in made:
+                made.add(g)
+                steps.insert(0, {"op": "create_group", "name": g})
+            steps.append({"op": "move", "sessionId": sid, "group": g})
+    return steps + unknown
+
+
 def main(argv):
     getattr(sys.stdout, "reconfigure", lambda **k: None)(encoding="utf-8")
     pos = [a for a in argv if not a.startswith("--")]
@@ -258,7 +351,9 @@ def main(argv):
     vault = Path(pos[1]).expanduser()
     device = argv[argv.index("--device") + 1] if "--device" in argv else "?"
     sessions = json.loads(sys.stdin.buffer.read().decode("utf-8-sig") or "[]")
-    if pos[0] == "check":
+    if pos[0] == "plan" and "--from-vault" in argv:
+        out = plan_from_vault(vault, sessions)
+    elif pos[0] == "check":
         out = check(vault, sessions)
     else:
         out = (publish if pos[0] == "publish" else plan)(vault, sessions, device)
