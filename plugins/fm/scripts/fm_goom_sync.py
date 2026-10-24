@@ -24,7 +24,7 @@ from pathlib import Path
 
 KINDS = ("project", "task", "reference", "atom", "decision", "note")
 # kind note: every other note under these top folders (folder dashboards in Goomnet). Private ones are skipped.
-NOTE_ROOTS = ("00-Soul", "01-GTD/Inbox", "02-Projects", "03-Areas", "99-Archive")
+NOTE_ROOTS = ("00-Soul", "01-GTD/Inbox", "02-Projects", "03-Areas", "04-Resources/Taxonomy", "99-Archive")
 # Chat/ folders are read by vaultchat directly; a project's main note is kind "project".
 NOTE_SKIP_PARTS = ("_trash", "Chat")
 BATCH = 500
