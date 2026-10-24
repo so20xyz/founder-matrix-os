@@ -24,7 +24,9 @@ from pathlib import Path
 
 KINDS = ("project", "task", "reference", "atom", "decision", "note")
 # kind note: every other note under these top folders (folder dashboards in Goomnet). Private ones are skipped.
-NOTE_ROOTS = ("00-Soul", "01-GTD/Inbox", "03-Areas", "99-Archive")
+NOTE_ROOTS = ("00-Soul", "01-GTD/Inbox", "02-Projects", "03-Areas", "99-Archive")
+# Chat/ folders are read by vaultchat directly; a project's main note is kind "project".
+NOTE_SKIP_PARTS = ("_trash", "Chat")
 BATCH = 500
 ENDPOINT = "/api/web/private/vault/sync"
 CONFIG_REL = (".fmos", "goom.json")
@@ -127,6 +129,12 @@ def _project_slug(value):
     return slug or None
 
 
+def _is_project_note(vault, f):
+    """02-Projects/<P>/<P>.md is synced as kind project (source_path is unique across kinds)."""
+    rel = f.relative_to(vault).parts
+    return len(rel) == 3 and rel[0] == "02-Projects" and f.stem == f.parent.name
+
+
 def _sources(vault, kind):
     if kind == "project":
         return [f for f in sorted(vault.glob("02-Projects/*/*.md")) if f.stem == f.parent.name]
@@ -138,7 +146,9 @@ def _sources(vault, kind):
             d = vault / root
             if d.is_dir():
                 out += [f for f in d.rglob("*.md")
-                        if not any(part.startswith(".") or part == "_trash" for part in f.relative_to(vault).parts)]
+                        if not any(part.startswith(".") or part in NOTE_SKIP_PARTS
+                                   for part in f.relative_to(vault).parts)
+                        and not _is_project_note(vault, f)]
         return sorted(out)
     folder = {"reference": "04-Resources/references",
               "atom": "04-Resources/Atomic/knowledge",
@@ -246,7 +256,12 @@ def _load_config():
         raise SystemExit_("goom config: token missing")
     if not isinstance(ws, int) or isinstance(ws, bool):
         raise SystemExit_("goom config: workspace_id must be an integer")
-    return url.rstrip("/"), token.strip(), ws
+    return ipv4_localhost(url.rstrip("/")), token.strip(), ws
+
+
+def ipv4_localhost(url):
+    """«localhost» → 127.0.0.1: on Windows ::1 is tried first and Docker's port proxy hangs on it (60s timeout)."""
+    return re.sub(r"^(https?://)localhost(?=[:/]|$)", r"\g<1>127.0.0.1", url, flags=re.I)
 
 
 def _post(url, token, payload, endpoint=ENDPOINT):

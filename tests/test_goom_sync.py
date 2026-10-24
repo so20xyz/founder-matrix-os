@@ -247,9 +247,13 @@ class TestNoteKind(unittest.TestCase):
         w(v / "03-Areas" / "Tag.md", "---\ntags: [private]\n---\nx\n")
         w(v / "03-Areas" / ".obsidian" / "h.md", "x\n")
         w(v / "02-Projects" / "P" / "other.md", "x\n")
+        w(v / "02-Projects" / "P" / "P.md", "---\ntype: project\n---\nx\n")
+        w(v / "02-Projects" / "P" / "Output" / "o.md", "x\n")
+        w(v / "02-Projects" / "P" / "Chat" / "2026-10-25.md", "x\n")
         items, skipped = gs.collect(v, {"note"})
         paths = sorted(i["source_path"] for i in items)
-        self.assertEqual(paths, ["00-Soul/SOUL.md", "03-Areas/Studio/Studio.md", "99-Archive/old.md"])
+        self.assertEqual(paths, ["00-Soul/SOUL.md", "02-Projects/P/Output/o.md", "02-Projects/P/other.md",
+                                 "03-Areas/Studio/Studio.md", "99-Archive/old.md"])
         self.assertTrue(all(i["kind"] == "note" for i in items))
         self.assertEqual(sum(1 for s in skipped if s["reason"] == "private"), 5)
         manifest = gs.build_manifest(items, skipped, {"note"})
@@ -258,3 +262,13 @@ class TestNoteKind(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestIPv4Localhost(unittest.TestCase):
+    def test_localhost_rewritten(self):
+        self.assertEqual(gs.ipv4_localhost("http://localhost:3000"), "http://127.0.0.1:3000")
+        self.assertEqual(gs.ipv4_localhost("http://LOCALHOST/x"), "http://127.0.0.1/x")
+
+    def test_other_hosts_kept(self):
+        for u in ("https://goom.example.com", "http://localhost.test:3000", "http://127.0.0.1:3000"):
+            self.assertEqual(gs.ipv4_localhost(u), u)
