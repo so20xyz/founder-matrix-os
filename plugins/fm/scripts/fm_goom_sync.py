@@ -15,6 +15,8 @@ each listed kind's rows whose path is not in the manifest.
   - A selected kind with no files in the manifest makes --full exit 2 before any network call, unless
     --allow-empty-kind is passed; then that kind gets [] and all of its server rows are deleted.
   - A missing vault directory exits 2.
+--apply with kind reference first runs fm_covers.ensure() on 04-Resources/references (one og:image fetch per new
+URL, failures cached in covers/_failed.json) so GTD-captured references reach Goomnet with a `cover:`. --no-covers skips it.
 content_hash = sha256(kind + "\\n" + project_slug + "\\n" + raw frontmatter text + "\\n" + body).
 """
 import argparse, hashlib, json, re, sys, unicodedata, urllib.error, urllib.request
@@ -266,6 +268,7 @@ def main(argv=None):
     ap.add_argument("--allow-empty-kind", action="store_true",
                     help="with --full: allow a selected kind with no files (deletes all of its server rows)")
     ap.add_argument("--kinds", default=",".join(KINDS))
+    ap.add_argument("--no-covers", action="store_true", help="skip the cover (og:image) pass before --apply")
     args = ap.parse_args(argv)
     kinds = [k.strip() for k in args.kinds.split(",") if k.strip()]
     bad = [k for k in kinds if k not in KINDS]
@@ -278,6 +281,16 @@ def main(argv=None):
     if not vault.is_dir():
         print(f"vault directory not found: {vault}", file=sys.stderr)
         return 2
+    if args.apply and not args.no_covers and "reference" in kinds_set:
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import fm_covers
+            st = fm_covers.ensure(vault, ["04-Resources/references"], apply=True)
+            changed = {k: v for k, v in st.items() if k != "ok" and v}
+            if changed:
+                print("covers: " + " ".join(f"{k}={v}" for k, v in changed.items()))
+        except Exception as e:  # covers must never block the sync
+            print(f"covers: skipped ({type(e).__name__})", file=sys.stderr)
     items, skipped = collect(vault, kinds_set)
     manifest = build_manifest(items, skipped, kinds_set)
 
