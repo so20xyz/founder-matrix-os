@@ -61,6 +61,14 @@ class VaultBackend(unittest.TestCase):
         self.assertEqual((msgs[0].author, msgs[0].text), ("Architect PC", "сайн уу"))
         self.assertIn("-pc-", msgs[0].id)
 
+    def test_say_lands_in_project_chat_folder(self):
+        (self.vault / "02-Projects" / "proj").mkdir(parents=True)
+        self.bind()
+        rc, _ = self.run_main("say", "--backend", "vault", "--sid", SID, "PARA")
+        self.assertEqual(rc, 0)
+        self.assertTrue(list((self.vault / "02-Projects" / "proj" / "Chat").glob("*.pc.md")))
+        self.assertFalse((self.vault / "01-GTD" / "Chat").exists())
+
     def test_watch_returns_queued_and_flips_running(self):
         self.bind()
         m = self.store.append_message(self.vault, "proj", "itge.e", "хий", "pc")
