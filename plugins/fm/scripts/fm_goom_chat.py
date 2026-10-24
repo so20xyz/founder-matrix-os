@@ -3,7 +3,10 @@
 
   python fm_goom_chat.py open                                  # (хуучин) Architect ↔ itge.e DIRECT чат → chat_id
   python fm_goom_chat.py say  "<текст>" [--sid S]               # агентын нэрээр бичнэ (--sid бол тэр сешний чатад)
-  python fm_goom_chat.py watch [--sid S] [--after <id>]         # itge.e-ийн шинэ мессеж ирэхэд хэвлээд гарна (сешнийг сэрээнэ)
+  python fm_goom_chat.py say  "<текст>" --reply-to <id>        # АГЕНТЫН АНХДАГЧ: тэр мессежийн thread-д хариулна (суваг цэвэр)
+  python fm_goom_chat.py say  "<текст>" --thread <root_id> [--also-channel]  # тодорхой thread-д бичнэ
+  python fm_goom_chat.py watch [--sid S] [--after <id>]         # itge.e-ийн шинэ мессеж ирэхэд хэвлээд гарна (сешнийг сэрээнэ);
+                                                               #   мөр бүр parent_id, thread_root-той → say --reply-to <id>
   python fm_goom_chat.py bind --sid S [--role r] [--title t]   # сешнд чат оноох/үүсгэх (нэрийг title-тай тааруулна)
   python fm_goom_chat.py stall-check [--threshold 180]         # хариугүй ≥3 мин чат → ~/.fmos/goom-stalled.json + Discord (goom-tick)
   python fm_goom_chat.py stall-hint                            # hook: энэ сешний чат гацсан бол сануулга
@@ -234,13 +237,35 @@ def bind(api, sid, role=None, title=None, sessions=None, pin=False, chat=None):
     return e
 
 
-def say(api, sid, text, timeout=30):
+def thread_root(api, token, cid, message_id, timeout=30):
+    """Мессежийн thread-ийн эх (root) id: эх мессеж бол өөрөө, хариу бол түүний эх."""
+    try:
+        res = _req("GET", f"{api}/api/web/private/chat/{cid}/messages/{int(message_id)}/thread", token, timeout=timeout)
+        return int((res.get("root") or {}).get("message_id") or message_id)
+    except Exception:
+        return int(message_id)  # backend ч бас эхийг өөрөө олно
+
+
+def say(api, sid, text, timeout=30, thread=None, reply_to=None, also_channel=False):
+    """Сувагт бичнэ. thread=<root_id> → тэр thread-д; reply_to=<message_id> → тэр мессежийн thread-д
+    (эхийг нь олно). Агентын анхдагч: itge.e-ийн мессежид хариулахдаа reply_to ашиглаж суваг цэвэр байлгана."""
     s = load_sessions()
     e = s.get(sid)
     if not e:
         raise RuntimeError(f"sid {sid[:8]} чатгүй — bind хий")
     tok = agent_token(api, e["role"], timeout=timeout)
-    _req("POST", f"{api}/api/web/private/chat/{e['chat_id']}/message", tok, {"content": text, "message_type": "TEXT"}, timeout=timeout)
+    body = {"content": text, "message_type": "TEXT"}
+    root = None
+    if reply_to:
+        root = thread_root(api, tok, e["chat_id"], reply_to, timeout=timeout)
+    elif thread:
+        root = int(thread)
+    if root:
+        body["parent_message_id"] = root
+        if also_channel:
+            body["also_send_to_channel"] = True
+    _req("POST", f"{api}/api/web/private/chat/{e['chat_id']}/message", tok, body, timeout=timeout)
+    return root
 
 
 # ---------- агент хэрэглэгч (зөвхөн локал dev) ----------
@@ -415,8 +440,17 @@ def sync_sessions(api, dry=False):
 
 # ---------- watch ----------
 def _messages(api, token, cid):
-    res = _req("GET", f"{api}/api/web/private/chat/{cid}/messages", token)
+    # include_replies=1: суваг + thread-ийн хариу бүгд (хавтгай); вэб суваг зөвхөн эх мессежийг харуулна.
+    res = _req("GET", f"{api}/api/web/private/chat/{cid}/messages?include_replies=1", token)
     return res if isinstance(res, list) else (res.get("messages") or res.get("data") or [])
+
+
+def watch_line(m, att=None):
+    """watch-ийн мөр: parent_id (thread-ийн хариу бол эх нь, үгүй бол null), thread_root (хариулах thread)."""
+    pid = m.get("parent_message_id")
+    return {"id": _msg_id(m), "text": m.get("content"), "at": m.get("created_at"),
+            "parent_id": pid, "thread_root": int(pid) if pid else _msg_id(m),
+            **({"attachments": att} if att else {})}
 
 
 def watch(api, sid, after, every):
@@ -440,8 +474,7 @@ def watch(api, sid, after, every):
         if mine:
             for m in mine:
                 att = [a.get("url") for a in (m.get("attachments") or []) if a.get("url")]
-                print(json.dumps({"id": _msg_id(m), "text": m.get("content"), "at": m.get("created_at"),
-                                  **({"attachments": att} if att else {})}, ensure_ascii=False))
+                print(json.dumps(watch_line(m, att), ensure_ascii=False))
             nxt = _msg_id(mine[-1])
             print(json.dumps({"next_after": nxt}))
             s = load_sessions()
@@ -652,6 +685,10 @@ def main(argv=None):
     sub.add_parser("open")
     BK = dict(choices=["api", "vault"], default="api", help="api (анхдагч) | vault")
     s = sub.add_parser("say"); s.add_argument("text"); s.add_argument("--sid"); s.add_argument("--backend", **BK)
+    tg = s.add_mutually_exclusive_group()
+    tg.add_argument("--thread", type=int, help="энэ root мессежийн thread-д бичих")
+    tg.add_argument("--reply-to", type=int, dest="reply_to", help="энэ мессежийн thread-д хариулах (эхийг нь олно) — агентын анхдагч")
+    s.add_argument("--also-channel", action="store_true", help="thread-ийн хариуг сувагт ч бас харуулах")
     w = sub.add_parser("watch"); w.add_argument("--after", type=int, default=0); w.add_argument("--every", type=int, default=4); w.add_argument("--sid"); w.add_argument("--backend", **BK); w.add_argument("--timeout", type=float)
     b = sub.add_parser("bind"); b.add_argument("--sid", required=True); b.add_argument("--role", choices=list(ROLES)); b.add_argument("--title"); b.add_argument("--chat", type=int, help="байгаа чатын id-д холбох")
     b.add_argument("--backend", **BK); b.add_argument("--channel", help="vault суваг (--backend vault)")
@@ -699,7 +736,8 @@ def main(argv=None):
     if a.cmd == "say":
         if sid == LEGACY_SID:
             _legacy_chat_id(api, agent_token(api))
-        say(api, sid, a.text); print(json.dumps({"ok": True})); return 0
+        root = say(api, sid, a.text, thread=a.thread, reply_to=a.reply_to, also_channel=a.also_channel)
+        print(json.dumps({"ok": True, **({"thread": root} if root else {})})); return 0
 
 
 if __name__ == "__main__":
