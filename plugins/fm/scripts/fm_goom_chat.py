@@ -733,6 +733,8 @@ def vault_run_done(run_id, outputs=None, tokens=0, failed=False):
 # ---------- stall (сешн сонсохоо больсон) ----------
 STALLED = FMOS / "goom-stalled.json"     # sid → {chat_id, title, msg_id, count, notified}
 RELAY_PY = Path(__file__).resolve().parents[1] / "tools" / "relay" / "relay.py"
+ITGE_ONLY_CHANNELS = {"gtd"}   # агент мэдэгдэл бичихгүй сувгууд
+SYS_CHANNEL = "sys-dispatch"
 
 
 def _discord_wake(sid, text):
@@ -744,6 +746,8 @@ def _discord_wake(sid, text):
             ch = (ns["chmap"]() or {}).get(sid)
             if not ch:
                 return "суваггүй"
+            if ch in ITGE_ONLY_CHANNELS:   # #gtd = зөвхөн itge.e (2026-10-26) — системийн сувагт
+                ch = SYS_CHANNEL
             ns["d_send"](ch, text, sid)
         return f"#{ch}"
     except BaseException as ex:   # d_send sys.exit хийж болно
