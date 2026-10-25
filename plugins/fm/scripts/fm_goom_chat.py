@@ -573,16 +573,52 @@ def vault_bind(sid, channel):
     return e
 
 
+OPEN_RUN = ("running", "queued")
+
+
+def run_to_close(run_list, reply_id, role=""):
+    """Агент сувагт хариулахад хаах run: reply-ээс ӨМНӨ үүссэн, нээлттэй (running давуу, дараа нь queued), энэ дүрд
+    оноогдсон эсвэл эзэнгүй хамгийн хуучин run. Цэвэр функц (тест). Run id = run-<message id>, id цагаар эрэмбэлэгдэнэ."""
+    role = (role or "").strip().lower()
+    cand = [r for r in run_list if r.status in OPEN_RUN and r.id[len("run-"):] < reply_id
+            and (not role or not (getattr(r, "assignee", "") or "").strip()
+                 or (r.assignee or "").strip().lower() == role)]
+    cand.sort(key=lambda r: (OPEN_RUN.index(r.status), r.id))
+    return cand[0] if cand else None
+
+
 def vault_say(sid, text):
-    store, _ = vault_lib()
+    """Vault сувагт агентын нэрээр бичнэ, тэгээд хариулсан run-ийг done болгоно (1061 гацсан шалтгаан, 2026-10-26)."""
+    store, runs = vault_lib()
     ch, e = vault_channel(sid)
-    m = store.append_message(vault_path(), ch, e.get("title") or ROLES.get(e.get("role"), "agent"), text, vault_device())
-    return {"ok": True, "id": m.id, "channel": ch}
+    vault = vault_path()
+    m = store.append_message(vault, ch, e.get("title") or ROLES.get(e.get("role"), "agent"), text, vault_device())
+    out = {"ok": True, "id": m.id, "channel": ch}
+    try:
+        r = run_to_close(runs.list_runs(vault, ch), m.id, e.get("role", ""))
+        if r:
+            runs.update_run(vault, r.id, status="done", completed=_now_iso())
+            out["closed_run"] = r.id
+    except (ValueError, OSError):
+        pass
+    return out
 
 
 def _now_iso():
     from datetime import datetime
     return datetime.now().replace(microsecond=0).isoformat()
+
+
+LISTEN = FMOS / "goom-listen"   # <channel>.json = {ts, pid} — vault watch сонсож байгааг dispatcher мэднэ
+
+
+def listen_beat(ch):
+    try:
+        LISTEN.mkdir(parents=True, exist_ok=True)
+        (LISTEN / (re.sub(r"[^\w.-]+", "_", ch) + ".json")).write_text(
+            json.dumps({"channel": ch, "ts": time.time(), "pid": os.getpid()}), encoding="utf-8")
+    except OSError:
+        pass
 
 
 def vault_watch(sid, timeout=None, every=3):
@@ -591,6 +627,7 @@ def vault_watch(sid, timeout=None, every=3):
     vault = vault_path()
     t0 = time.time()
     while True:
+        listen_beat(ch)
         for r in runs.list_runs(vault, ch, "queued"):
             cur = next((x for x in runs.list_runs(vault, ch, "queued") if x.id == r.id), None)   # claim-ийн өмнө дахин шалга
             if cur is None:
@@ -703,11 +740,14 @@ def run_reply(api, run_id, text, role=None, timeout=30):
     vault = vault_path()
     r = runs._parse(runs._find(vault, run_id).read_text(encoding="utf-8"), "")
     dest = parse_reply_to(r.reply_to)
-    if not dest:
-        raise SystemExit(f"{run_id}: reply_to алга — vault чатад `say --backend vault` ашигла")
     role = (role or r.assignee or "architect").strip().lower()
     if role not in ROLES:
-        role = "project" if role == "project" else "architect"
+        role = "architect"
+    if not dest:   # vault сувгийн run (app чат): тэр сувагт бичээд хаана — reply үргэлж run-ийг хаана
+        store, _ = vault_lib()
+        store.append_message(vault, r.channel, ROLES[role], text, vault_device())
+        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="")
+        return {"run_id": run_id, "channel": r.channel, "role": role}
     tok = agent_token(api, role, timeout=timeout)
     kind, ident, _mid = dest
     if kind == "chat":
@@ -718,6 +758,13 @@ def run_reply(api, run_id, text, role=None, timeout=30):
              {"text": text, "author_label": ROLES[role]}, timeout=timeout)
     runs.update_run(vault, run_id, status="done", completed=_now_iso())
     return {"run_id": run_id, "reply_to": r.reply_to, "role": role}
+
+
+def vault_run_retry(run_id):
+    """«Дахин ажиллуулах»: failed/running → queued, error цэвэрлэнэ; dispatcher ~30 с-д дахин авна."""
+    _, runs = vault_lib()
+    r = runs.update_run(vault_path(), run_id, status="queued", started="", completed="", error="")
+    return {"run_id": r.id, "status": r.status}
 
 
 def vault_run_done(run_id, outputs=None, tokens=0, failed=False):
@@ -823,6 +870,7 @@ def main(argv=None):
     d.add_argument("--tokens", type=int, default=0); d.add_argument("--failed", action="store_true")
     rp = sub.add_parser("reply", help="run-ий reply_to (API/board чат) руу хариулж done болгоно")
     rp.add_argument("--run", required=True); rp.add_argument("text"); rp.add_argument("--role")
+    rt = sub.add_parser("retry", help="failed run-ийг дахин дараалалд (Дахин ажиллуулах)"); rt.add_argument("--run", required=True)
     sub.add_parser("ensure-agents")
     y = sub.add_parser("sync-sessions"); y.add_argument("--dry-run", action="store_true")
     c = sub.add_parser("stall-check"); c.add_argument("--threshold", type=int, default=180); c.add_argument("--no-notify", action="store_true")
@@ -830,6 +878,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.cmd == "stall-hint":
         return stall_hint_hook()
+    if a.cmd == "retry":
+        print(json.dumps(vault_run_retry(a.run), ensure_ascii=False)); return 0
     if a.cmd == "run-done":
         print(json.dumps(vault_run_done(a.run, a.outputs, a.tokens, a.failed), ensure_ascii=False)); return 0
     if getattr(a, "backend", "api") == "vault":

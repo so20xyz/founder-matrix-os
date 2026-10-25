@@ -8,6 +8,8 @@ Every --interval seconds it stats every file in sync scope (mtime+size index). W
 runs the SAME code path as the 10-min sync (fm_goom_sync.collect -> POST /vault/sync) and sends only the
 items whose content_hash changed since the last push. Deletions are left to the full sync / parity report.
 watchdog is used for wake-ups when installed; polling is the always-on fallback.
+Each loop also runs fm_goom_dispatch.Dispatcher.tick(): a chat run queued >30 s with no live `vault watch`
+listener gets a headless `claude -p --agent fm:<role>` worker (cap 2; --no-dispatch disables).
 A lock file (~/.fmos/goom-watch.lock, OS-level exclusive lock) guarantees a single instance: a second
 start exits 0 immediately, so goom-tick can launch it every tick.
 """
@@ -16,6 +18,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fm_goom_sync as gs  # noqa: E402
+
+try:   # headless chat dispatcher (2026-10-26): сонсогчгүй queued run → claude -p worker
+    import fm_goom_dispatch as gd  # noqa: E402
+except Exception:  # noqa: BLE001
+    gd = None
 
 LOCK = Path.home() / ".fmos" / "goom-watch.lock"
 LOG = Path.home() / ".fmos" / "goom-watch.log"
@@ -117,6 +124,7 @@ def main(argv=None):
     ap.add_argument("--interval", type=float, default=15.0)
     ap.add_argument("--once", action="store_true", help="one pass (initial push), then exit")
     ap.add_argument("--dry-run", action="store_true", help="detect and report, never POST")
+    ap.add_argument("--no-dispatch", action="store_true", help="headless chat dispatcher-ийг унтраах")
     a = ap.parse_args(argv)
     if sys.platform == "darwin":
         print("fm_goom_watch: PC only (Drive mirror = one writer machine)", file=sys.stderr)
@@ -130,8 +138,13 @@ def main(argv=None):
         return 0  # already running
     cfg = None if a.dry_run else gs._load_config()
     sent, idx, wake = {}, None, _waker(vault)
-    log(f"watch start pid={os.getpid()} interval={a.interval}s watchdog={'on' if wake else 'off'}")
+    disp = gd.Dispatcher(dry=a.dry_run) if gd and not a.no_dispatch else None
+    log(f"watch start pid={os.getpid()} interval={a.interval}s watchdog={'on' if wake else 'off'} "
+        f"dispatch={'on' if disp else 'off'}")
     while True:
+        if disp:
+            for _ch, r, role, why in disp.tick():
+                log(f"dispatch {r.id} → {role} ({why})")
         new_idx = snapshot(vault)
         if new_idx != idx:
             try:
@@ -153,10 +166,10 @@ def main(argv=None):
         if a.once:
             return 0
         if wake:
-            wake.wait(a.interval)
+            wake.wait(min(a.interval, 10) if disp else a.interval)
             wake.clear()
         else:
-            time.sleep(a.interval)
+            time.sleep(min(a.interval, 10) if disp else a.interval)
 
 
 if __name__ == "__main__":
