@@ -734,6 +734,28 @@ def parse_reply_to(v):
     return (m.group(1), int(m.group(2)), int(m.group(3))) if m else None
 
 
+def parse_thread_reply_to(v):
+    """«thread:<vault path of channel file>#<root msg id>» → (dir, root_id) эсвэл None."""
+    m = re.fullmatch(r"thread:(.+)#([0-9]{14}-[a-z0-9]+-[0-9a-f]{4})", (v or "").strip())
+    return (m.group(1).rsplit("/", 1)[0], m.group(2)) if m else None
+
+
+def thread_reply_line(vault, chat_dir, root_id, author, text, device, now=None):
+    """Item thread-ийн эх сувагт `- HH:MM · <role> · ↳ #^msg-<root> text ^msg-<id>` мөр нэмнэ (append)."""
+    import secrets
+    from datetime import datetime
+    now = now or datetime.now()
+    dev = re.sub(r"[^a-z0-9]", "", (device or "pc").lower()) or "pc"
+    mid = f"{now:%Y%m%d%H%M%S}-{dev}-{secrets.token_hex(2)}"
+    body = " ".join((text or "").split())
+    folder = Path(vault) / chat_dir
+    folder.mkdir(parents=True, exist_ok=True)
+    f = folder / f"{now:%Y-%m-%d}.{dev}.md"
+    with open(f, "a", encoding="utf-8", newline=chr(10)) as fh:
+        fh.write(f"- {now:%H:%M} · {author} · ↳ #^msg-{root_id} {body} ^msg-{mid}" + chr(10))
+    return mid, f.relative_to(vault).as_posix()
+
+
 def run_reply(api, run_id, text, role=None, timeout=30):
     """Run-ий reply_to руу (API чат эсвэл хурлын самбарын чат) агентын нэрээр хариулж, run-ийг done болгоно."""
     _, runs = vault_lib()
@@ -743,6 +765,11 @@ def run_reply(api, run_id, text, role=None, timeout=30):
     role = (role or r.assignee or "architect").strip().lower()
     if role not in ROLES:
         role = "architect"
+    th = parse_thread_reply_to(r.reply_to)
+    if th:   # item thread-ээс ирсэн run: асуусан thread-д нь хариулна
+        mid, where = thread_reply_line(vault, th[0], th[1], ROLES[role], text, vault_device())
+        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="")
+        return {"run_id": run_id, "reply_to": r.reply_to, "thread": where, "msg": mid, "role": role}
     if not dest:   # vault сувгийн run (app чат): тэр сувагт бичээд хаана — reply үргэлж run-ийг хаана
         store, _ = vault_lib()
         store.append_message(vault, r.channel, ROLES[role], text, vault_device())

@@ -102,3 +102,18 @@ class WatchLine(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ThreadReplyToTest(unittest.TestCase):
+    def test_parse_and_line(self):
+        import tempfile
+        from datetime import datetime
+        rt = "thread:02-Projects/INAI Investment/Chat/2026-10-26.app.md#20261026023715-app-2ef0"
+        self.assertEqual(gc.parse_thread_reply_to(rt), ("02-Projects/INAI Investment/Chat", "20261026023715-app-2ef0"))
+        self.assertIsNone(gc.parse_thread_reply_to("chat:25#273"))
+        with tempfile.TemporaryDirectory() as v:
+            mid, where = gc.thread_reply_line(v, "02-Projects/INAI Investment/Chat", "20261026023715-app-2ef0",
+                                              "🗂 Project", "хариу\nмөр", "pc", datetime(2026, 10, 26, 2, 37, 50))
+            self.assertEqual(where, "02-Projects/INAI Investment/Chat/2026-10-26.pc.md")
+            line = (Path(v) / where).read_text(encoding="utf-8")
+            self.assertEqual(line, f"- 02:37 · 🗂 Project · ↳ #^msg-20261026023715-app-2ef0 хариу мөр ^msg-{mid}\n")
