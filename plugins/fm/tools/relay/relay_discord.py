@@ -137,7 +137,7 @@ def d_inbox(hook):
         if sid in load(Path.home() / ".fmos" / "goom-sessions.json", {}):
             gc = Path(__file__).resolve().parents[2] / "scripts" / "fm_goom_chat.py"
             out.insert(1, f"### 💬 Goom чатаа сонс (хэрэглэгчээс бүү асуу): Bash(run_in_background=true, command='{PY} -u {gc} watch --sid {sid}') — "
-                          f"itge.e Goom-д бичихэд дуусч чамайг сэрээнэ; хариулаад ТЭР ДАРУЙ дахин асаа. Goom-д хариулах: `{PY} {gc} say \"текст\" --sid {sid}`.")
+                          f"itge.e Goom-д бичихэд БОЛОН таны дүрд чиглэсэн vault run (queued) ирэхэд дуусч чамайг сэрээнэ; run ирвэл `{PY} {gc} reply --run <run_id> \"текст\"`-ээр хариулж done болго; хариулаад ТЭР ДАРУЙ дахин асаа. Goom чатад хариулах: `{PY} {gc} say \"текст\" --sid {sid}`.")
     ctx = (f"[FMOS Discord] Энэ сешн: {who}. Хариу: `{PY} {Path(__file__)} send <сувгийн нэр|sys> \"текст\" --sid {sid}`."
            + "\n"
            + ("\n\n".join(out) if out else "Шинэ мессеж алга."))

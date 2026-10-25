@@ -468,8 +468,15 @@ def watch(api, sid, after, every):
             msgs = _messages(api, token, cid)
         except Exception:
             msgs, token = [], None
+            run = claim_session_run(sid)
+            if run:
+                print(json.dumps(run, ensure_ascii=False)); return 0
             time.sleep(10)  # backend restart — дахин оролдоно
             continue
+        run = claim_session_run(sid)
+        if run:
+            print(json.dumps(run, ensure_ascii=False))
+            return 0
         mine = new_from_itge(msgs, after)
         if mine:
             for m in mine:
@@ -603,6 +610,66 @@ def vault_watch(sid, timeout=None, every=3):
         time.sleep(every if left is None else min(every, left))
 
 
+def session_channels(entry, channels):
+    """Сешний эзэмшдэг vault суваг: дүрийн нэртэй (ai-workers/Chat/<Role>) + төслийн сешний bind-лэсэн суваг."""
+    role = (entry.get("role") or "").lower()
+    own = (entry.get("channel") or "").lower()
+    return [c for c in channels if c.lower() == role or (own and c.lower() == own)]
+
+
+def session_queued_runs(sid, sessions=None):
+    """API-горимын сешний дүрд оноогдсон queued vault run-ууд (хуучнаас шинэ рүү). Vault тохируулаагүй бол []."""
+    try:
+        store, runs = vault_lib()
+        vault = vault_path()
+    except (SystemExit, Exception):
+        return []
+    e = (sessions or load_sessions()).get(sid) or {}
+    out = []
+    for ch in session_channels(e, store.list_channels(vault)):
+        for r in runs.list_runs(vault, ch, "queued"):
+            a = (getattr(r, "assignee", "") or "").strip().lower()
+            if not a or a in (ch.lower(), (e.get("role") or "").lower()):
+                out.append((ch, r))
+    return sorted(out, key=lambda x: x[1].id)
+
+
+def claim_session_run(sid, now=None):
+    """Нэг queued run-ийг running болгож (claim) wake payload буцаана; байхгүй бол None."""
+    store, runs = vault_lib()
+    vault = vault_path()
+    for ch, r in session_queued_runs(sid):
+        cur = next((x for x in runs.list_runs(vault, ch, "queued") if x.id == r.id), None)
+        if cur is None:
+            continue
+        try:
+            runs.update_run(vault, r.id, status="running", started=_now_iso())
+        except ValueError:
+            continue
+        mid = r.id[len("run-"):]
+        text = next((m.text for m in store.read_messages(vault, ch) if m.id == mid), "") or _run_body(vault, r)
+        p = watch_payload(r, ch, text)
+        p["text"] = p.pop("message_text")
+        p["reply_cmd"] = f'fm_goom_chat.py reply --run {r.id} "…"'
+        return p
+    return None
+
+
+def old_queued_runs(sid, now=None, threshold=180):
+    """Босгоос удаан queued байгаа run-ууд (stall)."""
+    from datetime import datetime
+    now = now or time.time()
+    out = []
+    for ch, r in session_queued_runs(sid):
+        try:
+            age = now - (Path(vault_path()) / r.path).stat().st_mtime
+        except OSError:
+            continue
+        if age >= threshold:
+            out.append((ch, r, age))
+    return out
+
+
 def watch_payload(r, ch, text):
     """vault watch-ийн гаралт (vault-contract §7.3): skill/workflow ирвэл сешн тэр skill-ийг Skill tool-оор
     ачаална (workflow бол Workflow/<slug>.md-ийн алхмыг дагана); reply_to байвал хариуг `reply`-ээр буцаана."""
@@ -690,23 +757,29 @@ def stall_check(api, threshold=180, now=None, notify=True):
     s = load_sessions(); old = _load(STALLED, {}); cur, out = {}, []
     for sid, e in s.items():
         cid = e.get("chat_id")
-        if not cid:
-            continue
         try:
-            pend = stalled_chats(_messages(api, agent_token(api, e.get("role", "architect")), cid), now, threshold)
+            pend = (stalled_chats(_messages(api, agent_token(api, e.get("role", "architect")), cid), now, threshold)
+                    if cid else [])
         except Exception:
             if sid in old: cur[sid] = old[sid]
             continue
+        try:
+            vruns = old_queued_runs(sid, now, threshold)
+        except Exception:
+            vruns = []
+        if vruns:   # vault run-ийг чат шиг тоолно (msg_id = run-ийн тоон бус тул түлхүүр нь run id)
+            pend = list(pend) + [{"id": r.id, "created_at": None, "_run": True, "_age": age} for _c, r, age in vruns]
         if not pend:
             continue
-        mid = _msg_id(pend[0]); prev = old.get(sid) or {}
+        first = pend[0]
+        mid = first["id"] if first.get("_run") else _msg_id(first); prev = old.get(sid) or {}
         r = {"chat_id": cid, "title": e.get("title"), "msg_id": mid, "count": len(pend),
              "notified": prev.get("notified") if prev.get("msg_id") == mid else None}
         new = r["notified"] is None
         dis = None
         if new and notify:
             dis = _discord_wake(sid, f"⏰ Second Brain: «{r['title'] or 'чат'}» чатад itge.e-ийн {len(pend)} мессеж "
-                                     f"{int((now - (_ts(pend[0]) or now)) // 60)} минут хариугүй — сешн сонсохоо больсон. "
+                                     f"{int(((pend[0]["_age"]) if pend[0].get("_run") else (now - (_ts(pend[0]) or now))) // 60)} минут хариугүй — сешн сонсохоо больсон. "
                                      f"Хариулаад watch-оо дахин асаа.")
             r["notified"] = int(now)
         cur[sid] = r
