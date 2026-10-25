@@ -23,6 +23,8 @@ CONCEPTS = {
     "inbox": {"inbox", "inbox - 2 урсгал", "сүүлийн 7 хоног"},
     "tools": {"tools", "хэрэгсэл"},
     "gallery": {"gallery"},
+    "daily": {"daily", "habits"},
+    "atoms": {"atoms", "playbooks"},
 }
 ALIAS = {a: k for k, v in CONCEPTS.items() for a in v}
 
