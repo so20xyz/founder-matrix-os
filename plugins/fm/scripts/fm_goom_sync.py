@@ -321,6 +321,59 @@ def _post(url, token, payload, endpoint=ENDPOINT):
         return json.loads(resp.read().decode("utf-8"))
 
 
+PROJECT_ENDPOINT = "/api/web/private/project/"
+
+
+def _get(url, token, endpoint):
+    req = urllib.request.Request(url + endpoint, headers={"Authorization": "Bearer " + token}, method="GET")
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def project_key(name, taken):
+    """A free key of max 4 ASCII chars from the folder name (Acme Website -> AcmeW, then Acme1..)."""
+    base = re.sub(r"[^A-Z0-9]", "", unicodedata.normalize("NFKD", name).upper())[:4] or "P"
+    if base not in taken:
+        return base
+    for n in range(1, 1000):
+        k = (base[:4 - len(str(n))] + str(n))
+        if k not in taken:
+            return k
+    raise SystemExit_("no free project_key for " + name)
+
+
+def missing_projects(items, existing_slugs):
+    """Project folders (kind project items) whose slug has no DB project row: [(slug, name)]."""
+    out, seen = [], set(existing_slugs)
+    for it in items:
+        if it["kind"] != "project":
+            continue
+        name = Path(it["source_path"]).parent.name
+        slug = slugify(name)
+        if slug and slug not in seen:
+            seen.add(slug)
+            out.append((slug, name))
+    return out
+
+
+def ensure_projects(url, token, ws, vault):
+    """Creates a DB project row for every 02-Projects/<P>/<P>.md that has none (vault = source).
+    Project notes' items carry project_slug = their own folder, so this runs before the item batches."""
+    items, _ = collect(vault, {"project"})
+    rows = _get(url, token, f"{PROJECT_ENDPOINT}?workspace_id={ws}")
+    rows = rows.get("items", rows) if isinstance(rows, dict) else rows
+    slugs = {r.get("slug") for r in rows or []}
+    keys = {r.get("project_key") for r in rows or []}
+    created = []
+    for slug, name in missing_projects(items, slugs):
+        key = project_key(name, keys)
+        keys.add(key)
+        _post(url, token, {"workspace_id": ws, "project_name": name, "project_key": key, "slug": slug,
+                           "status": "ACTIVE"}, endpoint=PROJECT_ENDPOINT)
+        created.append(slug)
+    return created
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Vault -> Goomnet sync (dry-run unless --apply).")
     ap.add_argument("vault")
@@ -393,8 +446,16 @@ def main(argv=None):
         print(str(e), file=sys.stderr)
         return 2
 
+    if "project" in kinds_set:
+        try:
+            for slug in ensure_projects(url, token, ws, vault):
+                print(f"project created: {slug}")
+        except (urllib.error.URLError, OSError, ValueError) as e:
+            print(f"projects: ensure failed ({type(e).__name__} {getattr(e, 'code', '')})", file=sys.stderr)
+            return 1
+
     totals = {"upserted": 0, "unchanged": 0, "deleted": 0}
-    all_errors = []
+    all_errors, all_warnings = [], []
     for n, (is_manifest, chunk) in enumerate(batches, 1):
         if is_manifest is None:
             payload = {"workspace_id": ws, "full": False, "items": [], "full_paths": manifest}
@@ -413,9 +474,12 @@ def main(argv=None):
         for key in totals:
             totals[key] += int(res.get(key, 0) or 0)
         all_errors.extend(res.get("errors") or [])
+        all_warnings.extend(res.get("warnings") or [])
         print(f"batch {n}/{len(batches)}: {label} upserted={res.get('upserted', 0)} "
               f"unchanged={res.get('unchanged', 0)} deleted={res.get('deleted', 0)}")
     print(f"total: upserted {totals['upserted']}, unchanged {totals['unchanged']}, deleted {totals['deleted']}")
+    for w in all_warnings:
+        print(f"warning {w.get('source_path')}: {w.get('error')}", file=sys.stderr)
     for e in all_errors:
         print(f"error {e.get('source_path')}: {e.get('error')}", file=sys.stderr)
     return 1 if all_errors else 0

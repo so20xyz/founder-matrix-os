@@ -9,6 +9,30 @@ SB = os.environ.get("SB_TOOLS") or "D:/CodeBase/goomnet"
 SID = "11111111-2222-3333-4444-555555555555"
 
 
+TAX = """---
+type: taxonomy
+---
+"""
+ROUTED = """---
+type: agent-run
+channel: Architect
+message: "[[01-GTD/Chat/x/2026-10-25.app#^msg-20261025151343-app-0111]]"
+mode: null
+model: claude
+status: queued
+assignee: "Architect"
+reply_to: "chat:25#273"
+context: []
+outputs: []
+started:
+completed:
+tokens: 0
+---
+# za
+
+za ene hural shiidegdsnu
+"""
+
 def _load():
     spec = importlib.util.spec_from_file_location("fm_goom_chat", D / "fm_goom_chat.py")
     m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
@@ -83,6 +107,32 @@ class VaultBackend(unittest.TestCase):
         r = self.runs.list_runs(self.vault, "proj")[0]
         self.assertEqual(r.status, "running")
         self.assertTrue(r.started)
+
+    def test_watch_includes_mention_and_reply_to(self):
+        self.bind()
+        tax = self.vault / "04-Resources/Taxonomy/Workflow"; tax.mkdir(parents=True)
+        (tax / "social-post-pipeline.md").write_text(TAX, encoding="utf-8")
+        m = self.store.append_message(self.vault, "proj", "itge.e", "@social-post-pipeline хий", "pc")
+        self.runs.create_run(self.vault, m, [], **self.runs.mentions(self.vault, m.text))
+        rc, out = self.run_main("watch", "--backend", "vault", "--sid", SID, "--timeout", "5")
+        d = json.loads(out.strip().splitlines()[-1])
+        self.assertEqual(d["workflow"], "social-post-pipeline")
+        self.assertNotIn("skill", d)
+
+    def test_parse_reply_to(self):
+        self.assertEqual(self.gc.parse_reply_to("chat:25#273"), ("chat", 25, 273))
+        self.assertEqual(self.gc.parse_reply_to("board:4#9"), ("board", 4, 9))
+        self.assertIsNone(self.gc.parse_reply_to("x"))
+
+    def test_watch_body_fallback_for_routed_run(self):
+        self.bind("Architect")
+        (self.vault / "03-Areas/AI Team/ai-workers").mkdir(parents=True)
+        (self.vault / "03-Areas/AI Team/ai-workers/Architect.md").write_text("x", encoding="utf-8")
+        d = self.vault / "03-Areas/AI Team/ai-workers/Chat/Architect/runs"; d.mkdir(parents=True)
+        (d / "run-20261025151343-app-0111.md").write_text(ROUTED, encoding="utf-8")
+        rc, out = self.run_main("watch", "--backend", "vault", "--sid", SID, "--timeout", "5")
+        o = json.loads(out.strip().splitlines()[-1])
+        self.assertEqual((o["message_text"], o["reply_to"], o["assignee"]), ("za ene hural shiidegdsnu", "chat:25#273", "Architect"))
 
     def test_watch_timeout(self):
         self.bind()

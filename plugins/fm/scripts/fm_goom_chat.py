@@ -593,14 +593,64 @@ def vault_watch(sid, timeout=None, every=3):
             except ValueError:
                 continue
             mid = r.id[len("run-"):]
-            text = next((m.text for m in store.read_messages(vault, ch) if m.id == mid), "")
-            print(json.dumps({"run_id": r.id, "channel": ch, "message_text": text, "context": r.context}, ensure_ascii=False))
+            text = next((m.text for m in store.read_messages(vault, ch) if m.id == mid), "") or _run_body(vault, r)
+            print(json.dumps(watch_payload(r, ch, text), ensure_ascii=False))
             return 0
         left = None if timeout is None else timeout - (time.time() - t0)
         if left is not None and left <= 0:
             print(json.dumps({"timeout": True}))
             return 0
         time.sleep(every if left is None else min(every, left))
+
+
+def watch_payload(r, ch, text):
+    """vault watch-ийн гаралт (vault-contract §7.3): skill/workflow ирвэл сешн тэр skill-ийг Skill tool-оор
+    ачаална (workflow бол Workflow/<slug>.md-ийн алхмыг дагана); reply_to байвал хариуг `reply`-ээр буцаана."""
+    out = {"run_id": r.id, "channel": ch, "message_text": text, "context": r.context}
+    for k in ("skill", "workflow", "task", "assignee", "reply_to"):
+        v = getattr(r, k, "")
+        if v:
+            out[k] = v
+    return out
+
+
+def _run_body(vault, r):
+    """Өөр хавтсанд байгаа мессежийн (API/board чат) текст run-ий body-д хадгалагдсан."""
+    try:
+        t = (Path(vault) / r.path).read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    body = t.split(chr(10) + "---" + chr(10), 1)[-1].split(chr(10), 1)[-1] if t.startswith("---") else t
+    return body.strip()
+
+
+def parse_reply_to(v):
+    """«chat:25#273» → ("chat", 25, 273); «board:4#9» → ("board", 4, 9)."""
+    m = re.fullmatch(r"(chat|board):(\d+)#(\d+)", (v or "").strip())
+    return (m.group(1), int(m.group(2)), int(m.group(3))) if m else None
+
+
+def run_reply(api, run_id, text, role=None, timeout=30):
+    """Run-ий reply_to руу (API чат эсвэл хурлын самбарын чат) агентын нэрээр хариулж, run-ийг done болгоно."""
+    _, runs = vault_lib()
+    vault = vault_path()
+    r = runs._parse(runs._find(vault, run_id).read_text(encoding="utf-8"), "")
+    dest = parse_reply_to(r.reply_to)
+    if not dest:
+        raise SystemExit(f"{run_id}: reply_to алга — vault чатад `say --backend vault` ашигла")
+    role = (role or r.assignee or "architect").strip().lower()
+    if role not in ROLES:
+        role = "project" if role == "project" else "architect"
+    tok = agent_token(api, role, timeout=timeout)
+    kind, ident, _mid = dest
+    if kind == "chat":
+        _req("POST", f"{api}/api/web/private/chat/{ident}/message", tok,
+             {"content": text, "message_type": "TEXT"}, timeout=timeout)
+    else:
+        _req("POST", f"{api}/api/web/private/vault/boards/{ident}/messages", tok,
+             {"text": text, "author_label": ROLES[role]}, timeout=timeout)
+    runs.update_run(vault, run_id, status="done", completed=_now_iso())
+    return {"run_id": run_id, "reply_to": r.reply_to, "role": role}
 
 
 def vault_run_done(run_id, outputs=None, tokens=0, failed=False):
@@ -694,6 +744,8 @@ def main(argv=None):
     b.add_argument("--backend", **BK); b.add_argument("--channel", help="vault суваг (--backend vault)")
     d = sub.add_parser("run-done"); d.add_argument("--run", required=True); d.add_argument("--output", action="append", default=[], dest="outputs")
     d.add_argument("--tokens", type=int, default=0); d.add_argument("--failed", action="store_true")
+    rp = sub.add_parser("reply", help="run-ий reply_to (API/board чат) руу хариулж done болгоно")
+    rp.add_argument("--run", required=True); rp.add_argument("text"); rp.add_argument("--role")
     sub.add_parser("ensure-agents")
     y = sub.add_parser("sync-sessions"); y.add_argument("--dry-run", action="store_true")
     c = sub.add_parser("stall-check"); c.add_argument("--threshold", type=int, default=180); c.add_argument("--no-notify", action="store_true")
@@ -714,6 +766,8 @@ def main(argv=None):
         if a.cmd == "watch":
             return vault_watch(sid, a.timeout)
     api = _cfg_url()
+    if a.cmd == "reply":
+        print(json.dumps(run_reply(api, a.run, a.text, a.role), ensure_ascii=False)); return 0
     if a.cmd == "ensure-agents":
         for role, uid, st in ensure_agents(api):
             print(f"{ROLES[role]}: user {uid} — {st}")
