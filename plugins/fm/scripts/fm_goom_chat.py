@@ -31,8 +31,24 @@ import time
 import urllib.request
 from pathlib import Path
 
-LOGIN = Path(os.environ.get("FM_GOOM_LOGIN", "D:/CodeBase/goomnet/backend/dev-login.txt"))
 FMOS = Path.home() / ".fmos"
+
+
+def _login_path():
+    """dev-login.txt: FM_GOOM_LOGIN env → ~/.fmos/goom.json «login» → ~/.fmos/goom-dev-login.txt (хувийн зам кодонд байхгүй)."""
+    env = os.environ.get("FM_GOOM_LOGIN")
+    if env:
+        return Path(env)
+    try:
+        cfg = json.loads((FMOS / "goom.json").read_text(encoding="utf-8"))
+        if cfg.get("login"):
+            return Path(cfg["login"]).expanduser()
+    except (OSError, ValueError):
+        pass
+    return FMOS / "goom-dev-login.txt"
+
+
+LOGIN = _login_path()
 STATE = FMOS / "goom-chat.json"            # хуучин (нэг чат)
 SESSIONS = FMOS / "goom-sessions.json"     # sid → {chat_id, role, title, seen}
 TOKENS = FMOS / "goom-agent-tokens.json"   # role → JWT кэш (Stop hook хурдан байх)

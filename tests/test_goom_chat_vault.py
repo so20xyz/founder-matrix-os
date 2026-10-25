@@ -184,7 +184,7 @@ class VaultBackend(unittest.TestCase):
     def test_api_default_still_api(self):
         called = []
         self.gc._cfg_url = lambda: "http://api"
-        self.gc.say = lambda api, sid, text, timeout=30: called.append((api, sid, text))
+        self.gc.say = lambda api, sid, text, timeout=30, **kw: called.append((api, sid, text))
         self.run_main("say", "--sid", SID, "hi")
         self.assertEqual(called, [("http://api", SID, "hi")])
 

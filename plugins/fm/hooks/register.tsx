@@ -1845,7 +1845,7 @@ export const register: Register = (on, options) => {
   vaultPath = ''
 
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'tasks', description: 'Энэ дүрийн vault task-ын самбарыг харуулах/нуух' })
+    await $.command.register({ name: 'fm-tasks', description: 'Энэ дүрийн vault task-ын самбарыг харуулах/нуух' })
     await $.command.register({ name: 'tsaglabar', description: 'Цаглабар — долоо хоног, өдрийн timeline, огноогүй тавиур (хажуугийн самбар)' })
     await $.command.register({ name: 'tasks-pane', description: 'Vault task-уудыг хажуугийн самбарт нээх (хэмжээг чирж өөрчилнө)' })
     await $.command.register({ name: 'fm-agents', description: 'Vault agent бүр одоо ямар task дээр ажиллаж байгаа (дүр · төхөөрөмж · эхэлсэн цаг · алхам)' })
@@ -3309,7 +3309,7 @@ export const register: Register = (on, options) => {
     return { text: agentsReport(reg, notes, ctx.devices, localNow(await $.clock.now()).getTime()) }
   })
 
-  on('command.run', { command: 'tasks' }, async ($, e) => {
+  on('command.run', { command: 'fm-tasks' }, async ($, e) => {
     const { value: wasHidden = false } = await $.state.get(HIDDEN)
     await $.state.set(HIDDEN, !wasHidden)
     return { text: !wasHidden ? 'Task самбар нуугдлаа' : 'Task самбар харагдана (дараагийн turn-ээс шинэчлэгдэнэ)' }

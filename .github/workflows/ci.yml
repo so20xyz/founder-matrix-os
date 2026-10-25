@@ -52,8 +52,26 @@ jobs:
           node-version: "20"
 
       - name: Validate plugin fm (strict)
-        run: npx -y @anthropic-ai/claude-code plugin validate --strict plugins/fm
+        # The npm CLI does not know the desktop-only `types` manifest field (mods state
+        # contract, required by the desktop app), so that single warning is tolerated;
+        # any other warning or error still fails. Validate locally with the desktop claude.exe.
+        run: |
+          set +e
+          out=$(npx -y @anthropic-ai/claude-code plugin validate --strict plugins/fm 2>&1); rc=$?
+          echo "$out"
+          [ $rc -eq 0 ] && exit 0
+          if ! echo "$out" | grep -qE 'Found [0-9]+ error'              && echo "$out" | grep -qE 'Found 1 warning'              && echo "$out" | grep -q "Unknown field 'types'"; then echo "only the known 'types' warning - OK"; exit 0; fi
+          exit 1
 
       - name: Validate marketplace founder-matrix (strict)
         if: always()
-        run: npx -y @anthropic-ai/claude-code plugin validate --strict .
+        # The npm CLI does not know the desktop-only `types` manifest field (mods state
+        # contract, required by the desktop app), so that single warning is tolerated;
+        # any other warning or error still fails. Validate locally with the desktop claude.exe.
+        run: |
+          set +e
+          out=$(npx -y @anthropic-ai/claude-code plugin validate --strict . 2>&1); rc=$?
+          echo "$out"
+          [ $rc -eq 0 ] && exit 0
+          if ! echo "$out" | grep -qE 'Found [0-9]+ error'              && echo "$out" | grep -qE 'Found 1 warning'              && echo "$out" | grep -q "Unknown field 'types'"; then echo "only the known 'types' warning - OK"; exit 0; fi
+          exit 1

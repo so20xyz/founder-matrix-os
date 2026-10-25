@@ -488,7 +488,12 @@ def test_lint_cli(v):
 def test_hooks_json_shape(v):
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     hooks = data["hooks"]
-    assert set(hooks) == {"SessionStart", "PostToolUse"}, hooks.keys()
+    # Stop = Goom session sync (f71c24c), UserPromptSubmit = Goom stall-hint (99c3752)
+    assert set(hooks) == {"SessionStart", "PostToolUse", "Stop", "UserPromptSubmit"}, hooks.keys()
+    for ev in ("Stop", "UserPromptSubmit"):
+        h = hooks[ev][0]["hooks"][0]
+        assert h["type"] == "command" and h["args"][0].startswith("${CLAUDE_PLUGIN_ROOT}/scripts/"), h
+        assert h.get("timeout", 0) <= 10, h
     ss = hooks["SessionStart"][0]["hooks"][0]
     pt = hooks["PostToolUse"][0]
     assert pt["matcher"] == "Write|Edit|MultiEdit", pt
