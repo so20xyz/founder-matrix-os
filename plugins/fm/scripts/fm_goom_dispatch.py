@@ -177,6 +177,20 @@ def _alive(pid):
         return False
 
 
+def _agent_beat(op, run_id, **kw):
+    """~/.fmos/agents бүртгэлд headless worker-ийг тэмдэглэнэ (Goom-ийн «N agent ажиллаж байна»). Алдаа залгина."""
+    try:
+        import fm_agents
+        if op == "start":
+            fm_agents.upsert(run_id, kind="headless", status="running", last_action="эхэлсэн",
+                             project=fm_agents.project_of("", kw.get("cwd", "")), **kw)
+        else:
+            fm_agents.upsert(run_id, status=kw.get("status", "done"), finished=fm_agents.now_iso(),
+                             last_action=kw.get("note") or kw.get("status", "done"))
+    except Exception as ex:
+        log(f"agent beat {op} {run_id}: {ex}")
+
+
 class Dispatcher:
     def __init__(self, cap=CAP, dry=False):
         self.cap, self.dry = cap, dry
@@ -202,12 +216,14 @@ class Dispatcher:
             return
         if r.status == "done":
             log(f"done {run_id}")
+            _agent_beat("finish", run_id, status="done")
             return
         try:
             runs.update_run(vault, run_id, status="failed", completed=gc._now_iso(), error=reason)
         except ValueError:
             pass
         log(f"failed {run_id}: {reason}")
+        _agent_beat("finish", run_id, status="failed", note=reason)
         notify(f"⚠ headless worker: {run_id} — {reason}")
 
     def reap(self, vault, runs, now=None):
@@ -263,6 +279,7 @@ class Dispatcher:
             pass
         self.procs[r.id] = (p, time.time(), ch, role, lf)
         self._save()
+        _agent_beat("start", r.id, role=role, title=f"«{ch}» {r.id}", cwd=str(vault))
         log(f"spawn {r.id} ch={ch} role={role} reason={reason} pid={p.pid}")
         notify(f"⚙ headless {AGENTS[role]} → «{ch}» {r.id} ({reason})")
 
