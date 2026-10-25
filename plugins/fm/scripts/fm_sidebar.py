@@ -19,6 +19,7 @@ Archive, бүлэггүй сешн, дэд сешн (fork, «… › …», Side
 """
 import datetime
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -255,7 +256,21 @@ def plan(vault, sessions, device):
 ROLE_ICON = {"creative": "🎨", "research": "🔍", "architect": "🏛", "project": "📁", "gtd": "📥", "wiki": "📚", "finance": "🔒"}
 ROLE_NAME = {"creative": "Creative", "research": "Research", "architect": "Architect", "gtd": "GTD", "wiki": "Wiki"}
 KNOWN_ICONS = set(ROLE_ICON.values())
-FINANCE_ROOTS = ("d:/vaults/founder.matrix",)
+# 🔒 хувийн (finance) vault-ийн замууд: FM_FINANCE_ROOTS (os.pathsep-ээр) → ~/.fmos/config.json «finance_roots»; кодонд хувийн зам байхгүй
+
+
+def _finance_roots():
+    env = os.environ.get("FM_FINANCE_ROOTS")
+    if env:
+        return tuple(r for r in env.split(os.pathsep) if r.strip())
+    try:
+        cfg = json.loads((Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8"))
+        return tuple(cfg.get("finance_roots") or ())
+    except (OSError, ValueError):
+        return ()
+
+
+FINANCE_ROOTS = _finance_roots()
 ROUTINE_FV = ROUTINE + ("calendar sync",)
 
 

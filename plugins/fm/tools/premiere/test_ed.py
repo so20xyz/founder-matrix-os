@@ -62,9 +62,9 @@ def test_tc_formats_timecode():
 
 
 def test_shots_to_rows_takes_mid_frame_and_drops_tiny_shots():
-    rows = ed.shots_to_rows("D:/lib/film.mp4", [(0.0, 4.0), (4.0, 4.2), (4.2, 10.0)])
+    rows = ed.shots_to_rows("/media/lib/film.mp4", [(0.0, 4.0), (4.0, 4.2), (4.2, 10.0)])
     assert [(r["start"], r["end"]) for r in rows] == [(0.0, 4.0), (4.2, 10.0)]
-    assert rows[0]["mid"] == 2.0 and rows[0]["file"] == "D:/lib/film.mp4"
+    assert rows[0]["mid"] == 2.0 and rows[0]["file"] == "/media/lib/film.mp4"
 
 
 def test_chunks_fallback_when_no_shots():
@@ -97,7 +97,7 @@ def test_place_script_refuses_protected_sequences():
             ed.place_script("x.mp4", 1, 3, bad); assert False, bad
         except ValueError:
             pass
-    js = ed.place_script("D:/lib/film.mp4", 12.5, 15.0, "Ed test", at=2.0, track=1)
+    js = ed.place_script("/media/lib/film.mp4", 12.5, 15.0, "Ed test", at=2.0, track=1)
     assert "FM.placeRange(" in js and '"Ed test"' in js and "12.5" in js
 
 
