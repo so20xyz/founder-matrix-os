@@ -47,8 +47,52 @@ def slugify(name):
     return re.sub(r"\s+", "-", name.strip().lower())
 
 
+def _strip_comment(v):
+    """Drops a trailing « #comment» that is outside quotes and brackets (YAML rule)."""
+    q, depth = None, 0
+    for i, ch in enumerate(v):
+        if q:
+            if ch == q:
+                q = None
+        elif ch in "\"'" and (i == 0 or v[i - 1] in " [{,:"):
+            q = ch
+        elif ch in "[{":
+            depth += 1
+        elif ch in "]}":
+            depth -= 1
+        elif ch == "#" and i > 0 and v[i - 1] in " 	":
+            return v[:i].rstrip()
+    return v
+
+
+def _split_flow(inner):
+    """Splits a flow list body on top-level commas, respecting quotes and nested brackets."""
+    parts, cur, q, depth = [], "", None, 0
+    for ch in inner:
+        if q:
+            cur += ch
+            if ch == q:
+                q = None
+            continue
+        if ch in "\"'" and not cur.strip():
+            q = ch
+        elif ch in "[{":
+            depth += 1
+        elif ch in "]}":
+            depth -= 1
+        elif ch == "," and depth == 0:
+            parts.append(cur)
+            cur = ""
+            continue
+        cur += ch
+    if q or depth:
+        raise YamlError("unbalanced flow list")
+    parts.append(cur)
+    return parts
+
+
 def _scalar(v):
-    v = v.strip()
+    v = _strip_comment(v.strip())
     if not v:
         return None
     if v[0] in "\"'":
@@ -56,18 +100,19 @@ def _scalar(v):
         if len(v) < 2 or not v.endswith(q):
             raise YamlError("unterminated quote")
         return v[1:-1]
-    if v[0] == "[":
-        if not v.endswith("]") or v.count("[") != v.count("]"):
-            raise YamlError("unbalanced flow list")
+    if v[0] in "[{":
+        close = "]" if v[0] == "[" else "}"
+        if not v.endswith(close):
+            raise YamlError("unbalanced flow " + ("list" if close == "]" else "map"))
+        try:
+            return json.loads(v)
+        except ValueError:
+            pass
+        if close == "}":
+            _split_flow(v[1:-1])
+            return v
         inner = v[1:-1].strip()
-        return [_scalar(p) if p.strip() else None for p in inner.split(",")] if inner else []
-    if v[0] == "{":
-        if not v.endswith("}") or v.count("{") != v.count("}"):
-            raise YamlError("unbalanced flow map")
-        return v
-    m = re.search(r"\s#", v)
-    if m:
-        v = v[:m.start()].rstrip()
+        return [_scalar(p) if p.strip() else None for p in _split_flow(inner)] if inner else []
     return v
 
 
@@ -124,7 +169,9 @@ def _project_slug(value):
         return None
     m = _WIKI_RE.search(value)
     name = (m.group(1) if m else value).strip()
-    name = name.split("/")[-1].strip()
+    parts = [x.strip() for x in name.split("/") if x.strip()]
+    # [[02-Projects/<P>/<any note>]] (e.g. _INDEX, _BRAIN) belongs to project folder <P>
+    name = parts[1] if len(parts) >= 3 and parts[0] == "02-Projects" else (parts[-1] if parts else "")
     slug = slugify(name)
     return slug or None
 
@@ -196,22 +243,21 @@ def collect(vault, kinds):
                     or "🔒" in title or "🔒" in f.stem:
                 skip("private")
                 continue
-            if kind == "task" and str(fm.get("type", "")).strip() != "task":
-                skip("not-task")
-                continue
+            # A non-task note inside 01-GTD/Tasks is still mirrored (decision 2026-10-25), as kind note.
+            ikind = "note" if kind == "task" and str(fm.get("type", "")).strip() != "task" else kind
             slug = _project_slug(fm.get("project") or fm.get("projects"))
             topics = fm.get("tags", fm.get("topics"))
             if isinstance(topics, str):
                 topics = [topics]
             topics = [str(t) for t in topics if t is not None] if isinstance(topics, list) else []
             item = {
-                "kind": kind,
+                "kind": ikind,
                 "source_path": rel,
                 "title": title,
                 "topics": topics,
                 "frontmatter": fm,
                 "body_md": body,
-                "content_hash": _content_hash(kind, slug, raw or "", body),
+                "content_hash": _content_hash(ikind, slug, raw or "", body),
             }
             status = fm.get("status")
             if isinstance(status, str) and status.strip():
