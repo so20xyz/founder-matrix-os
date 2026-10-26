@@ -277,8 +277,9 @@ def build_batches(items):
 def build_manifest(items, skipped, kinds):
     """full_paths for every selected kind: every non-private collected path of that kind (empty list = none)."""
     manifest = {k: [] for k in KINDS if k in kinds}
-    for it in items:
-        manifest[it["kind"]].append(it["source_path"])
+    for it in items:  # a non-task note under Tasks is kind "note" even when only "task" was selected
+        if it["kind"] in manifest:
+            manifest[it["kind"]].append(it["source_path"])
     for s in skipped:
         if s["reason"] != "private" and s["kind"] in manifest:
             manifest[s["kind"]].append(s["path"])

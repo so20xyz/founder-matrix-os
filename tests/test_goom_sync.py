@@ -102,6 +102,19 @@ class TestGoomSync(unittest.TestCase):
         new_atom = next(i for i in changed if i["kind"] == "atom")
         self.assertNotEqual(new_atom["content_hash"], atom["content_hash"])
 
+    def test_website_fields_carried(self):
+        # decision 2026-10-26: links/launch are one-line flow maps so the sync parser keeps them
+        w(self.vault / "02-Projects/Web/Web.md",
+          '---\ntype: project\nproject-type: website\n'
+          'links: {"staging": "https://x.vercel.app", "prod": "", "repo": "https://github.com/a/b"}\n'
+          'launch: [{"item": "domain", "done": false}, {"item": "SSL", "done": true}]\n'
+          'pages: "02-Projects/Web/Data/pages.csv"\n---\n# W\n')
+        items, _ = gs.collect(self.vault, {"project"})
+        fm = items[0]["frontmatter"]
+        self.assertEqual(fm["links"]["staging"], "https://x.vercel.app")
+        self.assertEqual(fm["launch"][1], {"item": "SSL", "done": True})
+        self.assertEqual(fm["pages"], "02-Projects/Web/Data/pages.csv")
+
     def test_private_skipped(self):
         w(self.vault / "04-Resources/references/Open.md", "---\ntitle: Open\n---\nx\n")
         w(self.vault / "04-Resources/references/Secret.md", "---\nprivate: true\n---\nx\n")
@@ -272,6 +285,14 @@ class ProjectRowsTest(unittest.TestCase):
                  {"kind": "project", "source_path": "02-Projects/Lab/Lab.md"},
                  {"kind": "task", "source_path": "01-GTD/Tasks/x.md"}]
         self.assertEqual(gs.missing_projects(items, {"lab"}), [("inai-investment", "INAI Investment")])
+
+
+class ManifestKinds(unittest.TestCase):
+    def test_unselected_kind_is_ignored(self):  # --full --kinds task with a kind:note item (was KeyError)
+        items = [{"kind": "task", "source_path": "01-GTD/Tasks/a.md"},
+                 {"kind": "note", "source_path": "01-GTD/Tasks/readme.md"}]
+        self.assertEqual(gs.build_manifest(items, [], {"task"}), {"task": ["01-GTD/Tasks/a.md"]})
+
 
 if __name__ == "__main__":
     unittest.main()
