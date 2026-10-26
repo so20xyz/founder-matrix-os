@@ -127,6 +127,14 @@ def _split(text):
     return None, text
 
 
+def _map_value(v):
+    """Scalar inside a block map item; bare true/false become booleans (milestones[].done)."""
+    x = _scalar(v)
+    if isinstance(x, str) and v.strip() in ("true", "false"):
+        return v.strip() == "true"
+    return x
+
+
 def _parse_fields(lines):
     fields, last = {}, None
     for line in lines:
@@ -138,8 +146,14 @@ def _parse_fields(lines):
                 cur = fields.get(last)
                 if not isinstance(cur, list):
                     cur = [] if cur is None else [cur]
-                cur.append(_scalar(item[2:]))
+                km = _KEY_RE.match(item[2:].strip())
+                # «- label: X» starts a block map item (milestones/launch); plain «- X» stays a scalar
+                cur.append({km.group(1).strip(): _map_value(km.group(2) or "")} if km else _scalar(item[2:]))
                 fields[last] = cur
+            elif last is not None and isinstance(fields.get(last), list) and fields[last] \
+                    and isinstance(fields[last][-1], dict) and _KEY_RE.match(item):
+                km = _KEY_RE.match(item)  # continuation key of the current map item («    done: true»)
+                fields[last][-1][km.group(1).strip()] = _map_value(km.group(2) or "")
             continue
         m = _KEY_RE.match(line)
         if not m:

@@ -294,6 +294,18 @@ class ManifestKinds(unittest.TestCase):
         self.assertEqual(gs.build_manifest(items, [], {"task"}), {"task": ["01-GTD/Tasks/a.md"]})
 
 
+
+class BlockMapList(unittest.TestCase):
+    def test_milestones_keep_done_and_date(self):
+        f = gs._parse_fields(["milestones:", '  - label: "A (board #6)"', "    date: 2026-10-21",
+                              "    done: true", "  - label: B", "    done: false", "tags: [x]"])
+        self.assertEqual(f["milestones"], [{"label": "A (board #6)", "date": "2026-10-21", "done": True},
+                                           {"label": "B", "done": False}])
+        self.assertEqual(f["tags"], ["x"])
+
+    def test_plain_block_list_unchanged(self):
+        self.assertEqual(gs._parse_fields(["tags:", "  - a", "  - b"])["tags"], ["a", "b"])
+
 if __name__ == "__main__":
     unittest.main()
 
