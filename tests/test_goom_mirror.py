@@ -150,6 +150,38 @@ class Watch(unittest.TestCase):
             todo, _ = gw.changed_items(v, sent)
             self.assertEqual([i["source_path"] for i in todo], ["01-GTD/Tasks/b.md"])
 
+    def test_pull_tick_applies_status_and_closes(self):
+        with tempfile.TemporaryDirectory() as d:
+            v = Path(d)
+            w(v / "01-GTD/Tasks/t.md", "---\ntype: task\nstatus: next-action\n---\n# t\n")
+            calls = []
+
+            class C:
+                def __init__(self, url, token):
+                    pass
+
+                def call(self, method, path, body=None):
+                    calls.append((method, path))
+                    if method == "GET":
+                        return {"changes": [{"change_id": 7, "kind": "status",
+                                             "payload": {"source_path": "01-GTD/Tasks/t.md", "status": "in-progress"}}]}
+                    return {}
+
+            res = gw.pull_tick(v, ("http://x", "tok", 1), client_factory=C)
+            self.assertEqual(res[0]["action"], "write")
+            self.assertTrue(res[0].get("applied"))
+            self.assertIn("status: in-progress", (v / "01-GTD/Tasks/t.md").read_text(encoding="utf-8"))
+            self.assertIn(("POST", "/api/web/private/vault/changes/7/applied"), calls)
+
+    def test_pull_tick_no_cfg_is_noop(self):
+        self.assertEqual(gw.pull_tick(Path("."), None), [])
+
+    def test_sleep_never_exceeds_pull_interval(self):
+        class A:
+            interval, pull_interval = 15.0, 10.0
+        self.assertEqual(gw._sleep_for(A, None, True), 10.0)
+        self.assertEqual(gw._sleep_for(A, None, False), 15.0)
+
 
 if __name__ == "__main__":
     unittest.main()
