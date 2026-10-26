@@ -102,6 +102,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${use
 5. Самбарын файлд `## For future agent` гарчиг **бүү нэм** — Kanban plugin түүнийг багана болгоно.
 6. Юу хаашаа зөөгдсөнийг товч тайлагна.
 
+### Долоо хоногийн task hygiene (itge.e 2026-10-26)
+
+Даваа бүр 09:00 (scheduled task) идэвхтэй төсөл бүрт: `project:`-оор шүүсэн нээлттэй task бүрийг commit, Output, шийдвэрийн атомтай тулга → нотолгоотойг `completed` + «## Хүргэсэн», орлогдсоныг `cancelled` + холбоос, тодорхойгүйг нэг «Асуулт - …» task (`waiting_on: me`). Тайлан = `02-Projects/<Төсөл>/Output/<огноо> - Task хяналт (hygiene).md` (хүснэгт: Task · Өмнө → Дараа · Нотолгоо), дүгнэлтийг төслийн `Chat/<огноо>.app.md`-д нэг мөр. Устгахгүй; Discord #gtd-д бичихгүй. Арга → [[04-Resources/Atomic/decisions/2026-10-26 - Task hygiene дүрэм]].
+
 ## Хориг
 
 - Төслийн `goal`, хүрээг өөрөө дахин бичихгүй — хуучирсныг илрүүлж, асуулт болгон тавина.
