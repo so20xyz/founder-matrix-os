@@ -772,11 +772,12 @@ def thread_reply_line(vault, chat_dir, root_id, author, text, device, now=None):
     return mid, f.relative_to(vault).as_posix()
 
 
-def run_reply(api, run_id, text, role=None, timeout=30):
+def run_reply(api, run_id, text, role=None, timeout=30, outputs=None):
     """Run-ий reply_to руу (API чат эсвэл хурлын самбарын чат) агентын нэрээр хариулж, run-ийг done болгоно."""
     _, runs = vault_lib()
     vault = vault_path()
     r = runs._parse(runs._find(vault, run_id).read_text(encoding="utf-8"), "")
+    out = {"outputs": list(dict.fromkeys([*r.outputs, *outputs]))} if outputs else {}
     dest = parse_reply_to(r.reply_to)
     role = (role or r.assignee or "architect").strip().lower()
     if role not in ROLES:
@@ -784,12 +785,12 @@ def run_reply(api, run_id, text, role=None, timeout=30):
     th = parse_thread_reply_to(r.reply_to)
     if th:   # item thread-ээс ирсэн run: асуусан thread-д нь хариулна
         mid, where = thread_reply_line(vault, th[0], th[1], ROLES[role], text, vault_device())
-        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="")
+        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="", **out)
         return {"run_id": run_id, "reply_to": r.reply_to, "thread": where, "msg": mid, "role": role}
     if not dest:   # vault сувгийн run (app чат): тэр сувагт бичээд хаана — reply үргэлж run-ийг хаана
         store, _ = vault_lib()
         store.append_message(vault, r.channel, ROLES[role], text, vault_device())
-        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="")
+        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="", **out)
         return {"run_id": run_id, "channel": r.channel, "role": role}
     tok = agent_token(api, role, timeout=timeout)
     kind, ident, _mid = dest
@@ -799,7 +800,7 @@ def run_reply(api, run_id, text, role=None, timeout=30):
     else:
         _req("POST", f"{api}/api/web/private/vault/boards/{ident}/messages", tok,
              {"text": text, "author_label": ROLES[role]}, timeout=timeout)
-    runs.update_run(vault, run_id, status="done", completed=_now_iso())
+    runs.update_run(vault, run_id, status="done", completed=_now_iso(), **out)
     return {"run_id": run_id, "reply_to": r.reply_to, "role": role}
 
 
@@ -808,6 +809,44 @@ def vault_run_retry(run_id):
     _, runs = vault_lib()
     r = runs.update_run(vault_path(), run_id, status="queued", started="", completed="", error="")
     return {"run_id": r.id, "status": r.status}
+
+
+def vault_run_progress(run_id, text, vault=None):
+    """Headless worker-ийн алхам → run-ийн `progress:` (app run card шууд харуулна) + agents бүртгэл."""
+    _, runs = vault_lib()
+    t = " ".join(str(text or "").split())[:160]
+    r = runs.update_run(vault or vault_path(), run_id, progress=t)
+    try:
+        import fm_agents
+        fm_agents.upsert(run_id, last_action=t)
+    except Exception:  # noqa: BLE001
+        pass
+    return {"run_id": r.id, "progress": r.progress}
+
+
+_BAD_FN = re.compile(r'[\\/:*?"<>|\s]+')
+
+
+def vault_run_ask(run_id, question, options=(), vault=None):
+    """itge.e-ийн шийдвэр хэрэгтэй: ask task (BOOT «Асуулт = task») үүсгэж run-ийг `waiting` болгоно.
+    App-ийн «Танаас хүлээж буй» карт хариулахад dispatcher run-ийг хариутай нь үргэлжлүүлнэ."""
+    import fm_goom_dispatch as gd
+    _, runs = vault_lib()
+    vault = Path(vault or vault_path())
+    r = runs._parse(runs._find(vault, run_id).read_text(encoding="utf-8"), "")
+    rel_run = runs._find(vault, run_id).relative_to(vault).as_posix()
+    short = _BAD_FN.sub(" ", " ".join(question.split()))[:50].strip(" .") or "headless"
+    d = vault / "01-GTD" / "Tasks"
+    d.mkdir(parents=True, exist_ok=True)
+    f, n = d / f"Асуулт - {short}.md", 2
+    while f.exists():
+        f, n = d / f"Асуулт - {short} ({n}).md", n + 1
+    f.write_text(gd.ask_note(question, list(options), run_id, rel_run.removesuffix(".md"), r.channel),
+                 encoding="utf-8", newline=chr(10))
+    rel = f.relative_to(vault).as_posix()
+    runs.update_run(vault, run_id, status="waiting", ask=rel, progress="❓ itge.e-ийн шийдвэр хүлээж байна")
+    return {"run_id": run_id, "status": "waiting", "ask": rel,
+            "next": "Одоо ажлаа зогсоож гар — хариу ирэхэд чамайг үргэлжлүүлнэ."}
 
 
 def vault_run_done(run_id, outputs=None, tokens=0, failed=False):
@@ -913,6 +952,10 @@ def main(argv=None):
     d.add_argument("--tokens", type=int, default=0); d.add_argument("--failed", action="store_true")
     rp = sub.add_parser("reply", help="run-ий reply_to (API/board чат) руу хариулж done болгоно")
     rp.add_argument("--run", required=True); rp.add_argument("text"); rp.add_argument("--role")
+    rp.add_argument("--output", action="append", default=[], dest="outputs", help="гаралтын vault зам (олон удаа)")
+    pg = sub.add_parser("progress", help="headless worker-ийн алхам → run card"); pg.add_argument("--run", required=True); pg.add_argument("text")
+    ak = sub.add_parser("ask", help="itge.e-ээс шийдвэр асууж run-ийг waiting болгоно"); ak.add_argument("--run", required=True)
+    ak.add_argument("question"); ak.add_argument("--option", action="append", default=[], dest="options")
     rt = sub.add_parser("retry", help="failed run-ийг дахин дараалалд (Дахин ажиллуулах)"); rt.add_argument("--run", required=True)
     sub.add_parser("ensure-agents")
     y = sub.add_parser("sync-sessions"); y.add_argument("--dry-run", action="store_true")
@@ -923,6 +966,10 @@ def main(argv=None):
         return stall_hint_hook()
     if a.cmd == "retry":
         print(json.dumps(vault_run_retry(a.run), ensure_ascii=False)); return 0
+    if a.cmd == "progress":
+        print(json.dumps(vault_run_progress(a.run, a.text), ensure_ascii=False)); return 0
+    if a.cmd == "ask":
+        print(json.dumps(vault_run_ask(a.run, a.question, a.options), ensure_ascii=False)); return 0
     if a.cmd == "run-done":
         print(json.dumps(vault_run_done(a.run, a.outputs, a.tokens, a.failed), ensure_ascii=False)); return 0
     if getattr(a, "backend", "api") == "vault":
@@ -937,7 +984,7 @@ def main(argv=None):
             return vault_watch(sid, a.timeout)
     api = _cfg_url()
     if a.cmd == "reply":
-        print(json.dumps(run_reply(api, a.run, a.text, a.role), ensure_ascii=False)); return 0
+        print(json.dumps(run_reply(api, a.run, a.text, a.role, outputs=a.outputs), ensure_ascii=False)); return 0
     if a.cmd == "ensure-agents":
         for role, uid, st in ensure_agents(api):
             print(f"{ROLES[role]}: user {uid} — {st}")

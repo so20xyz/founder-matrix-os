@@ -9,7 +9,8 @@ runs the SAME code path as the 10-min sync (fm_goom_sync.collect -> POST /vault/
 items whose content_hash changed since the last push. Deletions are left to the full sync / parity report.
 watchdog is used for wake-ups when installed; polling is the always-on fallback.
 Each loop also runs fm_goom_dispatch.Dispatcher.tick(): a chat run queued >30 s with no live `vault watch`
-listener gets a headless `claude -p --agent fm:<role>` worker (cap 2; --no-dispatch disables).
+listener gets a headless `claude -p --agent fm:<role>` worker (concurrency from ~/.fmos/config.json `headless`,
+default 4, round-robin per project; live progress, resume, ask/answer, stop — see fm_goom_dispatch; --no-dispatch disables).
 Each loop also pulls app writes (2026-10-26): pending vault_change rows (status, capture, decision) are applied
 to the vault with fm_goom_pull.process every --pull-interval seconds (default 10, --no-pull disables), so an app
 status change lands in the note within ~10 s and the next snapshot mirrors it back to the DB.

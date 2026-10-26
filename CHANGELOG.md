@@ -11,6 +11,18 @@
 
 ---
 
+## 0.9.123 · 2026-10-26
+
+### Нэмсэн
+- Claude нээлгүй ажиллах: Second Brain OS-ийн чат, task ▶, самбарын хүсэлт бүрийг headless agent (`claude -p --agent fm:<дүр>`) зэрэг гүйцэтгэнэ — анхдагч 4 зэрэг (`~/.fmos/config.json` → `headless.concurrency`), төсөл бүрт 2, төслүүдийн хооронд ээлжилнэ; урт ажилд 4 цагийн хязгаар.
+  - Яагаад: itge.e зөвхөн app дээрээ ажиллаж, Claude цонх нээхгүйгээр олон ажлыг зэрэг явуулна · Дүрэм: [[04-Resources/Atomic/decisions/2026-10-26 - Claude нээлгүй app-аас ажиллана]] · Ном: GTD
+  - Ойлго: run card дээр ажилтан, дүр, хугацаа, сүүлийн алхам шууд харагдана; «Зогсоох», «Дахин» товч бий.
+- Шийдвэр асуух: agent устгах, гадагш илгээх, push зэрэг шийдвэрт `fm_goom_chat.py ask` → «Танаас хүлээж буй» картанд асуулт гарч, хариулмагц ажил тэр session-оосоо үргэлжилнэ (`--resume`). Нэг thread-ийн дараагийн мессеж мөн өмнөх яриагаа үргэлжлүүлнэ.
+- `fm_goom_chat.py progress --run <id> "алхам"`, `reply --output <зам>`.
+
+### Нууцлал
+- Headless worker-т `git push`, `rm -rf`, `Remove-Item` хориотой (`--disallowedTools`); bypassPermissions зөвхөн vault ба `headless.repos`; 🔒 finance хэзээ ч headless биш; мэдэгдэл зөвхөн #sys-dispatch.
+
 ## 0.9.122 · 2026-10-26
 
 ### Өөрчилсөн
