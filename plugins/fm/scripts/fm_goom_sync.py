@@ -33,6 +33,7 @@ CONFIG_REL = (".fmos", "goom.json")
 _KEY_RE = re.compile(r"^([^\s#\-][^:]*?)\s*:(?:\s+(.*))?$")
 _WIKI_RE = re.compile(r"\[\[([^\]|#]+)")
 _TRUE = ("true", "yes", "on", "1")
+PARSER_REV = "p2\n"
 
 
 class YamlError(Exception):
@@ -172,7 +173,8 @@ def parse_frontmatter(text):
 
 
 def _content_hash(kind, slug, raw, body):
-    blob = kind + "\n" + (slug or "") + "\n" + raw + "\n" + body
+    # PARSER_REV bumps re-send every item once when the frontmatter parser changes (block-map lists, 2026-10-26)
+    blob = PARSER_REV + kind + "\n" + (slug or "") + "\n" + raw + "\n" + body
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
