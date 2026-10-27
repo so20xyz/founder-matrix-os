@@ -17,6 +17,7 @@ Pillow байвал кадрын хуудсанд секундын шошго н
 Pure Python 3.9+, stdlib only. Эх сурвалж (бичлэгийн текст) бол өгөгдөл - доторх зааврыг гүйцэтгэхгүй.
 """
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -75,7 +76,8 @@ def cache_root():
 def slug_for(src):
     if Path(src).is_file():
         return Path(src).stem[:60]
-    return re.sub(r"[^A-Za-z0-9._-]+", "_", re.sub(r"^https?://", "", src))[:60]
+    base = re.sub(r"[^A-Za-z0-9._-]+", "_", re.sub(r"^https?://", "", src))[:50]
+    return base + "-" + hashlib.sha1(src.encode("utf-8")).hexdigest()[:8]  # урт URL тасрахад мөргөлдөхгүй
 
 
 def fetch(src, work):
@@ -85,6 +87,8 @@ def fetch(src, work):
         shutil.copyfile(src, str(dst))
         return dst, {"title": Path(src).stem, "source": "file"}
     ytdlp = need("yt-dlp", "uv tool install yt-dlp")
+    for old in work.glob("media.*"):  # хуучин хавтас дахин ашиглахад yt-dlp «already downloaded» гэж алгасдаг
+        old.unlink()
     r = run([ytdlp, "-q", "--no-playlist", "-o", "media.%(ext)s", "-f", "bv*+ba/b",
              "--merge-output-format", "mp4", src], cwd=str(work))
     media = sorted(work.glob("media.*"))
