@@ -96,3 +96,31 @@ class Close(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ForkThreadTest(unittest.TestCase):
+    """itge.e 10-28: ажиллаж буй ярианд ирсэн шинэ мессеж → session fork + thread."""
+
+    @staticmethod
+    def r(i, status="done", session="", reply_to="", ask=""):
+        from types import SimpleNamespace
+        return SimpleNamespace(id=f"run-2026102818{i:04d}-app-0000", status=status, session=session,
+                               reply_to=reply_to, ask=ask)
+
+    def test_forks_running_session(self):
+        prev, new = self.r(1, "running", "s1"), self.r(2, "queued")
+        self.assertEqual(gd.fork_source(new, [prev, new]), "s1")
+
+    def test_no_fork_when_previous_done(self):
+        prev, new = self.r(1, "done", "s1"), self.r(2, "queued")
+        self.assertEqual(gd.fork_source(new, [prev, new]), "")
+
+    def test_no_fork_for_thread_or_ask(self):
+        prev = self.r(1, "running", "s1")
+        self.assertEqual(gd.fork_source(self.r(2, "queued", reply_to="thread:x#y"), [prev]), "")
+        self.assertEqual(gd.fork_source(self.r(2, "queued", ask="a.md"), [prev]), "")
+
+    def test_fork_cmd(self):
+        cmd = gd.worker_cmd("claude", "project", "s1", "new", [], fork=True)
+        i = cmd.index("--resume")
+        self.assertEqual(cmd[i:i + 5], ["--resume", "s1", "--fork-session", "--session-id", "new"])

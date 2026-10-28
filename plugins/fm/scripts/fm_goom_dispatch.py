@@ -271,15 +271,43 @@ def build_prompt(ch, r, text, chat_py=CHAT_PY):
     )
 
 
+def fork_prompt(prompt):
+    return ("Энэ бол сувгийн ажиллаж буй ярианаас салаалсан THREAD: өмнөх яриа бүхэлдээ чамд байна, харин тэр ажил "
+            "өөр worker-т үргэлжилж байна. Эхлээд энэ мессежид хэрэгтэй контекст файлуудыг (төслийн _BRAIN, task, "
+            "гаралт) уншиж бэлдээд хариул. Нөгөө ажлын файл/repo-г зэрэг бүү засварла — давхцах бол асуу.\n\n" + prompt)
+
+
+def recent_context(msgs, upto_id, n=12):
+    """Шинэ session-д сувгийн сүүлийн мессежүүд (контекст алдагдахгүй, itge.e 10-28)."""
+    prev = [m for m in msgs if m.id < upto_id][-n:]
+    if not prev:
+        return ""
+    lines = "\n".join(f"- {m.author}: {' '.join((m.text or '').split())[:400]}" for m in prev)
+    return f"Сувгийн сүүлийн {len(prev)} мессеж (өмнөх яриа):\n{lines}\n\n"
+
+
 def answer_prompt(run_id, question, answer, chat_py=CHAT_PY):
     return (f"itge.e таны асуултад хариуллаа.\nАсуулт: {question}\nХариу: «{answer or '(хоосон — батлав)'}»\n\n"
             "Энэ хариугаар ажлаа үргэлжлүүлж дуусга.\n" + _rules(chat_py, run_id, _py()))
 
 
-def worker_cmd(claude, role, resume, session_id, repos):
+def fork_source(r, siblings):
+    """Сувгийн яриа ажиллаж байхад ирсэн шинэ мессеж (itge.e 10-28): дараалалд хүлээлгэхгүй, ажиллаж буй
+    session-ийг fork хийж тэр мессежийн thread-д угтана. → ажиллаж буй run-ийн session эсвэл ''."""
+    if getattr(r, "session", "") or getattr(r, "reply_to", "") or getattr(r, "ask", ""):
+        return ""
+    prev = sorted((s for s in siblings if s.id < r.id and getattr(s, "session", "")
+                   and not getattr(s, "reply_to", "")), key=lambda s: s.id)
+    return prev[-1].session if prev and prev[-1].status == "running" else ""
+
+
+def worker_cmd(claude, role, resume, session_id, repos, fork=False):
     cmd = [claude, "-p", "--agent", AGENTS[role], "--permission-mode", "bypassPermissions",
            "--output-format", "stream-json", "--verbose"]
-    cmd += ["--resume", resume] if resume else ["--session-id", session_id]
+    if resume and fork:   # шинэ session id, өмнөх ярианы бүх контексттой
+        cmd += ["--resume", resume, "--fork-session", "--session-id", session_id]
+    else:
+        cmd += ["--resume", resume] if resume else ["--session-id", session_id]
     for d in repos:   # bypassPermissions-ийн хүрээ: vault (cwd) + эдгээр repo
         cmd += ["--add-dir", str(d)]
     cmd += ["--disallowedTools", *DISALLOWED]
@@ -522,6 +550,7 @@ class Dispatcher:
             return   # энэ хооронд сешн авчээ
         siblings = runs.list_runs(vault, ch)
         resume = resume_session(cur, siblings, time.time(), float(self.cfg["resume_window_min"]) * 60)
+        me, msgs = None, []
         if cur.ask:   # ask-ийн хариутай үргэлжлүүлэх
             try:
                 atext = (Path(vault) / cur.ask).read_text(encoding="utf-8")
@@ -534,19 +563,29 @@ class Dispatcher:
             prompt = answer_prompt(cur.id, q, ans)
         else:
             mid = cur.id[len("run-"):]
-            text = next((m.text for m in store.read_messages(vault, ch) if m.id == mid), "") or gc._run_body(vault, cur)
+            msgs = store.read_messages(vault, ch)
+            me = next((m for m in msgs if m.id == mid), None)
+            text = (me.text if me else "") or gc._run_body(vault, cur)
             prompt = build_prompt(ch, cur, text)
-        sid = "" if resume else str(uuid.uuid4())
+        fork = "" if resume else fork_source(cur, siblings)
+        if fork:   # хариу itge.e-ийн мессежийн thread-д очно; дараагийн thread мессеж энэ session-ийг үргэлжлүүлнэ
+            resume = fork
+            if not cur.ask and me is not None:
+                runs.update_run(vault, cur.id, reply_to=f"thread:{me.path}#{mid}")
+            prompt = fork_prompt(prompt)
+        elif not resume and not cur.ask:
+            prompt = recent_context(msgs, mid) + prompt
+        sid = str(uuid.uuid4()) if (fork or not resume) else ""
         runs.update_run(vault, cur.id, status="running", started=gc._now_iso(), completed="",
                         worker=f"headless {gc.vault_device()}", error="", ask="",
-                        progress="▶ эхэлж байна" + (" (үргэлжлэл)" if resume else ""),
-                        session=resume or sid)
+                        progress="▶ эхэлж байна" + (" (thread · ярианаас салаалсан)" if fork else " (үргэлжлэл)" if resume else ""),
+                        session=sid or resume)
         LOGDIR.mkdir(parents=True, exist_ok=True)
         logp = LOGDIR / f"{cur.id}.log"
         lf = open(logp, "a", encoding="utf-8")
         start_off = logp.stat().st_size
         repos = list(self.cfg["repos"]) + ([str(PLUGIN_REPO)] if (PLUGIN_REPO / ".git").exists() else [])
-        cmd = worker_cmd(self.claude, role, resume, sid, [d for d in dict.fromkeys(repos) if Path(d).is_dir()])
+        cmd = worker_cmd(self.claude, role, resume, sid, [d for d in dict.fromkeys(repos) if Path(d).is_dir()], fork=bool(fork))
         env = dict(os.environ, FM_VAULT=str(vault), FM_HEADLESS_RUN=cur.id)
         tokf = gc.FMOS / "claude-token"   # `claude setup-token`-ий урт хугацааны token (desktop host refresh-гүй үед)
         if tokf.is_file() and not env.get("CLAUDE_CODE_OAUTH_TOKEN"):
