@@ -100,7 +100,7 @@ ai-first: true
 
 Read → Edit ашигла. Байгаа note-ийг хэзээ ч Write-аар дарж бичихгүй. Хэрэглэгчийн мөрийг бүү устга, бүү зөө.
 
-**Task.** Шинэ task бүр `01-GTD/Tasks/<Тодорхой гарчиг>.md` (загвар `<V>/_system/templates/Task.md` эсвэл `/fm:task`). Заавал: `type: task`, `status` (`inbox` · `next-action` · `waiting` · `someday` · `completed` · `cancelled`), `owner` (`me` · `"@Нэр"` · дүрийн slug), `priority` (`high` · `medium` · `low`), `context` (`work` · `home`), `project` (wikilink эсвэл `TBD`), `tags: [task]`, `ai-first: true`. Дууссан бол `status: completed` (`done` биш) + `## Хүргэсэн` хэсэгт нэг мөр.
+**Task.** Шинэ task бүр `01-GTD/Tasks/<Тодорхой гарчиг>.md` (загвар `<V>/_system/templates/Task.md` эсвэл `/fm:task`). Заавал: `type: task`, `status` (`inbox` · `next-action` · `waiting` · `someday` · `completed` · `cancelled`), `owner` (`me` · `"@Нэр"` · дүрийн slug), `priority` (`high` · `medium` · `low`), `context` (`work` · `home`), `project` (wikilink эсвэл `TBD`), `tags: [task]`, `ai-first: true`. Дууссан бол `status: completed` (`done` биш) + `## Үр дүн` хэсэгт нэг мөр.
 
 **--checkpoint горим энд дуусна:** 7-р алхмын лог мөрийг нэмээд (`→ checkpoint:`), 8-р алхмын товч мэдэгдлийг өгөөд **яриагаа шууд үргэлжлүүл**.
 

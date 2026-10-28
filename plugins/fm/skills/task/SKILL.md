@@ -44,7 +44,7 @@ Vault: `04-Resources/Atomic/decisions/2026-10-09 - task-dispatch-discord-bus-in-
 1. **Төрөх.** Агентын task `status: inbox`, `owner` = дүр (`📚 Wiki`, `wiki`), `claimed:` хоосон.
 2. **Санал (offer).** Тэр дүрийн сешн бүр (PC, Mac аль аль нь) `relay.py watch`-аас `[task-offer] <task зам>` мөр авна — owner-ийг төхөөрөмжгүйгээр тааруулна (`📚 Wiki · PC`, `Wiki (PC)`, `Mac-Wiki` → `wiki`).
 3. **Авах (claim).** Сул (idle) сешн автоматаар `relay.py claim "<task зам>" --sid <sid>` → далд `#sys-dispatch` сувагт JSON claim; Discord-ийн дарааллаар **эхний claim ялна**. `WIN` → plugin frontmatter-т `status: in-progress`, `started: <одоо>`, `claimed: <PC|Mac>` бичээд task-ийг шууд гүйцэтгэнэ. `LOSE <device>` → хүрэхгүй. Ажилтай сешн авахгүй — task `inbox`-д хүлээнэ.
-4. **Дуусах.** `status: completed`, `completed: <одоо>` + «## Үр дүн»-д юу хүргэсэн, шийдвэрийн атом (`done` командыг доороос үз). Нотолгоо (commit/файл/шийдвэр)-г «## Хүргэсэн»-д заавал бич; шинэ шийдвэрээр орлогдсон task-уудыг `set --status cancelled` + холбоосоор хаа (itge.e 2026-10-26).
+4. **Дуусах.** `status: completed`, `completed: <одоо>` + «## Үр дүн»-д юу хүргэсэн, шийдвэрийн атом (`done` командыг доороос үз). Нотолгоо (commit/файл/шийдвэр)-г «## Үр дүн»-д заавал бич; шинэ шийдвэрээр орлогдсон task-уудыг `set --status cancelled` + холбоосоор хаа (itge.e 2026-10-26).
 5. **Discord.** Машин хоорондын зохицуулалт зөвхөн `#sys-dispatch`-аар. Хүний сувагт «🙋 авлаа / ✅ дууслаа» **бичихгүй** — Discord зөвхөн itge.e-тэй ярихад. `## Явц` дахь 🙋/✅ мөр бол vault доторх түүх.
 6. **Самбар.** `Tasks.base` → «▶ Яг одоо» (`in-progress`: эзэн, төхөөрөмж, эхэлсэн цаг). `/fm:update daily` `started`/`completed` цагаас өдрийн бодит бүртгэлийг гаргана.
 
