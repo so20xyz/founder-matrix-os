@@ -142,7 +142,7 @@ def cwd_keys_for(vault):
         return []
     want = str(vault.resolve()).replace("\\", "/").rstrip("/")
     # Claude-ийн хавтасны нэр: ASCII биш/тусгай тэмдэгт тус бүр '-' болно
-    # ('D:/My Drive/..' -> 'D--My-Drive-..'). Дэд хавтасны сешн нь ижил угтвартай.
+    # ('/home/me/Vault' -> '-home-me-Vault'). Дэд хавтасны сешн нь ижил угтвартай.
     slug = re.sub(r"[^A-Za-z0-9]", "-", want).strip("-").lower()
     keys = []
     for d in PROJECTS.iterdir():

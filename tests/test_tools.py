@@ -23,7 +23,8 @@ REPO = Path(__file__).resolve().parents[1]
 PLUGIN = REPO / "plugins" / "fm"
 TOOLS = PLUGIN / "tools"
 TOOL_SKILLS = ["figma", "notion", "relay", "post", "watch", "framer"]
-CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance", "log", "research", "refs", "sync"]
+CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance",
+               "log", "research", "refs", "sync", "help"]
 # client names, spelled in pieces so a history scrub (git filter-repo --replace-text) never rewrites the guard itself
 CLIENT_WORDS = re.compile("|".join(["proba" + "itsaa", "проба" + "йцаа", r"\bb" + r"yd\b", "way " + "academy", "opus" + "_ep", "mag" + "god", "go" + "pay", "ochir" + "suren", "очир" + "сүрэн", "river " + "garden", "galaxy " + "tower"]), re.I)
 
@@ -45,7 +46,7 @@ def child_env(home):
 
 # ------------------------------------------------------------------ skills
 
-def test_skill_lineup_is_14_plus_6():
+def test_skill_lineup_is_15_plus_6():
     have = sorted(p.parent.name for p in (PLUGIN / "skills").glob("*/SKILL.md"))
     assert have == sorted(CORE_SKILLS + TOOL_SKILLS), have
     for gone in ("track", "clip", "daily", "spawn", "bases", "canvas", "vault-cli"):
@@ -357,7 +358,7 @@ def test_no_stale_gtd_paths_in_repo():
     bad = []
     for p in REPO.rglob("*"):
         rel = p.relative_to(REPO).as_posix()
-        if not p.is_file() or rel in allowed or rel.startswith(("tests/", ".git/", "tools/fm-office/"))                 or "node_modules" in rel or p.suffix.lower() not in (".md", ".py", ".js", ".json", ".sh", ".html", ".txt", ".svg", ".base"):
+        if not p.is_file() or rel in allowed or rel.startswith(("tests/", ".git/", ".claude/", "tools/fm-office/"))                 or "node_modules" in rel or p.suffix.lower() not in (".md", ".py", ".js", ".json", ".sh", ".html", ".txt", ".svg", ".base"):
             continue
         if stale.search(p.read_text(encoding="utf-8", errors="ignore")):
             bad.append(rel)
