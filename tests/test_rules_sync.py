@@ -20,13 +20,14 @@ def main():
     w(tpl / "_system/BOOT.md", "# BOOT\n\n## Matrix-ийн дүрэм\n\n1. **A** a\n2. **Ганц команд: `update`.** u\n\n## Agent-ууд\n\ntable\n")
     w(tpl / (A + "GTD.md"), '---\nrole: gtd\naliases:\n  - "📥 GTD"\n---\n\n# GTD\n')
     w(v / "02-Projects/Нарны сайт/Нарны сайт.md", "x")
+    w(v / "03-Areas/people/Output/cv.html", "x")   # generic sub-folder inside a token dir
     w(v / "_system/BOOT.md", "# BOOT\n\n## Matrix-ийн дүрэм\n\n1. **A** Бат-ыг дууд\n\n## Task\n\nt\n")
     w(v / (A + "GTD.md"), '---\ndate: 2026-10-01\ntype: ai-worker\ngroup: Areas\nrole: gtd\nlast-done: "x"\nsession-id: 123\naliases:\n  - "Area"\n---\n\n# GTD\n\n## Дүрэм\n\nAcme-ийн inbox\n\n## Нэгтгэсэн түүх\n\nhist\n')
     w(v / (A + "Project.md"), "---\nrole: project\n---\n\n# Project\n\nНарны сайт дээр ажилла\n")
     log = fr.export(v, True)
-    g = (tpl / (A + "GTD.md")).read_text(); b = (tpl / "_system/BOOT.md").read_text()
+    g = (tpl / (A + "GTD.md")).read_text(encoding="utf-8"); b = (tpl / "_system/BOOT.md").read_text(encoding="utf-8")
     w(m / (A + "GTD.md"), '---\nrole: gtd\nlast-done: "mine"\n---\n\n# GTD\n\nold rules\n\n## Нэгтгэсэн түүх\n\nmy history\n')
-    up = fr.update(m, True); mg = (m / (A + "GTD.md")).read_text()
+    up = fr.update(m, True); mg = (m / (A + "GTD.md")).read_text(encoding="utf-8")
     checks = [("state keys dropped", "last-done" not in g and "session-id" not in g),
               ("history dropped", "hist" not in g and "Нэгтгэсэн" not in g),
               ("type + registry group", "type: agent-role" in g and "group: areas" in g),
@@ -35,6 +36,7 @@ def main():
               ("own name -> {{fm:member}}", "{{fm:member}}-ыг дууд" in b),
               ("product rule + section kept", "Ганц команд" in b and "## Agent-ууд" in b and "## Task" in b),
               ("project name refused", any(l.startswith("REFUSED") and "Project.md" in l for l in log)),
+              ("generic sub-folder is not a token", "Нарны сайт" in fr.tokens(v) and "Output" not in fr.tokens(v)),
               ("member: new rules, own history + state kept", "Дүрэм" in mg and "my history" in mg and 'last-done: "mine"' in mg and "old rules" not in mg),
               ("member: old copy in _trash", any((m / "_trash").glob("rules-*/" + A + "GTD.md"))),
               ("member: second update no-op", fr.update(m, True) == [])]

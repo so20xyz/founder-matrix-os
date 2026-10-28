@@ -36,7 +36,9 @@ try:
     SKELETON = json.loads((TEMPLATE / "_system" / "fm" / "registry.json").read_text(encoding="utf-8")).get("roles", {})
 except Exception:
     SKELETON = {}
-GENERIC = {"README", "Projects", "People", "Companies", "Life", "Project Files", "mentions"}
+GENERIC = {"README", "Projects", "People", "Companies", "Life", "Project Files", "mentions",
+           # generic sub-folders that may sit inside a token dir - never a project/person name
+           "Output", "Inbox", "Chat", "Boards", "specs", "assets", "Archive", "Outputs"}
 
 
 def files():
@@ -236,6 +238,11 @@ def update(vault, apply):
 
 
 def main(argv):
+    for stream in (sys.stdout, sys.stderr):   # Windows console is cp1252: Cyrillic log lines must not crash the run
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     pos = [a for a in argv if not a.startswith("--")]
     if len(pos) < 2 or pos[0] not in ("export", "update"):
         sys.stderr.write(__doc__); return 2
