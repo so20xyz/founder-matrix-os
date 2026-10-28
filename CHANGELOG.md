@@ -11,6 +11,13 @@
 
 ---
 
+## Unreleased
+
+### Нэмсэн
+- `/fm:refs <төсөл> <figma-url> [сэдэв]` — төслийн лавлагааны мөчлөг нэг командаар: нэг асуулт → spec (`fm_refs.py spec`, загвараас, `status: draft`) → Research цуглуулна → шинэ reviewer fact-check → Figma-ийн заасан node-д ангиллаар → Creative, Architect memo → Opus дарга 5–7 ⭐ → нэг `fig.py ask` → шийдвэр. `fm_refs.py check` зочлолтын төсөв (сайт бүрт ≤3 хуудас, login/checkout-гүй) ба картын талбарыг шалгана; `shot.mjs` нэг ачааллаар desktop + утасны (CDP эмуляц) зураг авч `visits.jsonl`-д бичнэ; `refs_place.py` тайлангийн картуудыг Figma-д component instance болгож тавина, ⭐ = `Star` boolean (tests/test_refs.py).
+  - Яагаад: өмнө гараар хийсэн лавлагааны урсгал дахин дуудахад нэг мөр болно; өмнөх ажлын алдаа (нэг сайтад 10 хуудас, таасан URL, Figma-д тархсан зөвлөгөөн) skill-д дүрэм болж орсон · Дүрэм: [[03-Areas/AI Team/Ажлын pipeline - agent-аар ажил хийлгэх]] · Ном: BASB
+  - Ойлго: skill бол зохицуулагч — судлах, шалгах, зурах аргыг `/fm:research`, `/fm:figma`-аас дууддаг; хэсэг бүр нэг бичигчтэй.
+
 ## 0.9.123 · 2026-10-26
 
 ### Нэмсэн
