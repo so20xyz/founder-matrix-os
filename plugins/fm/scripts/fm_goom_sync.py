@@ -217,7 +217,10 @@ def _sources(vault, kind):
               "atom": "04-Resources/Atomic/knowledge",
               "decision": "04-Resources/Atomic/decisions"}[kind]
     d = vault / folder
-    return sorted(d.rglob("*.md")) if d.is_dir() else []
+    # itge.e 2026-10-30: references/Chat/ (сувгийн мессеж, run) лавлагаа болж Мэдлэгийн санд гарч байв
+    return sorted(f for f in d.rglob("*.md")
+                  if not any(part.startswith(".") or part in NOTE_SKIP_PARTS
+                             for part in f.relative_to(d).parts)) if d.is_dir() else []
 
 
 def collect(vault, kinds):

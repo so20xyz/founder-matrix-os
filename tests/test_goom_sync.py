@@ -272,6 +272,17 @@ class TestNoteKind(unittest.TestCase):
         manifest = gs.build_manifest(items, skipped, {"note"})
         self.assertEqual(sorted(manifest["note"]), paths)
 
+    def test_reference_chat_folder_skipped(self):
+        # itge.e 2026-10-30: references/Chat/ (сувгийн мессеж, run) Мэдлэгийн санд лавлагаа болж гарч байв
+        v = Path(tempfile.mkdtemp())
+        w = lambda p, t: (p.parent.mkdir(parents=True, exist_ok=True), p.write_text(t, encoding="utf-8"))
+        ref = v / "04-Resources" / "references"
+        w(ref / "Real.md", "---\ntype: reference\n---\nx\n")
+        w(ref / "Chat" / "2026-10-30.app.md", "x\n")
+        w(ref / "Chat" / "runs" / "run-20261030030548-app-19c1.md", "---\ntype: agent-run\n---\nx\n")
+        items, _ = gs.collect(v, {"reference"})
+        self.assertEqual([i["source_path"] for i in items], ["04-Resources/references/Real.md"])
+
 
 
 class ProjectRowsTest(unittest.TestCase):
