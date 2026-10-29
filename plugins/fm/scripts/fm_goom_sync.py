@@ -319,12 +319,61 @@ def _load_config():
         raise SystemExit_("goom config: token missing")
     if not isinstance(ws, int) or isinstance(ws, bool):
         raise SystemExit_("goom config: workspace_id must be an integer")
-    return ipv4_localhost(url.rstrip("/")), token.strip(), ws
+    return resolve_base(url.rstrip("/"), token.strip()), token.strip(), ws
+
+
+_LOCAL_RE = re.compile(r"^(https?://)(localhost|127\.0\.0\.1|\[::1\])(?=[:/]|$)", re.I)
+LOCAL_HOSTS = ("127.0.0.1", "localhost", "[::1]")
+PROBE_TIMEOUT = 3
+_RESOLVED = {}
 
 
 def ipv4_localhost(url):
-    """«localhost» → 127.0.0.1: on Windows ::1 is tried first and Docker's port proxy hangs on it (60s timeout)."""
+    """«localhost» → 127.0.0.1 (kept for callers; resolve_base is the robust path)."""
     return re.sub(r"^(https?://)localhost(?=[:/]|$)", r"\g<1>127.0.0.1", url, flags=re.I)
+
+
+def local_candidates(url):
+    """A loopback URL → the same URL on 127.0.0.1, localhost, [::1] (in that order); others → [url].
+    Windows: localhost may try ::1 first (Docker proxy hung there, 2026-10), and WSL's wslrelay can hold
+    127.0.0.1:<port> while localhost reaches Docker (2026-10-27) — so no single spelling is safe."""
+    m = _LOCAL_RE.match(url)
+    if not m:
+        return [url]
+    rest = url[m.end():]
+    return [m.group(1) + h + rest for h in LOCAL_HOSTS]
+
+
+def _probe(base, token, timeout=PROBE_TIMEOUT):
+    """True when an HTTP server answers the authed project endpoint (any status = the API is there)."""
+    req = urllib.request.Request(base + PROJECT_ENDPOINT, headers={"Authorization": "Bearer " + token}, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout):
+            return True
+    except urllib.error.HTTPError:
+        return True
+    except (urllib.error.URLError, OSError, ValueError):
+        return False
+
+
+def resolve_base(url, token, probe=None):
+    """First loopback spelling that answers, cached for the process. All fail → loud stderr error, original url."""
+    cands = local_candidates(url)
+    if len(cands) == 1:
+        return url
+    if url in _RESOLVED:
+        return _RESOLVED[url]
+    probe = probe or _probe
+    for c in cands:
+        if probe(c, token):
+            _RESOLVED[url] = c
+            return c
+    print(f"ERROR goom backend unreachable: tried {', '.join(cands)} (timeout {PROBE_TIMEOUT}s each) - "
+          "is the goom-api Docker container running?", file=sys.stderr)
+    return url
+
+
+PROJECT_ENDPOINT = "/api/web/private/project/"
 
 
 def _post(url, token, payload, endpoint=ENDPOINT):
@@ -336,9 +385,6 @@ def _post(url, token, payload, endpoint=ENDPOINT):
     )
     with urllib.request.urlopen(req, timeout=60) as resp:
         return json.loads(resp.read().decode("utf-8"))
-
-
-PROJECT_ENDPOINT = "/api/web/private/project/"
 
 
 def _get(url, token, endpoint):

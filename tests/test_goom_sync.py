@@ -306,6 +306,53 @@ class BlockMapList(unittest.TestCase):
     def test_plain_block_list_unchanged(self):
         self.assertEqual(gs._parse_fields(["tags:", "  - a", "  - b"])["tags"], ["a", "b"])
 
+class TestResolveBase(unittest.TestCase):
+    def setUp(self):
+        gs._RESOLVED.clear()
+
+    def test_candidates_order(self):
+        self.assertEqual(gs.local_candidates("http://localhost:3000"),
+                         ["http://127.0.0.1:3000", "http://localhost:3000", "http://[::1]:3000"])
+        self.assertEqual(gs.local_candidates("http://127.0.0.1:3000/x")[1], "http://localhost:3000/x")
+        self.assertEqual(gs.local_candidates("https://goom.example.com"), ["https://goom.example.com"])
+
+    def test_first_answering_wins_and_is_cached(self):
+        calls = []
+        def probe(base, token):
+            calls.append(base)
+            return "localhost" in base
+        self.assertEqual(gs.resolve_base("http://localhost:3000", "t", probe), "http://localhost:3000")
+        self.assertEqual(calls, ["http://127.0.0.1:3000", "http://localhost:3000"])
+        self.assertEqual(gs.resolve_base("http://localhost:3000", "t", probe), "http://localhost:3000")
+        self.assertEqual(len(calls), 2)
+
+    def test_all_fail_logs_error(self):
+        err = StringIO()
+        with redirect_stderr(err):
+            out = gs.resolve_base("http://localhost:3000", "t", lambda b, t: False)
+        self.assertEqual(out, "http://localhost:3000")
+        self.assertIn("ERROR goom backend unreachable", err.getvalue())
+        self.assertIn("[::1]", err.getvalue())
+
+    def test_remote_not_probed(self):
+        self.assertEqual(gs.resolve_base("https://goom.example.com", "t", lambda b, t: 1 / 0), "https://goom.example.com")
+
+    def test_real_probe_refused_then_live(self):
+        class H(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(401); self.end_headers()
+            def log_message(self, *a):
+                pass
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            port = srv.server_address[1]
+            self.assertTrue(gs._probe(f"http://127.0.0.1:{port}", "t"))
+        finally:
+            srv.shutdown(); srv.server_close()
+        self.assertFalse(gs._probe(f"http://127.0.0.1:{port}", "t", timeout=1))
+
+
 if __name__ == "__main__":
     unittest.main()
 
