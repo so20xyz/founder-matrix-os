@@ -244,9 +244,11 @@ def post_heartbeat(vault, r, role, text):
     th = gc.parse_thread_reply_to(r.reply_to or "")
     if th:
         return gc.thread_reply_line(vault, th[0], th[1], author, text, gc.vault_device())[1]
-    if not r.reply_to and r.message_id and r.channel:
+    rid = str(getattr(r, "id", "") or "")
+    mid = getattr(r, "message_id", "") or (rid[len("run-"):] if rid.startswith("run-") else "")
+    if not r.reply_to and mid and r.channel:
         store, _ = gc.vault_lib()
-        return store.append_message(vault, r.channel, author, f"↳ #^msg-{r.message_id} {text}",
+        return store.append_message(vault, r.channel, author, f"↳ #^msg-{mid} {text}",
                                     gc.vault_device()).path
     return None
 

@@ -293,3 +293,15 @@ def test_wake_answered_closes_instead_of_resuming(tmp_path, monkeypatch):
     assert d.wake_answered(tmp_path, None, U()) == 1
     assert seen["run-a"]["status"] == "done" and "хойшлуулав" in seen["run-a"]["progress"]
     assert seen["run-b"]["status"] == "queued"
+
+
+def test_post_heartbeat_python_run_without_message_id(tmp_path, monkeypatch):
+    import types
+    import fm_goom_dispatch as d
+    calls = []
+    store = types.SimpleNamespace(append_message=lambda v, ch, a, t, dev: calls.append(t) or types.SimpleNamespace(path="c.md"))
+    monkeypatch.setattr(d.gc, "vault_lib", lambda: (store, None))
+    monkeypatch.setattr(d.gc, "vault_device", lambda: "pc")
+    r = types.SimpleNamespace(id="run-20261029175047-pc-59f0", reply_to="", channel="Wiki")
+    assert d.post_heartbeat(tmp_path, r, "wiki", "⏳ 5 мин · x") == "c.md"
+    assert calls[-1].startswith("↳ #^msg-20261029175047-pc-59f0 ")
