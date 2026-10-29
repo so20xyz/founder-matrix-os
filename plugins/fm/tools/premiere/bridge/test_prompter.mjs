@@ -13,4 +13,6 @@ ok(P.fill(2.22, sp[0]) === 0 && P.fill(99, sp[0]) === 1 && P.fill((sp[0][0] + sp
 ok(P.sentences([[0,4,'01 HOOK · микроскоп'],[4,1,'02 ЭРГЭЛТ · that is the biggest lie'],[0.5,2,'Суут ухааныг төрөлхийн зүйл гэж боддог уу?'],[3,1,'']]).length === 1, 'scene шошго, хоосон marker алгасагдана');
 ok(P.isStory('13 TYPE FX · THAT IS WHAT'), 'олон үгтэй шошго');
 ok(P.sentences([[0,2,'Суут ухаан',"MN VO"],[1,1,'Өөр marker','x']]).length === 1, 'MN VO comment байвал зөвхөн тэд');
+const S = [[0,2,'a'],[2,1,'b'],[3,4,'c']];
+ok(P.scrollPos(S, 1) > 0.4 && P.scrollPos(S, 1) < 0.7 && P.scrollPos(S, 2.5) > 1.5 && P.scrollPos(S, 99) === 2, 'гүйлгэлт мөрийн хугацаанд жигд, төгсгөлд зогсоно');
 process.exit(fails ? 1 : 0);

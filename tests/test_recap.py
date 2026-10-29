@@ -26,6 +26,8 @@ def utc(day, hh, mm=0):
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):   # Windows CI: cp1252 кирилл хэвлэхгүй
+        sys.stdout.reconfigure(encoding="utf-8")
     tmp = Path(tempfile.mkdtemp()).resolve()   # macOS /var→/private/var, Windows 8.3 нэр — cwd таарахын тулд
     v = tmp / "vault"
     projects = tmp / "projects" / "key"

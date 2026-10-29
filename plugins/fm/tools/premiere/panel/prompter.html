@@ -11,23 +11,26 @@ body{background:var(--bg);color:var(--ink);font-family:var(--display);padding:10
 button{font:inherit;font-size:12px;color:var(--ink);background:var(--stage);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer;font-weight:700}
 button.on{background:var(--sung);color:#1a1300;border-color:var(--sung)}
 .clock{font-family:var(--mono);font-size:15px;min-width:6ch;text-align:right}
-.stage{position:relative;flex:1;background:var(--stage);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;justify-content:center;padding:20px clamp(12px,4vw,48px);overflow:hidden}
-.stage.mirror .lines{transform:scaleX(-1)}
-.lines{display:flex;flex-direction:column;gap:22px}
-.ln{font-weight:900;line-height:1.15;transition:opacity .2s,font-size .2s}
-.ln.prev{font-size:clamp(16px,2.6vw,26px);opacity:.35}
-.ln.cur{font-size:clamp(28px,6vw,68px)}
-.ln.next{font-size:clamp(18px,3vw,32px);color:var(--dim)}
+.stage{position:relative;flex:1;background:var(--stage);border:1px solid var(--line);border-radius:12px;padding:0 clamp(12px,4vw,48px);overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 18%,#000 75%,transparent)}
+.lines{position:absolute;left:clamp(12px,4vw,48px);right:clamp(12px,4vw,48px);top:0;display:flex;flex-direction:column;gap:26px;will-change:transform}
+.ln{font-weight:900;line-height:1.15;font-size:clamp(24px,4.6vw,54px);transition:opacity .3s}
+.ln.prev{opacity:.3}.ln.next{opacity:.55}.ln.cur{opacity:1}
 .w{color:var(--dim)}.w.on{color:var(--ink)}.w.done{color:var(--sung)}
 .w.on .f{background:linear-gradient(90deg,var(--sung) var(--p,0%),var(--ink) var(--p,0%));-webkit-background-clip:text;background-clip:text;color:transparent}
 .cue{position:absolute;top:10px;right:14px;font-family:var(--mono);font-size:12px;color:var(--dim)}
 .prog{height:4px;background:var(--line);border-radius:2px;overflow:hidden}.prog i{display:block;height:100%;width:0;background:var(--sung)}
+.stage.manual{overflow-y:auto;-webkit-mask-image:none}
+.stage.manual .lines{position:static;transform:none!important;padding:24px 0 60vh}
+.stage.manual .ln{opacity:1}.stage.manual .w,.stage.manual .w.on,.stage.manual .w.done{color:var(--ink)}
+.stage.manual .w.on .f{background:none;color:var(--ink)}
+.stage.manual.mirror .lines{transform:scaleX(-1)!important}
 .empty{color:var(--dim);font-size:16px;text-align:center}
 </style></head>
 <body>
 <div class="bar">
   <b id="seq">sequence…</b>
   <span class="clock" id="clock">0.00</span>
+  <button id="manual" title="Цагаас салгаж, хулганаар өөрөө гүйлгэх (itge.e 2026-10-21)">Гараар</button>
   <button id="mirror" title="Толь (teleprompter шилэнд)">Толь</button>
   <button id="reload" title="Marker-уудыг дахин унших">↻</button>
 </div>
@@ -48,13 +51,23 @@ function poll() {
     busy = false; if (!s) return;
     var p = s.indexOf('|'), t = parseFloat(s.slice(0, p)), name = s.slice(p + 1);
     if (name !== seqName) { seqName = name; document.getElementById('seq').textContent = name; loadMarkers(); }
-    P.paint(t);
+    if (t !== lastT) { playing = Math.abs(t - lastT) < 1 && t > lastT; lastT = t; lastWall = performance.now(); }
+    else playing = false;
   });
 }
+var lastT = 0, lastWall = 0, playing = false;
+(function frame() {   // зөөлөн: poll-уудын хооронд цагийг тооцоолж 60 fps-ээр зурна
+  var t = lastT + (playing ? Math.min(0.25, (performance.now() - lastWall) / 1000) : 0);
+  P.paint(t); requestAnimationFrame(frame);
+})();
 setInterval(poll, 66);           // ~15/с
 setInterval(loadMarkers, 2000);  // marker засварыг дагана
 document.getElementById('reload').onclick = loadMarkers;
 document.getElementById('mirror').onclick = function () { this.classList.toggle('on'); document.getElementById('stage').classList.toggle('mirror'); };
+var stg = document.getElementById('stage'), mb = document.getElementById('manual');
+function setManual(on) { mb.classList.toggle('on', on); stg.classList.toggle('manual', on); try { localStorage.setItem('fmPrompterManual', on ? '1' : ''); } catch (e) {} }
+mb.onclick = function () { setManual(!stg.classList.contains('manual')); };
+try { setManual(localStorage.getItem('fmPrompterManual') === '1'); } catch (e) {}
 loadMarkers();
 </script>
 </body></html>

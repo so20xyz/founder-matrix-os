@@ -24,6 +24,48 @@ def _who(a):
     f = _author_fields(a)
     return f["from"] + (" (from_owner)" if f.get("from_owner") else "")
 
+# ── attachments (itge.e 2026-10-20): зураг/файл агентад харагдана — локал замаар (агуулгыг Discord/лог руу бичихгүй) ──
+ATT_MAX = 15 * 1024 * 1024
+
+
+def save_attachments(m):
+    """m["attachments"] → [{"filename","content_type","size","url","path"}] (амжилтгүй бол "path" оронд "error").
+    ~/.fmos/attachments/<YYYY-MM-DD>/<message_id>_<safe filename>; байгааг дахин ашиглана, дарахгүй; хэзээ ч raise хийхгүй."""
+    import re as _r, datetime as _dt
+    out = []
+    for a in (m.get("attachments") or []):
+        fn = a.get("filename") or "file"
+        e = {"filename": fn, "content_type": a.get("content_type") or "", "size": a.get("size") or 0, "url": a.get("url") or ""}
+        try:
+            safe = _r.sub(r"[^\w.\-]+", "_", Path(str(fn)).name, flags=_r.U).strip("._") or "file"
+            if (a.get("size") or 0) > ATT_MAX:
+                e["error"] = f"too large (>{ATT_MAX // 1048576} MB), skipped"; out.append(e); continue
+            mid = str(m.get("id") or "0")
+            try: day = _dt.datetime.fromtimestamp(((int(mid) >> 22) + 1420070400000) / 1000).strftime("%Y-%m-%d")
+            except Exception: day = _dt.date.today().isoformat()
+            d = Path.home() / ".fmos" / "attachments" / day; d.mkdir(parents=True, exist_ok=True)
+            p = d / f"{mid}_{safe}"
+            if not p.exists():
+                req = urllib.request.Request(e["url"], headers={"User-Agent": "fmos-relay"})
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    data = r.read(ATT_MAX + 1)
+                if len(data) > ATT_MAX:
+                    e["error"] = f"too large (>{ATT_MAX // 1048576} MB), skipped"; out.append(e); continue
+                tmp = p.with_name(p.name + ".part"); tmp.write_bytes(data); tmp.replace(p)
+            e["path"] = str(p)
+        except Exception as ex:
+            e["error"] = f"{type(ex).__name__}: {ex}"[:200]
+        out.append(e)
+    return out
+
+
+def format_watch_line(chan, who, content, atts):
+    """«#chan · who: text 📎 path» — local path so the agent can Read it; attachment-only → just the paths."""
+    txt = (content or "").replace("\n", " ⏎ ")[:600]
+    tail = "".join(" 📎 " + (a.get("path") or f"{a.get('filename')} ({a.get('error', '?')})") for a in atts or [])
+    return f"#{chan} · {who}:" + (" " + txt if txt else "") + tail
+
+
 def dapi(method, path, body=None):
     req = urllib.request.Request(API + path, method=method,
         data=json.dumps(body).encode() if body is not None else None,
@@ -108,8 +150,13 @@ def d_inbox(hook):
         if msgs: cur[n] = msgs[-1]["id"]
         elif not last:
             lm = dapi("GET", f"/channels/{cid}/messages?limit=1"); cur[n] = lm[0]["id"] if lm else "0"
-        lines = [f"- {m['timestamp'][11:16]} **{_who(m['author'])}**: {m['content']}"
-                 for m in msgs if not (my_tag and m["content"].startswith(my_tag))]
+        lines = []
+        for m in msgs:
+            if my_tag and m["content"].startswith(my_tag): continue
+            ln = f"- {m['timestamp'][11:16]} **{_who(m['author'])}**: {m['content']}"
+            for a in save_attachments(m):
+                ln += f"\n  📎 {a['filename']} → {a.get('path') or a.get('error', '?')}"
+            lines.append(ln)
         if lines: out.append(f"### #{n}\n" + "\n".join(lines))
     save(STATE, state)
     if not out and event != "SessionStart": return
@@ -423,7 +470,8 @@ def d_watch(sid, every=20, once=False):
                 if not m["author"].get("bot") and not fm and n in shared and not msg_claim(m["id"]):
                     print(f"#{n} · {who}: [нөгөө машин авлаа — бүү хариул] " + m["content"].replace("\n", " ⏎ ")[:200], flush=True)
                     continue
-                print(f"#{n} · {who}: " + m["content"].replace("\n", " ⏎ ")[:600], flush=True)
+                atts = save_attachments(m) if m.get("attachments") else []
+                print(format_watch_line(n, who, m["content"], atts), flush=True)
         _watch_offers(offers)
         if once and sys.stdout.n:
             sys.stdout.flush(); return

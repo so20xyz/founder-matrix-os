@@ -48,12 +48,14 @@ const channels = {};
 client.on('messageCreate', async m => {
   if (!WRITER || m.guildId !== CFG.guild.id || m.author.bot) return;
   const rel = fileFor(m.channel.name);
-  if (!rel || !m.content.trim()) return;
+  const atts = [...m.attachments.values()].map(a => a.url);
+  if (!rel || (!m.content.trim() && !atts.length)) return;
   git('pull', '-q', '--rebase', '--autostash');
   const p = join(RELAY, rel);
   if (existsSync(p) && readFileSync(p, 'utf8').includes(`d:${m.id}`)) return;
   mkdirSync(dirname(p), { recursive: true });
-  const [first, ...rest] = m.content.split('\n');
+  const body = [m.content.trim(), ...atts.map(u => `📎 ${u}`)].filter(Boolean).join('\n');
+  const [first, ...rest] = body.split('\n');
   appendFileSync(p, `\n## ${ts()} · ${MEMBER} (Discord) → ${m.channel.name === 'org' ? 'all' : '@' + m.channel.name} · ${first.slice(0, 80)}\n${rest.join('\n') || first}\n<!-- d:${m.id} -->\n`);
   state[rel] = statSync(p).size; saveState(); // don't echo it back
   git('add', p); git('commit', '-qm', `relay ${MEMBER} (Discord) → ${m.channel.name}`);

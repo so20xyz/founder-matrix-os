@@ -570,7 +570,10 @@ def d_dispatch(every=15, once=False):
                                      ensure_ascii=False), flush=True); woke += 1
                     continue
                 claim = not a.get("bot") and not fm and parent.get(n, n) in shared_ch
+                atts = save_attachments(m) if m.get("attachments") else []
+                if not txt.strip() and atts: txt = "📎 " + ", ".join(x["filename"] for x in atts)
                 ev = {"wake": local[n], "channel": parent.get(n, n), **_author_fields(a), "text": txt[:1500]}
+                if atts: ev["attachments"] = atts
                 if n.startswith("t:"): ev["thread"] = n[2:]; seen_threads[n[2:]] = m["id"]
                 if _channel_live(parent.get(n, n)):   # itge.e 2026-10-07: that session hears it itself — keep it until read
                     pending.append({"channel": parent.get(n, n), "id": m["id"], "t": time.time(), "ev": ev, "claim": claim})

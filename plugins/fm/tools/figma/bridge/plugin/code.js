@@ -13,6 +13,9 @@ const store = {}; store.__ver = 'v9';
 // том файлд «Plugin runtime aborted / Memory leak» болж унадаг байв.
 let jobs = 0, jobEnd = 0;
 figma.ui.postMessage({ info: { file: figma.root.name, editor: figma.editorType } });
+// UI нь зөвхөн одоогийн хуудасны thread-ийг харуулна (ижил нэртэй өөр файлын коммент холилдохгүй)
+figma.ui.postMessage({ page: figma.currentPage.name });
+figma.on('currentpagechange', () => figma.ui.postMessage({ page: figma.currentPage.name }));
 
 function serialize(v, depth) {
   if (depth > 6) return '[depth]';

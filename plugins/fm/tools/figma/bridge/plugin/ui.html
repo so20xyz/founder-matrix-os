@@ -101,7 +101,10 @@
   .cha{color:var(--done);font-size:12px}
   /* thread дотрох хариулт */
   .fc{display:inline-block;font-size:10px;line-height:1.5;color:var(--t2);background:var(--el);border-radius:5px;padding:0 6px;cursor:pointer;margin:0 3px 2px 0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}.fc:hover{color:var(--tx);background:var(--bd)}
-  .qr{display:flex;gap:6px;margin-top:8px;border-top:1px solid var(--bd);padding-top:7px}
+  .qr{margin-top:8px;border-top:1px solid var(--bd);padding-top:7px}
+  .qrow{display:flex;gap:6px;align-items:center}
+  .qatt{margin-bottom:6px}.qatt .thumbs img{cursor:not-allowed}
+  .qb{cursor:pointer;opacity:.75;padding:2px 3px;border-radius:5px}.qb:hover{opacity:1;background:var(--bd)}
   .qr input{flex:1;min-width:0;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:7px;padding:4px 8px;font:12px var(--sans)}
   .qr button{background:var(--ac);color:var(--ink);border:0;border-radius:7px;padding:3px 10px;font:600 12px var(--sans);cursor:pointer}
   .rbox{margin-top:8px;border-top:1px solid var(--bd);padding-top:8px}
@@ -253,13 +256,19 @@ function render() {
   const fa = document.activeElement, fq = fa && fa.dataset && fa.dataset.qi, fp = fq ? fa.selectionStart : 0;
   try { renderInner(); } finally { if (fq) { const el = C.querySelector('[data-qi="' + fq + '"]'); if (el) { el.focus(); el.setSelectionRange(fp, fp); } } }
 }
+// зөвхөн энэ файлын thread; шийдсэнийг анхдагчаар нууна (дарж харуулна)
+let showDone = false, curPage = null, allPages = false;
 function renderInner() {
-  const roots = all.filter(c => !c.parent);
-  const open = roots.filter(r => !r.resolved).length; $('n').textContent = open || '';
+  const inFile = all.filter(c => !c.parent && (!c.file || info.file === '?' || c.file === info.file));
+  const onPage = (c) => !curPage || allPages || (c.node && c.node.page ? c.node.page === curPage : (c.nodes || []).some(n => n.page === curPage));
+  const roots = inFile.filter(onPage), other = inFile.filter(c => !c.resolved).length - roots.filter(c => !c.resolved).length;
+  const open = roots.filter(r => !r.resolved).length, done = roots.length - open; $('n').textContent = open || '';
+  const pg = curPage && (other > 0 || allPages) && !replyTo ? '<div class="more" id="tgpage">' + (allPages ? '▴ Зөвхөн «' + esc(curPage) + '» хуудас' : '◎ Бусад хуудасны ' + other + ' нээлттэй thread') + '</div>' : '';
   if (!roots.length) { C.innerHTML = '<div class="empty"><i>◎</i><b>Коммент алга</b>Figma-д frame сонгоод доор бичвэл энд thread үүснэ.</div>'; return; }
   if (replyTo && !roots.some(r => r.id === replyTo)) replyTo = null;
-  const list = replyTo ? roots.filter(r => r.id === replyTo) : roots;
-  C.innerHTML = (replyTo ? '<div style="margin:6px 0"><span id="back">← Бүх thread</span></div>' : '') + list.map(r => {
+  const list = replyTo ? roots.filter(r => r.id === replyTo) : roots.filter(r => showDone || !r.resolved);
+  const tog = !replyTo && done ? '<div class="more" id="tgdone">' + (showDone ? '▴ Шийдсэн ' + done + '-г нуух' : '✓ Шийдсэн ' + done + ' thread харах') + '</div>' : '';
+  C.innerHTML = (replyTo ? '<div style="margin:6px 0"><span id="back">← Бүх thread</span></div>' : pg + tog) + list.map(r => {
     const kids = all.filter(c => c.parent === r.id);
     const collapsed = !replyTo && kids.length > 3 && !expanded[r.id];
     const shown = collapsed ? kids.slice(-2) : kids;
@@ -276,10 +285,12 @@ function renderInner() {
       shown.map(m => msgHtml(m, true)).join('') + (r.choice && kids.length ? choiceHtml(r) : '') +
       (r.status && r.status.state && r.status.state !== 'done' && !r.resolved ? '<div class="st ' + r.status.state + '">' + (r.status.state === 'working' ? '⏳ ажиллаж байна' : '🕐 дараалалд') + (r.status.text ? ' · ' + esc(r.status.text) : '') + ' · ' + hhmm(r.status.at) + '</div>' : '') +
       (work ? '<div class="msg re claude live"><span class="who">Claude</span><span class="wsp">✳</span> <b class="lvt"></b> <span class="lvd"></span><div class="lvm"></div></div>' : '') +
-      (replyTo ? '' : '<div class="qr"><input data-qi="' + r.id + '" placeholder="Хариулах… (Enter)" value="' + esc(D(r.id).text).replace(/"/g, '&quot;') + '"><button data-qs="' + r.id + '">Илгээх</button></div>') +
+      (replyTo ? '' : qrHtml(r)) +
       '</div>';
   }).join('');
   const bk = $('back'); if (bk) bk.onclick = () => { replyTo = null; showSel(); render(); };
+  const tg = $('tgdone'); if (tg) tg.onclick = () => { showDone = !showDone; keepScroll = true; render(); };
+  const tp = $('tgpage'); if (tp) tp.onclick = () => { allPages = !allPages; keepScroll = true; render(); };
   showAtt();
   if (!keepScroll) C.scrollTop = C.scrollHeight; keepScroll = false; try { renderCl(); } catch (e) {}
 }
@@ -299,10 +310,21 @@ function readImg(file, cb) { const fr = new FileReader(); fr.onload = () => cb(f
 function pasteImgs(e, cb) { const it = [...((e.clipboardData || {}).items || [])].filter(x => x.type.indexOf('image/') === 0); if (!it.length) return false;
   e.preventDefault(); it.forEach(x => readImg(x.getAsFile(), cb)); return true; }
 C.addEventListener('input', (e) => { const t = e.target; if (t.dataset && t.dataset.rt) D(t.dataset.rt).text = t.value; if (t.dataset && t.dataset.qi) D(t.dataset.qi).text = t.value; });
-function quickReply(id) { const el = C.querySelector('[data-qi="' + id + '"]'), text = (el ? el.value : D(id).text).trim(); if (!text) return;
-  const root = all.find(c => c.id === id); wsSend(({ newComment: { text, parent: id, ...(root && root.node ? { node: root.node } : {}) } })); D(id).text = ''; if (el) el.value = ''; }
+// thread бүрийн доорх хурдан хариулт: текст + сонгосон frame (◎) + зураг (Ctrl+V, 📎 файл, 📸 frame)
+function qrHtml(r) { const d = D(r.id);
+  const att = (d.nodes.length || d.imgs.length) ? '<div class="qatt">' + d.nodes.map((n, i) => '<span class="node" data-qn="' + r.id + '" data-i="' + i + '" title="хасах">◎ ' + esc(n.name) + ' ✕</span>').join(' ') +
+    (d.imgs.length ? '<div class="thumbs">' + d.imgs.map((u, i) => '<img src="' + u + '" data-qm="' + r.id + '" data-i="' + i + '" title="хасах">').join('') + '</div>' : '') + '</div>' : '';
+  return '<div class="qr">' + att + '<div class="qrow"><input data-qi="' + r.id + '" placeholder="Хариулах… (Enter · Ctrl+V зураг)" value="' + esc(d.text).replace(/"/g, '&quot;') + '">' +
+    '<a class="qb" data-ra="' + r.id + '" title="Figma-д сонгосон frame хавсаргах">◎</a><a class="qb" data-qf="' + r.id + '" title="Зураг/файл upload">📎</a><a class="qb" data-rs="' + r.id + '" title="Сонгосон frame-ийн зураг">📸</a>' +
+    '<button data-qs="' + r.id + '">' + (d.nodes.length && !d.text ? 'Сонголтоо илгээх' : 'Илгээх') + '</button></div></div>'; }
+function quickReply(id) { const el = C.querySelector('[data-qi="' + id + '"]'), d = D(id), text = (el ? el.value : d.text).trim(); if (!text && !d.imgs.length && !d.nodes.length) return;
+  const root = all.find(c => c.id === id);
+  wsSend(({ newComment: { text: text || (d.imgs.length ? '🖼' : '◎'), parent: id, ...(root && root.node ? { node: root.node } : {}), nodes: d.nodes.length ? d.nodes : undefined, images: d.imgs.length ? d.imgs : undefined } }));
+  delete draft[id]; if (el) el.value = ''; keepScroll = true; render(); }
 C.addEventListener('keydown', (e) => { const t = e.target; if (t.dataset && t.dataset.qi && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); quickReply(t.dataset.qi); } });
-C.addEventListener('paste', (e) => { const t = e.target; if (t.dataset && t.dataset.rt) pasteImgs(e, (u) => { D(t.dataset.rt).imgs.push(u); render(); }); });
+C.addEventListener('paste', (e) => { const t = e.target; const id = t.dataset && (t.dataset.rt || t.dataset.qi); if (id) pasteImgs(e, (u) => { D(id).imgs.push(u); keepScroll = true; render(); }); });
+const qfile = document.createElement('input'); qfile.type = 'file'; qfile.accept = 'image/*'; qfile.multiple = true; qfile.style.display = 'none'; document.body.appendChild(qfile);
+let qfileFor = null; qfile.onchange = () => { const id = qfileFor; [...qfile.files].forEach(f => readImg(f, (u) => { D(id).imgs.push(u); keepScroll = true; render(); })); qfile.value = ''; };
 // сонголт: мөр дээр дарж сонгоно (анхдагч = 1-р санал), гол товч «Сонголтоо илгээх» илгээнэ; бичсэн текст = тайлбар
 const chosen = {};
 const pendingChoice = () => { const r = all.filter(c => !c.parent && c.choice && !c.answer && !c.resolved && (!replyTo || c.id === replyTo)); return r[r.length - 1] || null; };
@@ -311,8 +333,11 @@ function choiceHtml(r) { const A = r.answer, cur = A ? A.pick : (chosen[r.id] !=
     (o.desc ? ' title="' + esc(o.desc).replace(/"/g, '&quot;') + '"' : '') + '><span class="no">' + (i + 1) + '</span><span class="ol">' + esc(o.label) + '</span>' +
     (o.node ? '<span class="lk" data-n="' + esc(o.node) + '" title="frame руу очих">◎</span>' : '') + '</div>').join('') +
     (A ? '<div class="cha">✓ ' + (A.label ? esc(A.label) : 'тайлбар') + (A.note ? ' — ' + esc(A.note) : '') + ' · ' + hhmm(A.at) + '</div>' : '') + '</div>'; }
-C.onclick = (e) => { const t = e.target.closest('[data-qs],[data-ch],[data-n],[data-e],[data-m],[data-r],[data-rsend],[data-ra],[data-rs],[data-dn],[data-di],[data-big],[data-d],[data-x]') || e.target;
+C.onclick = (e) => { const t = e.target.closest('[data-qs],[data-qf],[data-qn],[data-qm],[data-ch],[data-n],[data-e],[data-m],[data-r],[data-rsend],[data-ra],[data-rs],[data-dn],[data-di],[data-big],[data-d],[data-x]') || e.target;
   if (t.dataset.qs) return quickReply(t.dataset.qs);
+  if (t.dataset.qf) { qfileFor = t.dataset.qf; qfile.click(); return; }
+  if (t.dataset.qn) { D(t.dataset.qn).nodes.splice(Number(t.dataset.i), 1); keepScroll = true; render(); return; }
+  if (t.dataset.qm) { D(t.dataset.qm).imgs.splice(Number(t.dataset.i), 1); keepScroll = true; render(); return; }
   if (t.dataset.n) { parent.postMessage({ pluginMessage: { focus: t.dataset.n } }, '*'); return; }
   if (t.dataset.ch) { chosen[t.dataset.ch] = Number(t.dataset.i); keepScroll = true; const y = C.scrollTop; render(); C.scrollTop = y; sendLabel(); return; }
   if (t.dataset.e) { expanded[t.dataset.e] = true; keepScroll = true; render(); }
@@ -415,8 +440,9 @@ document.querySelector('[data-p="g"]').addEventListener('click', () => { if (!GA
 connect(); render();
 window.onmessage = (e) => { const m = e.data.pluginMessage; if (!m) return;
   if (m.uiState) { UI = { ...UI, ...m.uiState }; if (UI.collapsed) { document.body.classList.add('collapsed'); $('col').textContent = '▸'; } return; }
+  if (m.page !== undefined) { curPage = m.page; render(); return; }
   if (m.info) { info = m.info; s.textContent = info.file; if (ws && ws.readyState === 1) ws.send(JSON.stringify({ hello: info })); return; }
-  if (m.snap) { const d = D(m.snap.rid); d.imgs.push('data:image/png;base64,' + m.snap.data); if (!d.nodes.some(x => x.id === m.snap.node.id)) d.nodes.push(m.snap.node); showAtt(); return; }
+  if (m.snap) { const d = D(m.snap.rid); d.imgs.push('data:image/png;base64,' + m.snap.data); if (!d.nodes.some(x => x.id === m.snap.node.id)) d.nodes.push(m.snap.node); showAtt(); if (m.snap.rid !== K()) { keepScroll = true; render(); } return; }
   if (m.sel !== undefined) { sel = m.sel; sels = m.sels || (m.sel ? [m.sel] : []); showSel(); return; }
   if (m.log !== undefined) { add(m.log, m.kind, m.t, m.node); return; }
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); };

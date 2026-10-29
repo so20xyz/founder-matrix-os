@@ -57,7 +57,7 @@ function saveComments() { fs.mkdirSync(STASH, { recursive: true }); fs.writeFile
 function addComment(c) {
   const id = crypto.randomUUID().slice(0, 8), { images, ...rest } = c;
   c = { id, at: Date.now(), ...rest }; const imgs = saveImages(id, images); if (imgs && imgs.length) c.images = imgs; comments.push(c); saveComments();
-  for (const [s, m] of plugins) if (!c.file || m.file === c.file) sendFrame(s, JSON.stringify({ comment: c }));
+  for (const [s, m] of plugins) if (c.file && m.file === c.file) sendFrame(s, JSON.stringify({ comment: c }));  // файлгүй коммент бусад файлын панелд очихгүй
   if (c.from === "user") { for (const w of waiters) w(); waiters.clear(); }
   return c;
 }
@@ -178,7 +178,7 @@ const server = http.createServer(async (req, res) => {
       if (parent && b.session && !parent.claimedBy) parent.claimedBy = b.session;
       if (parent && b.session && parent.claimedBy && parent.claimedBy !== b.session && !b.force) return json(409, { error: `thread ${parent.id}-ийг «${parent.claimedBy}» сешн авсан. --force-оор хүчлэх` });
       if (parent && (b.from || "claude") === "claude" && parent.status && parent.status.state !== "done" && !b.keepStatus) parent.status = null;
-      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, ...(b.session ? { session: b.session } : {}), parent: b.parent || null, file: b.file || (parent && parent.file) || null, node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}), ...(b.choice ? { choice: b.choice } : {}), ...(!b.parent && b.session ? { claimedBy: b.session } : {}), ...(b.images ? { images: b.images } : {}) }));
+      return json(200, addComment({ from: b.from || "claude", text: b.text, play: b.play || null, ...(b.session ? { session: b.session } : {}), parent: b.parent || null, file: b.file || (parent && parent.file) || (b.doc && pick(b.doc) ? plugins.get(pick(b.doc)).file : null) || (last && plugins.has(last) ? plugins.get(last).file : null), node: b.node || (parent && parent.node) || null, ...(b.nodes ? { nodes: b.nodes } : {}), ...(b.choice ? { choice: b.choice } : {}), ...(!b.parent && b.session ? { claimedBy: b.session } : {}), ...(b.images ? { images: b.images } : {}) }));
     }
   }
   // /claude : Claude Code hook-ууд төлвөө илгээнэ → бүх plugin-д WebSocket-оор (Claude Code-ийн «Running… 16s» шиг)
@@ -257,7 +257,7 @@ server.on("upgrade", (req, sock) => {
     let msg; try { msg = JSON.parse(txt); } catch { return; }
     if (msg.hello) { const h = typeof msg.hello === 'object' ? msg.hello : { file: msg.hello };
       plugins.set(sock, { ...h, at: Date.now() }); last = sock; console.log("plugin:", h.file, h.editor);
-      sendFrame(sock, JSON.stringify({ commentsAll: comments.filter(c => !c.file || c.file === h.file) })); return; }
+      sendFrame(sock, JSON.stringify({ commentsAll: comments.filter(c => c.file === h.file) })); return; }
     if (msg.answerChoice) { const a = msg.answerChoice, root = comments.find(c => c.id === a.id); if (!root || !root.choice || root.answer) return;
       const opt = a.pick != null ? root.choice[a.pick] : null;
       addComment({ from: "user", parent: root.id, file: root.file, node: root.node, text: (opt ? "✓ " + opt.label : "💬") + (a.note ? " — " + a.note : "") });
