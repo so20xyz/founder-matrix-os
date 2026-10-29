@@ -28,18 +28,47 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools" / "relay
 HEAD = "## Өөрчлөлтийн түүх"
 TABLE = "| Цаг | Юу | Хаана |\n|---|---|---|"
 SKIP = ("/_system/logs/", "/.obsidian/", "/_trash/")
+# Wiki 2026-10-30: scratchpad, memory, Temp-ийн засвар task-ийн түүхийг «засвар · <зам>» шуугиангаар дүүргэж байв
+NOISE = ("/appdata/local/temp/", "/.claude/", "/tmp/")
+TASKS_DIR = "01-GTD/Tasks/"
 # command descriptions that only look (read, list, check …) — they leave nothing to record
 READ_ONLY = re.compile(
     r"(read|inspect|check|list|find|show|locate|view|search|look|count|verify|preview|debug|probe|"
     r"унш|шалга|харах|хар |жагсаа|хай|тоол)", re.I)
 
 
+def _claim_file(sid):
+    return Path.home() / ".fmos" / "active-task" / re.sub(r"[^A-Za-z0-9_-]", "_", str(sid or ""))
+
+
 def active_task(sid):
-    f = Path.home() / ".fmos" / "active-task" / re.sub(r"[^A-Za-z0-9_-]", "_", str(sid or ""))
     try:
-        return f.read_text(encoding="utf-8").strip()
+        return _claim_file(sid).read_text(encoding="utf-8").strip()
     except OSError:
         return ""
+
+
+def follow_task(sid, ev, vault):
+    """Сешн in-progress task note-ийг өөрөө засвал тэр task руу шилжинэ (Wiki 2026-10-30: claim нэг удаа авагдаад
+    хэдэн өдөр хуучирч, өөр ажлын засвар хуучин task-д бичигдэж байв). Буцаах: шинэ claim (эсвэл '')."""
+    if ev.get("tool_name") not in ("Write", "Edit", "MultiEdit"):
+        return ""
+    rel = short_path((ev.get("tool_input") or {}).get("file_path", ""), vault)
+    if not rel.startswith(TASKS_DIR) or not rel.endswith(".md") or "/" in rel[len(TASKS_DIR):]:
+        return ""
+    try:
+        head = (vault / rel).read_text(encoding="utf-8")[:1500]
+    except OSError:
+        return ""
+    m = re.search(r"^status:\s*(\S+)", head, re.M)
+    if not m or m.group(1).strip("\"'") != "in-progress" or re.search(r"^private:\s*true", head, re.M):
+        return ""
+    if rel != active_task(sid):
+        try:
+            f = _claim_file(sid); f.parent.mkdir(parents=True, exist_ok=True); f.write_text(rel, encoding="utf-8")
+        except OSError:
+            return ""
+    return rel
 
 
 def cell(s, n=90):
@@ -122,13 +151,15 @@ def main():
         ev = json.load(sys.stdin)
     except Exception:
         return
-    rel = active_task(ev.get("session_id"))
-    if not rel:
-        return
     try:
         import fmconfig
         vault = Path(fmconfig.vault_dir())
     except Exception:
+        return
+    if follow_task(ev.get("session_id"), ev, vault):
+        return   # task note-ийг өөрийг нь засаж байна — түүхэнд «засвар · task» мөр нэмэхгүй
+    rel = active_task(ev.get("session_id"))
+    if not rel:
         return
     task = vault / rel
     r = row_for(ev, vault)
@@ -138,7 +169,7 @@ def main():
     probe = "/" + where.replace("\\", "/")
     if abspath and Path(abspath).resolve() == task.resolve():
         return
-    if any(s in probe for s in SKIP) or not where:
+    if any(s in probe for s in SKIP) or not where or any(s in probe.lower() for s in NOISE):
         return
     raw = task.read_bytes()
     bak = backup_path(task)

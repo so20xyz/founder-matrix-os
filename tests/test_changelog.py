@@ -95,6 +95,26 @@ def main():
         fire(mod, dict(EV, tool_input={"description": "Pay check"}))
         pbak = bak.with_name(hashlib.sha256(unicodedata.normalize("NFC", "Нууц.md").encode()).hexdigest()[:16] + ".md")
         check(not pbak.exists(), "a private task is never backed up")
+
+        # Wiki 2026-10-30: a stale claim followed the session for days; editing another in-progress task note moves the claim
+        (home / ".fmos" / "active-task" / "sid1").write_text("01-GTD/Tasks/Тест task.md", encoding="utf-8")
+        new = task.with_name("Шинэ ажил.md"); new.write_text(NOTE.replace("Тест task", "Шинэ ажил"), encoding="utf-8")
+        fire(mod, {"session_id": "sid1", "tool_name": "Edit", "tool_input": {"file_path": str(new)}, "cwd": "/x"})
+        claim = (home / ".fmos" / "active-task" / "sid1").read_text(encoding="utf-8")
+        check(claim == "01-GTD/Tasks/Шинэ ажил.md", "editing an in-progress task note moves the session's claim to it", claim)
+        fire(mod, dict(EV, tool_input={"description": "Ship the city page"}))
+        check("Ship the city page" in new.read_text(encoding="utf-8") and "Ship the city page" not in task.read_text(encoding="utf-8"),
+              "later work is logged to the newly followed task, not the stale one")
+        done = task.with_name("Дууссан.md"); done.write_text(NOTE.replace("in-progress", "completed"), encoding="utf-8")
+        fire(mod, {"session_id": "sid1", "tool_name": "Edit", "tool_input": {"file_path": str(done)}, "cwd": "/x"})
+        check((home / ".fmos" / "active-task" / "sid1").read_text(encoding="utf-8") == "01-GTD/Tasks/Шинэ ажил.md",
+              "editing a completed task note does not steal the claim")
+
+        # scratchpad / memory / Temp edits are noise, never history rows
+        before = new.read_text(encoding="utf-8")
+        for p in ("C:/Users/U/AppData/Local/Temp/claude/x/scratchpad/rm23.js", "C:/Users/U/.claude/projects/p/memory/figma.md"):
+            fire(mod, {"session_id": "sid1", "tool_name": "Write", "tool_input": {"file_path": p}, "cwd": "/x"})
+        check(new.read_text(encoding="utf-8") == before, "temp/scratchpad/memory edits are not logged")
     print(f"\n{len(FAILS)} failed")
     sys.exit(1 if FAILS else 0)
 
