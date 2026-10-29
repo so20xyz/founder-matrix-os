@@ -24,6 +24,7 @@ TESTS = [
     "tests/test_onboard.py",
     "tests/test_doctor.py",
     "tests/test_tools.py",
+    "tests/test_watch.py",
     "tests/test_recap.py",
     "tests/test_refs.py",
     "tests/test_migrate.py",
