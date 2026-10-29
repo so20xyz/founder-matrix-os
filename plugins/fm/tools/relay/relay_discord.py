@@ -441,9 +441,12 @@ def d_watch(sid, every=20, once=False):
         except Exception: thr = {}
         for tid, pid in thr.items():                                                            # replies inside my threads
             pn = next((k for k in names if ch.get(k) == pid), None)
-            if pn and ("t:" + tid) not in last:
-                try: last["t:" + tid] = _thread_base(tid, t0)
-                except Exception: continue
+            if pn and ("t:" + tid) not in names:
+                # 2026-10-29: курсор STATE-ээс сэргэсэн thread-ийг ч жагсаалтад нэмнэ — өмнө нь `not in last` шалгаснаас
+                # watch дахин асах бүрд мэдэгдэж байсан thread-ийн хариу (itge.e «Prod hiichih») дуугүй алгасагддаг байв
+                if ("t:" + tid) not in last:
+                    try: last["t:" + tid] = _thread_base(tid, t0)
+                    except Exception: continue
                 ch["t:" + tid] = tid; names.append("t:" + tid)
         for tn, tcid in team:
             key = "team:" + tn
