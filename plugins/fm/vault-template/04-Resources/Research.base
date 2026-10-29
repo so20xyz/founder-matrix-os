@@ -1,7 +1,9 @@
 filters:
   and:
-    - file.inFolder("04-Resources/Research")
     - file.ext == "md"
+    - or:
+        - file.inFolder("04-Resources/Research")
+        - type == "research"
 views:
   - type: table
     name: Судалгаа
