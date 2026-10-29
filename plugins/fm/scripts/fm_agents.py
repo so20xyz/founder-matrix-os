@@ -219,7 +219,14 @@ def hook(d):
         upsert(aid, status="waiting", last_action="хариулав", **base)
     elif ev == "PostToolUse":
         tool = d.get("tool_name") or ""
-        upsert(aid, status="running", last_action=tool, **base)
+        ti = d.get("tool_input") or {}
+        prev = load(aid) or {}
+        step = {"ts": now_iso(), "text": _step_text(tool, ti)}
+        fl = [{"path": str(ti[k]).replace("\\", "/"), "edit": tool in EDIT_TOOLS}
+              for k in FILE_KEYS if isinstance(ti, dict) and ti.get(k)]
+        upsert(aid, status="running", last_action=step["text"],
+               steps=((prev.get("steps") or []) + [step])[-STEPS_MAX:],
+               files=merge_files(prev.get("files"), fl), **base)
         if tool in ("Agent", "Task"):
             ti = d.get("tool_input") or {}
             sub_id = _agent_id_from(d.get("tool_response")) or d.get("tool_use_id") or ""
@@ -287,6 +294,54 @@ def _transcript_state(entries):
     return state, cwd, title, tool, ep
 
 
+# AgentTrail-аас авсан санаа №1-2 (2026-10-29): tool алхам + хөндсөн файлыг transcript-аас.
+# isSidechain мөр = үндсэн transcript дахь subagent-ийн шуугиан → алгасна (subagent өөрийн файлаас уншигдана).
+FILE_KEYS = ("file_path", "notebook_path")
+EDIT_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}
+STEPS_MAX, FILES_MAX = 12, 60
+
+
+def _step_text(name, ti):
+    ti = ti if isinstance(ti, dict) else {}
+    for k in FILE_KEYS:
+        if ti.get(k):
+            return f"{name} {Path(str(ti[k])).name}"
+    for k in ("description", "pattern", "query", "url", "command", "skill", "prompt"):
+        if ti.get(k):
+            return f"{name}: {_clip(str(ti[k]), 70)}"
+    return name
+
+
+def _trail(entries, sidechain_ok=False):
+    """[{ts, text}] сүүлийн tool алхмууд, files [{path, edit}] — tool input-ээс (observed)."""
+    steps, files = [], {}
+    for e in entries:
+        if e.get("isSidechain") and not sidechain_ok:
+            continue
+        if e.get("type") != "assistant":
+            continue
+        for b in (e.get("message") or {}).get("content") or []:
+            if not (isinstance(b, dict) and b.get("type") == "tool_use"):
+                continue
+            name, ti = b.get("name") or "", b.get("input") or {}
+            steps.append({"ts": e.get("timestamp") or "", "text": _step_text(name, ti)})
+            for k in FILE_KEYS:
+                fp = ti.get(k) if isinstance(ti, dict) else None
+                if fp:
+                    fp = str(fp).replace("\\", "/")
+                    files[fp] = files.get(fp, False) or name in EDIT_TOOLS
+    return steps[-STEPS_MAX:], [{"path": k, "edit": v} for k, v in files.items()]
+
+
+def merge_files(prev, new):
+    """Run-ий files: хуримтлагдана (edit=True наалддаг), шинэ нь төгсгөлд, FILES_MAX хүртэл."""
+    out = {f["path"]: bool(f.get("edit")) for f in prev or [] if isinstance(f, dict) and f.get("path")}
+    for f in new or []:
+        out[f["path"]] = out.get(f["path"], False) or bool(f.get("edit"))
+    items = [{"path": k, "edit": v} for k, v in out.items()]
+    return items[-FILES_MAX:]
+
+
 def _role_from(title):
     m = re.match(r"\W*(Architect|Creative|Wiki|Research|Project|GTD|Finance)\b", title or "", re.I)
     return m.group(1).lower() if m else ""
@@ -323,6 +378,10 @@ def scan(now=None, root=None):
                    "task": task or prev.get("task", ""), "project": project_of(task, cwd) or prev.get("project", ""),
                    "status": state, "last_action": tool or prev.get("last_action", ""),
                    "started": prev.get("started") or _iso(tr.stat().st_ctime), "last_seen": _iso(mt), "source": "scan"}
+            steps, files = _trail(_tail_entries(tr, 256 * 1024))
+            if steps:
+                rec["steps"] = steps
+            rec["files"] = merge_files(prev.get("files"), files)
             save(rec); n += 1
         sub = tr.with_suffix("") / "subagents"
         for sj in sub.glob("agent-*.jsonl") if sub.is_dir() else []:
@@ -337,7 +396,9 @@ def scan(now=None, root=None):
             prev = load(aid) or {}
             st = "done" if sm.get("finished") else ("running" if now - smt <= STALE else "stale")
             parent = load(sid) or {}
-            stool = _transcript_state(_tail_entries(sj, 32 * 1024))[3]
+            sent = _tail_entries(sj, 128 * 1024)
+            stool = _transcript_state(sent)[3]
+            ssteps, sfiles = _trail(sent, sidechain_ok=True)
             rec = {**prev, "id": aid, "kind": "subagent", "parent": sid, "device": prev.get("device") or device(),
                    "agent_type": sm.get("agentType") or prev.get("agent_type", ""),
                    "role": prev.get("role") or sm.get("agentType", ""),
@@ -346,6 +407,9 @@ def scan(now=None, root=None):
                    "project": prev.get("project") or parent.get("project", ""),
                    "status": st, "last_action": stool or prev.get("last_action", ""),
                    "started": prev.get("started") or _iso(sj.stat().st_ctime), "last_seen": _iso(smt), "source": "scan"}
+            if ssteps:
+                rec["steps"] = ssteps
+            rec["files"] = merge_files(prev.get("files"), sfiles)
             if st == "done" and not rec.get("finished"):
                 rec["finished"] = _iso(smt)
             save(rec); n += 1

@@ -124,3 +124,37 @@ class ForkThreadTest(unittest.TestCase):
         cmd = gd.worker_cmd("claude", "project", "s1", "new", [], fork=True)
         i = cmd.index("--resume")
         self.assertEqual(cmd[i:i + 5], ["--resume", "s1", "--fork-session", "--session-id", "new"])
+
+
+def test_heartbeat_line_every_5_min_and_only_on_new_step():
+    from fm_goom_dispatch import heartbeat_line, HEARTBEAT
+    w = {"t0": 1000.0, "progress": "Read report.md"}
+    assert heartbeat_line(w, 1000 + HEARTBEAT - 1) is None          # 5 мин болоогүй
+    line = heartbeat_line(w, 1000 + HEARTBEAT)
+    assert line == "⏳ 5 мин · Read report.md", line
+    w.update(hb_t=1000 + HEARTBEAT, hb_text="Read report.md")
+    assert heartbeat_line(w, 1000 + 2 * HEARTBEAT) is None           # шинэ алхамгүй → давтахгүй
+    w["progress"] = "Write atom.md"
+    assert heartbeat_line(w, 1000 + 2 * HEARTBEAT).endswith("Write atom.md")
+    assert heartbeat_line({"t0": 0, "progress": ""}, 10_000) is None
+
+
+def test_post_heartbeat_routes_to_thread(tmp_path, monkeypatch):
+    import types
+    import fm_goom_dispatch as d
+    calls = []
+    monkeypatch.setattr(d.gc, "vault_device", lambda: "pc")
+    monkeypatch.setattr(d.gc, "thread_reply_line", lambda *a: calls.append(("thread", a[1], a[2], a[4])) or ("m", "p.md"))
+
+    class Store:
+        @staticmethod
+        def append_message(vault, ch, author, text, dev):
+            calls.append(("chan", ch, author, text))
+            return types.SimpleNamespace(path="c.md")
+    monkeypatch.setattr(d.gc, "vault_lib", lambda: (Store, None))
+    R = lambda **k: types.SimpleNamespace(**{"reply_to": "", "message_id": None, "channel": "Wiki", **k})
+    assert d.post_heartbeat(tmp_path, R(message_id="20261029150000-pc-ab12"), "wiki", "⏳ 5 мин · x") == "c.md"
+    assert calls[-1] == ("chan", "Wiki", "📚 Wiki", "↳ #^msg-20261029150000-pc-ab12 ⏳ 5 мин · x")
+    d.post_heartbeat(tmp_path, R(reply_to="thread:02-Projects/A/Chat#20261029150000-pc-ab12"), "wiki", "y")
+    assert calls[-1] == ("thread", "02-Projects/A", "20261029150000-pc-ab12", "y")
+    assert d.post_heartbeat(tmp_path, R(reply_to="chat:5:9"), "wiki", "z") is None

@@ -120,3 +120,30 @@ if __name__ == "__main__":
             except Exception:
                 import traceback; traceback.print_exc(); fails += 1; print("FAIL ", n)
     sys.exit(1 if fails else 0)
+
+
+def test_trail_steps_files_skip_sidechain():
+    ents = [
+        {"type": "assistant", "timestamp": "t1", "message": {"content": [
+            {"type": "tool_use", "name": "Read", "input": {"file_path": r"C:\v\a.md"}}]}},
+        {"type": "assistant", "isSidechain": True, "message": {"content": [
+            {"type": "tool_use", "name": "Edit", "input": {"file_path": "/noise.md"}}]}},
+        {"type": "assistant", "timestamp": "t2", "message": {"content": [
+            {"type": "tool_use", "name": "Edit", "input": {"file_path": r"C:\v\a.md"}},
+            {"type": "tool_use", "name": "Bash", "input": {"command": "ls", "description": "List files"}}]}},
+    ]
+    steps, files = fa._trail(ents)
+    assert [s["text"] for s in steps] == ["Read a.md", "Edit a.md", "Bash: List files"], steps
+    assert files == [{"path": "C:/v/a.md", "edit": True}], files
+    merged = fa.merge_files([{"path": "x", "edit": True}], [{"path": "x", "edit": False}, {"path": "y", "edit": False}])
+    assert merged == [{"path": "x", "edit": True}, {"path": "y", "edit": False}]
+
+
+def test_hook_accumulates_files_and_steps():
+    _setup()
+    for fp, tool in (("/v/a.md", "Read"), ("/v/b.md", "Write")):
+        fa.hook({"hook_event_name": "PostToolUse", "session_id": "s1", "cwd": "/v",
+                 "tool_name": tool, "tool_input": {"file_path": fp}})
+    r = fa.load("s1")
+    assert [f["path"] for f in r["files"]] == ["/v/a.md", "/v/b.md"] and r["files"][1]["edit"]
+    assert r["steps"][-1]["text"] == "Write b.md" and r["last_action"] == "Write b.md"

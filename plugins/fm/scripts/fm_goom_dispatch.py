@@ -184,6 +184,33 @@ def scan_stream(lines):
     return out
 
 
+HEARTBEAT = 300   # секунд: урт run thread-д ядаж ийм давтамжтай нэг мөр явц бичнэ (стандарт v1 §4)
+
+
+def heartbeat_line(w, now, every=HEARTBEAT):
+    """Явцын мөр (эсвэл None): эхэлснээс хойш every, өмнөх мөрөөс хойш every өнгөрч, шинэ алхам байвал."""
+    prog = (w.get("progress") or "").strip()
+    last = w.get("hb_t") or w.get("t0") or now
+    if not prog or now - last < every or prog == w.get("hb_text"):
+        return None
+    mins = max(1, int((now - (w.get("t0") or now)) // 60))
+    return f"⏳ {mins} мин · {_clip(prog, 120)}"
+
+
+def post_heartbeat(vault, r, role, text):
+    """Явцын мөрийг run-ий асуусан газар thread хариу болгож бичнэ: item thread → тэр thread,
+    vault сувгийн мессеж → тэр мессежийн thread. API чат/самбар руу бичихгүй (токен хэрэгтэй)."""
+    author = gc.ROLES.get(role) or gc.ROLES["architect"]
+    th = gc.parse_thread_reply_to(r.reply_to or "")
+    if th:
+        return gc.thread_reply_line(vault, th[0], th[1], author, text, gc.vault_device())[1]
+    if not r.reply_to and r.message_id and r.channel:
+        store, _ = gc.vault_lib()
+        return store.append_message(vault, r.channel, author, f"↳ #^msg-{r.message_id} {text}",
+                                    gc.vault_device()).path
+    return None
+
+
 def fail_reason(rc, tail=""):
     """Worker хариугүй гарсны шалтгаан (run card-д харагдана)."""
     res = scan_stream((tail or "").splitlines())["result"]
@@ -481,6 +508,13 @@ class Dispatcher:
             except ValueError:
                 pass
         _agent_beat("beat", rid, note=w.get("progress") or "ажиллаж байна")
+        line = heartbeat_line(w, time.time()) if cur is not None and cur.status == "running" else None
+        if line:
+            w["hb_t"], w["hb_text"] = time.time(), w.get("progress")
+            try:
+                post_heartbeat(vault, cur, w.get("role") or cur.assignee or "", line)
+            except Exception as e:  # noqa: BLE001 — явцын мөр бичигдэхгүй байх нь run-ийг зогсоох шалтгаан биш
+                log(f"heartbeat {rid}: {e}")
         return s
 
     def reap(self, vault, runs, now=None):
