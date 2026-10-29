@@ -86,6 +86,8 @@ def role_for(assignee, channel):
         k = (v or "").strip().lower()
         if k in AGENTS:
             return k
+        if k.split(" ")[0] in AGENTS:   # дүрийн note «Creative Director.md» → суваг «Creative Director» → creative
+            return k.split(" ")[0]
         if k == "finance":
             return None
     return "project"

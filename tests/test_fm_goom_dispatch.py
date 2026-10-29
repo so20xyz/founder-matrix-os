@@ -58,6 +58,7 @@ class Plan(unittest.TestCase):
     def test_role_for(self):
         self.assertEqual(gd.role_for("Project", "INAI Investment"), "project")
         self.assertEqual(gd.role_for("", "Creative"), "creative")
+        self.assertEqual(gd.role_for("", "Creative Director"), "creative")
         self.assertEqual(gd.role_for("", "INAI Investment"), "project")
         self.assertIsNone(gd.role_for("finance", "x"))
 
