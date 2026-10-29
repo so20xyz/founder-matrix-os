@@ -367,6 +367,8 @@ def _rules(chat_py, run_id, py, role="", reply_file=""):
         "  гэж асуугаад шууд дуусга (хариу ирэхэд чамайг үргэлжлүүлнэ).\n"
         "- Төсөл, repo өөр сешнд завгүй бол хариугүй бүү гар — дараалалд үлдээд дараа үргэлжилнэ:\n"
         f"  \"{py}\" \"{chat_py}\" wait --run {run_id} \"<шалтгаан, монголоор>\"\n"
+        "- Чи headless: turn дуусмагц процесс гарна. run_in_background, Monitor бүү хэрэглэ; урт команд (QA, build) "
+        "foreground-оор timeout 600000-аар. «Хүлээнэ», «дуусахад мэдэгдэнэ» гэж хэзээ ч бүү дуусга — дуустал ажилла.\n"
         "- Хатуу хориг: _trash/-аас гадуур юм устгахгүй (устгах бол _trash/ руу зөө); git push хийхгүй, клиентэд "
         "харагдах суваг/репо руу юу ч илгээхгүй; Discord #gtd-д бичихгүй; 🔒 03-Areas/Business/finances/private/-ийг "
         "уншихгүй.\n"
@@ -433,6 +435,13 @@ def recent_context(msgs, upto_id, n=12):
 def answer_prompt(run_id, question, answer, chat_py=CHAT_PY, role=""):
     return (f"itge.e таны асуултад хариуллаа.\nАсуулт: {question}\nХариу: «{answer or '(хоосон — батлав)'}»\n\n"
             "Энэ хариугаар ажлаа үргэлжлүүлж дуусга.\n"
+            + _rules(chat_py, run_id, _py(), role, str(LOGDIR / f"{run_id}.reply.md")))
+
+
+def nudge_prompt(run_id, chat_py=CHAT_PY, role=""):
+    return ("Чи reply хийлгүй turn-ээ дуусгасан тул процесс зогсож, background-оор асаасан команд чинь тасарсан. "
+            "Хүлээх хүн байхгүй — тасарсан алхмыг (шалгалт, build г.м.) foreground-оор дахин ажиллуулж, ажлаа "
+            "дуусгаад reply хий.\n"
             + _rules(chat_py, run_id, _py(), role, str(LOGDIR / f"{run_id}.reply.md")))
 
 
@@ -611,6 +620,7 @@ class Dispatcher:
         self.claude = shutil.which("claude") or shutil.which("claude.cmd")
         self.orphans = gc._load(STATE, {})
         self.hold = {}    # run_id → epoch: төсөл завгүй тул энэ хүртэл дахин бүү асаа
+        self.nudged = set()   # хариугүй rc=0 гарсны дараа нэг удаа «дуусга» гэж үргэлжлүүлсэн run-ууд
 
     @property
     def timeout(self):
@@ -647,6 +657,14 @@ class Dispatcher:
             log(f"{r.status} {run_id}")
             _agent_beat("finish", run_id, status={"done": "done", "waiting": "waiting"}.get(r.status, "cancelled"),
                         note={"waiting": "itge.e-ийн хариу хүлээж байна"}.get(r.status))
+            return
+        # run-20261029190753-pc-b5a9: worker QA-г background-оор асаагаад «Хүлээнэ» гэж turn-ээ дуусгасан → процесс
+        # гарч, ажил дутуу failed болов. rc=0 хариугүй гарсан бол өөрийн session-оос нэг удаа «дуусга» гэж үргэлжлүүлнэ.
+        if reason.startswith("worker rc=0,") and getattr(r, "session", "") and run_id not in self.nudged:
+            self.nudged.add(run_id)
+            runs.update_run(vault, run_id, status="queued", pid="", **extra,
+                            progress="хариугүй зогссон — ажлаа дуусгуулахаар үргэлжлүүлж байна")
+            log(f"nudge {run_id} (rc=0, хариугүй)")
             return
         try:
             runs.update_run(vault, run_id, status="failed", completed=gc._now_iso(), error=reason, pid="", **extra)
@@ -772,6 +790,8 @@ class Dispatcher:
             if st == "cancelled":
                 ans = ans or "(itge.e асуултыг цуцалсан — тэр алхмыг хийхгүй)"
             prompt = answer_prompt(cur.id, q, ans, role=role)
+        elif cur.id in self.nudged and resume:
+            prompt = nudge_prompt(cur.id, role=role)
         else:
             mid = cur.id[len("run-"):]
             msgs = store.read_messages(vault, ch)

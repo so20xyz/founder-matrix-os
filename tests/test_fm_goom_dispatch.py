@@ -278,6 +278,21 @@ def test_finish_busy_keeps_queued_and_holds(monkeypatch):
     assert runs2.updates[-1]["status"] == "failed" and "run-2" not in d.hold
 
 
+def test_finish_silent_exit_nudges_once(monkeypatch):
+    # run-20261029190753-pc-b5a9: «Хүлээнэ (QA дуусахад мэдэгдэл ирнэ)» гээд гарсан worker-ийг нэг удаа үргэлжлүүлнэ
+    RS = namedtuple("RS", "id status tokens session")
+    monkeypatch.setattr(gd, "_agent_beat", lambda *a, **k: None)
+    d = gd.Dispatcher(cfg=dict(gd.DEFAULTS))
+    runs = _Runs(RS("run-1", "running", 0, "sess-1"))
+    d._finish("v", runs, "run-1", "worker rc=0, хариу ирээгүй: Хүлээнэ")
+    assert runs.updates[-1]["status"] == "queued" and "run-1" in d.nudged and "run-1" not in d.hold
+    d._finish("v", runs, "run-1", "worker rc=0, хариу ирээгүй: Хүлээнэ")
+    assert runs.updates[-1]["status"] == "failed"
+    p = gd.nudge_prompt("run-1", chat_py=Path("c.py"))
+    assert "foreground" in p and "reply --run run-1" in p
+    assert "run_in_background" in gd.build_prompt("P", run("20261026020742"), "x", chat_py=Path("c.py"))
+
+
 def test_wake_answered_closes_instead_of_resuming(tmp_path, monkeypatch):
     RW = namedtuple("RW", "id ask")
     (tmp_path / "a.md").write_text(_ask("completed", "одоохондоо хойшлуулав"), encoding="utf-8")

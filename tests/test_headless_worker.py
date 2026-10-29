@@ -55,12 +55,12 @@ class Stream(unittest.TestCase):
     def test_progress_from_events(self):
         tool = {"type": "assistant", "message": {"content": [
             {"type": "tool_use", "name": "Bash", "input": {"command": "ls", "description": "List files"}}]}}
-        self.assertEqual(gd.progress_from_event(tool), "⚙ Bash: List files")
+        self.assertEqual(gd.progress_from_event(tool), "шалгаж байна · List files")
         rd = {"type": "assistant", "message": {"content": [
             {"type": "tool_use", "name": "Read", "input": {"file_path": "D:/v/01-GTD/Tasks/A.md"}}]}}
-        self.assertEqual(gd.progress_from_event(rd), "⚙ Read: A.md")
+        self.assertEqual(gd.progress_from_event(rd), "файл уншиж байна · A.md")
         txt = {"type": "assistant", "message": {"content": [{"type": "text", "text": "Эхлээд note уншина.\nдараа"}]}}
-        self.assertEqual(gd.progress_from_event(txt), "✎ Эхлээд note уншина.")
+        self.assertEqual(gd.progress_from_event(txt), "хариу бичиж байна · Эхлээд note уншина.")
         self.assertIsNone(gd.progress_from_event({"type": "user"}))
 
     def test_scan_stream(self):
@@ -71,7 +71,7 @@ class Stream(unittest.TestCase):
                  json.dumps({"type": "result", "subtype": "success", "result": "ok",
                              "usage": {"input_tokens": 10, "output_tokens": 5}})]
         s = gd.scan_stream(lines)
-        self.assertEqual((s["session"], s["progress"], s["tokens"], s["result"]), ("s-1", "⚙ Grep: owner", 15, "ok"))
+        self.assertEqual((s["session"], s["progress"], s["tokens"], s["result"]), ("s-1", "хайж байна · owner", 15, "ok"))
 
     def test_fail_reason_uses_result_text(self):
         tail = json.dumps({"type": "result", "subtype": "error_during_execution", "result": "Invalid API key"})
