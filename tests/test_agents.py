@@ -34,8 +34,9 @@ def test_session_lifecycle():
     assert r["kind"] == "session" and r["status"] == "running" and r["role"] == "architect", r
     assert r["task"] == "01-GTD/Tasks/T.md" and r["project"] == "Inai Operation App", r
     assert r["device"] == "PC" and r["title"] == "🏛 Architect · PC", r
+    assert r["turn_started"], r
     fa.hook({"hook_event_name": "Stop", "session_id": "s1"})
-    assert fa.load("s1")["status"] == "waiting"
+    assert fa.load("s1")["status"] == "idle"   # ээлж дууссан, асуулт алга → хүлээхгүй
 
 
 def test_subagent_background_and_notification(tmp=None):
@@ -109,6 +110,47 @@ def test_scan_transcripts():
     assert s["status"] == "running" and s["last_action"] == "Bash" and s["role"] == "architect", s
     assert fa.load("a1")["status"] == "running" and fa.load("a1")["title"] == "Fix CI"
     assert fa.load("a2")["status"] == "done" and fa.load("s9") is None
+
+
+def _asst(text, stop="end_turn", tools=()):
+    c = [{"type": "text", "text": text}] + [{"type": "tool_use", "name": n, "input": i} for n, i in tools]
+    return {"type": "assistant", "message": {"stop_reason": stop, "content": c}}
+
+
+def test_signals_ask_setting_turn_spawn():
+    ents = [
+        {"type": "agent-setting", "agentSetting": "fm:architect"},
+        {"type": "user", "timestamp": "2026-10-29T08:00:00Z", "message": {"content": "do it"}},
+        _asst("", "tool_use", [(fa.SPAWN_TOOL, {"title": "Fix review card", "prompt": "x"})]),
+        {"type": "user", "message": {"content": [{"type": "tool_result", "content": "ok"}]}},
+        _asst("Хийлээ.\n\nАль хувилбарыг сонгох вэ?"),
+    ]
+    sig = fa._signals(ents)
+    assert sig["agent_setting"] == "fm:architect" and sig["turn_started"] == "2026-10-29T08:00:00Z", sig
+    assert sig["spawns"] == ["Fix review card"] and "сонгох вэ?" in sig["ask"], sig
+    # асуултгүй төгсгөл → ask хоосон; question mark in an earlier paragraph does not count
+    assert fa._signals(ents[:4] + [_asst("Яагаад? Учир нь...\n\nДууслаа.")])["ask"] == ""
+    # AskUserQuestion tool → ask
+    a = _asst("", "tool_use", [("AskUserQuestion", {"questions": [{"question": "A эсвэл B?"}]})])
+    assert fa._signals(ents[:2] + [a])["ask"] == "A эсвэл B?"
+    # scheduled-task run never waits
+    sch = [{"type": "user", "message": {"content": "<scheduled-task name=\"fm-harvester-pc\">..."}}, _asst("OK?")]
+    assert fa._signals(sch)["scheduled"]
+
+
+def test_stop_waits_only_on_real_ask_and_spawn_link():
+    d = _setup()
+    tr = d / "s1.jsonl"
+    tr.write_text("\n".join(json.dumps(e, ensure_ascii=False) for e in [
+        {"type": "agent-setting", "agentSetting": "fm:wiki"},
+        {"type": "user", "message": {"content": "q"}}, _asst("Үүнийг устгах уу?")]) + "\n", encoding="utf-8")
+    fa.hook({"hook_event_name": "Stop", "session_id": "s1", "transcript_path": str(tr)})
+    r = fa.load("s1")
+    assert r["status"] == "waiting" and r["ask"] == "Үүнийг устгах уу?" and r["agent_setting"] == "fm:wiki", r
+    fa.hook({"hook_event_name": "PostToolUse", "session_id": "s1", "tool_name": fa.SPAWN_TOOL,
+             "tool_input": {"title": "Child chip", "prompt": "p"}})
+    fa.save({"id": "c9", "kind": "session", "title": "Child chip", "last_seen": fa.now_iso()})
+    assert fa.link_spawned() == 1 and fa.load("c9")["spawned_by"] == "s1"
 
 
 if __name__ == "__main__":
