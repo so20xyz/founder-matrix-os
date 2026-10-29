@@ -639,7 +639,8 @@ class Dispatcher:
         except ValueError:
             pass
         self._save()
-        _agent_beat("start", cur.id, role=role, title=f"«{ch}» {cur.id}", cwd=str(vault))
+        _agent_beat("start", cur.id, role=role, title=f"«{ch}» {cur.id}", cwd=str(vault), channel=ch,
+                    task=getattr(cur, "task", None) or None)
         log(f"spawn {cur.id} ch={ch} role={role} reason={reason} pid={p.pid} "
             + (f"resume={resume[:8]}" if resume else f"session={sid[:8]}"))
         notify(f"⚙ headless {AGENTS[role]} → «{ch}» {cur.id} ({reason}{', үргэлжлэл' if resume else ''})")
