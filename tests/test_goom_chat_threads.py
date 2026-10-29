@@ -116,4 +116,4 @@ class ThreadReplyToTest(unittest.TestCase):
                                               "🗂 Project", "хариу\nмөр", "pc", datetime(2026, 10, 26, 2, 37, 50))
             self.assertEqual(where, "02-Projects/INAI Investment/Chat/2026-10-26.pc.md")
             line = (Path(v) / where).read_text(encoding="utf-8")
-            self.assertEqual(line, f"- 02:37 · 🗂 Project · ↳ #^msg-20261026023715-app-2ef0 хариу мөр ^msg-{mid}\n")
+            self.assertEqual(line, f"- 02:37 · 🗂 Project · ↳ #^msg-20261026023715-app-2ef0 хариу ⏎ мөр ^msg-{mid}\n")

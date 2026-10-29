@@ -145,20 +145,60 @@ def _clip(s, n=140):
     return s if len(s) <= n else s[: n - 1] + "…"
 
 
+# itge.e 2026-10-29 «энэ надад буцааж хариу өгнө тэ эсвэл би энэ bash-ийг нь унших ёстой юу?»: run card-ийн
+# «Одоо:» мөр энгийн монгол үйл үг (tool-ийн англи нэр биш); дэлгэрэнгүй нь « · »-ийн ард, «▸ N алхам»-д л.
+TOOL_VERBS = {
+    "Read": "файл уншиж байна", "NotebookRead": "файл уншиж байна", "Grep": "хайж байна", "Glob": "файл хайж байна",
+    "LS": "хавтас харж байна", "Edit": "файл засаж байна", "MultiEdit": "файл засаж байна",
+    "Write": "файл бичиж байна", "NotebookEdit": "файл засаж байна", "Bash": "шалгаж байна",
+    "PowerShell": "шалгаж байна", "WebFetch": "вэб хуудас уншиж байна", "WebSearch": "вэбээс хайж байна",
+    "Skill": "skill ачаалж байна", "Agent": "туслах agent ажиллуулж байна", "Task": "туслах agent ажиллуулж байна",
+    "TodoWrite": "ажлаа төлөвлөж байна", "ToolSearch": "хэрэгсэл бэлдэж байна",
+}
+VERB_TEXT = "хариу бичиж байна"
+
+
+def plain_step(progress):
+    """«<монгол үйл үг> · <дэлгэрэнгүй>» → үйл үг (⏳ мөр, «Одоо:»-д); хуучин «⚙ Tool: …» → зураглал."""
+    p = (progress or "").strip()
+    if p.startswith("⚙ "):
+        name = p[2:].split(":", 1)[0].strip()
+        return TOOL_VERBS.get(name) or ("хэрэгсэл ажиллуулж байна" if name.startswith("mcp__") else "ажиллаж байна")
+    if p.startswith("✎ "):
+        return VERB_TEXT
+    return p.split(" · ", 1)[0].strip()
+
+
+def _own_progress(cmd):
+    """Worker өөрөө `fm_goom_chat.py progress --run X "<монгол алхам>"` дуудсан бол тэр бичвэр."""
+    m = re.search(r"fm_goom_chat\.py\"?\s+progress\s+--run\s+\S+\s+[\"'](.+?)[\"']\s*$", cmd or "")
+    return m.group(1).strip() if m else None
+
+
 def progress_from_event(ev):
-    """stream-json мөр → run card-д харуулах сүүлийн алхам («⚙ Tool: …» / «✎ бичвэр»). Хамааралгүй бол None."""
+    """stream-json мөр → run card-ийн сүүлийн алхам «<монгол үйл үг> · <дэлгэрэнгүй>». Хамааралгүй бол None."""
     if not isinstance(ev, dict) or ev.get("type") != "assistant":
         return None
     last = None
     for c in (ev.get("message") or {}).get("content") or []:
         if c.get("type") == "tool_use":
+            name = str(c.get("name") or "")
             inp = c.get("input") or {}
+            own = _own_progress(inp.get("command")) if name in ("Bash", "PowerShell") else None
+            if own:
+                last = own
+                continue
+            if name in ("Bash", "PowerShell") and "fm_goom_chat.py" in str(inp.get("command") or ""):
+                cmd = str(inp.get("command") or "")
+                last = (VERB_TEXT if " reply " in cmd else "асуулт илгээж байна" if " ask " in cmd else None) or last
+                continue
+            verb = TOOL_VERBS.get(name) or ("хэрэгсэл ажиллуулж байна" if name.startswith("mcp__") else "ажиллаж байна")
             what = (inp.get("description") or (Path(str(inp["file_path"])).name if inp.get("file_path") else "")
-                    or inp.get("pattern") or inp.get("url") or inp.get("query") or inp.get("command")
-                    or inp.get("prompt") or "")
-            last = f"⚙ {c.get('name')}: {_clip(what, 110)}" if what else f"⚙ {c.get('name')}"
+                    or inp.get("pattern") or inp.get("url") or inp.get("query") or inp.get("skill")
+                    or inp.get("command") or inp.get("prompt") or "")
+            last = f"{verb} · {_clip(what, 110)}" if what else verb
         elif c.get("type") == "text" and (c.get("text") or "").strip():
-            last = "✎ " + _clip(c["text"].strip().splitlines()[0], 120)
+            last = f"{VERB_TEXT} · " + _clip(c["text"].strip().splitlines()[0], 110)
     return last
 
 
@@ -194,7 +234,7 @@ def heartbeat_line(w, now, every=HEARTBEAT):
     if not prog or now - last < every or prog == w.get("hb_text"):
         return None
     mins = max(1, int((now - (w.get("t0") or now)) // 60))
-    return f"⏳ {mins} мин · {_clip(prog, 120)}"
+    return f"⏳ {mins} мин · {_clip(plain_step(prog), 120)}"
 
 
 def post_heartbeat(vault, r, role, text):
@@ -252,6 +292,41 @@ def ask_state(text):
     return (m.group(1).strip('"') if m else ""), _section(text, "Хариу")
 
 
+# run-20261028163107-app-16da (Academy Season 2): ask-ийг хойшлуулах шийдвэрээр хаасан ч dispatcher
+# «answered → queued» гэж үргэлжлүүлж, worker «Нөгөө сешн дуусахыг хүлээж байна» гэж хариугүй гараад failed
+# болов. Одоо: зөвхөн «Хариулах»-аар (resolution: answered / app-ийн «<хүн> (YYYY-MM-DD HH:MM): …» мөр) эсвэл
+# «үргэлжлүүл» гэсэн хариугаар resume; хаасан/цуцалсан бол run done + хаасан тайлбар.
+_APP_ANSWER = re.compile(r"^\S.{0,40}\(\d{4}-\d\d-\d\d \d\d:\d\d\):\s*\S", re.S)
+_CONTINUE = re.compile(r"үргэлжлүүл|цааш нь|хий\b|тийм|зөвшөөр|болно|go on|continue|proceed", re.I)
+_BUSY = re.compile(r"(сешн|session|төсөл|project)[^\n]{0,60}(дуусахыг хүлээ|завгүй|хүлээж байна|busy|in use)", re.I)
+
+
+def ask_decision(text):
+    """Ask note → ("resume", хариу) | ("close", тайлбар) | ("wait", ""). Хаасан шийдвэр ажлыг дахин эхлүүлэхгүй."""
+    st, ans = ask_state(text)
+    if st not in ("completed", "cancelled", "done"):
+        return "wait", ""
+    m = re.search(r"^resolution:\s*\"?(\w+)", text, re.M)
+    res = m.group(1) if m else ""
+    if res == "answered":
+        return "resume", ans
+    if res != "closed" and st != "cancelled" and _APP_ANSWER.match(ans or ""):
+        return "resume", ans
+    body = re.sub(r"^\S.{0,40}\(\d{4}-\d\d-\d\d \d\d:\d\d\):\s*", "", ans or "").strip()
+    if body and _CONTINUE.search(body) and res != "closed" and st != "cancelled":
+        return "resume", ans
+    return "close", body or ("цуцалсан" if st == "cancelled" else "хаасан")
+
+
+def busy_exit(tail):
+    """Worker хариугүй гарсан шалтгаан нь «төсөл/сешн завгүй» бол True → failed биш, дараалалд үлдэнэ."""
+    res = scan_stream((tail or "").splitlines())["result"] or tail or ""
+    return bool(_BUSY.search(res[-1500:]))
+
+
+HOLD = 300   # секунд: завгүй төслийн run-ийг дахин асаахаас өмнө хүлээх
+
+
 def ask_note(question, options, run_id, run_path, channel, today=None):
     """BOOT «Асуулт = task» хэлбэрийн note (status waiting, waiting_on me, tag ask, «## Асуулт» + сонголтууд)."""
     today = today or time.strftime("%Y-%m-%d")
@@ -264,21 +339,42 @@ def ask_note(question, options, run_id, run_path, channel, today=None):
             f"## Контекст\nHeadless worker-ийн асуулт — run [[{run_path}|{run_id}]]. Хариулмагц ажил үргэлжилнэ.\n")
 
 
-def _rules(chat_py, run_id, py):
+# itge.e 2026-10-29 «чатны хариултын бүтцийг оновчлох»: бүх agent-ийн хариу нэг бүтэцтэй; app «Таны сонголт»-ын
+# мөр бүрийг товч болгож, дарахад itge.e-ийн нэрээр thread-д хариулна. Шийдвэр:
+# 04-Resources/Atomic/decisions/2026-10-29 - Agent-ийн хариултын нэг бүтэц.md
+REPLY_FORMAT = (
+    "Хариултын бүтэц (заавал, редакцийн монгол кирилл, бүтэн өгүүлбэр, гадаад нэр томьёо хаалтанд):\n"
+    "**Товч:** 1–2 өгүүлбэр — юу хийж, юу олсон.\n"
+    "**Олдвор**\n- ≤5 мөр, тус бүр нэг бүтэн өгүүлбэр (тоо, огноо, эх сурвалжтай)\n"
+    "**Санал**\n- юу хийхийг зөвлөж байгаа, яагаад\n"
+    "**Таны сонголт**\n- <сонголт 1 — товч, үйл үгээр>\n- <сонголт 2>\n"
+    "  (itge.e шийдэх зүйл байхгүй бол энэ хэсгийг бүү бич; мөр бүр «- »-ээр эхэлнэ — app товч болгоно)\n"
+    "**Эх сурвалж**\n- линк, vault зам (app эвхэж харуулна)\n"
+)
+
+
+def _rules(chat_py, run_id, py, role="", reply_file=""):
+    rf = reply_file or f"<түр файл, ж: ~/.fmos/goom-dispatch/{run_id}.reply.md>"
+    rl = f" --role {role}" if role else ""
     return (
         "Ажиллах дүрэм (Claude цонхгүй, itge.e app-аас харж байна):\n"
-        f"- Алхам бүрийн дараа явцаа товч мэдээл: \"{py}\" \"{chat_py}\" progress --run {run_id} \"<алхам>\"\n"
+        f"- Алхам бүрийн дараа явцаа энгийн МОНГОЛ хэлээр нэг өгүүлбэрээр мэдээл (tool-ийн англи нэргүй, ж: "
+        f"«эх сурвалжуудыг уншиж байна», «тайлан бичиж байна»): \"{py}\" \"{chat_py}\" progress --run {run_id} \"<алхам>\"\n"
         "- itge.e-ийн шийдвэр хэрэгтэй бол (устгах, гадагш илгээх, push, мөнгө, тодорхойгүй) ӨӨРӨӨ бүү шийд:\n"
         f"  \"{py}\" \"{chat_py}\" ask --run {run_id} \"<асуулт>\" --option \"<сонголт 1>\" --option \"<сонголт 2>\"\n"
         "  гэж асуугаад шууд дуусга (хариу ирэхэд чамайг үргэлжлүүлнэ).\n"
+        "- Төсөл, repo өөр сешнд завгүй бол хариугүй бүү гар — дараалалд үлдээд дараа үргэлжилнэ:\n"
+        f"  \"{py}\" \"{chat_py}\" wait --run {run_id} \"<шалтгаан, монголоор>\"\n"
         "- Хатуу хориг: _trash/-аас гадуур юм устгахгүй (устгах бол _trash/ руу зөө); git push хийхгүй, клиентэд "
         "харагдах суваг/репо руу юу ч илгээхгүй; Discord #gtd-д бичихгүй; 🔒 03-Areas/Business/finances/private/-ийг "
         "уншихгүй.\n"
         "- Task-тай ажил бол: дуусахад task-аа өөрөө хаа — status: completed, completed: огноо, «## Хүргэсэн»-д "
         "файл/commit/шийдвэр; «## Өөрчлөлтийн түүх»-д мөр нэм.\n"
-        f"- Дуусаад ЗААВАЛ ганц удаа хариул (run-ийг done болгоно, гаралтыг --output-оор):\n"
-        f"  \"{py}\" \"{chat_py}\" reply --run {run_id} \"<монгол хариу, 2-6 өгүүлбэр>\" --output \"<vault зам>\"\n"
-        "  Хийж чадахгүй бол шалтгаанаа мөн тэр командаар хариул."
+        + REPLY_FORMAT +
+        "- Дуусаад ЗААВАЛ ганц удаа хариул (run-ийг done болгоно, гаралтыг --output-оор). Олон мөртэй тул хариугаа "
+        f"Write tool-оор {rf} файлд бичээд:\n"
+        f"  \"{py}\" \"{chat_py}\" reply --run {run_id}{rl} --file \"{rf}\" --output \"<vault зам>\"\n"
+        "  Хийж чадахгүй бол шалтгаанаа мөн тэр командаар (мөн бүтэцтэйгээр) хариул."
     )
 
 
@@ -286,15 +382,34 @@ def _py():
     return sys.executable.replace("pythonw", "python")
 
 
-def build_prompt(ch, r, text, chat_py=CHAT_PY):
+def skill_invoke(slug, vault=None):
+    """run `skill:` slug → Skill tool-ийн нэр: Taxonomy note-ийн `invoke:`, эс бөгөөс fm-x → fm:x."""
+    if not slug:
+        return ""
+    if vault:
+        try:
+            t = (Path(vault) / "04-Resources" / "Taxonomy" / "Skill" / f"{slug}.md").read_text(encoding="utf-8")
+            m = re.search(r'^invoke:\s*"?([^"\r\n]+?)"?\s*$', t, re.M)
+            if m:
+                return m.group(1).strip()
+        except OSError:
+            pass
+    return "fm:" + slug[3:] if slug.startswith("fm-") else slug
+
+
+def build_prompt(ch, r, text, chat_py=CHAT_PY, role="", vault=None):
     ctx = "\n".join(f"- {c}" for c in (r.context or [])) or "- (алга)"
     task = f"\nTask: {r.task}" if getattr(r, "task", "") else ""
+    who = f"\nДүр: {gc.ROLES.get(role, role)} — хариу энэ дүрийн нэрээр гарна." if role else ""
+    sk = skill_invoke(getattr(r, "skill", ""), vault)
+    skill = (f"\nitge.e энэ ажилд «{sk}» skill сонгосон — эхлээд Skill tool-оор ачаалж, аргыг нь дага.\n"
+             if sk else "")
     return (
         f"Чи Second Brain OS-ийн headless worker. itge.e Claude нээлгүй app-аас ажил өгсөн.\n"
-        f"Суваг: {ch}\nRun: {r.id} (файл: {r.path}){task}\nКонтекст:\n{ctx}\n\n"
-        f"itge.e-ийн мессеж:\n«{text}»\n\n"
+        f"Суваг: {ch}{who}\nRun: {r.id} (файл: {r.path}){task}\nКонтекст:\n{ctx}\n\n"
+        f"itge.e-ийн мессеж:\n«{text}»\n{skill}\n"
         "Дүрийн note, контекст файлуудыг уншаад ажлыг бодитоор гүйцэтгэ (судалгаа бол огноотой эх сурвалжтай, "
-        "тоо зохиохгүй).\n" + _rules(chat_py, r.id, _py())
+        "тоо зохиохгүй).\n" + _rules(chat_py, r.id, _py(), role, str(LOGDIR / f"{r.id}.reply.md"))
     )
 
 
@@ -313,9 +428,50 @@ def recent_context(msgs, upto_id, n=12):
     return f"Сувгийн сүүлийн {len(prev)} мессеж (өмнөх яриа):\n{lines}\n\n"
 
 
-def answer_prompt(run_id, question, answer, chat_py=CHAT_PY):
+def answer_prompt(run_id, question, answer, chat_py=CHAT_PY, role=""):
     return (f"itge.e таны асуултад хариуллаа.\nАсуулт: {question}\nХариу: «{answer or '(хоосон — батлав)'}»\n\n"
-            "Энэ хариугаар ажлаа үргэлжлүүлж дуусга.\n" + _rules(chat_py, run_id, _py()))
+            "Энэ хариугаар ажлаа үргэлжлүүлж дуусга.\n"
+            + _rules(chat_py, run_id, _py(), role, str(LOGDIR / f"{run_id}.reply.md")))
+
+
+# Composer-ийн model/effort (run `model:`/`effort:`); хоосон эсвэл «claude» бол дүрийн note-ийн
+# `default-model` / `default-effort`, тэр ч алга бол энэ хүснэгт (itge.e 2026-10-29: Wiki = Sonnet high, GTD = Haiku).
+ROLE_DEFAULTS = {"architect": ("claude-opus-5-5", "high"), "wiki": ("claude-sonnet-5-5", "high"),
+                 "research": ("claude-sonnet-5-5", "high"), "creative": ("claude-opus-5-5", "medium"),
+                 "gtd": ("claude-haiku-5-5", "low"), "project": ("claude-sonnet-5-5", "medium")}
+MODEL_ALIAS = {"opus": "claude-opus-5-5", "sonnet": "claude-sonnet-5-5", "haiku": "claude-haiku-5-5"}
+EFFORTS = ("low", "medium", "high", "xhigh", "max")
+_MODEL_RE = re.compile(r"[a-z0-9][a-z0-9.\-]*")
+
+
+def role_note_defaults(vault, role):
+    """ai-workers/*.md-ийн (frontmatter `role: <role>`) default-model, default-effort → (model, effort)."""
+    d = Path(vault) / "03-Areas" / "AI Team" / "ai-workers"
+    for f in sorted(d.glob("*.md")) if d.is_dir() else []:
+        try:
+            t = f.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        m = re.match(r"﻿?---\r?\n(.*?)\r?\n---", t, re.S)
+        if not m or not re.search(rf"^role:\s*\"?{re.escape(role)}\"?\s*$", m.group(1), re.M):
+            continue
+        get = lambda k: (re.search(rf"^{k}:\s*\"?([^\"\r\n]*?)\"?\s*$", m.group(1), re.M) or [None, ""])[1]
+        return get("default-model").strip().lower(), get("default-effort").strip().lower()
+    return "", ""
+
+
+def pick_model(run_model, run_effort, role, note=("", "")):
+    """→ (model, effort) claude CLI-д: run > дүрийн note > ROLE_DEFAULTS. Буруу утгыг алгасна."""
+    base = ROLE_DEFAULTS.get(role, ("", ""))
+    model = ""
+    for v in ((run_model or "").strip().lower(), (note[0] or "").strip().lower(), base[0]):
+        v = MODEL_ALIAS.get(v, v)
+        if v and v != "claude" and _MODEL_RE.fullmatch(v):
+            model = v
+            break
+    effort = next((v for v in ((run_effort or "").strip().lower(), (note[1] or "").strip().lower(), base[1])
+                   if v in EFFORTS), "")
+    return model, effort
 
 
 def fork_source(r, siblings):
@@ -328,9 +484,13 @@ def fork_source(r, siblings):
     return prev[-1].session if prev and prev[-1].status == "running" else ""
 
 
-def worker_cmd(claude, role, resume, session_id, repos, fork=False):
+def worker_cmd(claude, role, resume, session_id, repos, fork=False, model="", effort=""):
     cmd = [claude, "-p", "--agent", AGENTS[role], "--permission-mode", "bypassPermissions",
            "--output-format", "stream-json", "--verbose"]
+    if model:
+        cmd += ["--model", model]
+    if effort:
+        cmd += ["--effort", effort]
     if resume and fork:   # шинэ session id, өмнөх ярианы бүх контексттой
         cmd += ["--resume", resume, "--fork-session", "--session-id", session_id]
     else:
@@ -448,6 +608,7 @@ class Dispatcher:
         self.procs = {}   # run_id → dict(p, t0, ch, role, lf, log, off, progress, session)
         self.claude = shutil.which("claude") or shutil.which("claude.cmd")
         self.orphans = gc._load(STATE, {})
+        self.hold = {}    # run_id → epoch: төсөл завгүй тул энэ хүртэл дахин бүү асаа
 
     @property
     def timeout(self):
@@ -459,14 +620,22 @@ class Dispatcher:
         cur.update({k: v for k, v in self.orphans.items() if k not in cur})
         gc._save(STATE, cur)
 
-    def _finish(self, vault, runs, run_id, reason, scan=None):
-        """Worker дууссан: done/waiting/cancelled бол хэвээр; running хэвээр бол failed + шалтгаан."""
+    def _finish(self, vault, runs, run_id, reason, scan=None, tail=""):
+        """Worker дууссан: done/waiting/cancelled бол хэвээр; queued (worker `wait`) эсвэл «төсөл завгүй» гэж
+        хариугүй гарсан бол дараалалд үлдээж HOLD хүлээнэ; бусад running → failed + шалтгаан."""
         r = _read_run(vault, runs, run_id)
         if r is None:
             return
         extra = {}
         if scan and scan.get("tokens") and not r.tokens:
             extra["tokens"] = scan["tokens"]
+        if r.status == "queued" or (r.status == "running" and busy_exit(tail)):
+            if r.status == "running":
+                runs.update_run(vault, run_id, status="queued", pid="", progress="төсөл өөр ажилд завгүй — дараалалд хүлээж байна")
+            self.hold[run_id] = time.time() + HOLD
+            log(f"requeued {run_id} (төсөл завгүй, {HOLD} с хүлээнэ)")
+            _agent_beat("finish", run_id, status="waiting", note="төсөл завгүй — дараалалд")
+            return
         if r.status in ("done", "waiting", "cancelled"):
             if extra:
                 try:
@@ -542,7 +711,8 @@ class Dispatcher:
                 w["lf"].close()
             except OSError:
                 pass
-            self._finish(vault, runs, rid, fail_reason(rc, _tail(w["log"])), s)
+            tail = _tail(w["log"])
+            self._finish(vault, runs, rid, fail_reason(rc, tail), s, tail)
         for rid, o in list(self.orphans.items()):
             cur = _read_run(vault, runs, rid)
             if cur is not None and cur.status == "cancelled":
@@ -565,13 +735,18 @@ class Dispatcher:
             if not r.ask:
                 continue
             try:
-                st, _ans = ask_state((Path(vault) / r.ask).read_text(encoding="utf-8"))
+                kind, note = ask_decision((Path(vault) / r.ask).read_text(encoding="utf-8"))
             except OSError:
                 continue
-            if st in ("completed", "cancelled", "done"):
+            if kind == "resume":
                 runs.update_run(vault, r.id, status="queued", progress="itge.e хариулсан — үргэлжлүүлж байна")
-                log(f"answered {r.id} ({st}) → queued")
+                log(f"answered {r.id} → queued")
                 n += 1
+            elif kind == "close":   # хаасан/хойшлуулсан шийдвэр: ажлыг дахин эхлүүлэхгүй
+                runs.update_run(vault, r.id, status="done", completed=gc._now_iso(), pid="",
+                                progress=_clip(f"itge.e асуултыг хаасан: {note}", 150))
+                log(f"ask closed {r.id} → done ({_clip(note, 60)})")
+                _agent_beat("finish", r.id, status="done", note="itge.e асуултыг хаасан")
         return n
 
     def spawn(self, vault, store, runs, ch, r, role, reason):
@@ -594,13 +769,14 @@ class Dispatcher:
             q = _section(atext, "Асуулт").splitlines()[0] if _section(atext, "Асуулт") else ""
             if st == "cancelled":
                 ans = ans or "(itge.e асуултыг цуцалсан — тэр алхмыг хийхгүй)"
-            prompt = answer_prompt(cur.id, q, ans)
+            prompt = answer_prompt(cur.id, q, ans, role=role)
         else:
             mid = cur.id[len("run-"):]
             msgs = store.read_messages(vault, ch)
             me = next((m for m in msgs if m.id == mid), None)
             text = (me.text if me else "") or gc._run_body(vault, cur)
-            prompt = build_prompt(ch, cur, text)
+            text = text.replace(" ⏎ ", "\n")
+            prompt = build_prompt(ch, cur, text, role=role, vault=vault)
         fork = "" if resume else fork_source(cur, siblings)
         if fork:   # хариу itge.e-ийн мессежийн thread-д очно; дараагийн thread мессеж энэ session-ийг үргэлжлүүлнэ
             resume = fork
@@ -619,7 +795,9 @@ class Dispatcher:
         lf = open(logp, "a", encoding="utf-8")
         start_off = logp.stat().st_size
         repos = list(self.cfg["repos"]) + ([str(PLUGIN_REPO)] if (PLUGIN_REPO / ".git").exists() else [])
-        cmd = worker_cmd(self.claude, role, resume, sid, [d for d in dict.fromkeys(repos) if Path(d).is_dir()], fork=bool(fork))
+        model, effort = pick_model(cur.model, getattr(cur, "effort", ""), role, role_note_defaults(vault, role))
+        cmd = worker_cmd(self.claude, role, resume, sid, [d for d in dict.fromkeys(repos) if Path(d).is_dir()],
+                         fork=bool(fork), model=model, effort=effort)
         env = dict(os.environ, FM_VAULT=str(vault), FM_HEADLESS_RUN=cur.id)
         tokf = gc.FMOS / "claude-token"   # `claude setup-token`-ий урт хугацааны token (desktop host refresh-гүй үед)
         if tokf.is_file() and not env.get("CLAUDE_CODE_OAUTH_TOKEN"):
@@ -641,7 +819,7 @@ class Dispatcher:
         self._save()
         _agent_beat("start", cur.id, role=role, title=f"«{ch}» {cur.id}", cwd=str(vault), channel=ch,
                     task=getattr(cur, "task", None) or None)
-        log(f"spawn {cur.id} ch={ch} role={role} reason={reason} pid={p.pid} "
+        log(f"spawn {cur.id} ch={ch} role={role} model={model or '-'} effort={effort or '-'} reason={reason} pid={p.pid} "
             + (f"resume={resume[:8]}" if resume else f"session={sid[:8]}"))
         notify(f"⚙ headless {AGENTS[role]} → «{ch}» {cur.id} ({reason}{', үргэлжлэл' if resume else ''})")
 
@@ -655,7 +833,8 @@ class Dispatcher:
             self.wake_answered(vault, store, runs)
             queued = all_queued(vault, store, runs)
             busy = {w.get("session") for w in self.procs.values() if w.get("session")}
-            blocked = set()
+            self.hold = {k: t for k, t in self.hold.items() if t > now}
+            blocked = set(self.hold)   # төсөл завгүй гэж буцсан run-ууд HOLD хүлээнэ
             if busy:
                 win = float(self.cfg["resume_window_min"]) * 60
                 for ch, r in queued:

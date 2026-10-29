@@ -756,6 +756,26 @@ def parse_thread_reply_to(v):
     return (m.group(1).rsplit("/", 1)[0], m.group(2)) if m else None
 
 
+def encode_lines(text):
+    """Олон мөрт хариуг нэг мөрөнд: мөр хоорондыг « ⏎ » (store.append_message-тэй ижил; app буцааж задална)."""
+    lines = [" ".join(ln.split()) for ln in str(text or "").replace(chr(13), "").split(chr(10))]
+    while lines and not lines[-1]:
+        lines.pop()
+    while lines and not lines[0]:
+        lines.pop(0)
+    return " ⏎ ".join(lines)
+
+
+def reply_role(role, assignee, channel):
+    """Хариуны гарын үсэг = run-ийн дүр (itge.e 2026-10-29: Wiki сувагт «Architect» гарч байв):
+    --role > assignee > сувгийн нэр (ai-workers/Chat/<Role>) > project."""
+    import fm_goom_dispatch as gd
+    r = (role or "").strip().lower()
+    if r in ROLES:
+        return r
+    return gd.role_for(assignee, channel) or "project"
+
+
 def thread_reply_line(vault, chat_dir, root_id, author, text, device, now=None):
     """Item thread-ийн эх сувагт `- HH:MM · <role> · ↳ #^msg-<root> text ^msg-<id>` мөр нэмнэ (append)."""
     import secrets
@@ -763,7 +783,7 @@ def thread_reply_line(vault, chat_dir, root_id, author, text, device, now=None):
     now = now or datetime.now()
     dev = re.sub(r"[^a-z0-9]", "", (device or "pc").lower()) or "pc"
     mid = f"{now:%Y%m%d%H%M%S}-{dev}-{secrets.token_hex(2)}"
-    body = " ".join((text or "").split())
+    body = encode_lines(text)
     folder = Path(vault) / chat_dir
     folder.mkdir(parents=True, exist_ok=True)
     f = folder / f"{now:%Y-%m-%d}.{dev}.md"
@@ -779,9 +799,7 @@ def run_reply(api, run_id, text, role=None, timeout=30, outputs=None):
     r = runs._parse(runs._find(vault, run_id).read_text(encoding="utf-8"), "")
     out = {"outputs": list(dict.fromkeys([*r.outputs, *outputs]))} if outputs else {}
     dest = parse_reply_to(r.reply_to)
-    role = (role or r.assignee or "architect").strip().lower()
-    if role not in ROLES:
-        role = "architect"
+    role = reply_role(role, r.assignee, r.channel)
     th = parse_thread_reply_to(r.reply_to)
     if th:   # item thread-ээс ирсэн run: асуусан thread-д нь хариулна
         mid, where = thread_reply_line(vault, th[0], th[1], ROLES[role], text, vault_device())
@@ -847,6 +865,14 @@ def vault_run_ask(run_id, question, options=(), vault=None):
     runs.update_run(vault, run_id, status="waiting", ask=rel, progress="❓ itge.e-ийн шийдвэр хүлээж байна")
     return {"run_id": run_id, "status": "waiting", "ask": rel,
             "next": "Одоо ажлаа зогсоож гар — хариу ирэхэд чамайг үргэлжлүүлнэ."}
+
+
+def vault_run_wait(run_id, reason, vault=None):
+    """Төсөл/repo өөр сешнд завгүй: run-ийг failed биш queued болгож буцаана (dispatcher HOLD хүлээгээд дахин авна)."""
+    _, runs = vault_lib()
+    t = " ".join(str(reason or "").split())[:140] or "төсөл завгүй"
+    r = runs.update_run(vault or vault_path(), run_id, status="queued", pid="", progress=f"дараалалд хүлээж байна: {t}")
+    return {"run_id": r.id, "status": r.status}
 
 
 def vault_run_done(run_id, outputs=None, tokens=0, failed=False):
@@ -951,11 +977,13 @@ def main(argv=None):
     d = sub.add_parser("run-done"); d.add_argument("--run", required=True); d.add_argument("--output", action="append", default=[], dest="outputs")
     d.add_argument("--tokens", type=int, default=0); d.add_argument("--failed", action="store_true")
     rp = sub.add_parser("reply", help="run-ий reply_to (API/board чат) руу хариулж done болгоно")
-    rp.add_argument("--run", required=True); rp.add_argument("text"); rp.add_argument("--role")
+    rp.add_argument("--run", required=True); rp.add_argument("text", nargs="?", default=""); rp.add_argument("--role")
+    rp.add_argument("--file", help="олон мөртэй бүтэцтэй хариу (UTF-8) — Товч/Олдвор/Санал/Таны сонголт")
     rp.add_argument("--output", action="append", default=[], dest="outputs", help="гаралтын vault зам (олон удаа)")
     pg = sub.add_parser("progress", help="headless worker-ийн алхам → run card"); pg.add_argument("--run", required=True); pg.add_argument("text")
     ak = sub.add_parser("ask", help="itge.e-ээс шийдвэр асууж run-ийг waiting болгоно"); ak.add_argument("--run", required=True)
     ak.add_argument("question"); ak.add_argument("--option", action="append", default=[], dest="options")
+    wt = sub.add_parser("wait", help="төсөл завгүй: run-ийг дараалалд буцаана"); wt.add_argument("--run", required=True); wt.add_argument("reason")
     rt = sub.add_parser("retry", help="failed run-ийг дахин дараалалд (Дахин ажиллуулах)"); rt.add_argument("--run", required=True)
     sub.add_parser("ensure-agents")
     y = sub.add_parser("sync-sessions"); y.add_argument("--dry-run", action="store_true")
@@ -966,6 +994,8 @@ def main(argv=None):
         return stall_hint_hook()
     if a.cmd == "retry":
         print(json.dumps(vault_run_retry(a.run), ensure_ascii=False)); return 0
+    if a.cmd == "wait":
+        print(json.dumps(vault_run_wait(a.run, a.reason), ensure_ascii=False)); return 0
     if a.cmd == "progress":
         print(json.dumps(vault_run_progress(a.run, a.text), ensure_ascii=False)); return 0
     if a.cmd == "ask":
@@ -984,7 +1014,10 @@ def main(argv=None):
             return vault_watch(sid, a.timeout)
     api = _cfg_url()
     if a.cmd == "reply":
-        print(json.dumps(run_reply(api, a.run, a.text, a.role, outputs=a.outputs), ensure_ascii=False)); return 0
+        text = Path(a.file).expanduser().read_text(encoding="utf-8-sig") if a.file else a.text
+        if not (text or "").strip():
+            raise SystemExit("reply: хариу хоосон (text эсвэл --file)")
+        print(json.dumps(run_reply(api, a.run, text, a.role, outputs=a.outputs), ensure_ascii=False)); return 0
     if a.cmd == "ensure-agents":
         for role, uid, st in ensure_agents(api):
             print(f"{ROLES[role]}: user {uid} — {st}")

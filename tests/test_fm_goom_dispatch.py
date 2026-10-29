@@ -158,3 +158,138 @@ def test_post_heartbeat_routes_to_thread(tmp_path, monkeypatch):
     d.post_heartbeat(tmp_path, R(reply_to="thread:02-Projects/A/Chat#20261029150000-pc-ab12"), "wiki", "y")
     assert calls[-1] == ("thread", "02-Projects/A", "20261029150000-pc-ab12", "y")
     assert d.post_heartbeat(tmp_path, R(reply_to="chat:5:9"), "wiki", "z") is None
+
+
+# ---- 2026-10-29: хариултын бүтэц, model/effort, монгол явц, гарын үсэг ----
+def test_prompt_has_reply_format_role_skill_and_file(tmp_path):
+    r = R("run-20261029120000-app-0001", "queued", "Wiki", [], "", "x.md")
+    r = r._replace() if hasattr(r, "_replace") else r
+    t = gd.build_prompt("Wiki", r, "үз", role="wiki", vault=tmp_path)
+    for s in ("**Товч:**", "**Олдвор**", "**Санал**", "**Таны сонголт**", "--role wiki", "--file", "📚 Wiki"):
+        assert s in t, s
+    R2 = namedtuple("R2", "id status assignee context task path skill")
+    t = gd.build_prompt("Wiki", R2(r.id, "queued", "", [], "", "x.md", "fm-watch"), "үз", role="wiki")
+    assert "«fm:watch» skill" in t
+
+
+def test_skill_invoke_reads_taxonomy(tmp_path):
+    d = tmp_path / "04-Resources" / "Taxonomy" / "Skill"
+    d.mkdir(parents=True)
+    (d / "pdf.md").write_text('---\ninvoke: "anthropic-skills:pdf"\n---\n', encoding="utf-8")
+    assert gd.skill_invoke("pdf", tmp_path) == "anthropic-skills:pdf"
+    assert gd.skill_invoke("fm-save", tmp_path) == "fm:save"
+    assert gd.skill_invoke("", tmp_path) == ""
+
+
+def test_pick_model_run_then_note_then_default():
+    assert gd.pick_model("claude-haiku-5-5", "low", "wiki") == ("claude-haiku-5-5", "low")
+    assert gd.pick_model("claude", "", "wiki", ("opus", "")) == ("claude-opus-5-5", "high")
+    assert gd.pick_model("", "", "gtd") == ("claude-haiku-5-5", "low")
+    assert gd.pick_model("bad model", "huge", "wiki") == ("claude-sonnet-5-5", "high")
+
+
+def test_role_note_defaults(tmp_path):
+    d = tmp_path / "03-Areas" / "AI Team" / "ai-workers"
+    d.mkdir(parents=True)
+    (d / "Wiki.md").write_text("---\nrole: wiki\ndefault-model: claude-sonnet-5-5\ndefault-effort: high\n---\n",
+                               encoding="utf-8")
+    assert gd.role_note_defaults(tmp_path, "wiki") == ("claude-sonnet-5-5", "high")
+    assert gd.role_note_defaults(tmp_path, "gtd") == ("", "")
+
+
+def test_worker_cmd_model_effort():
+    cmd = gd.worker_cmd("claude", "wiki", "", "sid", [], model="claude-sonnet-5-5", effort="high")
+    i = cmd.index("--model")
+    assert cmd[i:i + 4] == ["--model", "claude-sonnet-5-5", "--effort", "high"]
+    assert "--model" not in gd.worker_cmd("claude", "wiki", "", "sid", [])
+
+
+def test_progress_is_plain_mongolian():
+    ev = {"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "name": "Bash", "input": {"description": "Verify the tool-vs-system atom name"}}]}}
+    p = gd.progress_from_event(ev)
+    assert p.startswith("шалгаж байна · Verify"), p
+    assert gd.plain_step(p) == "шалгаж байна"
+    own = {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash", "input": {
+        "command": 'python "C:/x/fm_goom_chat.py" progress --run run-1 "эх сурвалж уншиж байна"'}}]}}
+    assert gd.progress_from_event(own) == "эх сурвалж уншиж байна"
+    assert gd.plain_step("⚙ Read: f.jpg") == "файл уншиж байна"
+    assert gd.plain_step("✎ All done") == "хариу бичиж байна"
+    w = {"t0": 1000.0, "progress": "файл уншиж байна · a.md"}
+    assert gd.heartbeat_line(w, 1000 + gd.HEARTBEAT) == "⏳ 5 мин · файл уншиж байна"
+
+
+def test_reply_role_uses_channel_not_architect():
+    assert gc.reply_role("", "", "Wiki") == "wiki"
+    assert gc.reply_role("", "Creative", "Wiki") == "creative"
+    assert gc.reply_role("gtd", "", "Wiki") == "gtd"
+    assert gc.reply_role("", "", "INAI Investment") == "project"
+
+
+def test_encode_lines_keeps_structure():
+    assert gc.encode_lines("**Товч:** a\n\n**Олдвор**\n- b  c\n") == "**Товч:** a ⏎  ⏎ **Олдвор** ⏎ - b c"
+
+
+# ---- ask хаалт ба завгүй төсөл (run-20261028163107-app-16da) ----
+def _ask(status, answer, resolution=""):
+    res = f"resolution: {resolution}\n" if resolution else ""
+    return f"---\ntype: task\nstatus: {status}\n{res}---\n\n## Асуулт\nVercel рүү гаргах уу?\n\n## Хариу\n{answer}\n"
+
+
+def test_ask_decision_resume_only_on_answer():
+    assert gd.ask_decision(_ask("waiting", ""))[0] == "wait"
+    assert gd.ask_decision(_ask("completed", "itge.e (2026-10-29 17:50): тийм, гарга"))[0] == "resume"
+    assert gd.ask_decision(_ask("completed", "x", "answered"))[0] == "resume"
+    k, note = gd.ask_decision(_ask("completed", "Season 2 дуусахаар эргэж харна — одоохондоо хойшлуулав"))
+    assert (k, note) == ("close", "Season 2 дуусахаар эргэж харна — одоохондоо хойшлуулав")
+    assert gd.ask_decision(_ask("cancelled", "itge.e (2026-10-29 17:50): хэрэггүй"))[0] == "close"
+    assert gd.ask_decision(_ask("completed", "хэрэггүй боллоо", "closed"))[0] == "close"
+    assert gd.ask_decision(_ask("completed", "за үргэлжлүүл"))[0] == "resume"
+
+
+class _Runs:
+    def __init__(self, r):
+        self.r, self.updates = r, []
+
+    def _find(self, vault, rid):
+        return self
+
+    def read_text(self, encoding=None):
+        return ""
+
+    def _parse(self, text, path):
+        return self.r
+
+    def update_run(self, vault, rid, **kw):
+        self.updates.append(kw)
+
+
+def test_finish_busy_keeps_queued_and_holds(monkeypatch):
+    RR = namedtuple("RR", "id status tokens")
+    runs = _Runs(RR("run-1", "running", 0))
+    monkeypatch.setattr(gd, "notify", lambda *_: None)
+    monkeypatch.setattr(gd, "_agent_beat", lambda *a, **k: None)
+    d = gd.Dispatcher(cfg=dict(gd.DEFAULTS))
+    tail = '{"type":"result","result":"Нөгөө сешн дуусахыг хүлээж байна — Academy төсөл завгүй."}'
+    d._finish("v", runs, "run-1", "worker rc=0, хариу ирээгүй", tail=tail)
+    assert runs.updates[-1]["status"] == "queued" and "run-1" in d.hold
+    runs2 = _Runs(RR("run-2", "running", 0))
+    d._finish("v", runs2, "run-2", "worker rc=1, хариу ирээгүй", tail="boom")
+    assert runs2.updates[-1]["status"] == "failed" and "run-2" not in d.hold
+
+
+def test_wake_answered_closes_instead_of_resuming(tmp_path, monkeypatch):
+    RW = namedtuple("RW", "id ask")
+    (tmp_path / "a.md").write_text(_ask("completed", "одоохондоо хойшлуулав"), encoding="utf-8")
+    (tmp_path / "b.md").write_text(_ask("completed", "itge.e (2026-10-29 17:50): тийм"), encoding="utf-8")
+    monkeypatch.setattr(gd, "all_runs", lambda *a: [("ch", RW("run-a", "a.md")), ("ch", RW("run-b", "b.md"))])
+    monkeypatch.setattr(gd, "_agent_beat", lambda *a, **k: None)
+    seen = {}
+
+    class U:
+        def update_run(self, vault, rid, **kw):
+            seen[rid] = kw
+    d = gd.Dispatcher(cfg=dict(gd.DEFAULTS))
+    assert d.wake_answered(tmp_path, None, U()) == 1
+    assert seen["run-a"]["status"] == "done" and "хойшлуулав" in seen["run-a"]["progress"]
+    assert seen["run-b"]["status"] == "queued"
