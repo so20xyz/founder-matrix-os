@@ -26,7 +26,7 @@ def utc(day, hh, mm=0):
 
 
 def main():
-    tmp = Path(tempfile.mkdtemp())
+    tmp = Path(tempfile.mkdtemp()).resolve()   # macOS /var→/private/var, Windows 8.3 нэр — cwd таарахын тулд
     v = tmp / "vault"
     projects = tmp / "projects" / "key"
     fr.PROJECTS = tmp / "projects"
