@@ -115,6 +115,33 @@ def main():
         for p in ("C:/Users/U/AppData/Local/Temp/claude/x/scratchpad/rm23.js", "C:/Users/U/.claude/projects/p/memory/figma.md"):
             fire(mod, {"session_id": "sid1", "tool_name": "Write", "tool_input": {"file_path": p}, "cwd": "/x"})
         check(new.read_text(encoding="utf-8") == before, "temp/scratchpad/memory edits are not logged")
+
+        # itge.e 2026-10-30: an agent completing its task today posts one «✅ Дууссан» line to its role channel
+        import datetime, types
+        sent = []
+        fake = types.ModuleType("fm_goom_chat")
+        fake.ROLES = {"wiki": "📚 Wiki"}
+        fake.vault_device = lambda: "pc"
+        fake.vault_lib = lambda: (types.SimpleNamespace(append_message=lambda v, ch, a, t, d: sent.append((ch, a, t))), None)
+        sys.modules["fm_goom_chat"] = fake
+        today = datetime.date.today().isoformat()
+        wt = task.with_name("Wiki - IG пост лавлагаа.md")
+        wt.write_text(f"---\ntype: task\nstatus: completed\ncompleted: {today} 09:40\nowner: \"📚 Wiki\"\n---\n\n# Wiki - IG пост лавлагаа\n\n"
+                      "## Хүргэсэн\n- [[04-Resources/references/Grid системийн 5 төрөл]] (cover)\n", encoding="utf-8")
+        ev_w = {"session_id": "sid2", "tool_name": "Edit", "tool_input": {"file_path": str(wt)}, "cwd": "/x"}
+        fire(mod, ev_w)
+        check(len(sent) == 1 and sent[0][0] == "Wiki" and sent[0][1] == "📚 Wiki" and "✅ Дууссан: Wiki - IG пост лавлагаа" in sent[0][2]
+              and "Grid системийн 5 төрөл" in sent[0][2], "completed agent task → one line in its role channel", sent)
+        fire(mod, ev_w)
+        check(len(sent) == 1, "announced once per task", len(sent))
+        mine = task.with_name("Миний task.md")
+        mine.write_text(f"---\ntype: task\nstatus: completed\ncompleted: {today}\nowner: me\n---\n\n# Миний\n", encoding="utf-8")
+        fire(mod, {"session_id": "sid2", "tool_name": "Edit", "tool_input": {"file_path": str(mine)}, "cwd": "/x"})
+        old = task.with_name("Хуучин.md")
+        old.write_text("---\ntype: task\nstatus: completed\ncompleted: 2026-01-01\nowner: wiki\n---\n\n# Хуучин\n", encoding="utf-8")
+        fire(mod, {"session_id": "sid2", "tool_name": "Edit", "tool_input": {"file_path": str(old)}, "cwd": "/x"})
+        check(len(sent) == 1, "itge.e's own tasks and tasks completed on another day are not announced", sent)
+        sys.modules.pop("fm_goom_chat", None)
     print(f"\n{len(FAILS)} failed")
     sys.exit(1 if FAILS else 0)
 

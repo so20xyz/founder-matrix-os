@@ -146,6 +146,71 @@ def safe_write(task, data, tries=5):
         except OSError: pass
 
 
+ROLE_CHANNEL = {"wiki": "Wiki", "architect": "Architect", "creative": "Creative Director", "gtd": "GTD",
+                "project": "Project", "research": "Research"}
+ANNOUNCED = ".fmos/announced-tasks.json"
+
+
+def _section_first_item(text, titles):
+    for t in titles:
+        m = re.search(rf"^##\s+{re.escape(t)}\s*$(.*?)(?=^##\s|\Z)", text, re.M | re.S)
+        if not m:
+            continue
+        for line in m.group(1).splitlines():
+            s = line.strip()
+            if s.startswith(("-", "*")):
+                s = re.sub(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]", lambda x: (x.group(2) or x.group(1)).split("/")[-1], s.lstrip("-* "))
+                return cell(s, 160)
+    return ""
+
+
+def announce_completed(ev, vault, today=None):
+    """itge.e 2026-10-30 «Wiki-ийн апп сувагт дууссан ажлын товч мөрийг бичдэг болго»: an agent saving its task
+    as completed (today) posts one «✅ Дууссан: …» line to its role's app channel — Discord-born work no longer
+    leaves the channel empty. Once per task (~/.fmos/announced-tasks.json); 🔒 private and itge.e's own tasks skip."""
+    if ev.get("tool_name") not in ("Write", "Edit", "MultiEdit"):
+        return None
+    rel = short_path((ev.get("tool_input") or {}).get("file_path", ""), vault)
+    if not rel.startswith(TASKS_DIR) or not rel.endswith(".md") or "/" in rel[len(TASKS_DIR):]:
+        return None
+    try:
+        text = (vault / rel).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    m = re.search(r"^status:\s*(\S+)", text, re.M)
+    if not m or m.group(1).strip("\"'") != "completed" or re.search(r"^private:\s*true", text, re.M):
+        return None
+    today = today or datetime.date.today().isoformat()
+    c = re.search(r"^completed:\s*\"?(\d{4}-\d{2}-\d{2})", text, re.M)
+    if not c or c.group(1) != today:
+        return None
+    o = re.search(r"^owner:\s*(.+)$", text, re.M)
+    role = next((w for w in re.findall(r"[a-z]+", (o.group(1) if o else "").lower()) if w in ROLE_CHANNEL), None)
+    if not role:
+        return None
+    seen_f = Path.home() / ANNOUNCED
+    try:
+        seen = set(json.loads(seen_f.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        seen = set()
+    if rel in seen:
+        return None
+    h1 = re.search(r"^#\s+(.+)$", text, re.M)
+    title = cell(h1.group(1) if h1 else Path(rel).stem, 120)
+    done = _section_first_item(text, ("Хүргэсэн", "Үр дүн"))
+    msg = f"✅ Дууссан: {title}" + (f" — {done}" if done else "") + f" · [[{rel[:-3]}]]"
+    import fm_goom_chat as gc
+    store, _ = gc.vault_lib()
+    store.append_message(vault, ROLE_CHANNEL[role], gc.ROLES.get(role, role), msg, gc.vault_device())
+    seen.add(rel)
+    try:
+        seen_f.parent.mkdir(parents=True, exist_ok=True)
+        seen_f.write_text(json.dumps(sorted(seen), ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass
+    return msg
+
+
 def main():
     try:
         ev = json.load(sys.stdin)
@@ -156,6 +221,10 @@ def main():
         vault = Path(fmconfig.vault_dir())
     except Exception:
         return
+    try:
+        announce_completed(ev, vault)
+    except Exception:
+        pass
     if follow_task(ev.get("session_id"), ev, vault):
         return   # task note-ийг өөрийг нь засаж байна — түүхэнд «засвар · task» мөр нэмэхгүй
     rel = active_task(ev.get("session_id"))
