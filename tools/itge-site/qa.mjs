@@ -31,11 +31,12 @@ const PAGES = (function () {
   walk('lessons', 'lesson-')
   walk('journal', 'jr-')
   out.push(['journal', 'journal/'])
-  for (const d of ['program', 'library', 'glossary', 'about']) {
+  for (const d of ['program', 'library', 'glossary', 'about', 'resources']) {
     if (fs.existsSync(path.join(SITE, d, 'index.html'))) out.push([d, d + '/'])
   }
   return out
 })()
+const MODE = process.env.THEME === 'dark' ? 'dark' : 'light'   // THEME=dark node qa.mjs
 const WIDTHS = process.argv[2] ? [Number(process.argv[2])] : [390, 768, 1440]
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 
@@ -63,7 +64,7 @@ try {
 
   for (const w of WIDTHS) {
     for (const [name, p] of PAGES) {
-      const ctx = await browser.newContext({ viewport: { width: w, height: 900 }, deviceScaleFactor: 1 })
+      const ctx = await browser.newContext({ viewport: { width: w, height: 900 }, deviceScaleFactor: 1, colorScheme: MODE })
       const page = await ctx.newPage()
       const errors = [], bad = []
       page.on('console', m => { if (m.type() === 'error') errors.push(m.text().slice(0, 160)) })
@@ -92,7 +93,7 @@ try {
         toc: document.querySelectorAll('.atoc a').length,
       })).catch(() => ({}))
 
-      const file = path.join(OUT, `v2-${name}_${w}.png`)
+      const file = path.join(OUT, `v2-${name}_${w}${MODE === 'dark' ? '-dark' : ''}.png`)
       await page.screenshot({ path: file, fullPage: true }).catch(e => errors.push('shot: ' + e.message))
       report.push({ page: name, width: w, ...m, errors, http: bad })
       const flag = (errors.length || bad.length || (m.overflow || 0) > 1 || (m.brokenImg || []).length) ? '⚠' : '·'
