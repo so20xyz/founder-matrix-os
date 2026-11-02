@@ -546,6 +546,20 @@ def _release_task(ref, sid):
     return "RELEASED"
 
 
+def _prev_section(tdir, proj, exclude, vault):
+    """«## Өмнөх» (itge.e 2026-11-02): ижил төслийн сүүлийн task-ууд — skills/task/scripts/fm_task_prev.py-тай нэг код."""
+    if not proj: return ""
+    here = Path(__file__).resolve()
+    for root in (here.parents[2], here.parents[2] / "plugins" / "fm"):   # canon (plugins/fm/tools/relay) эсвэл shim (tools/relay)
+        d = root / "skills" / "task" / "scripts"
+        if (d / "fm_task_prev.py").exists():
+            if str(d) not in sys.path: sys.path.insert(0, str(d))
+            from fm_task_prev import section
+            prev = section(tdir, proj, exclude=exclude, rel_dir=tdir.relative_to(vault).as_posix())
+            return ("\n" + prev) if prev else ""
+    return ""
+
+
 def d_task(args, sid):
     """GTD task (itge.e 2026-10-05): PARA has no tasks — a task is created on purpose, owned by a dural (session role),
     and the owner is notified in its Discord channel. Usage:
@@ -575,7 +589,7 @@ def d_task(args, sid):
         f"date: {today}", f"updated: {today}", "type: task", f"status: {status}", f"owner: \"{owner}\"",
         f"priority: {opt('--prio', '🟡')}", f"due: {opt('--due')}", f"project: \"[[{proj}]]\"" if proj else "project:",
         *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []), *([f"device: {opt('--device')}"] if opt("--device") else []), *(["private: true"] if secret else []),
-        "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n", encoding="utf-8")
+        "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n" + _prev_section(tdir, proj, safe, vault), encoding="utf-8")
     _new = f.read_bytes(); _verify_write(f, _new)
     if not secret: _task_backup(f, _new)
     try:

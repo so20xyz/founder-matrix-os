@@ -556,6 +556,11 @@ def cmd_new(vault: Path, args: List[str]) -> None:
     wf = _opt(args, "--workflow").strip()
     if wf:
         fm, body = attach_workflow(vault, fm, body, wf)
+    if project:  # «## Өмнөх»: ижил төслийн сүүлийн task-ууд (itge.e 2026-11-02, fm_task_prev)
+        from fm_task_prev import section
+        prev = section(folder, project, exclude=name, rel_dir=folder.relative_to(vault).as_posix())
+        if prev:
+            body += [""] + prev.rstrip("\n").split("\n")
     body = append_progress(body, "- %s 📌 үүсгэв" % now_stamp())
     write(path, join_note(fm, body))
     _out("task → %s" % path.relative_to(vault).as_posix())

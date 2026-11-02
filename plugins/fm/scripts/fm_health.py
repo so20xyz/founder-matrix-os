@@ -128,7 +128,24 @@ def check_goom_sync():
         add("❌" if age > 10 else "✅", "goom-tick", f"сүүлд {age} мин өмнө ажилласан" + (" — гацсан байж магадгүй (Task Scheduler goom-tick)" if age > 10 else ""))
 
 
-for f in (check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text, check_goom_sync):
+def check_task_flow():
+    """Төсөлтэй task-ийн хэд нь өмнөх task руугаа холбоостой вэ (itge.e 2026-11-02: 20% байв, «## Өмнөх» нэмэв)."""
+    tdir = VAULT / "01-GTD/Tasks"
+    if not tdir.exists(): return
+    names, rows = set(), []
+    for p in tdir.glob("*.md"):
+        t = p.read_text(encoding="utf-8", errors="ignore")
+        m = re.match(r"---\n(.*?)\n---", t, re.S)
+        if not m or not re.search(r"^type:\s*task", m.group(1), re.M): continue
+        pr = re.search(r"^project:[ \t]*(\S.*)$", m.group(1), re.M)
+        names.add(p.stem)
+        if pr and "[[" in pr.group(1): rows.append((p.stem, re.findall(r"\[\[([^\]|#]+)", t[m.end():])))
+    linked = sum(1 for s, ls in rows if any(l.split("/")[-1] in names and l.split("/")[-1] != s for l in ls))
+    pct = round(100 * linked / len(rows)) if rows else 0
+    add("⚠" if pct < 50 else "✅", "task flow", f"төсөлтэй {len(rows)} task-ийн {pct}% нь өмнөх task руугаа холбоостой (зорилт ≥50%)")
+
+
+for f in (check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text, check_goom_sync, check_task_flow):
     try: f()
     except Exception as e: add("❌", f.__name__, f"шалгалт унав: {e}")
 
