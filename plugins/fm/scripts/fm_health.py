@@ -28,7 +28,8 @@ def check_broadcast():
 
 
 def check_boot_size():
-    for rel, lim in (("_system/BOOT.md", 12_000), ("_CLAUDE.md", 30_000)):
+    # _CLAUDE.md inject хийгддэггүй (лавлах) — сешн бүрийн ачаалал = BOOT.md + hook-ийн контекст л
+    for rel, lim in (("_system/BOOT.md", 12_000),):
         p = VAULT / rel
         if not p.exists(): continue
         n = p.stat().st_size
