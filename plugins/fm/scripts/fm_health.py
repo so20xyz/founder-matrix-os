@@ -128,6 +128,17 @@ def check_goom_sync():
         add("❌" if age > 10 else "✅", "goom-tick", f"сүүлд {age} мин өмнө ажилласан" + (" — гацсан байж магадгүй (Task Scheduler goom-tick)" if age > 10 else ""))
 
 
+def check_strays():
+    """Илүүдэл файл, хоосон хавтас (itge.e 2026-11-02: root-д png, sortspec, давхар References hub)."""
+    root_ok = {"AGENTS.md", "Home.md", "_CLAUDE.md", "CLAUDE.md"}
+    stray = [p.name for p in VAULT.iterdir() if p.is_file() and p.name not in root_ok and not p.name.startswith(".")]
+    add("⚠" if stray else "✅", "root files", ", ".join(stray) if stray else "зөвхөн Home, AGENTS, _CLAUDE")
+    skip = {".obsidian", "_trash", ".backups", ".trash", ".git"}
+    empty = [p.relative_to(VAULT).as_posix() for p in VAULT.rglob("*") if p.is_dir() and not (skip & set(p.relative_to(VAULT).parts))
+             and not any(p.iterdir())]
+    add("⚠" if len(empty) > 10 else "✅", "empty folders", f"{len(empty)}" + (": " + "; ".join(empty[:4]) if empty else ""))
+
+
 def check_task_flow():
     """Төсөлтэй task-ийн хэд нь өмнөх task руугаа холбоостой вэ (itge.e 2026-11-02: 20% байв, «## Өмнөх» нэмэв)."""
     tdir = VAULT / "01-GTD/Tasks"
@@ -149,7 +160,7 @@ def check_task_flow():
     add("⚠" if pct < 50 else "✅", "task flow", f"төсөлтэй {len(rows)} task-ийн {pct}% нь өмнөх task руугаа холбоостой (зорилт ≥50%)")
 
 
-for f in (check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text, check_goom_sync, check_task_flow):
+for f in (check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text, check_goom_sync, check_task_flow, check_strays):
     try: f()
     except Exception as e: add("❌", f.__name__, f"шалгалт унав: {e}")
 
