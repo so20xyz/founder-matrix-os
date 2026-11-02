@@ -4,7 +4,7 @@
 Season 2-ын Output доторх HTML хуулбар бүрт «энэ бол хуулбар» туузыг тавина.
 
 Яагаад: нэг уншвар гурван газар хэвтдэг байсан —
-  02-Projects/Academy Second Brain Season 2/Output/Article NN - lesson/
+  02-Projects/<Season 2 төсөл>/Output/Article NN - lesson/
   02-Projects/itge.online/Output/site/articles/<slug>/
   https://itge-intro.vercel.app/articles/<slug>/
 тэгээд itge.e аль нь жинхэнэ нь болохыг ялгаж чаддаггүй, засвар буруу хуулбар
@@ -28,7 +28,8 @@ VAULT = pathlib.Path(r"D:/My Drive/Second Brain 2.0")
 if not VAULT.exists():
     VAULT = pathlib.Path.home() / "My Drive/Second Brain 2.0"
 
-S2 = VAULT / "02-Projects/Academy Second Brain Season 2/Output"
+# Төслийн нэрийг кодонд бичихгүй (нийтийн repo): «… Season 2» хавтсыг хайж олно.
+S2 = next(iter(sorted((VAULT / "02-Projects").glob("*Season 2/Output"))), VAULT / "02-Projects/Season 2/Output")
 SITE_REL = "02-Projects/itge.online/Output/site"
 PROD = "https://itge-intro.vercel.app"
 
