@@ -8,8 +8,11 @@
 import { chromium } from '../../plugins/fm/tools/browse/node_modules/playwright-core/index.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
+import { readFileSync as __rf } from 'node:fs';
+import { homedir as __hd } from 'node:os';
+const __VAULT = process.env.FM_VAULT || (() => { try { return JSON.parse(__rf(__hd() + '/.fmos/config.json', 'utf8')).vault.replace(/\\/g, '/'); } catch { return '.'; } })();
 
-const OUT = 'D:/My Drive/Second Brain 2.0/02-Projects/itge.e Content/Output/2026-10-29 Skills carousel'
+const OUT = __VAULT + '/02-Projects/itge.e Content/Output/2026-10-29 Skills carousel'
 const W = 1080, H = 1350
 const BLUE = '#3B82F6', AMBER = '#F5A524', GREEN = '#22C55E', RED = '#EF4444', GREY = '#8A8A8A'
 

@@ -3,7 +3,17 @@
 Бичвэрийн эх сурвалж энэ файл. Дараа нь `python build.py` стандарт хэсгүүдийг (toc, rv, anav) нэмнэ."""
 import pathlib, re
 
-SITE = pathlib.Path(r"D:/My Drive/Second Brain 2.0/02-Projects/itge.online/Output/site")
+
+def _cfg_vault():
+    """Vault: FM_VAULT эсвэл ~/.fmos/config.json «vault» (хувийн зам кодонд бичихгүй)."""
+    import json, os
+    v = os.environ.get("FM_VAULT")
+    if not v:
+        try: v = json.loads((pathlib.Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8")).get("vault")
+        except Exception: v = None
+    return pathlib.Path(v) if v else pathlib.Path(".")
+
+SITE = _cfg_vault() / "02-Projects/itge.online/Output/site"
 s = (SITE / "articles/suu-bilig/index.html").read_text(encoding="utf-8")
 
 TITLE = "Skills: agent ажлаа яаж зөв дарааллаар хийдэг вэ"

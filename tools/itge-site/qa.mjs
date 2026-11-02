@@ -11,8 +11,11 @@ import { chromium } from '../../plugins/fm/tools/browse/node_modules/playwright-
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { readFileSync as __rf } from 'node:fs';
+import { homedir as __hd } from 'node:os';
+const __VAULT = process.env.FM_VAULT || (() => { try { return JSON.parse(__rf(__hd() + '/.fmos/config.json', 'utf8')).vault.replace(/\\/g, '/'); } catch { return '.'; } })();
 
-const SITE = 'D:/My Drive/Second Brain 2.0/02-Projects/itge.online/Output/site'
+const SITE = __VAULT + '/02-Projects/itge.online/Output/site'
 const OUT = path.join(SITE, '_qa')
 const PORT = 8899
 // Хуудсуудыг диск дээрээс өөрөө олно — шинэ уншвар, хичээл нэмэгдэхэд

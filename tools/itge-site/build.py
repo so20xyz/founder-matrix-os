@@ -37,9 +37,19 @@ import shutil
 import sys
 from datetime import date
 
-VAULT = pathlib.Path(r"D:/My Drive/Second Brain 2.0")
+
+def _cfg_vault():
+    """Vault: FM_VAULT эсвэл ~/.fmos/config.json «vault» (хувийн зам кодонд бичихгүй)."""
+    import json, os
+    v = os.environ.get("FM_VAULT")
+    if not v:
+        try: v = json.loads((pathlib.Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8")).get("vault")
+        except Exception: v = None
+    return pathlib.Path(v) if v else pathlib.Path(".")
+
+VAULT = _cfg_vault()
 if not VAULT.exists():  # Mac
-    VAULT = pathlib.Path.home() / "My Drive/Second Brain 2.0"
+    VAULT = _cfg_vault()
 
 PROJECT = VAULT / "02-Projects/itge.online"
 SITE = PROJECT / "Output/site"

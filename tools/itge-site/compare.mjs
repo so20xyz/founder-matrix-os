@@ -14,8 +14,11 @@ import { chromium } from '../../plugins/fm/tools/browse/node_modules/playwright-
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { readFileSync as __rf } from 'node:fs';
+import { homedir as __hd } from 'node:os';
+const __VAULT = process.env.FM_VAULT || (() => { try { return JSON.parse(__rf(__hd() + '/.fmos/config.json', 'utf8')).vault.replace(/\\/g, '/'); } catch { return '.'; } })();
 
-const VAULT = 'D:/My Drive/Second Brain 2.0'
+const VAULT = __VAULT + ''
 const SITE = `${VAULT}/02-Projects/itge.online/Output/site`
 const OUT = `${VAULT}/02-Projects/itge.online/Output/Харьцуулалт - Vercel ба локал`
 const SHOTS = path.join(OUT, 'shots')

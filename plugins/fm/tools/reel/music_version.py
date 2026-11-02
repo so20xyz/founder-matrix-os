@@ -11,9 +11,19 @@
 import argparse, json, subprocess, sys, tempfile
 from pathlib import Path
 
+
+def _cfg_vault():
+    """Vault: FM_VAULT эсвэл ~/.fmos/config.json «vault» (хувийн зам кодонд бичихгүй)."""
+    import json, os
+    v = os.environ.get("FM_VAULT")
+    if not v:
+        try: v = json.loads((Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8")).get("vault")
+        except Exception: v = None
+    return Path(v) if v else Path(".")
+
 HERE = Path(__file__).resolve().parent
 PR = HERE.parent / "premiere" / "pr.py"
-SFX = "D:/My Drive/Second Brain 2.0/03-Areas/Studio/SFX сан"
+SFX = str(_cfg_vault() / "03-Areas/Studio/SFX сан")
 
 
 def ff(args):

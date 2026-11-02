@@ -8,6 +8,16 @@
 import argparse, json, subprocess, sys
 from pathlib import Path
 
+
+def _cfg_vault():
+    """Vault: FM_VAULT эсвэл ~/.fmos/config.json «vault» (хувийн зам кодонд бичихгүй)."""
+    import json, os
+    v = os.environ.get("FM_VAULT")
+    if not v:
+        try: v = json.loads((Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8")).get("vault")
+        except Exception: v = None
+    return Path(v) if v else Path(".")
+
 LVL = {"texture": -16, "clicks": -20, "risers": -13, "subs": -9, "impacts": -9}
 
 
@@ -51,7 +61,7 @@ def cues(tl):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("tl"); ap.add_argument("out"); ap.add_argument("--sfx", default="D:/My Drive/Second Brain 2.0/03-Areas/Studio/SFX сан")
+    ap.add_argument("tl"); ap.add_argument("out"); ap.add_argument("--sfx", default=str(_cfg_vault() / "03-Areas/Studio/SFX сан"))
     ap.add_argument("--dur", type=float, default=None)
     a = ap.parse_args()
     tl = json.load(open(a.tl, encoding="utf-8")); out = Path(a.out); out.mkdir(parents=True, exist_ok=True); sfx = Path(a.sfx)

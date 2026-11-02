@@ -9,6 +9,16 @@
 import argparse, subprocess, sys
 from pathlib import Path
 
+
+def _cfg_vault():
+    """Vault: FM_VAULT эсвэл ~/.fmos/config.json «vault» (хувийн зам кодонд бичихгүй)."""
+    import json, os
+    v = os.environ.get("FM_VAULT")
+    if not v:
+        try: v = json.loads((Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8")).get("vault")
+        except Exception: v = None
+    return Path(v) if v else Path(".")
+
 HERE = Path(__file__).resolve().parent
 NOTE = {"C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11}
 
@@ -25,7 +35,7 @@ def main():
     ap.add_argument("vocals"); ap.add_argument("out"); ap.add_argument("--bpm", type=float, default=108)
     ap.add_argument("--key", default="F"); ap.add_argument("--hook", type=float, required=True)
     ap.add_argument("--pitch", type=float, default=0, help="vocal-ыг хагас тоноор шилжүүлэх (жишээ +1: F→F#)")
-    ap.add_argument("--sfx", default="D:/My Drive/Second Brain 2.0/03-Areas/Studio/SFX сан"); ap.add_argument("--work", default="C:/fmtmp/remix")
+    ap.add_argument("--sfx", default=str(_cfg_vault() / "03-Areas/Studio/SFX сан")); ap.add_argument("--work", default="C:/fmtmp/remix")
     a = ap.parse_args()
     W = Path(a.work); W.mkdir(parents=True, exist_ok=True); bar = 4 * 60 / a.bpm; sfx = Path(a.sfx)
     uv = ["uv", "run", "--no-project", "--with", "mido", "python", str(HERE / "symphony_build.py")]

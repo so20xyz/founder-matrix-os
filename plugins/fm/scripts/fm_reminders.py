@@ -137,6 +137,6 @@ def tick(vault, now, dry):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] != "tick": print(__doc__); sys.exit(2)
-    vault = Path(_arg("--vault") or configured_vault() or "D:/My Drive/Second Brain 2.0")
+    vault = Path(_arg("--vault") or configured_vault() or ".")
     now = dt.datetime.strptime(_arg("--now"), "%Y-%m-%d %H:%M") if _arg("--now") else dt.datetime.now()
     tick(vault, now, "--dry-run" in sys.argv)

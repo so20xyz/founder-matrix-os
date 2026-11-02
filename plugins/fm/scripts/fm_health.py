@@ -6,9 +6,19 @@ Vault-ын агуулгыг fm_vault_check/fm_lint шалгадаг; энэ нь
 import json, os, re, sys
 from pathlib import Path
 
+
+def _cfg_vault():
+    """Vault: FM_VAULT эсвэл ~/.fmos/config.json «vault» (хувийн зам кодонд бичихгүй)."""
+    import json, os
+    v = os.environ.get("FM_VAULT")
+    if not v:
+        try: v = json.loads((Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8")).get("vault")
+        except Exception: v = None
+    return Path(v) if v else Path(".")
+
 HOME = Path.home()
 VAULT = Path(sys.argv[sys.argv.index("--vault") + 1]) if "--vault" in sys.argv else (
-    Path("D:/My Drive/Second Brain 2.0") if os.name == "nt" else HOME / "My Drive/Second Brain 2.0")
+    _cfg_vault())
 RES = []
 
 
@@ -59,7 +69,7 @@ def check_plugin_cache():
     inst = rj(HOME / ".claude/plugins/installed_plugins.json", {}) or {}
     active = [e.get("version") for k, arr in (inst.get("plugins") or {}).items() if k.startswith("fm@") for e in arr]
     add("⚠" if len(vs) > 3 else "✅", "plugin cache", f"fm-ийн {len(vs)} хувилбар кэшд (сүүлийн {vs[-1]}), идэвхтэй: {', '.join(map(str, active)) or '?'}")
-    repo = Path("D:/CodeBase/founder-matrix-os/plugins/fm/.claude-plugin/plugin.json")
+    repo = Path(__file__).resolve().parents[1] / ".claude-plugin/plugin.json"
     rv = (rj(repo, {}) or {}).get("version")
     if rv and active and rv not in active: add("⚠", "plugin version", f"repo {rv} ≠ суусан {', '.join(map(str, active))} — `/plugin update`")
 
@@ -104,7 +114,7 @@ def check_registry():
 
 def check_hook_text():
     """SessionStart-ийн заавар дахь скриптийн зам бодит эсэх (10-р сард scripts/ → plugins/fm/scripts/ шилжсэн)."""
-    repo = Path("D:/CodeBase/founder-matrix-os")
+    repo = Path(__file__).resolve().parents[3]
     stale = []
     for src in (repo / "plugins/fm/tools/relay").glob("*.py"):
         for m in re.findall(r"founder-matrix-os[\\/]+((?:scripts|tools)[\\/][\w/\\.-]+\.py)", src.read_text(encoding="utf-8", errors="ignore")):

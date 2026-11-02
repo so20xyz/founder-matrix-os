@@ -10,7 +10,17 @@ from pathlib import Path
 
 import yaml
 
-VAULT = Path(sys.argv[sys.argv.index("--vault") + 1]) if "--vault" in sys.argv else Path("D:/My Drive/Second Brain 2.0")
+
+def _cfg_vault():
+    """Vault: FM_VAULT эсвэл ~/.fmos/config.json «vault» (хувийн зам кодонд бичихгүй)."""
+    import json, os
+    v = os.environ.get("FM_VAULT")
+    if not v:
+        try: v = json.loads((Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8")).get("vault")
+        except Exception: v = None
+    return Path(v) if v else Path(".")
+
+VAULT = Path(sys.argv[sys.argv.index("--vault") + 1]) if "--vault" in sys.argv else _cfg_vault()
 MIN = int(sys.argv[sys.argv.index("--min") + 1]) if "--min" in sys.argv else 5
 SKIP = {".obsidian", "_trash", ".backups", ".trash"}
 SKIP_KEYS = {"type", "status", "tags", "date", "updated", "created", "ai-first", "title", "aliases", "url", "cover", "priority",

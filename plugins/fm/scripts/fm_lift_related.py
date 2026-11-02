@@ -6,7 +6,17 @@ frontmatter-ийн аль нэг талбарт байгаа холбоосыг 
 import collections, re, sys
 from pathlib import Path
 
-V = Path(sys.argv[sys.argv.index("--vault") + 1]) if "--vault" in sys.argv else Path("D:/My Drive/Second Brain 2.0")
+
+def _cfg_vault():
+    """Vault: FM_VAULT эсвэл ~/.fmos/config.json «vault» (хувийн зам кодонд бичихгүй)."""
+    import json, os
+    v = os.environ.get("FM_VAULT")
+    if not v:
+        try: v = json.loads((Path.home() / ".fmos" / "config.json").read_text(encoding="utf-8")).get("vault")
+        except Exception: v = None
+    return Path(v) if v else Path(".")
+
+V = Path(sys.argv[sys.argv.index("--vault") + 1]) if "--vault" in sys.argv else _cfg_vault()
 SKIP = {".obsidian", "_trash", ".backups"}
 SOURCE = {"session-decision", "atomic", "atom", "task", "reference", "research"}
 TARGET = {"project", "area", "person", "reference", "atomic", "atom", "session-decision", "goal", "product"}
