@@ -234,7 +234,39 @@ def update(vault, apply):
                 shutil.copy2(dst, trash / rel)
             dst.parent.mkdir(parents=True, exist_ok=True)
             dst.write_bytes(new.encode("utf-8"))
+    log += partner(vault, apply, trash)
     return log
+
+
+PARTNER = "## Хамтрагчийн зарчим"
+
+
+def partner(vault, apply, trash):
+    """CLAUDE.md-ийн «Хамтрагчийн зарчим» хэсгийг template-аас авна; vault-ийн CLAUDE.md-ийн бусад хэсэг хэвээр (itge.e 2026-11-03)."""
+    src = TEMPLATE / "CLAUDE.md"
+    t = src.read_text(encoding="utf-8") if src.is_file() else ""
+    i = t.find(PARTNER)
+    if i < 0:
+        return []
+    sec = t[i:].rstrip() + "\n"
+    dst = vault / "CLAUDE.md"
+    old = dst.read_text(encoding="utf-8") if dst.is_file() else None
+    if old is None:
+        new = t
+    elif PARTNER in old:
+        j = old.find(PARTNER)
+        k = old.find("\n## ", j + len(PARTNER))
+        new = old[:j] + sec + (old[k + 1:] if k >= 0 else "")
+    else:
+        new = old.rstrip() + "\n\n" + sec
+    if new == old:
+        return []
+    if apply:
+        if old is not None:
+            trash.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(dst, trash / "CLAUDE.md")
+        dst.write_bytes(new.encode("utf-8"))
+    return [("add      " if old is None else "replace  ") + "CLAUDE.md (" + PARTNER[3:] + ")"]
 
 
 def main(argv):

@@ -30,6 +30,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 5. Албан ёсны `productivity` plugin-ий update-ийг **бүү** ажиллуул - тэр `TASKS.md`, `memory/` бичиж хоёр дахь санах ой үүсгэдэг. Энэ skill бүгдийг vault-д хийнэ.
 
 6. **Хуучин бүтэц.** Vault-д `00-GTD`/`02-GTD`, `03-Projects`, `04-Areas`, `05-Resources`, `06-Atomic` зэрэг хуучин хавтас байвал (эсвэл `fm_brain_check` «дэд хавтсан дахь base» мэдээлбэл) гишүүнд санал болго: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_migrate.py" "<V>"` (dry run) → зөвшөөрвөл `--apply`. Дэлгэрэнгүй — `/fm:setup` 2.1.
+7. **Дүрмийн шинэчлэл (оркестр, daily).** `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fm_rules.py" update "<V>"` (dry run) — BOOT, 6 үндсэн дүрийн бүтэц, `CLAUDE.md`-ийн «Хамтрагчийн зарчим» хэсгийг plugin-ий загвараас шинэчилнэ (гишүүний түүх, бусад мөр хэвээр, хуучин нь `_trash/rules-<огноо>/`). Өөрчлөлт байвал жагсаалтыг нэг мөрөөр хэлээд `--apply`. Maintainer-ийн vault-д (загварыг `export` хийдэг эх vault) бүү ажиллуул.
 
 ## Оркестр — дараалал ба хэзээ алгасах
 
