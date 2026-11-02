@@ -96,7 +96,7 @@ def _opt(args: List[str], key: str, default: str = "") -> str:
 
 def _positional(args: List[str]) -> List[str]:
     flags_with_value = {"--owner", "--project", "--status", "--priority", "--due", "--context",
-                        "--body", "--by", "--summary", "--device", "--sid"}
+                        "--body", "--by", "--summary", "--device", "--sid", "--area", "--resource"}
     out, skip = [], False
     for a in args:
         if skip:
@@ -523,6 +523,17 @@ def cmd_new(vault: Path, args: List[str]) -> None:
         if not proj_file.exists():
             _die("Төслийн нот олдсонгүй: %s" % proj_file, 2)
         project = project[:-3] if project.endswith(".md") else project
+    # Task зөвхөн төслийнх биш (itge.e 2026-11-02): эзэн нь area (`--area`, таслалаар олныг) эсвэл нөөц (`--resource`)
+    areas, resource = [], _opt(args, "--resource").strip().strip("[]")
+    for a in filter(None, (x.strip().strip("[]") for x in _opt(args, "--area").split(","))):
+        a = a[:-3] if a.endswith(".md") else a
+        if not (vault / (a + ".md")).exists():
+            _die("Area-гийн note олдсонгүй: %s.md" % a, 2)
+        areas.append(a)
+    if resource:
+        resource = resource[:-3] if resource.endswith(".md") else resource
+        if not (vault / (resource + ".md")).exists():
+            _die("Нөөцийн note олдсонгүй: %s.md" % resource, 2)
     folder = tasks_dir(vault)
     folder.mkdir(parents=True, exist_ok=True)
     name = safe_filename(title)
@@ -543,6 +554,10 @@ def cmd_new(vault: Path, args: List[str]) -> None:
     fm = apply_status(fm, status, args, was="")  # a new note: nothing started yet
     if name != title:
         fm.append("aliases:\n  - %s" % yaml_str(title))
+    if areas:
+        fm.append("areas:\n" + "\n".join("  - %s" % yaml_str("[[%s]]" % a) for a in areas))
+    if resource:
+        fm = fm_set(fm, "resource", yaml_str("[[%s]]" % resource))
     if project:
         body = [("- Төсөл: [[%s|%s]]" % (project, Path(project).name)) if l.strip() == "- Төсөл:" else l
                 for l in body]
@@ -556,9 +571,10 @@ def cmd_new(vault: Path, args: List[str]) -> None:
     wf = _opt(args, "--workflow").strip()
     if wf:
         fm, body = attach_workflow(vault, fm, body, wf)
-    if project:  # «## Өмнөх»: ижил төслийн сүүлийн task-ууд (itge.e 2026-11-02, fm_task_prev)
+    if project or areas:  # «## Өмнөх»: ижил төсөл (эсвэл area)-ийн сүүлийн task-ууд (itge.e 2026-11-02, fm_task_prev)
         from fm_task_prev import section
-        prev = section(folder, project, exclude=name, rel_dir=folder.relative_to(vault).as_posix())
+        prev = section(folder, project, exclude=name, rel_dir=folder.relative_to(vault).as_posix(),
+                       area=areas[0] if areas else "")
         if prev:
             body += [""] + prev.rstrip("\n").split("\n")
     body = append_progress(body, "- %s 📌 үүсгэв" % now_stamp())

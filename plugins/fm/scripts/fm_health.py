@@ -132,14 +132,18 @@ def check_task_flow():
     """Төсөлтэй task-ийн хэд нь өмнөх task руугаа холбоостой вэ (itge.e 2026-11-02: 20% байв, «## Өмнөх» нэмэв)."""
     tdir = VAULT / "01-GTD/Tasks"
     if not tdir.exists(): return
-    names, rows = set(), []
+    names, rows, orphans = set(), [], 0
     for p in tdir.glob("*.md"):
         t = p.read_text(encoding="utf-8", errors="ignore")
-        m = re.match(r"---\n(.*?)\n---", t, re.S)
+        m = re.match(r"---\r?\n(.*?)\r?\n---", t, re.S)
         if not m or not re.search(r"^type:\s*task", m.group(1), re.M): continue
-        pr = re.search(r"^project:[ \t]*(\S.*)$", m.group(1), re.M)
+        fm = m.group(1)
+        pr = re.search(r"^project:[ \t]*(\S.*)$", fm, re.M)
         names.add(p.stem)
         if pr and "[[" in pr.group(1): rows.append((p.stem, re.findall(r"\[\[([^\]|#]+)", t[m.end():])))
+        # эзэн = project, areas/area эсвэл resource (itge.e 2026-11-02: task зөвхөн төслийнх биш)
+        elif not re.search(r"^(areas?|resource):[ \t]*\S|^areas:\s*\n\s+- ", fm, re.M): orphans += 1
+    add("⚠" if orphans else "✅", "task owner", f"эзэнгүй (project/areas/resource алга) task {orphans} — weekly review-д холбо")
     linked = sum(1 for s, ls in rows if any(l.split("/")[-1] in names and l.split("/")[-1] != s for l in ls))
     pct = round(100 * linked / len(rows)) if rows else 0
     add("⚠" if pct < 50 else "✅", "task flow", f"төсөлтэй {len(rows)} task-ийн {pct}% нь өмнөх task руугаа холбоостой (зорилт ≥50%)")

@@ -546,16 +546,16 @@ def _release_task(ref, sid):
     return "RELEASED"
 
 
-def _prev_section(tdir, proj, exclude, vault):
-    """«## Өмнөх» (itge.e 2026-11-02): ижил төслийн сүүлийн task-ууд — skills/task/scripts/fm_task_prev.py-тай нэг код."""
-    if not proj: return ""
+def _prev_section(tdir, proj, exclude, vault, area=""):
+    """«## Өмнөх» (itge.e 2026-11-02): ижил төсөл (эсвэл area)-ийн сүүлийн task-ууд — skills/task/scripts/fm_task_prev.py-тай нэг код."""
+    if not proj and not area: return ""
     here = Path(__file__).resolve()
     for root in (here.parents[2], here.parents[2] / "plugins" / "fm"):   # canon (plugins/fm/tools/relay) эсвэл shim (tools/relay)
         d = root / "skills" / "task" / "scripts"
         if (d / "fm_task_prev.py").exists():
             if str(d) not in sys.path: sys.path.insert(0, str(d))
             from fm_task_prev import section
-            prev = section(tdir, proj, exclude=exclude, rel_dir=tdir.relative_to(vault).as_posix())
+            prev = section(tdir, proj, exclude=exclude, rel_dir=tdir.relative_to(vault).as_posix(), area=area)
             return ("\n" + prev) if prev else ""
     return ""
 
@@ -582,14 +582,18 @@ def d_task(args, sid):
     secret = _secret_task(rel, {"owner": owner}, R)
     today = datetime.date.today().isoformat()
     proj = opt("--project"); res = opt("--research")
+    # task зөвхөн төслийнх биш (itge.e 2026-11-02): --area «A[,B]» → areas:, --resource → resource:
+    areas = [a.strip().strip("[]") for a in opt("--area").split(",") if a.strip()]
+    resource = opt("--resource").strip().strip("[]")
     if res:
         res, ok = _research_link(vault, res)
         if not ok: print(f"⚠️ --research «{opt('--research')}»: {RESEARCH_DIR.as_posix()}/<сэдэв>/ hub олдсонгүй — байгаагаар нь бичив")
     f.write_text("---\n" + "\n".join([
         f"date: {today}", f"updated: {today}", "type: task", f"status: {status}", f"owner: \"{owner}\"",
         f"priority: {opt('--prio', '🟡')}", f"due: {opt('--due')}", f"project: \"[[{proj}]]\"" if proj else "project:",
-        *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []), *([f"device: {opt('--device')}"] if opt("--device") else []), *(["private: true"] if secret else []),
-        "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n" + _prev_section(tdir, proj, safe, vault), encoding="utf-8")
+        *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []),
+        *((["areas:"] + [f'  - "[[{a}]]"' for a in areas]) if areas else []), *([f'resource: "[[{resource}]]"'] if resource else []), *([f"device: {opt('--device')}"] if opt("--device") else []), *(["private: true"] if secret else []),
+        "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n" + _prev_section(tdir, proj, safe, vault, areas[0] if areas else ""), encoding="utf-8")
     _new = f.read_bytes(); _verify_write(f, _new)
     if not secret: _task_backup(f, _new)
     try:
