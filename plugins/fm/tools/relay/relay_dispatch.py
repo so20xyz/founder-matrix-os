@@ -546,6 +546,24 @@ def _release_task(ref, sid):
     return "RELEASED"
 
 
+def _task_scripts_dir():
+    here = Path(__file__).resolve()
+    for root in (here.parents[2], here.parents[2] / "plugins" / "fm"):   # canon эсвэл shim
+        d = root / "skills" / "task" / "scripts"
+        if (d / "fm_task_raci.py").exists():
+            if str(d) not in sys.path: sys.path.insert(0, str(d))
+            return d
+    return None
+
+
+def _raci(vault, owner, proj):
+    """RACI анхдагч (шийдвэр 2026-10-14, 10-25) — skills/task/scripts/fm_task_raci.py-тай нэг код."""
+    if not _task_scripts_dir(): return {}
+    from fm_task_raci import defaults
+    o = owner if not owner.startswith(("📚", "🎨", "🏛", "📁", "📥", "🔍", "💼")) else owner.split(" ", 1)[-1].lower()
+    return defaults(vault, o, f"[[{proj}]]" if proj else "")
+
+
 def _prev_section(tdir, proj, exclude, vault, area=""):
     """«## Өмнөх» (itge.e 2026-11-02): ижил төсөл (эсвэл area)-ийн сүүлийн task-ууд — skills/task/scripts/fm_task_prev.py-тай нэг код."""
     if not proj and not area: return ""
@@ -592,7 +610,8 @@ def d_task(args, sid):
         f"date: {today}", f"updated: {today}", "type: task", f"status: {status}", f"owner: \"{owner}\"",
         f"priority: {opt('--prio', '🟡')}", f"due: {opt('--due')}", f"project: \"[[{proj}]]\"" if proj else "project:",
         *([f"research: \"{res.replace(chr(34), chr(39))}\""] if res else []),
-        *((["areas:"] + [f'  - "[[{a}]]"' for a in areas]) if areas else []), *([f'resource: "[[{resource}]]"'] if resource else []), *([f"device: {opt('--device')}"] if opt("--device") else []), *(["private: true"] if secret else []),
+        *((["areas:"] + [f'  - "[[{a}]]"' for a in areas]) if areas else []), *([f'resource: "[[{resource}]]"'] if resource else []),
+        *[f"{k}: {v}" for k, v in _raci(vault, owner, proj).items()], *([f"device: {opt('--device')}"] if opt("--device") else []), *(["private: true"] if secret else []),
         "tags:", "  - task", "ai-first: true", f'up: "[[{tdir.relative_to(vault).as_posix()}/Tasks]]"']) + "\n---\n\n# " + title + "\n\n" + opt("--body") + "\n" + _prev_section(tdir, proj, safe, vault, areas[0] if areas else ""), encoding="utf-8")
     _new = f.read_bytes(); _verify_write(f, _new)
     if not secret: _task_backup(f, _new)

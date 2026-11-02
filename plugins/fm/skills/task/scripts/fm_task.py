@@ -558,6 +558,10 @@ def cmd_new(vault: Path, args: List[str]) -> None:
         fm.append("areas:\n" + "\n".join("  - %s" % yaml_str("[[%s]]" % a) for a in areas))
     if resource:
         fm = fm_set(fm, "resource", yaml_str("[[%s]]" % resource))
+    # RACI анхдагч (шийдвэр 2026-10-14, 10-25): R = owner, A = клиент/төсөлгүй → me, дотоод → project, I = me
+    from fm_task_raci import defaults as raci_defaults
+    for key, val in raci_defaults(vault, owner, project).items():
+        fm = fm_set(fm, key, val)
     if project:
         body = [("- Төсөл: [[%s|%s]]" % (project, Path(project).name)) if l.strip() == "- Төсөл:" else l
                 for l in body]
