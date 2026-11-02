@@ -101,7 +101,7 @@ def main():
 
     set_fm(hub, spec_approved="3")
     rc, out = child("step()", env)
-    check(T("1 Research").is_file() and "🔬 Research" in T("1 Research").read_text(encoding="utf-8"), "spec_approved: 3 → research task", out)
+    check(T("1 Research").is_file() and "📚 Wiki" in T("1 Research").read_text(encoding="utf-8"), "spec_approved: 3 → research task", out)
 
     (hubdir / "01 Old cycle.md").write_text("Мөчлөг 1-ийн эх сурвалж: https://data.mn/about\n", encoding="utf-8")
     (hubdir / "20 Атлас тайлан.md").write_text("Түүвэрт www.data.mn байсан.\n", encoding="utf-8")
@@ -157,7 +157,7 @@ def main():
     check("| 2 | 5 Soyol сонголт | ✅ (13:29) |" in h and "| 3 | Сэдэв | №6 атлас |" in h, "other cycles' rows untouched")
     led = hubdir / "_ledger - мөчлөг 3.md"
     lt = led.read_text(encoding="utf-8") if led.is_file() else ""
-    check("| 1 Research | 🔬 Research | opus | 120k | 75 мин | abc123 |" in lt, "ledger row: model, tokens, wall-clock, resume id", lt)
+    check("| 1 Research | 📚 Wiki | opus | 120k | 75 мин | abc123 |" in lt, "ledger row: model, tokens, wall-clock, resume id", lt)
     check("160,000" in lt, "ledger sums the written tokens (40k + 120k)", lt)
     rc, out = child("print(json.dumps(sorted(relay._research_hubs(V))))", env)
     check(acts(out) == ["Atlas"], "_ledger file is never taken for the hub", out)

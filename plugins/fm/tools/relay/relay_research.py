@@ -18,7 +18,7 @@ Stage task (01-GTD/Tasks): research: [[hub]] · cycle: N · stage: spec|research
 """
 import csv as _csv
 
-RC_OWNERS = {"spec": "📚 Wiki", "research": "🔬 Research", "review": "📚 Wiki", "architect": "🏛️ Architect",
+RC_OWNERS = {"spec": "📚 Wiki", "research": "📚 Wiki", "review": "📚 Wiki", "architect": "🏛️ Architect",
              "creative": "🎨 Creative"}
 RC_LABELS = {"spec": "Spec", "research": "1 Research", "review": "2 Wiki шалгалт", "architect": "3 Architect memo",
              "creative": "3 Creative memo", "council": "4 Зөвлөгөөн", "choice": "5 Soyol сонголт",
