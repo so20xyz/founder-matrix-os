@@ -136,7 +136,7 @@ def d_inbox(hook):
     if pair: print(json.dumps({"hookSpecificOutput": {"hookEventName": event, "additionalContext": pair}}, ensure_ascii=False)); return
     state = load(STATE, {}); reg = load(REG, {"sessions": {}})
     me = reg["sessions"].get(sid)
-    names = list(dict.fromkeys([BROADCAST] + ([chmap().get(sid, chname(me))] if me else [])))
+    names = _listen_names(sid, me)
     ch = dchannels(state); cur = state.setdefault(sid, {}); out = []
     my_tag = f"[{me['name']}]" if me else None
     for n in names:
@@ -400,13 +400,21 @@ class _Count:
     def __getattr__(self, k): return getattr(self.s, k)
 
 
+def _listen_names(sid, me):
+    """Сешний сонсох сувгууд. itge.e 2026-11-02: broadcast нь #gtd (itge.e-ийн суваг) бол зөвхөн GTD сешн сонсоно
+    (BOOT «Discord» 1-р заалт); бусад сешн өөрийн суваг, thread-ээ л сонсоно, #gtd-ийн линк бүрээр сэрэхгүй."""
+    disp = fmconfig.dcfg("dispatcher_role", "gtd")
+    bc = [] if me and BROADCAST == disp and me.get("role") != disp else [BROADCAST]
+    return list(dict.fromkeys(bc + ([chmap().get(sid, chname(me))] if me else [])))
+
+
 def d_watch(sid, every=20, once=False):
     """Continuous: print one line per new Discord message for this session (own messages skipped).
     once=True (itge.e 2026-10-20): мессеж хэвлэгдсэн тойргийн төгсгөлд гарна — Bash run_in_background-оор ажиллуулахад
     Monitor-ын 30 минутын хязгааргүй, мессеж ирэхэд сешн сэрээд дахин асаана (курсор STATE-д хадгалагддаг)."""
     if once: sys.stdout = _Count(sys.stdout)
     reg = load(REG, {"sessions": {}}); me = reg["sessions"].get(sid)
-    names = list(dict.fromkeys([BROADCAST] + ([chmap().get(sid, chname(me))] if me else [])))
+    names = _listen_names(sid, me)
     tag = f"[{me['name']}]" if me else None
     st = load(STATE, {}); ch = dchannels(st, names); save(STATE, st)
     # resume from the last seen id (persisted) so restarts after network drops never lose messages
