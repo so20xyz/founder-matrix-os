@@ -13,6 +13,9 @@ pr.py - drive Adobe Premiere Pro from the terminal through the FM Bridge (bridge
   python pr.py stereo                         mono (Ch.1) клипүүдийг stereo болгоно (L+R = L); импорт бүрт автоматаар
   python pr.py newseq NAME ITEM...            sequence from clips (keeps the clips' 1080x1920)
   python pr.py markers FILE.json [--seq S]    story markers: [{"t":0,"name":"Hook","comment":"...","dur":3,"color":1}]
+  python pr.py place TRACK TIME FILE [--seq S] [--insert] [--bin B]
+                                              TRACK = V1.. / A1.., TIME = сек эсвэл HH:MM:SS(.ms); FILE = зам (импортлоно) эсвэл төслийн item-ийн нэр;
+                                              анхдагч overwrite, --insert = ripple insert
   python pr.py volume TRACK CLIP DB [--seq S] set an audio clip's level (dB); DB '-' just reads it
   python pr.py export OUT.mp4 PRESET.epr [--seq S] [--direct]
   python pr.py run -f script.jsx | -e "return FM.info()"   any ExtendScript (FM.* helpers available)
@@ -28,7 +31,7 @@ import io
 import json, os, shutil, subprocess, sys, urllib.request
 from pathlib import Path
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+getattr(sys.stdout, "reconfigure", lambda **k: None)(encoding="utf-8", errors="replace")
 HERE = Path(__file__).resolve().parent
 PORT = int(os.environ.get("PREMIERE_BRIDGE_PORT", "3056"))
 BASE = f"http://127.0.0.1:{PORT}"
@@ -78,6 +81,44 @@ def flag(args, name):
         args.remove(name)
         return True
     return False
+
+
+def parse_track(t):
+    """'V2' -> ('V', 1), 'a1' -> ('A', 0)."""
+    t = str(t).strip().upper()
+    if len(t) < 2 or t[0] not in "VA" or not t[1:].isdigit() or int(t[1:]) < 1:
+        raise ValueError("TRACK нь V1.. эсвэл A1.. байх ёстой: " + t)
+    return t[0], int(t[1:]) - 1
+
+
+def parse_time(v):
+    """'3', '2.5', '00:00:03', '01:02.5', '1:00:00.250' -> seconds (float)."""
+    v = str(v).strip()
+    try:
+        parts = [float(x) for x in v.split(":")]
+    except ValueError:
+        raise ValueError("TIME буруу: " + v)
+    if not 1 <= len(parts) <= 3 or any(x < 0 for x in parts):
+        raise ValueError("TIME буруу: " + v)
+    sec = 0.0
+    for x in parts:
+        sec = sec * 60 + x
+    return sec
+
+
+def place_script(track, at, file, seq=None, insert=False, bin_name=None):
+    """ExtendScript: (импорт хийгээд) FM.place-ээр байрлуулна."""
+    kind, idx = parse_track(track)
+    t = parse_time(at)
+    p = Path(file)
+    if p.exists():
+        path = str(p.resolve()).replace(chr(92), "/")
+        imp = f"FM.importFiles([{js(path)}], {js(bin_name or PROJECT)}); "
+        name = p.name
+    else:
+        imp, name = "", str(file)
+    return (f"{imp}var r = FM.place({js(name)}, {idx}, {t}, {js(kind)}, {str(bool(insert)).lower()}, {js(seq)}); "
+            f"return {{placed: {js(name)}, track: {js(kind + str(idx + 1))}, at: {t}, timeline: r}}")
 
 
 def recordings(d=REC_DIR, n=5):
@@ -184,6 +225,10 @@ def main(argv):
     elif cmd == "markers":
         data = json.load(open(a[0], encoding="utf-8"))
         print(js(run(f"return FM.markers({js(data)}, {js(seq)})")))
+    elif cmd == "place":
+        ins, b = flag(a, "--insert"), opt(a, "--bin")
+        if len(a) < 3: sys.exit("usage: pr.py place TRACK TIME FILE [--seq S] [--insert] [--bin B]")
+        print(js(run(place_script(a[0], a[1], a[2], seq, ins, b), 300)))
     elif cmd == "volume":
         db = None if a[2] == "-" else float(a[2])
         print(js(run(f"return FM.volume({int(a[0])}, {int(a[1])}, {js(db)}, {js(seq)})")))
