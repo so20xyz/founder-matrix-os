@@ -22,6 +22,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ["3.9", "3.12"]
+        # macOS + 3.9 runner-ийг GitHub олгохгүй дараалалд цуцлагддаг (2026-11-03); macOS-ийг 3.12-оор шалгана.
+        exclude:
+          - os: macos-latest
+            python: "3.9"
     steps:
       - uses: actions/checkout@v4
 
