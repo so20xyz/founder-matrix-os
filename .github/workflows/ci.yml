@@ -17,6 +17,8 @@ jobs:
     name: test (${{ matrix.os }}, py${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    # macOS runner GitHub-аас олгогдохгүй цуцлагдах нь давтагддаг (2026-11-03) - мэдээллийн job, CI-г унагахгүй.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
     strategy:
       fail-fast: false
       matrix:
