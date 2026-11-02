@@ -182,7 +182,9 @@ def d_inbox(hook):
                       "мессеж ирэхэд дуусч чамайг сэрээнэ; хариулаад ТЭР ДАРУЙ дахин асаа. Monitor биш (30 мин хязгаартай).")
         # itge.e 2026-10-23: сешн бүр өөрийн Goom чаттай (fm_goom_chat.py bind / sync-sessions) — тэр чатыг ч сонсоно
         if sid in load(Path.home() / ".fmos" / "goom-sessions.json", {}):
-            gc = Path(__file__).resolve().parents[2] / "scripts" / "fm_goom_chat.py"
+            # 2026-11-02: shim (tools/relay/relay.py)-ээр дуудахад parents[2] = repo root болж буруу зам өгдөг байв
+            gc = next((r / "scripts" / "fm_goom_chat.py" for r in (Path(__file__).resolve().parents[2], Path(__file__).resolve().parents[2] / "plugins" / "fm")
+                       if (r / "scripts" / "fm_goom_chat.py").exists()), Path(__file__).resolve().parents[2] / "scripts" / "fm_goom_chat.py")
             out.insert(1, f"### 💬 Goom чатаа сонс (хэрэглэгчээс бүү асуу): Bash(run_in_background=true, command='{PY} -u {gc} watch --sid {sid}') — "
                           f"itge.e Goom-д бичихэд БОЛОН таны дүрд чиглэсэн vault run (queued) ирэхэд дуусч чамайг сэрээнэ; run ирвэл `{PY} {gc} reply --run <run_id> \"текст\"`-ээр хариулж done болго; хариулаад ТЭР ДАРУЙ дахин асаа. Goom чатад хариулах: `{PY} {gc} say \"текст\" --sid {sid}`.")
     ctx = (f"[FMOS Discord] Энэ сешн: {who}. Хариу: `{PY} {Path(__file__)} send <сувгийн нэр|sys> \"текст\" --sid {sid}`."
