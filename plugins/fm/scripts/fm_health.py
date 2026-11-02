@@ -112,7 +112,23 @@ def check_hook_text():
     add("⚠" if stale else "✅", "hook text paths", "; ".join(sorted(set(stale))[:4]) if stale else "бүгд бий")
 
 
-for f in (check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text):
+def check_goom_sync():
+    """Vault -> Second Brain sync (itge.e 2026-11-02: goom-tick 7 цаг гацаж, токен дуусан ч хэн ч мэдээгүй)."""
+    import base64, time
+    cfg = rj(HOME / ".fmos/goom.json")
+    if not cfg: return
+    try:
+        p = cfg["token"].split(".")[1]; exp = json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4)))["exp"]
+        left = int(exp - time.time())
+        add("❌" if left < 0 else "✅", "goom token", f"хугацаа дууссан {-left // 60} мин өмнө (goom-tick гацсан?)" if left < 0 else f"{left // 3600} цаг үлдсэн")
+    except Exception as e: add("⚠", "goom token", f"уншиж чадсангүй: {e}")
+    log = HOME / ".fmos/goom-pull.log"
+    if log.exists():
+        age = int((time.time() - log.stat().st_mtime) // 60)
+        add("❌" if age > 10 else "✅", "goom-tick", f"сүүлд {age} мин өмнө ажилласан" + (" — гацсан байж магадгүй (Task Scheduler goom-tick)" if age > 10 else ""))
+
+
+for f in (check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text, check_goom_sync):
     try: f()
     except Exception as e: add("❌", f.__name__, f"шалгалт унав: {e}")
 
