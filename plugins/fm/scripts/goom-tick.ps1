@@ -17,6 +17,7 @@ try {
 & python "D:\CodeBase\founder-matrix-os\plugins\fm\scripts\fm_goom_pull.py" "D:/My Drive/Second Brain 2.0" --apply *>> "$env:USERPROFILE\.fmos\goom-pull.log"
 if ((Get-Date).Minute -lt 2) { & python "D:\CodeBase\founder-matrix-os\plugins\fm\scripts\fm_github_inbox.py" "D:/My Drive/Second Brain 2.0" --apply *>> "$env:USERPROFILE\.fmos\github-inbox.log" }
 & python "D:\CodeBase\founder-matrix-os\plugins\fm\scripts\fm_agents.py" scan *>> "$env:USERPROFILE\.fmos\agents.log"  # agent heartbeat (~/.fmos/agents) -> Goom header
+& python "D:\CodeBase\founder-matrix-os\plugins\fm\scripts\fm_reminders.py" tick *>> "$env:USERPROFILE\.fmos\reminders.log"  # itge.e-ийн task сануулга + 07:30 жагсаалт -> Discord #сануулга (2026-11-02)
 & python "D:\CodeBase\founder-matrix-os\plugins\fm\scripts\fm_goom_chat.py" sync-sessions *>> "$env:USERPROFILE\.fmos\goom-sync.log"
 # --full цагт нэг (itge.e 2026-11-02): зөөсөн/устгасан note-ийг DB-ээс soft-delete; өмнө нь хэзээ ч ажилладаггүй байсан тул 23 хуучин мөр үлдэв
 $full = @(); if ((Get-Date).Minute -lt 2) { $full = @('--full') }
