@@ -1,6 +1,6 @@
 ---
 name: update
-description: "ГАНЦ КОМАНД. «update», «шинэчил», «өдрийн дүгнэлт» гэхэд юу хэрэгтэйг өөрөө шийдэж дараалан хийнэ: ярианаас атом (save), Inbox ангилах (inbox), task эзэнтэй нь (task), хүмүүс (people), төсөл (project), өдрийн тэмдэглэл, STATUS, лог, нээлттэй task-ууд. Горим: daily, weekly. Тус алхмыг дангаар нь ч дуудна — «хадгал», «checkpoint», «линк хадгал», «лог бич», «task үүсгэ», «таск дууслаа», «миний таскууд», «inbox цэгцэл», «хүн нэм», «төсөл үүсгэ», «төсөл хаа», «өдрөө эхлүүлье», «weekly review», «би юу хийв», «recap» (хуучин /fm:update save, /fm:update log, /fm:update task, /fm:update inbox, /fm:update people, /fm:update project). The one command: save, log, task, inbox, people, project, daily, weekly."
+description: "ГАНЦ КОМАНД. «update», «шинэчил», «өдрийн дүгнэлт» гэхэд юу хэрэгтэйг өөрөө шийдэж дараалан хийнэ: ярианаас атом (save), Inbox ангилах (inbox), task эзэнтэй нь (task), хүмүүс (people), төсөл (project), өдрийн тэмдэглэл, STATUS, лог, нээлттэй task-ууд. Горим: daily, weekly. Тус алхмыг дангаар нь ч дуудна — «хадгал», «checkpoint», «линк хадгал», «лог бич», «task үүсгэ», «таск дууслаа», «миний таскууд», «inbox цэгцэл», «хүн нэм», «төсөл үүсгэ», «төсөл хаа», «өдрөө эхлүүлье», «weekly review», «би юу хийв», «recap» (хуучин save, log, task, inbox, people, project командууд). The one command: save, log, task, inbox, people, project, daily, weekly."
 argument-hint: "[daily [дүгнэлт] | weekly | хурдан] [нэг өгүүлбэр төлөв]"
 ---
 ## Алхам бүр нэг GUIDE (2026-11-03: 21 команд → 11)

@@ -1,6 +1,6 @@
 ---
 name: research
-description: "🔬 Research агентын судалгааны урсгал - асуултыг Товч / Сэдэв / Мөчлөг гэж ангилж, skill-үүдийг дараалуулна (auto-research-tools → last30days → deep-research), шинэ subagent-аар fact-check хийж, тайлан бичээд Wiki-д атомын task өгнө. Soyol зөвхөн эхний brief-ийг батална. «судал», «судалгаа хий», «research», «тайлан бич», «гүн судалгаа», «deep research», «fact-check хийгээд тайлан», «хэн юу ярьж байна», «ямар tool тохирох вэ судал», «мөчлөгийн судалгаа», «hub task» гэвэл ашигла. Orchestrates research - classify, brief gate, collect, independent fact-check, report, Wiki handoff. Мөн төслийн лавлагааны мөчлөг refs — GUIDE-ийн алхам (хуучин /fm:research refs)."
+description: "🔬 Research агентын судалгааны урсгал - асуултыг Товч / Сэдэв / Мөчлөг гэж ангилж, skill-үүдийг дараалуулна (auto-research-tools → last30days → deep-research), шинэ subagent-аар fact-check хийж, тайлан бичээд Wiki-д атомын task өгнө. Soyol зөвхөн эхний brief-ийг батална. «судал», «судалгаа хий», «research», «тайлан бич», «гүн судалгаа», «deep research», «fact-check хийгээд тайлан», «хэн юу ярьж байна», «ямар tool тохирох вэ судал», «мөчлөгийн судалгаа», «hub task» гэвэл ашигла. Orchestrates research - classify, brief gate, collect, independent fact-check, report, Wiki handoff. Мөн төслийн лавлагааны мөчлөг refs — GUIDE-ийн алхам (хуучин refs команд)."
 argument-hint: "<сэдэв эсвэл асуулт> [--quick | --topic | --cycle <hub task>]"
 ---
 ## Алхам (2026-11-03: 21 команд → 11)

@@ -1,6 +1,6 @@
 ---
 name: setup
-description: "Шинэ гишүүнийг эхнээс нь тохируулна (fm_doctor, plugin, vault, Discord, sidebar, routine) ба upgrade. Мөн машин солиход нөхөх (sync), сешнийг дүрд холбох (role), vault-ийн цөм дүрэм (vault) — «тохируул», «суулга», «upgrade», «машин солив», «нөхөж ав», «дүр сонго», «чи ямар дүр вэ», «role тавь» (хуучин /fm:setup sync, /fm:setup role, /fm:setup vault). Setup, sync, role, vault."
+description: "Шинэ гишүүнийг эхнээс нь тохируулна (fm_doctor, plugin, vault, Discord, sidebar, routine) ба upgrade. Мөн машин солиход нөхөх (sync), сешнийг дүрд холбох (role), vault-ийн цөм дүрэм (vault) — «тохируул», «суулга», «upgrade», «машин солив», «нөхөж ав», «дүр сонго», «чи ямар дүр вэ», «role тавь» (хуучин sync, role, vault командууд). Setup, sync, role, vault."
 argument-hint: "[хурдан | upgrade | doctor | plugins | tools | sidebar | routines]"
 ---
 ## Алхмууд (2026-11-03: 21 команд → 11)
