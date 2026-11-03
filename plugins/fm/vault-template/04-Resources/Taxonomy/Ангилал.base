@@ -1,0 +1,125 @@
+filters:
+  and:
+    - file.inFolder("04-Resources/Taxonomy")
+    - note.type == "taxonomy"
+properties:
+  file.name:
+    displayName: Утга
+  label:
+    displayName: Нэр
+  icon:
+    displayName: Icon
+  axis:
+    displayName: Тэнхлэг
+  aliases:
+    displayName: Хуучин бичлэг
+  bridge:
+    displayName: Гүүр
+  path_or_file:
+    displayName: Байршил
+  invoke:
+    displayName: Skill дуудах
+  agent:
+    displayName: Дүр
+  trigger:
+    displayName: Эхлүүлэгч
+  key-activity:
+    displayName: Key Activity
+  ka-match:
+    displayName: Канвастай тааралт
+  evidence-count:
+    displayName: Нотолгоо (task)
+  preset:
+    displayName: Preset
+  operation:
+    displayName: Үйлдэл
+  domain:
+    displayName: Талбар
+  iris:
+    displayName: IRIS тулгалт
+views:
+  - type: table
+    name: Тэнхлэгээр
+    groupBy:
+      property: axis
+      direction: ASC
+    order:
+      - icon
+      - file.name
+      - label
+      - aliases
+      - bridge
+      - path_or_file
+  - type: table
+    name: Хэрэгсэл
+    filters:
+      and:
+        - note.axis == "tool"
+    order:
+      - icon
+      - file.name
+      - bridge
+      - command
+      - path_or_file
+  - type: table
+    name: Skill
+    filters:
+      and:
+        - note.axis == "skill"
+    order:
+      - icon
+      - file.name
+      - invoke
+      - agent
+      - tools
+  - type: table
+    name: Workflow
+    filters:
+      and:
+        - note.axis == "workflow"
+    order:
+      - icon
+      - file.name
+      - label
+      - trigger
+      - outputs
+  - type: table
+    name: Төслийн төрөл
+    filters:
+      and:
+        - note.axis == "project-type"
+    order:
+      - icon
+      - file.name
+      - label
+      - evidence-count
+      - key-activity
+      - ka-match
+      - preset
+  - type: table
+    name: Task-ийн төрөл
+    filters:
+      and:
+        - note.axis == "task-type"
+    order:
+      - icon
+      - file.name
+      - label
+      - evidence-count
+      - key-activity
+      - ka-match
+  - type: table
+    name: Техник
+    filters:
+      and:
+        - note.axis == "technique"
+    groupBy:
+      property: operation
+      direction: ASC
+    order:
+      - icon
+      - label
+      - operation
+      - domain
+      - iris
+      - value

@@ -1,14 +1,126 @@
 filters:
-  and:
+  or:
+  - and:
+    - note.type == "tool"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+  - and:
     - file.inFolder("03-Areas/Business/tools")
     - file.ext == "md"
+properties:
+  status:
+    displayName: Төлөв
+  path:
+    displayName: Зам
+  repo:
+    displayName: Repo
+  license:
+    displayName: Лиценз
+  used_for:
+    displayName: Зориулалт
+  machine:
+    displayName: Машин
 views:
-  - type: table
-    name: Хэрэгсэл
-    order:
-      - file.name
-      - type
-      - status
-    sort:
-      - property: file.mtime
-        direction: DESC
+- type: cards
+  name: Cards - бүгд (төлвөөр)
+  filters:
+    and:
+    - note.type == "tool"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+  groupBy:
+    property: status
+    direction: ASC
+  order:
+  - file.name
+  - status
+  - used_for
+- type: table
+  name: Table
+  filters:
+    and:
+    - note.type == "tool"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+  order:
+  - file.name
+  - status
+  - path
+  - repo
+  - license
+  - used_for
+  - machine
+- type: table
+  name: Active
+  filters:
+    and:
+    - note.type == "tool"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - status == "active"
+  order:
+  - file.name
+  - status
+  - path
+  - repo
+  - license
+  - used_for
+  - machine
+- type: table
+  name: Trial
+  filters:
+    and:
+    - note.type == "tool"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - status == "trial"
+  order:
+  - file.name
+  - status
+  - path
+  - repo
+  - license
+  - used_for
+  - machine
+- type: table
+  name: Archived
+  filters:
+    and:
+    - note.type == "tool"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - status == "archived"
+  order:
+  - file.name
+  - status
+  - path
+  - repo
+  - license
+  - used_for
+  - machine
+- type: table
+  name: Хэрэгсэл
+  filters:
+    and:
+    - file.inFolder("03-Areas/Business/tools")
+    - file.ext == "md"
+  order:
+  - file.name
+  - type
+  - status
+  sort:
+  - property: file.mtime
+    direction: DESC
+- type: table
+  name: <байгууллага>
+  filters:
+    and:
+    - note.type == "tool"
+    - org.toString().contains("<байгууллага>")
+  order:
+  - file.name
+  - status
+  - path
+  - repo
+  - used_for
+  - machine

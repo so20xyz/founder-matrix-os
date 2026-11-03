@@ -1,63 +1,83 @@
 ---
-date: {{date:YYYY-MM-DD}}
+date: <% tp.date.now("YYYY-MM-DD") %>
 type: daily
 tags:
   - daily
 ai-first: true
-focus: []
+focus: []          # {{fm:member}}-ийн оролт (дашбоардаас). ЖАГСААЛТ — mood/energy нь скаляр
 mood:
 energy:
+habit_morning: false
+habit_work: false
+habit_learn: false
+habit_move: false
+habit_close: false
 ---
 
-# {{date:YYYY-MM-DD}} - {{date:dddd}}
+# <% tp.date.now("YYYY-MM-DD") %> - <% tp.date.now("dddd") %>
 
 ## For future agent
 
-{{date:YYYY-MM-DD}}-ний өдрийн тэмдэглэл: юун дээр ажилласан, хэнтэй уулзсан, ямар шийдвэр гарсан, эрч хүч, өдрийн зорилго. Тухайн өдөр юу болсныг сэргээхэд эндээс эхэл.
+Daily note for this date. Captures what was worked on, who was met, decisions made, energy, and the day's intention. Pull this when reconstructing what happened on a given day.
 
-## 🌅 Өглөө
+---
 
-**Өдрийн зорилго:**
+## 🌅 Morning
 
-**Талархал:**
+**Intention:** <% tp.file.cursor() %>
+
+**Grateful for:**
 1.
 2.
 3.
 
-## 🎯 Өнөөдрийн гол 3
+---
 
-- 🔴 #1:
-- 🟡 #2:
-- 🟢 #3:
+## 🎯 Today's Focus
 
-## 📥 Inbox
+### 🔴 #1 -
 
-- [ ]
+### 🟡 #2 -
 
-## 💼 Ажил
+### 🟢 #3 -
 
-## 🏠 Хувийн
+---
 
-## 🧠 Өнөөдрийн шийдвэр ба атомууд
+## 💼 Work Log
 
-```base
-filters:
-  and:
-    - file.inFolder("04-Resources/Atomic")
-    - date == this.date
-views:
-  - type: table
-    name: Өнөөдрийн атомууд
-    order:
-      - file.basename
-      - type
-      - status
+
+
+---
+
+## 🏠 Personal
+
+
+
+---
+
+## ✅ Habits
+
+- [ ] Exercised
+- [ ] Read/learned something
+- [ ] Reached out to someone
+
+---
+
+## 🧠 Өнөөдрийн шийдвэрүүд
+
+```dataview
+TABLE WITHOUT ID decision AS "Шийдвэр", changetype AS "Төрөл", decidedby AS "Хэн", status AS "Төлөв"
+FROM "04-Resources/Atomic"
+WHERE type = "session-decision" AND dateformat(date, "yyyy-MM-dd") = this.file.name
+SORT changetype ASC
 ```
 
-## 🌙 Оройн дүгнэлт
+---
 
-**Сайн болсон:**
+## 🌙 Evening Review
 
-**Болоогүй:**
+**What went well:**
 
-**Маргаашийн #1:**
+**What didn't:**
+
+**Tomorrow's #1 priority:**

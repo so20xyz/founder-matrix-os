@@ -1,36 +1,45 @@
 ---
-date: {{date:YYYY-MM-DD}}
+date: <% tp.date.now("YYYY-MM-DD") %>
 type: meeting
+status: upcoming
+scheduled:
+met:
+priority:
+project:
+company:
+people:
+attendees:
 tags:
   - meeting
 ai-first: true
-status: upcoming
-context: work
-scheduled:
-met:
-project:
-company:
-people: []
 ---
 
-# {{title}}
+# <% tp.file.title %>
 
 ## For future agent
 
-Уулзалтын тэмдэглэл (`type: meeting`). `status`: upcoming | done | cancelled. `scheduled` = товлосон, `met` = болсон огноо. Уулзалтаас гарсан ажлыг тусдаа task болгоно — энд бүү нэгтгэ.
+Уулзалтын тэмдэглэл (task биш - `type: meeting`, `Meetings.base`-д харагдана). `status`: upcoming | done | cancelled. `scheduled` = товлосон огноо, `met` = болсон огноо. Уулзалтаас гарсан **ажлыг тусдаа task** болгож төрүүл, энэ note дотор бүү нэгтгэ.
 
 ## Хаанаас / яагаад
+<% tp.file.cursor() %>
 
-## Бэлтгэл
+## Авч очих / бэлтгэл
 
-## 📝 Тэмдэглэл
 
-> Оролцогч, ишлэл, шийдвэрийг зөвхөн хэлсэн/бичигдсэнээр нь бич. Мэдэхгүй бол TBD.
+## 📝 Тэмдэглэл *(уулзалтын үеэр)*
 
-**Оролцогчид:** TBD
+> ⚠️ Оролцогчид, ишлэл, шийдвэрийг {{fm:member}} хэлснээр л бич. Агент бүү зохио (TBD).
+
+**Оролцогчид:** TBD · **Эхэлсэн:** 
 
 ## Гол үр дүн
 
-## Дараагийн алхам (task болгох)
 
-- [ ]
+## Дараагийн алхам (task болгож төрүүлэх)
+
+- [ ] 
+
+## Links
+
+- Төсөл: 
+- Хүмүүс / байгууллага: 

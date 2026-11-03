@@ -1,0 +1,42 @@
+filters:
+  and:
+    - file.inFolder("03-Areas/Products")
+    - file.ext == "md"
+    - type == "product"
+views:
+  - type: table
+    name: Самбар (stage)
+    groupBy:
+      property: stage
+      direction: ASC
+    order:
+      - file.name
+      - kind
+      - category
+      - stage
+      - projects
+      - pricing
+  - type: table
+    name: Хүснэгт
+    order:
+      - file.name
+      - kind
+      - category
+      - stage
+      - status
+      - owner
+      - projects
+      - repo
+      - version
+      - pricing
+      - last_release
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: cards
+    name: Gallery
+    order:
+      - file.name
+      - kind
+      - stage
+      - pricing

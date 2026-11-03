@@ -1,25 +1,28 @@
 ---
-date: {{date:YYYY-MM-DD}}
-updated: {{date:YYYY-MM-DD}}
+date: <% tp.date.now("YYYY-MM-DD") %>
 type: sop
 tags:
   - sop
 ai-first: true
+uid: <% tp.date.now("YYYYMMDD-HHmmss") %>
 cadence:
 area:
 owner:
 next-run:
+scope: team
+notion-id:
+sensitivity: normal
 ---
 
-# {{title}}
+# <% tp.file.title %>
 
 ## For future agent
 
-Стандарт ажиллагааны журам: юуг, хэдий давтамжтай (`cadence`), хэн (`owner` — хүн эсвэл дүрийн slug) хийх. `next-run` = дараагийн огноо.
+Стандарт ажиллагааны журам ({{fm:member}}, 2026-09-17). `cadence` = давтамж, `area` = аль хэсэгт хамаарах, `owner` → хариуцах хүн/суудал. `next-run` дараагийн ажиллуулах огноо.
 
-## Хэзээ хэрэглэх вэ
+⚠️ Notion-ы 228 SOP-ыг бөөнөөр импортлохгүй (шилжүүлэлтийн дүрэм 8) — зөвхөн шаардлагатай нэг бүрийг гараар нэмнэ.
 
-## Алхмууд
+## Checklist
 
 - [ ]
 

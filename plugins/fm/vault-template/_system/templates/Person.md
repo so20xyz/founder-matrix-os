@@ -1,38 +1,54 @@
 ---
-date: {{date:YYYY-MM-DD}}
-updated: {{date:YYYY-MM-DD}}
+date: <% tp.date.now("YYYY-MM-DD") %>
 type: person
 tags:
   - person
 ai-first: true
-aliases: []
 role:
-relationship:
-companies: []
-projects: []
-last_interaction: {{date:YYYY-MM-DD}}
+company:
+relationship:  # team | client | partner | network | personal
+relationship_strength:
+last_interaction: <% tp.date.now("YYYY-MM-DD") %>
 follow_up_date:
-hot: false
+contact_email:
+location:
+kind: хувь хүн
+contact_phone:
+reg_no_masked:     # РД ••NN зөвхөн клиент/гэрээний хувь хүнд; {{fm:member}}-ийнхийг хэзээ ч бүү бич
+ebarimt:
+  required: false
+  type: хувь хүн     # хувь хүн | байгууллага
+  tin_ref:           # хувь хүн бол reg_no_masked, байгууллагаар авах бол [[companies/...]]
+products: []
+contracts: []
+sensitivity: normal  # normal | business
 ---
 
-# {{title}}
+# <% tp.file.title %>
 
 ## For future agent
 
-Хүний note: хэн бэ, юу хийдэг, ямар холбоотой, юунд анхаардаг. Энэ хүнтэй харилцахаас өмнө эндээс эхэл. Хувийн мэдээллийг зөвхөн тухайн хүн/эзэн хэлсэн бол бичнэ.
+Person note. Captures role, company, relationship context, what they care about, and how to help each other. Pull this before any interaction with this person or when reasoning about who knows what.
 
-## Тухай
+## About
+<% tp.file.cursor() %>
 
-## Юунд анхаардаг вэ
+## What They Care About
 
-## Бие биедээ хэрхэн тус болох вэ
 
-## Харилцаа
+## How We Can Help Each Other
 
-## Тэмдэглэл
 
-<!--
-relationship: team | client | partner | mentor | network | family | friend
-hot: true = идэвхтэй харилцаатай хүн (People.base → Hot, /fm:update people hot).
-companies / projects: "[[wikilink]]" жагсаалт (байгууллага, төсөл).
--->
+## Notes
+
+
+---
+
+## Interactions
+
+```dataview
+LIST FROM "01-GTD/Daily"
+WHERE contains(file.outlinks, this.file.link)
+SORT date DESC
+LIMIT 15
+```

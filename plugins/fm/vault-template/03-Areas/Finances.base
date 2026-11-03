@@ -1,11 +1,15 @@
 filters:
   and:
-    - note.type == "finance-record"
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
+  - note.type == "finance-record"
+  - '!file.inFolder("_system/templates")'
+  - '!file.inFolder("_trash")'
+  - file.ext == "md"
 formulas:
   month: txn-date.format("YYYY-MM")
+  icon: if(state == "actual", "✅", if(state == "saved", "🟡", "🔮"))
+  low: if(variable, net * 1.1, net)
+  high: if(variable, net * 0.9, net)
+  days_left: (date(note["txn-date"]) - today()).days
 properties:
   kind:
     displayName: Төрөл
@@ -25,59 +29,207 @@ properties:
     displayName: Компани
   formula.month:
     displayName: Сар
+  net:
+    displayName: Цэвэр
+  flow:
+    displayName: Урсгал
+  month:
+    displayName: Сар
+  state:
+    displayName: Төлөв
+  bill:
+    displayName: Төлбөр
+  balance_after:
+    displayName: Үлдэгдэл
+  formula.low:
+    displayName: Муу хувилбар (+10%)
+  formula.high:
+    displayName: Сайн хувилбар (−10%)
+  formula.days_left:
+    displayName: Хоног үлдсэн
 views:
-  - type: table
-    name: All
-    order:
-      - file.basename
-      - kind
-      - amount
-      - currency
-      - status
-      - project
-      - company
-      - txn-date
-    columnSize:
-      file.basename: 260
-  - type: table
-    name: Сар бүр
-    groupBy:
-      property: formula.month
-      direction: DESC
-    order:
-      - file.basename
-      - kind
-      - amount
-      - status
-  - type: table
-    name: Орлого
-    filters:
+- type: table
+  name: All
+  order:
+  - file.basename
+  - kind
+  - amount
+  - currency
+  - status
+  - project
+  - company
+  - txn-date
+  columnSize:
+    file.basename: 332
+- type: table
+  name: Сар бүр
+  groupBy:
+    property: formula.month
+    direction: DESC
+  order:
+  - file.basename
+  - kind
+  - amount
+  - status
+- type: table
+  name: Орлого
+  filters:
+    and:
+    - kind == "invoice"
+  order:
+  - file.basename
+  - amount
+  - status
+  - due
+  - company
+- type: table
+  name: Зарлага
+  filters:
+    and:
+    - kind != "invoice"
+  order:
+  - file.basename
+  - kind
+  - amount
+  - status
+  - due
+- type: table
+  name: Хугацаа хэтэрсэн
+  filters:
+    and:
+    - status == "overdue"
+  order:
+  - file.basename
+  - amount
+  - due
+  - company
+- type: table
+  name: Бодит
+  filters:
+    and:
+    - &id001
       and:
-        - kind == "invoice"
-    order:
-      - file.basename
-      - amount
-      - status
-      - due
-      - company
-  - type: table
-    name: Зарлага
-    filters:
+      - file.ext == "md"
+      - type == "finance-record"
+      - file.inFolder("03-Areas/Business/finances/private")
+    - and:
+      - state == "actual"
+  order:
+  - txn-date
+  - file.basename
+  - net
+  - balance_after
+  - bill
+  - area
+  - area_type
+  - areas
+  summaries:
+    net: Sum
+  columnSize:
+    note.net: 112
+- type: table
+  name: Сараар
+  groupBy:
+    property: month
+    direction: DESC
+  order:
+  - txn-date
+  - file.basename
+  - net
+  - state
+  summaries:
+    net: Sum
+  filters:
+    and:
+    - *id001
+- type: table
+  name: Төлөвлөсөн
+  filters:
+    and:
+    - *id001
+    - and:
+      - state == "forecast"
+  order:
+  - txn-date
+  - file.basename
+  - net
+  - bill
+- type: table
+  name: Сар бүрийн урсгал
+  groupBy:
+    property: month
+    direction: ASC
+  order:
+  - formula.icon
+  - file.name
+  - txn-date
+  - net
+  - formula.low
+  - formula.high
+  - bill
+  sort:
+  - property: txn-date
+    direction: ASC
+  summaries:
+    net: Sum
+    formula.low: Sum
+    formula.high: Sum
+  filters:
+    and:
+    - &id002
       and:
-        - kind != "invoice"
-    order:
-      - file.basename
-      - kind
-      - amount
-      - status
-      - due
-  - type: table
-    name: Хугацаа хэтэрсэн
-    filters:
-      and:
-        - status == "overdue"
-    order:
-      - file.basename
-      - amount
-      - due
-      - company
+      - type == "finance-record"
+      - scope == "personal"
+      - file.inFolder("03-Areas/Business/finances/private/records")
+- type: table
+  name: Ирэх 30 хоног
+  filters:
+    and:
+    - *id002
+    - and:
+      - state != "actual"
+      - date(note["txn-date"]) >= today()
+      - date(note["txn-date"]) <= today() + "30d"
+  order:
+  - formula.icon
+  - file.name
+  - txn-date
+  - formula.days_left
+  - net
+  sort:
+  - property: txn-date
+    direction: ASC
+  summaries:
+    net: Sum
+- type: table
+  name: Бодит (төлсөн/орсон)
+  filters:
+    and:
+    - *id002
+    - and:
+      - state == "actual"
+  groupBy:
+    property: flow
+    direction: ASC
+  order:
+  - file.name
+  - txn-date
+  - net
+  - doc
+  summaries:
+    net: Sum
+- type: table
+  name: Зээлүүд
+  filters:
+    and:
+    - *id002
+    - and:
+      - kind == "payment"
+      - bill.toString().contains("зээл")
+  order:
+  - formula.icon
+  - file.name
+  - txn-date
+  - net
+  summaries:
+    net: Sum

@@ -23,6 +23,8 @@ project:
 company:
 doc:
 recurs:
+areas:
+  - "[[03-Areas/Personal/Life/Life]]"
 ---
 
 # {{title}}

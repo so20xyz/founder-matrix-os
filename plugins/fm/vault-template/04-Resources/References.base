@@ -1,14 +1,45 @@
 filters:
-  and:
+  or:
+  - and:
     - note.type == "reference"
     - '!file.inFolder("_system/templates")'
     - '!file.inFolder("_trash")'
     - file.ext == "md"
+  - and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - projects.contains(this.file.name)
+  - and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - note.type == "reading"
+formulas:
+  status_icon: if(status == "read", "✅", if(status == "reading", "📖", if(status == "to-read", "⏭️", if(status == "reference", "📚", "❔"))))
+  age_days: if(added, (today() - date(added)).days, "")
+  cover_ok: if(!cover, "🚫 cover алга", if(cover.toString().contains("/_cat-"), "⚠️ placeholder", "✅ зураг"))
+  atom_ok: if(!atoms, "⚠️ атом алга", "✅")
+  category: if(note.type == "research", "🔬 Судалгаа", if(["post", "ads", "moodboard"].contains(note.reftype.toString().lower()), "📱 Пост", if(["video", "podcast", "music", "watch event"].contains(note.reftype.toString().lower()),
+    "🎬 Видео", if(note.reftype.toString().lower() == "product", "📦 Бүтээгдэхүүн", if(["website", "article"].contains(note.reftype.toString().lower()), "🌐 Вэбсайт", if(["ai skill", "template", "my tools",
+    "design-input", "design-spec"].contains(note.reftype.toString().lower()), "🛠 Хэрэгсэл", if(note.reftype.toString().lower() == "book", "📚 Ном", "🔗 Бусад")))))))
+  stage: if(["done", "studied", "reviewed"].contains(note.status), "✅ Дууссан", if(note.status == "active", "🔄 Ашиглаж буй", if(note.status == "selected", "⭐ Сонгосон", if(note.status == "someday", "💤 Хэзээ
+    нэгэн цагт", "📥 Inbox"))))
+  created: if(note.collected, note.collected, if(note.date, note.date, file.ctime))
+  last_used: if(note.last_used, note.last_used, file.mtime)
 properties:
   cover:
     displayName: Cover
   reftype:
     displayName: Төрөл
+  price:
+    displayName: Үнэ
+  stock:
+    displayName: Үлдэгдэл
+  seller:
+    displayName: Зарагч
+  checked:
+    displayName: Шалгасан
   platform:
     displayName: Платформ
   status:
@@ -21,184 +52,598 @@ properties:
     displayName: Хадгалсан
   favorite:
     displayName: ★
+  formula.status_icon:
+    displayName: ' '
+  title:
+    displayName: Гарчиг
+  priority:
+    displayName: Урьд.
+  format:
+    displayName: Хэлбэр
+  framework:
+    displayName: Framework
+  rating:
+    displayName: Үнэлгээ
+  added:
+    displayName: Нэмсэн
+  started:
+    displayName: Эхэлсэн
+  finished:
+    displayName: Дууссан
+  formula.age_days:
+    displayName: Хэдэн хоног
+  formula.cover_ok:
+    displayName: Cover
+  formula.atom_ok:
+    displayName: Атом
+  atoms:
+    displayName: Атом
+  projects:
+    displayName: Төсөл
+  creator:
+    displayName: Зохиогч
+  topics:
+    displayName: Сэдэв
+  importance:
+    displayName: Ач холбогдол
+  formula.category:
+    displayName: Ангилал
+  formula.stage:
+    displayName: Төлөв
+  formula.created:
+    displayName: Үүссэн
+  formula.last_used:
+    displayName: Сүүлд ашигласан
+  kind:
+    displayName: Төрөл
+  summary:
+    displayName: Товч
+  posted:
+    displayName: Огноо
+  technique:
+    displayName: Техник
 views:
-  - type: cards
-    name: All
-    groupBy:
-      property: reftype
-      direction: ASC
-    order:
-      - file.name
-      - reftype
-      - platform
-      - status
-      - url
-    image: cover
-  - type: cards
-    name: Product
-    filters:
-      and:
-        - reftype == "Product"
-    order:
-      - file.name
-      - platform
-      - tags
-    image: cover
-  - type: cards
-    name: Video
-    filters:
-      and:
-        - reftype == "Video"
-    order:
-      - file.name
-      - created
-      - tags
-    image: cover
-  - type: cards
-    name: AI skill
-    filters:
-      and:
-        - reftype == "ai skill"
-    order:
-      - file.name
-      - tags
-    image: cover
-  - type: cards
-    name: My Tools
-    filters:
-      and:
-        - reftype == "My Tools"
-    order:
-      - file.name
-      - tags
-    image: cover
-  - type: cards
-    name: Template
-    filters:
-      and:
-        - reftype == "Template"
-    order:
-      - file.name
-      - tags
-    image: cover
-  - type: cards
-    name: Website
-    filters:
-      and:
-        - reftype == "Website"
-    order:
-      - file.name
-      - tags
-    image: cover
-  - type: cards
-    name: Reading
-    filters:
-      or:
-        - reftype == "Post"
-        - reftype == "Article"
-        - reftype == "Book"
-    order:
-      - file.name
-      - reftype
-    image: cover
-  - type: cards
-    name: Visual
-    filters:
-      or:
-        - reftype == "Moodboard"
-        - reftype == "Infographic"
-        - reftype == "website inspire"
-    order:
-      - file.name
-      - reftype
-    image: cover
-  - type: cards
-    name: Working
-    filters:
-      or:
-        - reftype == "design-input"
-        - reftype == "design-spec"
-        - reftype == "idea-set"
-    order:
-      - file.name
-      - reftype
-    image: cover
-  - type: cards
-    name: Research
-    filters:
-      and:
-        - reftype == "Research"
-    order:
-      - file.name
-      - reftype
-    image: cover
-  - type: cards
-    name: Other
-    filters:
-      and:
-        - reftype != "Product"
-        - reftype != "Video"
-        - reftype != "ai skill"
-        - reftype != "My Tools"
-        - reftype != "Template"
-        - reftype != "Website"
-        - reftype != "Post"
-        - reftype != "Article"
-        - reftype != "Book"
-        - reftype != "Moodboard"
-        - reftype != "Infographic"
-        - reftype != "website inspire"
-        - reftype != "design-input"
-        - reftype != "design-spec"
-        - reftype != "idea-set"
-        - reftype != "Research"
-    order:
-      - file.name
-      - reftype
-    image: cover
-  - type: cards
-    name: Favorites
-    filters:
-      and:
-        - favorite == true
-    order:
-      - file.name
-      - reftype
-    image: cover
-  - type: cards
-    name: No cover
-    filters:
-      and:
-        - "!cover"
-    order:
-      - file.name
-      - url
-  - type: table
-    name: Table
-    groupBy:
-      property: reftype
-      direction: ASC
-    order:
-      - file.name
-      - reftype
-      - platform
-      - status
-      - created
-      - url
-  - type: table
-    name: 🧠 Синапс (хэн ашигласан)
-    order:
-      - file.name
-      - project
-      - task
-      - file.backlinks
-  - type: table
-    name: Эх сурвалж (source)
-    filters:
-      and:
-        - type == "source"
-    order:
-      - file.name
-      - claim
-      - status
-      - source-date
+- type: cards
+  name: All
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+  groupBy:
+    property: reftype
+    direction: ASC
+  order:
+  - file.name
+  - reftype
+  - platform
+  - status
+  - url
+  image: cover
+- type: cards
+  name: Reading
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - or:
+      - reftype == "Post"
+      - reftype == "Article"
+      - reftype == "Book"
+  order:
+  - file.name
+  - reftype
+  image: cover
+- type: cards
+  name: Visual
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - or:
+      - reftype == "Moodboard"
+      - reftype == "Infographic"
+      - reftype == "website inspire"
+  order:
+  - file.name
+  - reftype
+  image: cover
+- type: cards
+  name: Working
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - or:
+      - reftype == "design-input"
+      - reftype == "design-spec"
+      - reftype == "idea-set"
+  order:
+  - file.name
+  - reftype
+  image: cover
+- type: cards
+  name: Favorites
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - favorite == true
+  order:
+  - file.name
+  - reftype
+  image: cover
+- type: cards
+  name: No cover
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - '!cover'
+  order:
+  - file.name
+  - url
+- type: table
+  name: 🧠 Синапс (хэн ашигласан)
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+  order:
+  - file.name
+  - project
+  - task
+  - file.backlinks
+- type: table
+  name: Эх сурвалж (source)
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - type == "source"
+  order:
+  - file.name
+  - claim
+  - status
+  - source-date
+- type: cards
+  name: References
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - projects.contains(this.file.name)
+  groupBy:
+    property: reftype
+    direction: ASC
+  order:
+  - file.name
+  - price
+  - stock
+  - platform
+  - status
+  - reftype
+  - tags
+  sort:
+  - property: file.name
+    direction: ASC
+  image: cover
+- type: table
+  name: Table (төсөл)
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - projects.contains(this.file.name)
+  order:
+  - status
+  - file.name
+  - price
+  - stock
+  - platform
+  - checked
+  - reftype
+  - url
+- type: table
+  name: ⚠️ Төслийн лавлагаа - cover, атом шалгах
+  filters:
+    and:
+    - note.type == "reference"
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - projects.contains(this.file.name)
+  order:
+  - file.name
+  - formula.cover_ok
+  - formula.atom_ok
+  - atoms
+  - reftype
+  - price
+  - platform
+  - cover
+  sort:
+  - property: formula.cover_ok
+    direction: ASC
+  columnSize:
+    file.name: 320
+    atoms: 300
+- type: table
+  name: 📚 Бүх ном
+  filters:
+    and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - note.type == "reading"
+  order:
+  - formula.status_icon
+  - file.basename
+  - creator
+  - status
+  - priority
+  - framework
+  - formula.age_days
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 260
+    author: 150
+- type: table
+  name: 📖 Уншиж байгаа
+  filters:
+    and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - note.type == "reading"
+    - status == "reading"
+  order:
+  - formula.status_icon
+  - file.basename
+  - creator
+  - framework
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 260
+- type: table
+  name: ⏭️ Дараагийнх
+  filters:
+    and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - note.type == "reading"
+    - status == "to-read"
+  order:
+  - priority
+  - file.basename
+  - creator
+  - framework
+  columnSize:
+    file.basename: 260
+- type: table
+  name: ✅ Уншсан
+  filters:
+    and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - note.type == "reading"
+    - status == "read"
+  order:
+  - formula.status_icon
+  - file.basename
+  - creator
+  - rating
+  - finished
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 260
+- type: table
+  name: 🧭 Framework-аар
+  filters:
+    and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - note.type == "reading"
+  groupBy:
+    property: framework
+    direction: ASC
+  order:
+  - formula.status_icon
+  - file.basename
+  - creator
+  - status
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 260
+- type: cards
+  name: 🖼 Бүгд
+  filters:
+    and:
+    - or:
+      - note.type == "reference"
+      - note.type == "research"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+  order:
+  - file.name
+  - formula.category
+  - formula.stage
+  - platform
+  - formula.created
+  - formula.last_used
+  sort:
+  - property: formula.created
+    direction: DESC
+  limit: 50
+  image: cover
+- type: cards
+  name: 📥 Сүүлийн 7 хоног
+  filters:
+    and:
+    - or:
+      - note.type == "reference"
+      - note.type == "research"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+    - formula.created >= today() - "7 days"
+  order:
+  - file.name
+  - formula.category
+  - platform
+  - formula.stage
+  - formula.created
+  sort:
+  - property: formula.created
+    direction: DESC
+  limit: 50
+  image: cover
+- type: cards
+  name: 📱 Пост
+  filters:
+    and:
+    - or:
+      - note.type == "reference"
+      - note.type == "research"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+    - formula.category == "📱 Пост"
+  order:
+  - file.name
+  - platform
+  - creator
+  - formula.stage
+  - formula.created
+  - formula.last_used
+  sort:
+  - property: formula.created
+    direction: DESC
+  limit: 50
+  image: cover
+- type: cards
+  name: 🎬 Видео
+  filters:
+    and:
+    - or:
+      - note.type == "reference"
+      - note.type == "research"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+    - formula.category == "🎬 Видео"
+  order:
+  - file.name
+  - platform
+  - creator
+  - formula.stage
+  - formula.created
+  - formula.last_used
+  sort:
+  - property: formula.created
+    direction: DESC
+  limit: 50
+  image: cover
+- type: cards
+  name: 📦 Бүтээгдэхүүн
+  filters:
+    and:
+    - or:
+      - note.type == "reference"
+      - note.type == "research"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+    - formula.category == "📦 Бүтээгдэхүүн"
+  order:
+  - file.name
+  - formula.stage
+  - url
+  - formula.created
+  - formula.last_used
+  sort:
+  - property: formula.created
+    direction: DESC
+  limit: 50
+  image: cover
+- type: cards
+  name: 🌐 Вэбсайт
+  filters:
+    and:
+    - or:
+      - note.type == "reference"
+      - note.type == "research"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+    - formula.category == "🌐 Вэбсайт"
+  order:
+  - file.name
+  - formula.stage
+  - url
+  - formula.created
+  - formula.last_used
+  sort:
+  - property: formula.created
+    direction: DESC
+  limit: 50
+  image: cover
+- type: cards
+  name: 🛠 Хэрэгсэл
+  filters:
+    and:
+    - or:
+      - note.type == "reference"
+      - note.type == "research"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+    - formula.category == "🛠 Хэрэгсэл"
+  order:
+  - file.name
+  - formula.stage
+  - url
+  - formula.created
+  - formula.last_used
+  sort:
+  - property: formula.last_used
+    direction: DESC
+  limit: 50
+  image: cover
+- type: cards
+  name: 🔗 Бусад
+  filters:
+    and:
+    - or:
+      - note.type == "reference"
+      - note.type == "research"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+    - or:
+      - formula.category == "📚 Ном"
+      - formula.category == "🔗 Бусад"
+  order:
+  - file.name
+  - formula.category
+  - formula.stage
+  - formula.created
+  - formula.last_used
+  sort:
+  - property: formula.created
+    direction: DESC
+  limit: 50
+  image: cover
+- type: table
+  name: Төлөвөөр (GTD)
+  filters:
+    and:
+    - or:
+      - note.type == "reference"
+      - note.type == "research"
+    - file.ext == "md"
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("99-Archive")'
+  groupBy:
+    property: formula.stage
+    direction: ASC
+  order:
+  - file.name
+  - formula.stage
+  - formula.category
+  - platform
+  - creator
+  - topics
+  - importance
+  - formula.created
+  - formula.last_used
+  - url
+  sort:
+  - property: formula.created
+    direction: DESC
+  limit: 50
+- type: cards
+  name: 📱 Social saves
+  filters:
+    and:
+    - file.inFolder("03-Areas/Studio/Social saves/gallery")
+    - type == "reference"
+  order:
+  - title
+  - creator
+  - topics
+  image: cover
+- type: cards
+  name: Сэдвээр
+  filters:
+    and:
+    - file.inFolder("03-Areas/Studio/Social saves/gallery")
+    - type == "reference"
+  groupBy:
+    property: topics
+    direction: ASC
+  order:
+  - title
+  - creator
+  image: cover
+- type: cards
+  name: Чухал (3)
+  filters:
+    and:
+    - file.inFolder("03-Areas/Studio/Social saves/gallery")
+    - type == "reference"
+    - importance == 3
+  groupBy:
+    property: topics
+    direction: ASC
+  order:
+  - title
+  - summary
+  image: cover
+- type: table
+  name: Хүснэгт
+  filters:
+    and:
+    - file.inFolder("03-Areas/Studio/Social saves/gallery")
+    - type == "reference"
+  order:
+  - title
+  - topics
+  - importance
+  - creator
+  - platform
+  - kind
+  - summary
+  - posted
+- type: cards
+  name: 🧭 Техникээр
+  filters:
+    and:
+    - file.inFolder("03-Areas/Studio/Social saves/gallery")
+    - '!technique.isEmpty()'
+  groupBy:
+    property: technique
+    direction: ASC
+  order:
+  - title
+  - technique
+  - platform
+  image: cover

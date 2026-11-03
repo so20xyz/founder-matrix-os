@@ -11,6 +11,13 @@
 
 ---
 
+## 0.10.2 — 2026-11-03
+
+### Өөрчилсөн
+- **Багийн repo = maintainer-ийн бүрэн ажлын урсгал.** `fm_rules export/update` одоо BOOT, дүрийн note-оос гадна **base** (Tasks, Projects, Atoms, Decisions, Topics, References, Ангилал …), **загвар** (Task, Topic, Session Decision, Product, Research, Албан бичиг …) ба **workflow**-уудыг (`04-Resources/Taxonomy/Workflow/`) зөөнө. `/fm:update` бүрт багийн vault-д очно (хуучин нь `_trash/rules-<огноо>/`-д).
+  - Яагаад: itge.e vault-аа сайжруулах бүрт баг яг адилхан ажиллана · Дүрэм: [[04-Resources/Atomic/decisions/2026-11-03 - Atlas322 зөвхөн INAI баг, хувийн төслүүд rollingbd дээр]]
+  - Ойлго: хувийн санхүү, тодорхой төслийн base, хувийн бүртгэл зөөгдөхгүй; нэрсийг нуух хүснэгт maintainer-ийн vault-д.
+
 ## 0.10.1 — 2026-11-03
 
 ### Нэмсэн

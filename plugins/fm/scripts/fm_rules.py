@@ -41,10 +41,33 @@ GENERIC = {"README", "Projects", "People", "Companies", "Life", "Project Files",
            "Output", "Inbox", "Chat", "Boards", "specs", "assets", "Archive", "Outputs"}
 
 
-def files():
+# itge.e 2026-11-03: the team repo carries the maintainer's whole Claude workflow — bases, templates, workflows too
+EXTRA = ["*/*.base", "*/*/*.base", "_system/templates/*.md", "04-Resources/Taxonomy/Workflow/*.md"]
+SKIP = ("_trash", ".backups", "99-Archive", ".obsidian", "finances", "Private Finance", "Subscriptions", "/Chat/",
+        "03-Areas/Business/", "library/repos/")
+
+
+def extra(root):
+    for g in EXTRA:
+        for p in sorted(Path(root).glob(g)):
+            rel = p.relative_to(root).as_posix()
+            if any(x in rel for x in SKIP):
+                continue
+            if rel.startswith("02-Projects/") and rel.count("/") > 1:   # a single project's own base
+                continue
+            yield rel
+
+
+def files(root=None):
     yield "_system/BOOT.md"
     for n in CORE:
         yield "%s/%s.md" % (ROLE_DIR, n)
+    if root is not None:
+        yield from extra(root)
+
+
+def _is_role(rel):
+    return rel.startswith(ROLE_DIR + "/")
 
 
 def split(text):
@@ -174,12 +197,14 @@ def export(vault, apply):
         rewrite.update(json.loads(local.read_text(encoding="utf-8")))
     tok = tokens(vault) - set(rewrite)
     log = []
-    for rel in files():
+    for rel in files(vault):
         src = vault / rel
         if not src.is_file():
             log.append("missing  %s" % rel); continue
         text = src.read_text(encoding="utf-8")
-        if rel.endswith("BOOT.md"):
+        if not rel.endswith("BOOT.md") and not _is_role(rel):
+            out = text                                                          # base / template / workflow: whole
+        elif rel.endswith("BOOT.md"):
             prev = TEMPLATE / rel
             out = merge_boot(text, prev.read_text(encoding="utf-8") if prev.is_file() else "")
         else:
@@ -217,13 +242,13 @@ def update(vault, apply):
     today = datetime.date.today().isoformat()
     trash = vault / "_trash" / ("rules-" + today)
     log = []
-    for rel in files():
+    for rel in files(TEMPLATE):
         src = TEMPLATE / rel
         if not src.is_file():
             continue
         new = src.read_text(encoding="utf-8").replace("{{fm:member}}", member).replace("{{fm:date}}", today)
         dst = vault / rel
-        if dst.is_file() and not rel.endswith("BOOT.md"):
+        if dst.is_file() and _is_role(rel):
             ofm, _, tail = split(dst.read_text(encoding="utf-8"))
             nfm, nbody, _ = split(new)
             new = join(nfm + state_of(ofm), nbody, tail)            # their run state and history stay

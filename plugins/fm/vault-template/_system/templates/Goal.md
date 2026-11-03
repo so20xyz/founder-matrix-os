@@ -1,48 +1,28 @@
 ---
-date: {{date:YYYY-MM-DD}}
-updated: {{date:YYYY-MM-DD}}
+date: <% tp.date.now("YYYY-MM-DD") %>
 type: goal
 tags:
   - goal
 ai-first: true
-aliases: []
-year: {{date:YYYY}}
-horizon: year
+category:
 status: active
-areas: []
-projects: []
+progress: 0
+target_date: 2026-12-31
 ---
 
-# {{title}}
+# <% tp.file.title %>
 
 ## For future agent
 
-Зорилгын note (`type: goal`). Жилийн зорилгууд нэг note-д (`03-Areas/Goals/<он> Goals.md`), зорилго бүр хэмжүүртэй. Төсөл `goals:` талбараар энд холбогдоно. Зорилгыг эзний үгээр бичнэ — Agent зохиохгүй.
+Goal note. Captures why this goal matters, success criteria, milestones, and progress. Pull this when assessing whether work being proposed actually moves toward a stated goal.
 
-## Яагаад
+## Why This Matters
+<% tp.file.cursor() %>
 
-## Зорилгууд
+## Success Criteria
 
-## Төслүүд
 
-```base
-filters:
-  and:
-    - type == "project"
-    - list(goals).contains(this)
-views:
-  - type: table
-    name: Зорилгын төслүүд
-    order:
-      - file.basename
-      - status
-      - area
-      - due
-```
+## Milestones
+- [ ]
 
-## Улирлын эргэц
-
-<!--
-horizon: life | year | quarter
-status: active | achieved | dropped
--->
+## Progress Log

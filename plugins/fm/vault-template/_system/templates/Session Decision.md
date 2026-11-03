@@ -1,57 +1,53 @@
 ---
-date: {{date:YYYY-MM-DD}}
-updated: {{date:YYYY-MM-DD}}
+date: <% tp.date.now("YYYY-MM-DD") %>
 type: session-decision
 tags:
   - session-decision
+  - decision
+  - <% "<changetype>" %>
 ai-first: true
-decision: "<нэг мөрөөр шийдвэр>"
+from:
+topics:
+up: "[[04-Resources/Atomic/decisions/Decisions]]"
+decision: "<нэг мөр, .base мөрөнд задлахгүй харагдана>"
 status: accepted
-changetype: content
-projects: []
-areas: []
-decidedby: me
-role:
-confidence: stated
-reversible: true
-sessionref: "[[_system/logs/{{date:YYYY-MM-DD}}]]"
+changetype: <task|project|skill|structure|tool|schema|config|content>
+scope: "<өөрчилсөн файлын зам, verbatim>"
+projects:
+  - "[[02-Projects/.../...]]"
+decidedby: <bd|claude>
+confidence: <stated|high|medium|speculation>
+reversible: <true|false>
+sessionref: "[[_system/logs/<% tp.date.now("YYYY-MM-DD") %>]]"
 supersedes: []
 supersededby: []
+updated: <% tp.date.now("YYYY-MM-DD") %>
 ---
 
-# <Шийдвэрийн гарчиг монголоор>
-
 ## For future agent
-
-2–3 өгүүлбэр: юуг, хэн, хэзээ шийдсэн; төлөв, итгэлцэл; энэ атом ямар «яагаад»-ыг хадгална (as of {{date:YYYY-MM-DD}}).
+<2-3 өгүүлбэр: юуг, хэн, хэзээ шийдсэн. Статус, итгэлцэл. Энэ атом ямар "яагаад"-ыг хадгалж байгаа. (as of <огноо>)>
 
 ## Шийдвэр
+<Нэг догол мөр эсвэл жагсаалт. Юуг шийдсэн бэ.>
 
 ## Нөхцөл байдал
+<Ямар нөхцөлд гарсан бэ. Ямар асуудлыг шийдэж байсан бэ.>
 
 ## Авч үзсэн хувилбарууд
-
-| Хувилбар | Үр дагавар | Сонголт |
-|---|---|---|
+<Зөвхөн шийдвэрийн атомд. Хүснэгт: хувилбар | үр дагавар | сонголт (✅/⛔)>
 
 ## Үндэслэл
-
-Эзний ишлэл огноотой. Agent-ийн дүгнэлт бол `confidence`-ээр тэмдэглэ.
+<Яагаад энэ хувилбар. {{fm:member}}-ийн шууд ишлэл байвал огноотой. Claude-ийн дүгнэлт бол confidence-ээр тэмдэглэ.>
 
 ## Юу өөрчлөгдсөн
+<Бодит файл, зам. Юу үүссэн, зөөгдсөн, өөрчлөгдсөн.>
 
 ## Юу хийж болохгүй
+<Заавал биш. Дараагийн session дахин алдахгүйн тулд.>
 
-## Эргэж харах нөхцөл
+## Эргээд харах болзол
+<Заавал биш. Хэрэв X болбол → шинэ атом бич, энэ атомын status-ыг superseded болго, supersededby-г заа.>
 
-Хэрэв X болбол → шинэ атом, энэ атомын `status: superseded`, `supersededby:`.
-
-<!--
-enum:
-  status: proposed | accepted | superseded | reverted
-  changetype: task | project | skill | structure | tool | schema | config | content
-  decidedby: me | "@Нэр" | <дүрийн slug>
-  confidence: stated | high | medium | speculation
-Файлын нэр: 04-Resources/Atomic/decisions/YYYY-MM-DD - <монгол гарчиг>.md
-projects/areas хоёрын ядаж нэг нь ≥1 холбоостой байна.
--->
+## Эх сурвалж ба холбоос
+- Session лог: [[_system/logs/<% tp.date.now("YYYY-MM-DD") %>]]
+- <Холбогдох төсөл, tool, өмнөх атом>

@@ -1,10 +1,50 @@
 filters:
-  and:
-    - file.inFolder("01-GTD/Inbox")
-    - file.ext == "md"
+  or:
+    - and:
+        - file.inFolder("01-GTD/Inbox")
+        - file.ext == "md"
+    - and:
+        - file.ext == "md"
+        - '!file.inFolder("_trash")'
+        - '!file.inFolder("99-Archive")'
+        - '!file.inFolder("03-Areas/Business/finances/private")'
+        - note.private != true
+        - or:
+            - file.inFolder("01-GTD/Inbox")
+            - note.status == "inbox"
+    - and:
+        - note.type == "reference"
+        - note.collected >= today() - "7 days"
+        - file.ext == "md"
+        - '!file.inFolder("_trash")'
+formulas:
+  stream: if(note.type == "reference" || note.type == "research" || note.type == "clip", "🔬 Судалгаа / лавлагаа", "📁 Төсөл / санхүү")
+properties:
+  formula.stream:
+    displayName: Урсгал
+  type:
+    displayName: Төрөл
+  status:
+    displayName: Төлөв
+  project:
+    displayName: Төсөл
+  collected:
+    displayName: Ирсэн
+  cover:
+    displayName: Cover
+  platform:
+    displayName: Платформ
+  reftype:
+    displayName: Төрөл
+  url:
+    displayName: Холбоос
 views:
   - type: table
     name: Хураалт
+    filters:
+      and:
+        - file.inFolder("01-GTD/Inbox")
+        - file.ext == "md"
     order:
       - file.name
       - file.ctime
@@ -12,3 +52,122 @@ views:
     sort:
       - property: file.ctime
         direction: DESC
+    columnSize:
+      file.name: 689
+  - type: table
+    name: 📁 Төсөл / санхүү
+    filters:
+      and:
+        - file.ext == "md"
+        - '!file.inFolder("_trash")'
+        - '!file.inFolder("99-Archive")'
+        - '!file.inFolder("03-Areas/Business/finances/private")'
+        - note.private != true
+        - or:
+            - file.inFolder("01-GTD/Inbox")
+            - note.status == "inbox"
+        - note.type != "reference"
+        - note.type != "research"
+        - note.type != "clip"
+        - file.name != "Inbox"
+    order:
+      - file.name
+      - type
+      - status
+      - project
+      - file.ctime
+    sort:
+      - property: file.ctime
+        direction: DESC
+  - type: cards
+    name: 🔬 Судалгаа / лавлагаа
+    filters:
+      and:
+        - file.ext == "md"
+        - '!file.inFolder("_trash")'
+        - '!file.inFolder("99-Archive")'
+        - '!file.inFolder("03-Areas/Business/finances/private")'
+        - note.private != true
+        - or:
+            - file.inFolder("01-GTD/Inbox")
+            - note.status == "inbox"
+        - or:
+            - note.type == "reference"
+            - note.type == "research"
+            - note.type == "clip"
+    order:
+      - file.name
+      - collected
+      - status
+    sort:
+      - property: collected
+        direction: DESC
+    image: cover
+  - type: table
+    name: 2 урсгал
+    filters:
+      and:
+        - file.ext == "md"
+        - '!file.inFolder("_trash")'
+        - '!file.inFolder("99-Archive")'
+        - '!file.inFolder("03-Areas/Business/finances/private")'
+        - note.private != true
+        - or:
+            - file.inFolder("01-GTD/Inbox")
+            - note.status == "inbox"
+        - file.name != "Inbox"
+    groupBy:
+      property: formula.stream
+      direction: ASC
+    order:
+      - file.name
+      - formula.stream
+      - type
+      - status
+  - type: cards
+    name: Сүүлийн 7 хоног
+    filters:
+      and:
+        - note.type == "reference"
+        - note.collected >= today() - "7 days"
+        - file.ext == "md"
+        - '!file.inFolder("_trash")'
+    order:
+      - file.name
+      - collected
+      - platform
+      - status
+      - url
+    sort:
+      - property: collected
+        direction: DESC
+    image: cover
+  - type: cards
+    name: Сонгоогүй (inbox)
+    filters:
+      and:
+        - note.type == "reference"
+        - note.collected >= today() - "7 days"
+        - file.ext == "md"
+        - '!file.inFolder("_trash")'
+        - note.status == "inbox"
+    order:
+      - file.name
+      - collected
+      - platform
+    image: cover
+  - type: table
+    name: Хүснэгт
+    filters:
+      and:
+        - note.type == "reference"
+        - note.collected >= today() - "7 days"
+        - file.ext == "md"
+        - '!file.inFolder("_trash")'
+    order:
+      - file.name
+      - collected
+      - platform
+      - reftype
+      - status
+      - url

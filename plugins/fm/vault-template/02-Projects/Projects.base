@@ -1,15 +1,16 @@
 filters:
   and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "project"
+  - '!file.inFolder("_system/templates")'
+  - '!file.inFolder("_trash")'
+  - file.ext == "md"
+  - note.type == "project"
 formulas:
-  status_icon: if(status == "active", "🟢", if(status == "blocked", "🔴", if(status == "stalled", "🟡", if(status == "idle", "💤", if(status == "planning", "⚪", if(status == "on-hold", "⏸️", if(status == "completed", "✅", if(status == "archived", "📦", "❔"))))))))
+  status_icon: if(status == "active", "🟢", if(status == "blocked", "🔴", if(status == "stalled", "🟡", if(status == "idle", "💤", if(status == "planning", "⚪", if(status == "on-hold", "⏸️", if(status == "completed",
+    "✅", if(status == "archived", "📦", "❔"))))))))
   days_since_update: if(updated, (today() - date(updated)).days, "")
 properties:
   formula.status_icon:
-    displayName: " "
+    displayName: ' '
   formula.days_since_update:
     displayName: Stale (days)
   status:
@@ -33,169 +34,167 @@ properties:
   parent:
     displayName: Эцэг төсөл
 views:
-  - type: table
-    name: Төслүүд
-    order:
-      - formula.status_icon
-      - file.basename
-      - parent
-      - status
-      - start
-      - due
-      - area
-    sort:
-      - property: formula.status_icon
-        direction: DESC
-    columnSize:
-      formula.status_icon: 40
-      file.basename: 210
-  - type: table
-    name: 🏠 Home
-    filters:
-      and:
-        - context == "home"
-    order:
-      - formula.status_icon
-      - file.basename
-      - status
-      - area
-      - due
-    columnSize:
-      formula.status_icon: 40
-      file.basename: 210
-  - type: table
-    name: 💼 Work
-    filters:
-      and:
-        - context == "work"
-    groupBy:
-      property: area
-      direction: ASC
-    order:
-      - formula.status_icon
-      - file.basename
-      - parent
-      - status
-      - due
-    columnSize:
-      formula.status_icon: 40
-      file.basename: 210
-  - type: table
-    name: Гол төслүүд
-    filters:
-      and:
-        - parent.isEmpty()
-    order:
-      - formula.status_icon
-      - file.basename
-      - status
-      - start
-      - due
-      - area
-    columnSize:
-      formula.status_icon: 40
-      file.basename: 200
-  - type: table
-    name: Дэд төслүүд
-    groupBy:
-      property: parent
-      direction: ASC
-    order:
-      - formula.status_icon
-      - file.basename
-      - status
-      - area
-    columnSize:
-      formula.status_icon: 40
-      file.basename: 210
-  - type: table
-    name: Active
-    filters:
-      and:
-        - status == "active"
-    order:
-      - formula.status_icon
-      - file.basename
-      - tags
-      - updated
-    columnSize:
-      formula.status_icon: 40
-      file.basename: 183
-  - type: table
-    name: Stalled
-    filters:
-      and:
-        - status == "stalled"
-    order:
-      - file.basename
-      - tags
-      - updated
-      - formula.days_since_update
-  - type: table
-    name: Planning
-    filters:
-      and:
-        - status == "planning"
-    order:
-      - file.basename
-      - tags
-      - date
-      - start
-      - due
-  - type: table
-    name: On Hold
-    filters:
-      or:
-        - status == "on-hold"
-    order:
-      - file.basename
-      - tags
-      - updated
-      - formula.days_since_update
-  - type: table
-    name: Archived
-    filters:
-      and:
-        - status == "archived"
-    order:
-      - file.basename
-      - tags
-      - updated
-  - type: table
-    name: All
-    groupBy:
-      property: status
-      direction: ASC
-    order:
-      - formula.status_icon
-      - file.basename
-      - parent
-      - status
-      - tags
-      - updated
-      - formula.days_since_update
-    columnSize:
-      formula.status_icon: 70
-      file.basename: 165
-  - type: table
-    name: Timeline
-    order:
-      - formula.status_icon
-      - file.basename
-      - start
-      - due
-      - status
-      - area
-    columnSize:
-      formula.status_icon: 40
-      file.basename: 200
-  - type: table
-    name: Санхүү
-    order:
-      - file.basename
-      - income
-      - expenses
-      - status
-      - area
-    columnSize:
-      file.basename: 244
+- type: table
+  name: Төслүүд
+  order:
+  - formula.status_icon
+  - file.basename
+  - parent
+  - status
+  - start
+  - due
+  - area
+  sort:
+  - property: formula.status_icon
+    direction: DESC
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 210
+- type: table
+  name: 🏠 Home
+  filters:
+    and:
+    - context == "home"
+  order:
+  - formula.status_icon
+  - file.basename
+  - status
+  - area
+  - due
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 210
+- type: table
+  name: 💼 Work
+  filters:
+    and:
+    - context == "work"
+  groupBy:
+    property: area
+    direction: ASC
+  order:
+  - formula.status_icon
+  - file.basename
+  - parent
+  - status
+  - due
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 210
+- type: table
+  name: Гол төслүүд
+  filters:
+    and:
+    - parent.isEmpty()
+  order:
+  - formula.status_icon
+  - file.basename
+  - status
+  - start
+  - due
+  - area
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 200
+- type: table
+  name: Дэд төслүүд
+  groupBy:
+    property: parent
+    direction: ASC
+  order:
+  - formula.status_icon
+  - file.basename
+  - status
+  - area
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 210
+- type: table
+  name: Active
+  filters:
+    and:
+    - status == "active"
+  order:
+  - formula.status_icon
+  - file.basename
+  - tags
+  - updated
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 183
+- type: table
+  name: Stalled
+  filters:
+    and:
+    - status == "stalled"
+  order:
+  - file.basename
+  - tags
+  - updated
+  - formula.days_since_update
+- type: table
+  name: Planning
+  filters:
+    and:
+    - status == "planning"
+  order:
+  - file.basename
+  - tags
+  - date
+  - start
+  - due
+- type: table
+  name: On Hold
+  filters:
+    or:
+    - status == "on-hold"
+  order:
+  - file.basename
+  - tags
+  - updated
+  - formula.days_since_update
+- type: table
+  name: Archived
+  filters:
+    and:
+    - status == "archived"
+  order:
+  - file.basename
+  - tags
+  - updated
+- type: table
+  name: All
+  groupBy:
+    property: status
+    direction: ASC
+  order:
+  - formula.status_icon
+  - file.basename
+  - parent
+  - status
+  - tags
+  - updated
+  - formula.days_since_update
+  columnSize:
+    formula.status_icon: 70
+    file.basename: 165
+- type: table
+  name: Timeline
+  order:
+  - formula.status_icon
+  - file.basename
+  - start
+  - due
+  - status
+  - area
+  columnSize:
+    formula.status_icon: 40
+    file.basename: 200
+- type: table
+  name: Санхүү
+  order:
+  - file.basename
+  - status
+  - area
+  columnSize:
+    file.basename: 244

@@ -3,7 +3,7 @@ date: {{date:YYYY-MM-DD}}
 updated: {{date:YYYY-MM-DD}}
 type: topic
 tags: [topic, hub]
-scope: internal        # research = өдрийн судалгааны циклд орно · internal = дотоод
+scope: inai            # inai = өдрийн судалгааны цикл/newsletter-т орно · internal = дотоод
 open-questions:
   - ""
 ai-first: true
@@ -13,7 +13,7 @@ up: "[[04-Resources/Topics/Topics]]"
 
 ## For future agent
 
-Сэдвийн hub: хадгалсан пост, лавлагаа → сэдэв → атом → төсөл гэсэн гүүр. Атом, лавлагаа бүр `topics:`-д 1–2 сэдэв заана; энд автоматаар цугларна. `open-questions:` = энэ сэдвээр одоо мэдэхийг хүсэж буй асуултууд; хариулагдвал хасаж, «Одоо бид юу мэдэх вэ»-д нэм.
+Сэдвийн hub = судалгааны хөдөлгүүр ([[04-Resources/Atomic/decisions/2026-10-14 - Сэдэв = судалгааны хөдөлгүүр]]). `open-questions:`-оор өдрийн хайлт хийгдэнэ (`collect.py --questions`, зөвхөн `scope: inai`); асуулт хариулагдвал хасаж, доорх хураангуйд нэм.
 
 ## Одоо бид юу мэдэх вэ
 
@@ -21,7 +21,7 @@ up: "[[04-Resources/Topics/Topics]]"
 
 ## Холбогдсон (`topics:`)
 
-> Note-ийн `topics:`-д энэ сэдвийг бичвэл энд автоматаар гарна.
+> Сэдэв = судалгааны хөдөлгүүр ([[04-Resources/Atomic/decisions/2026-10-14 - Сэдэв = судалгааны хөдөлгүүр]]). Note-ийн `topics:`-д энэ сэдвийг бичвэл энд автоматаар гарна.
 
 ```base
 filters:

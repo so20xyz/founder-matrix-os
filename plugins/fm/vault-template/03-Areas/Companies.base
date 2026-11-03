@@ -57,3 +57,10 @@ views:
       - file.name
       - industry
       - status
+  - type: table
+    name: Харилцагч ба И-баримт
+    filters:
+      or:
+        - relationship == "client"
+        - status == "client"
+    order: [file.name, legal_name, reg_no_masked, ebarimt.required, ebarimt.type, contact_person, contracts]

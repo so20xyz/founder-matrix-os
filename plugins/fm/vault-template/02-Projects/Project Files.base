@@ -1,59 +1,137 @@
 filters:
   and:
-    - file.inFolder("02-Projects")
-    - file.ext == "md"
-    - note.type != "project"
+  - file.inFolder("02-Projects")
+  - file.ext == "md" || file.ext == "html" || file.ext == "pdf"
+  - '!file.folder.contains("/img")'
+  - note.type != "project"
 formulas:
+  section: if(file.name.contains("хөтөлбөр") || file.name.contains("Curriculum"), "1 · Танилцуулга ба хөтөлбөр", if(file.name.contains("Хичээл ") || file.path.contains("Article "), "2 · Хичээл бүрийн эхний
+    өдөр", if(file.path.contains("/Journal/"), "Journal · " + file.folder.split("/")[4], "3 · Бичлэг, самбар, бусад")))
   project: file.folder.split("/")[1]
-  stage: 'if(file.folder.contains("/Inbox"), "📥 Inbox", if(file.folder.contains("/Output"), "📤 Output", "📄 Баримт"))'
+  stage: if(file.folder.contains("_superseded"), "🗄 Хуучин хувилбар", if(file.folder.contains("/Inbox"), "📥 Inbox", if(file.folder.contains("/Resources"), "📐 Стандарт", if(file.folder.contains("/Output"),
+    "📤 Output", "📄 Баримт"))))
 properties:
+  formula.section:
+    displayName: Хэсэг
   formula.project:
     displayName: Төсөл
   formula.stage:
     displayName: Шат
+  status:
+    displayName: Төлөв
 views:
-  - type: table
-    name: Энэ төсөл
-    filters:
-      and:
-        - file.inFolder(this.file.folder)
-    groupBy:
-      property: formula.stage
-      direction: ASC
-    order: [file.name, type, status, file.mtime]
-    sort:
-      - property: file.mtime
-        direction: DESC
-  - type: table
-    name: 📥 Inbox (бүх төсөл)
-    filters:
-      and:
-        - file.folder.contains("/Inbox")
-    groupBy:
-      property: formula.project
-      direction: ASC
-    order: [file.name, formula.project, file.mtime]
-    sort:
-      - property: file.mtime
-        direction: DESC
-  - type: table
-    name: 📤 Output (бүх төсөл)
-    filters:
-      and:
-        - file.folder.contains("/Output")
-    groupBy:
-      property: formula.project
-      direction: ASC
-    order: [file.name, formula.project, status, file.mtime]
-    sort:
-      - property: file.mtime
-        direction: DESC
-  - type: table
-    name: Төслийн бүх файл
-    groupBy:
-      property: formula.project
-      direction: ASC
-    order: [file.name, formula.stage, type, status, file.mtime]
-    sort:
-      - property: file.mtime
-        direction: DESC
+- type: table
+  name: Энэ төслийн Output (хэсгээр)
+  filters:
+    and:
+    - file.folder.startsWith(this.file.folder + "/Output")
+    - '!file.folder.contains("_superseded")'
+    - status != "superseded"
+  groupBy:
+    property: formula.section
+    direction: ASC
+  order:
+  - file.name
+  - status
+  - file.ext
+  - file.mtime
+  sort:
+  - property: file.name
+    direction: ASC
+- type: table
+  name: Энэ төсөл
+  filters:
+    and:
+    - file.inFolder(this.file.folder)
+  groupBy:
+    property: formula.stage
+    direction: ASC
+  order:
+  - file.name
+  - type
+  - status
+  - file.mtime
+  sort:
+  - property: file.mtime
+    direction: DESC
+- type: table
+  name: 📥 Inbox (бүх төсөл)
+  filters:
+    and:
+    - file.folder.contains("/Inbox")
+  groupBy:
+    property: formula.project
+    direction: ASC
+  order:
+  - file.name
+  - formula.project
+  - file.mtime
+  sort:
+  - property: file.mtime
+    direction: DESC
+- type: table
+  name: 📤 Output (бүх төсөл)
+  filters:
+    and:
+    - file.folder.contains("/Output")
+    - '!file.folder.contains("_superseded")'
+    - status != "superseded"
+  groupBy:
+    property: formula.project
+    direction: ASC
+  order:
+  - file.name
+  - formula.project
+  - status
+  - file.mtime
+  sort:
+  - property: file.mtime
+    direction: DESC
+- type: table
+  name: 🗄 Хуучин хувилбар (бүх төсөл)
+  filters:
+    or:
+    - file.folder.contains("_superseded")
+    - status == "superseded"
+  groupBy:
+    property: formula.project
+    direction: ASC
+  order:
+  - file.name
+  - status
+  - file.mtime
+  sort:
+  - property: file.mtime
+    direction: DESC
+- type: table
+  name: Төслийн бүх файл
+  groupBy:
+    property: formula.project
+    direction: ASC
+  order:
+  - file.name
+  - formula.stage
+  - type
+  - status
+  - file.mtime
+  sort:
+  - property: file.mtime
+    direction: DESC
+- type: table
+  name: 📰 Journal
+  filters:
+    and:
+    - '!file.inFolder("_trash")'
+    - '!file.inFolder("_system")'
+    - '!file.inFolder("03-Areas/Business/finances")'
+    - file.inFolder("02-Projects/<байгууллага> Newsletter/Output/Journal")
+    - kind == "newsletter-issue"
+  order:
+  - issue
+  - file.folder
+  - status
+  - topics
+  - date
+  sort:
+  - property: issue
+    direction: DESC
