@@ -138,6 +138,7 @@ def sync(spec, apply, force):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("cmd", choices=["status", "sync"])
     ap.add_argument("--repo")
