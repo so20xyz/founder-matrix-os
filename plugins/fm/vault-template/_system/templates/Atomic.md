@@ -10,6 +10,7 @@ areas: []
 confidence: high
 sources: []
 supersededby: []
+topics: []        # 1–2 сэдэв: [[04-Resources/Topics/<Сэдэв>]] — лавлагаа → сэдэв → атом → төсөл гүүр
 ---
 
 # <Нэг баримт, нэг өгүүлбэрээр монголоор>

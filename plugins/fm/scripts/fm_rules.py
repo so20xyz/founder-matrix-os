@@ -168,7 +168,10 @@ def tokens(vault):
 def export(vault, apply):
     rules = json.loads(RULES.read_text(encoding="utf-8")) if RULES.is_file() else {}
     names = [n for n in rules.get("member_names", []) + [member_of()] if n]
-    rewrite = rules.get("rewrite", {})
+    rewrite = dict(rules.get("rewrite", {}))
+    local = vault / "_system" / "fm" / "rules-rewrite.json"   # client/person names stay in the maintainer vault, never the repo
+    if local.is_file():
+        rewrite.update(json.loads(local.read_text(encoding="utf-8")))
     tok = tokens(vault) - set(rewrite)
     log = []
     for rel in files():

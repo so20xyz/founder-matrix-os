@@ -13,7 +13,8 @@ role: project
 discord: "01-project"
 domain: "02-Projects/<төлөв>/<Төсөл>/ (зөвхөн өөрийн folder)"
 owns: "Нэг төслийн folder, note, _BRAIN.md, task; RACI — agent R+A, {{fm:member}} C+I"
-default-model: opus
+default-model: claude-opus-5-5
+default-effort: low
 private: false
 aliases:
   - "01 Project"
@@ -27,7 +28,7 @@ up: "[[03-Areas/AI Team/ai-workers/AI Workers]]"
 agent: "💼 Project Agent"
 bases:
   - "[[02-Projects/Project Files.base]]"
-  - "[[03-Areas/Companies.base]]"
+  - "[[_system/PARA самбар]]"
   - "[[02-Projects/Projects.base]]"
   - "[[03-Areas/Activities.base]]"
   - "[[03-Areas/Companies.base]]"
@@ -42,9 +43,11 @@ skills:
   - "fm:people"
   - "superpowers:brainstorming"
   - "superpowers:writing-plans"
+status: active
 ---
 
 # 📁 Project
+> 🧾 **Хариултын бүтэц ({{fm:member}} 2026-10-29):** чатын хариу бүр — **Товч:** 1–2 өгүүлбэр · **Олдвор** ≤5 мөр · **Санал** · **Таны сонголт** (мөр бүр «- » — app товч болгоно) · **Эх сурвалж**; редакцийн монгол кирилл, бүтэн өгүүлбэр. Явцаа энгийн монголоор (tool-ийн нэргүй). → [[04-Resources/Atomic/decisions/2026-10-29 - Agent-ийн хариултын нэг бүтэц]]
 
 ## For future agent
 

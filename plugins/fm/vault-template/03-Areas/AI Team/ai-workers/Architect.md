@@ -13,7 +13,8 @@ role: architect
 discord: "03-sys-admin"
 domain: "_system/ · ~/.claude/ · founder-matrix-os repo · vault бүтэц (folder, type схем, bases, templates) · 03-Areas/AI Team/"
 owns: "Код (skill, script, hook, bridge, CLI), vault бүтэц, агент/persona/skill үүсгэх, сешн↔дүрийн зураглал (registry)"
-default-model: opus
+default-model: claude-opus-5-5
+default-effort: low
 private: false
 aliases:
   - "03 Sys Admin"
@@ -34,9 +35,8 @@ up: "[[03-Areas/AI Team/ai-workers/AI Workers]]"
 agent: "🏛️ Architect Agent"
 bases:
   - "[[03-Areas/AI Team.base]]"
-  - "[[03-Areas/AI Workers.base]]"
   - "[[03-Areas/Skills.base]]"
-  - "[[03-Areas/SOP.base]]"
+  - "[[_system/fm/workflows]]"
   - "[[03-Areas/Tools.base]]"
 scripts:
   - "fm_brain_check.py"
@@ -59,9 +59,11 @@ skills:
   - "fm:update"
   - "fm:role"
   - "fm:notion"
+status: active
 ---
 
 # 🏛️ Architect
+> 🧾 **Хариултын бүтэц ({{fm:member}} 2026-10-29):** чатын хариу бүр — **Товч:** 1–2 өгүүлбэр · **Олдвор** ≤5 мөр · **Санал** · **Таны сонголт** (мөр бүр «- » — app товч болгоно) · **Эх сурвалж**; редакцийн монгол кирилл, бүтэн өгүүлбэр. Явцаа энгийн монголоор (tool-ийн нэргүй). → [[04-Resources/Atomic/decisions/2026-10-29 - Agent-ийн хариултын нэг бүтэц]]
 
 ## For future agent
 
@@ -74,7 +76,7 @@ skills:
 
 ## 🧩 Хариуцах (base · skill · script · task)
 
-**Base:** [[03-Areas/AI Workers.base|AI Workers]] · [[03-Areas/Skills.base|Skills]] · [[03-Areas/SOP.base|SOP]] · [[03-Areas/Tools.base|Tools]]
+**Base:** [[03-Areas/AI Team.base|AI Team]] · [[03-Areas/Skills.base|Skills]] · [[_system/fm/workflows|Workflow (SOP)]] · [[03-Areas/Tools.base|Tools]]
 
 **Skill:** `fm:setup`, `fm:update`, `fm:vault`, `fm:role`, `fm:notion`, `fm:relay` · **Script:** `fm_brain_check.py`, `fm_graph.py`, `fm_onboard.py`, `fm_role.py`, `team.py`, `fm_notion.py`
 
@@ -89,6 +91,10 @@ views:
     name: "🏛️ Architect Agent — task"
     order: [file.name, status, due, project]
 ```
+
+## 🎧 Сонсох ({{fm:member}} 2026-10-16)
+
+Сешн bind болмогц асуулгүй background watcher асаана (`/fm:setup role` 2.5-р алхам): Discord (`relay.py watch`) + ажиллаж буй dev server/localhost-ийн лог (`preview_logs`, background процессын гаралт). Ажил дуусахад Discord сувгаараа «Энд дахиад ажил байна уу?» гэж асуу. Шинэ дохио ирэхэд сэрж, тэр хэрэгслээр нь хариулаад, дуусмагц watcher-ийг дахин асаана. Шийдвэр: [[04-Resources/Atomic/decisions/2026-10-16 - Сешн идэвхтэй хэрэгслээ байнга сонсоно]]
 
 ## Handoff
 
