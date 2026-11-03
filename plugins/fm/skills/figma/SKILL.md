@@ -135,3 +135,11 @@ python3 "$F/fig.py" --doc "<файл>" ask --title "Аль чиглэлийг ү
 3. Screen size солих = **variant солих**. Гараар хуулж дахин угсрахыг хориглоно.
 4. Нэг загварыг засвал component-оо засна — бүх дэлгэцэнд нэг дор орно.
 5. Тайлан/шалгалт: frame доторх raw frame vs instance харьцааг хэл; давтагдах элемент raw frame хэвээр бол «дууссан» гэж бүү хэл.
+
+## 🤖 Plugin-ийг автоматаар асаах (itge.e 2026-11-03: «Figma computer use хийгээд plugin-аа асаачиж байгаарай»)
+
+`fig.py status` нь `plugin: False` бол хэрэглэгчээс бүү асуу — өөрөө асаа:
+1. Figma ажиллахгүй бол `cmd.exe //c start "" "%LOCALAPPDATA%\Figma\Figma.exe"`, ~20 секунд хүлээ (сүүлд нээсэн файл нээгдэнэ).
+2. `powershell -NoProfile -ExecutionPolicy Bypass -File "$F/open_plugin.ps1"` — Figma-г урд гаргаж, Ctrl+/ → «Claude Bridge» → Enter. Дараа нь `fig.py status` дахин шалга (`plugin: True`).
+3. Шинэ файл хэрэгтэй бол одоо нээлттэй файлд шинэ page үүсгэ (өөр файлын page-д бүү хүр); шинэ файл үүсгэх нь UI хэрэгтэй тул зөвхөн itge.e хүсвэл.
+Баталгаажсан: 2026-11-03 PC (Windows), Figma 126.x — plugin 5 секундэд холбогдсон.

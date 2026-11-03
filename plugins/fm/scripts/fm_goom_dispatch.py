@@ -845,12 +845,15 @@ class Dispatcher:
             if not cur.ask and me is not None:
                 runs.update_run(vault, cur.id, reply_to=f"thread:{me.path}#{mid}")
             prompt = fork_prompt(prompt)
-        elif not resume and not cur.ask:
+        elif not cur.ask:
+            # a follow-up that resumes the session is still a new request → its own task + sub-chat (itge.e 2026-11-03:
+            # «design update, title update» asked at 12:49 resumed the session and got no task)
             if me is not None and (task := task_subchat(vault, ch, cur, me, role)):
                 prompt = prompt + (
                     f"\nЭнэ хүсэлтэд task үүсэв: [[{task}]] — явц, шийдвэрээ түүний «## Өөрчлөлтийн түүх»-д бич, "
                     "дуусахад «## Үр дүн» + status completed.\n")
-            prompt = recent_context(msgs, mid) + prompt
+            if not resume:
+                prompt = recent_context(msgs, mid) + prompt
         sid = str(uuid.uuid4()) if (fork or not resume) else ""
         runs.update_run(vault, cur.id, status="running", started=gc._now_iso(), completed="",
                         worker=f"headless {gc.vault_device()}", error="", ask="",
