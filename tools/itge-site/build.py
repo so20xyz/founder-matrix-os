@@ -1325,7 +1325,7 @@ __FOOTER__
 </body></html>
 """
 
-CAT_LABEL = {"youtube": "YouTube", "podcast": "Подкаст", "forte": "Forte", "read": "Уншвар", "tool": "Repo ба skill"}
+CAT_LABEL = {"youtube": "YouTube", "podcast": "Подкаст", "forte": "Forte", "read": "Уншвар", "tool": "Repo ба skill", "fm": "fm команд", "agent": "Agent дүр"}
 
 
 def build_resources(cfg, articles) -> bool:
@@ -1335,7 +1335,7 @@ def build_resources(cfg, articles) -> bool:
     esc = htmllib.escape
     gal = []  # (cats, html)
 
-    def card(cats, kind, lesson, img, title, desc, meta, url, ext=True):
+    def card(cats, kind, lesson, img, title, desc, meta, url, ext=True, prompt=""):
         les = f'<span class="rl">Хичээл {lesson:02d}</span>' if lesson else ""
         ph = (f'<div class="rph"><img src="../assets/img/{esc(img)}" alt="" loading="lazy">{les}</div>' if img else "")
         tgt = ' target="_blank" rel="noopener"' if ext else ""
@@ -1344,7 +1344,9 @@ def build_resources(cfg, articles) -> bool:
         gal.append((cats,
             f'<article class="rgcard rg2" data-cats="{" ".join(cats)}">{ph}'
             f'<div class="rbody"><div class="rtop"><span class="rk">{esc(kind)}</span></div>'
-            f'<h3>{esc(title)}</h3><p>{esc(desc)}</p><p class="rm">{esc(meta)}</p>{link}</div></article>'))
+            f'<h3>{esc(title)}</h3><p>{esc(desc)}</p>'
+            + (f'<p class="rm"><code>{esc(prompt)}</code></p>' if prompt else "")
+            + f'<p class="rm">{esc(meta)}</p>{link}</div></article>'))
 
     for m in res.get("media", []):
         card(m["cat"], m["src"], m.get("lesson"), m["img"], m["name"], m["desc"], m["by"], m["url"])
@@ -1353,8 +1355,8 @@ def build_resources(cfg, articles) -> bool:
              a["dek"][:150] + ("…" if len(a["dek"]) > 150 else ""), a["meta"] or "itge.e",
              "../" + a["href"], ext=False)
     for it in res["items"]:
-        card(["tool"], it["kind"], it["lesson"], it.get("img") or "th-skills.png", it["name"], it["desc"],
-             f'{it["by"]} · {it["where"]} · {it["status"]}', it.get("url", ""))
+        card(it.get("cats") or ["tool"], it["kind"], it.get("lesson"), it.get("img", "th-skills.png"), it["name"], it["desc"],
+             f'{it["by"]} · {it["where"]} · {it["status"]}', it.get("url", ""), prompt=it.get("prompt", ""))
 
     present = {c for cats, _ in gal for c in cats}
     cats_cfg = [c for c in res.get("cats", []) if c["k"] == "all" or c["k"] in present]

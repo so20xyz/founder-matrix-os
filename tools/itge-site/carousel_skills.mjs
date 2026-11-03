@@ -130,6 +130,8 @@ function exe() {
     path.join(E.ProgramFiles || '', 'Google/Chrome/Application/chrome.exe'),
     path.join(E['ProgramFiles(x86)'] || '', 'Google/Chrome/Application/chrome.exe'),
     path.join(E.LOCALAPPDATA || '', 'Google/Chrome/Application/chrome.exe'),
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    path.join(E.HOME || '', 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
   ].find(p => p && fs.existsSync(p))
   if (!c) throw new Error('Chrome олдсонгүй')
   return c

@@ -47,6 +47,8 @@ function exe() {
     path.join(E.ProgramFiles || '', 'Google/Chrome/Application/chrome.exe'),
     path.join(E['ProgramFiles(x86)'] || '', 'Google/Chrome/Application/chrome.exe'),
     path.join(E.LOCALAPPDATA || '', 'Google/Chrome/Application/chrome.exe'),
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    path.join(E.HOME || '', 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
   ].find(p => p && fs.existsSync(p))
   if (!c) throw new Error('Chrome олдсонгүй')
   return c
@@ -64,7 +66,8 @@ const measure = () => ({
   brokenImg: [...document.images].filter(i => i.complete && i.naturalWidth === 0).length,
 })
 
-const server = spawn('python', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], {
+const PY = process.platform === 'win32' ? 'python' : 'python3'
+const server = spawn(PY, ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], {
   cwd: SITE, stdio: 'ignore',
 })
 process.on('exit', () => server.kill())

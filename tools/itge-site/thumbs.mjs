@@ -94,6 +94,16 @@ const CARDS = [
       ).join('')}
     </svg>`,
   },
+  {
+    file: 'th-sedveer-bish-uildleer.png', bg: NAVY, fg: PAPER, accent: BLUE,
+    no: '04', kicker: 'Хичээл 04 · Гол уншвар', title: 'Сэдвээр биш,<br>үйлдлээр',
+    art: `<svg viewBox="0 0 220 120" fill="none">
+      ${['P · Төсөл', 'A · Хүрээ', 'R · Нөөц', 'A · Архив'].map((t, i) =>
+        `<rect x="2" y="${4 + i * 29}" width="${206 - i * 34}" height="22" rx="4" fill="${i === 0 ? BLUE : PAPER}" opacity="${i === 0 ? 1 : .5 - i * .1}"/>
+         <text x="12" y="${19 + i * 29}" font-size="11" font-weight="800" fill="${i === 0 ? PAPER : '#0E1A3D'}" font-family="Inter">${t}</text>`
+      ).join('')}
+    </svg>`,
+  },
 ]
 
 const page =(c) => `<!doctype html><meta charset="utf-8">
@@ -122,6 +132,8 @@ function exe() {
     path.join(E.ProgramFiles || '', 'Google/Chrome/Application/chrome.exe'),
     path.join(E['ProgramFiles(x86)'] || '', 'Google/Chrome/Application/chrome.exe'),
     path.join(E.LOCALAPPDATA || '', 'Google/Chrome/Application/chrome.exe'),
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    path.join(E.HOME || '', 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
   ].find(p => p && fs.existsSync(p))
   if (!c) throw new Error('Chrome олдсонгүй')
   return c
