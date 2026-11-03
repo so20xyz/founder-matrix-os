@@ -998,7 +998,9 @@ def homework_html(L):
     n = len(hw["items"])
     cols = min(n, 3)
     cells = "".join(
-        '<div><span class="k">%02d</span><b>%s</b><small>%s</small></div>' % (i + 1, clean(it["b"]), clean(it["t"]))
+        '<div><span class="k">%02d</span><b>%s</b><small>%s</small></div>'
+        % (i + 1, ('<a href="%s" target="_blank" rel="noopener">%s ↗</a>' % (htmllib.escape(it["href"]), clean(it["b"])))
+           if it.get("href") else clean(it["b"]), clean(it["t"]))  # optional href: a todo that opens a form (2026-11-03)
         for i, it in enumerate(hw["items"])
     )
     return ('<div class="hw" id="homework"><figure class="dg"><figcaption class="dh">%s</figcaption>'
