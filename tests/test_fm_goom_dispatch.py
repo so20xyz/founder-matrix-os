@@ -333,3 +333,9 @@ def test_task_subchat_skips_short_pings_and_other_roles(tmp_path):
     assert gd.task_subchat(tmp_path, "Demo", cur, long, "creative") == ""
     assert gd.task_subchat(tmp_path, "Demo", types.SimpleNamespace(id="r", task="[[t]]"), long, "project") == ""
     assert gd.task_subchat(tmp_path, "Demo", cur, types.SimpleNamespace(text="↳ #^msg-1 " + long.text), "project") == ""
+
+
+def test_task_subchat_skips_questions(tmp_path):
+    import types
+    q = types.SimpleNamespace(text="за өнөөдрийн хичээлийн сэдэв юу билээ сүүлд юун дээр зогслоо")
+    assert gd.task_subchat(tmp_path, "Demo", types.SimpleNamespace(id="r", task=""), q, "project") == ""

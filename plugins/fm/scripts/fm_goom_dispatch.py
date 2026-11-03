@@ -427,6 +427,8 @@ def task_subchat(vault, ch, cur, me, role):
     text = " ".join((getattr(me, "text", "") or "").replace(" ⏎ ", " ").split())
     if role != "project" or getattr(cur, "task", "") or not text or text.startswith(("↳", "🧵")) or len(text) < 40:
         return ""
+    if text.rstrip().endswith("?") or re.search(r"юу бил|юу болж|хаана байна|яаж байна", text.lower()):
+        return ""   # a question / status check is answered, not tracked (2026-11-03: «… сэдэв юу билээ» became a task)
     store, runs = gc.vault_lib()
     try:
         folder = store.channel_dir(Path(vault), ch).parent
@@ -438,7 +440,8 @@ def task_subchat(vault, ch, cur, me, role):
     title = re.sub(r'[\\/:*?"<>|#^\[\]]', " ", text)[:60].rsplit(" ", 1)[0].strip(" .,") or text[:40]
     relay = PLUGIN_REPO / "tools" / "relay" / "relay.py"
     try:
-        out = subprocess.run([_py(), str(relay), "task", f"{ch} - {title}", "--owner", "project", "--project", ch,
+        # full note path: a bare [[<name>]] link is not matched by the project board (linksProject → folder prefix)
+        out = subprocess.run([_py(), str(relay), "task", f"{ch} - {title}", "--owner", "project", "--project", f"{proj}/{ch}",
                               "--status", "in-progress"], cwd=str(vault), capture_output=True, text=True,
                              encoding="utf-8", timeout=60, env=dict(os.environ, PYTHONIOENCODING="utf-8")).stdout
     except (OSError, subprocess.SubprocessError):
