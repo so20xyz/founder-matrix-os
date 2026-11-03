@@ -82,6 +82,57 @@ def dapi(method, path, body=None):
                 time.sleep(min(wait + 0.5, 30)); continue
             raise
 
+def _project_folder(me):
+    """Vault folder of a project session: registry `project` (folder name or slug) or its title without the icon."""
+    root = fmconfig.vault_dir() / "02-Projects"
+    cands = [me.get("project") or "", _re.sub(r"^\W+", "", me.get("title") or "").strip()]
+    for c in cands:
+        if c and (root / c).is_dir():
+            return c
+    norm = lambda s: _re.sub(r"[^\w]+", " ", s.lower()).strip()
+    slug, title = (me.get("project") or "").lower(), norm(cands[1])
+    if root.is_dir():
+        dirs = [d.name for d in root.iterdir() if d.is_dir() and not d.name.startswith(("_", "."))]
+        for d in dirs:   # «📐 Second Brain Season 2» ⊂ «Way Academy Second Brain Season 2»
+            if title and len(title) > 6 and title in norm(d):
+                return d
+        for d in dirs:
+            if slug and slug in _re.sub(r"[^a-z0-9]+", "-", d.lower()):
+                return d
+    return ""
+
+
+def project_context(me, max_tasks=25, max_dec=15):
+    """SessionStart for a project session: ALL its open tasks (any role's, any age) and its decision atoms
+    (itge.e 2026-11-03: a Season 2 session re-asked a question Architect had already settled that day)."""
+    name = _project_folder(me)
+    if not name:
+        return ""
+    V = fmconfig.vault_dir(); key = f"02-Projects/{name}"
+    def linked(txt):
+        head = txt.split("\n---", 1)[0] if txt.startswith("---") else ""
+        return key in head or f"[[{name}]]" in head
+    def fm(txt, k):
+        m = _re.search(rf"^{k}:\s*\"?([^\"\n]*)", txt, _re.M); return (m.group(1).strip() if m else "")
+    tasks, decs = [], []
+    for f in sorted((V / "01-GTD/Tasks").glob("*.md"), key=lambda p: -p.stat().st_mtime):
+        try: t = f.read_text(encoding="utf-8", errors="ignore")[:4000]
+        except OSError: continue
+        if linked(t) and fm(t, "status") in ("inbox", "next-action", "in-progress", "waiting"):
+            tasks.append(f"- [[01-GTD/Tasks/{f.stem}]] · {fm(t, 'status')} · R {fm(t, 'responsible') or fm(t, 'owner')}")
+    for f in sorted((V / "04-Resources/Atomic/decisions").glob("*.md"), key=lambda p: p.name, reverse=True):
+        try: t = f.read_text(encoding="utf-8", errors="ignore")[:3000]
+        except OSError: continue
+        if linked(t) and "supersededby: [\"" not in t:
+            decs.append(f"- [[04-Resources/Atomic/decisions/{f.stem}]]")
+    if not tasks and not decs:
+        return ""
+    NL = chr(10); more = lambda xs, n: xs[:n] + ([f"- … +{len(xs) - n}"] if len(xs) > n else [])
+    return (f"### 📁 {name} — нээлттэй task ({len(tasks)}), шийдвэр ({len(decs)}){NL}"
+            "Эхлэхээсээ өмнө эдгээрийг уншаад ажилла; энд шийдэгдсэн зүйлийг itge.e-ээс дахин бүү асуу." + NL
+            + NL.join(more(tasks, max_tasks)) + (NL + "Шийдвэр:" + NL + NL.join(more(decs, max_dec)) if decs else ""))
+
+
 def dchannels(state, need=()):
     """Guild text channels name -> id, cached 1 h; a needed name missing from the cache refreshes it at once
     (2026-10-15: new project channels stayed invisible to watch for up to an hour)."""
@@ -168,6 +219,8 @@ def d_inbox(hook):
             hist = [l for l in t.split("## ТҮҮХ")[-1].strip().splitlines() if l.startswith("- ")][-5:]
             NL = chr(10)
             out.insert(0, f"### 🏃 baton · {fmconfig.baton_key(me)}{NL}{now}{NL}{NL}Сүүлийн түүх:{NL}" + NL.join(hist))
+        pc = project_context(me)
+        if pc: out.insert(1 if sf.exists() else 0, pc)
     # Soyol 2026-10-16: the GTD role runs the dispatcher (its title «📥 GTD» never contains "dispatcher_title")
     if me and event == "SessionStart" and (me.get("role") == fmconfig.dcfg("dispatcher_role", "gtd")
                                            or fmconfig.DISPATCHER_TITLE in (me.get("title") or "")):
