@@ -11,6 +11,11 @@
 
 ---
 
+## 0.10.3 — 2026-11-03
+
+### Засварласан
+- `fm_downstream.py`: сурагчийн шүүсэн хуулбарт `hooks.json`-ийн хасагдсан script-ийг (fm_agents, fm_goom_chat, fm_goom_session_sync) дуудсан hook-уудыг автоматаар хасна — өмнө нь tool бүрийн дараа алдаа өгч байв (way-academy-season-2 issue #1).
+
 ## 0.10.2 — 2026-11-03
 
 ### Өөрчилсөн

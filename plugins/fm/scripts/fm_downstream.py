@@ -73,7 +73,35 @@ def build(dst: Path, spec: dict):
             shutil.copytree(PLUGIN / "tools" / t, dst / "tools" / t, ignore=ign)
     if spec.get("vault_template", True):
         shutil.copytree(PLUGIN / "vault-template", dst / "vault-template", ignore=ign)
+    prune_hooks(dst)
     return sorted(dict.fromkeys(skills))
+
+
+def prune_hooks(dst: Path):
+    """Drop hooks whose ${CLAUDE_PLUGIN_ROOT}/<path> was filtered out (else they error after every tool call)."""
+    hj = dst / "hooks" / "hooks.json"
+    if not hj.is_file():
+        return []
+    data = json.loads(hj.read_text(encoding="utf-8"))
+    dropped = []
+
+    def ok(h):
+        for a in [h.get("command", "")] + list(h.get("args", [])):
+            if "${CLAUDE_PLUGIN_ROOT}/" in a:
+                rel = a.split("${CLAUDE_PLUGIN_ROOT}/", 1)[1].split()[0]
+                if not (dst / rel).exists():
+                    dropped.append(rel)
+                    return False
+        return True
+
+    for ev, groups in list(data.get("hooks", {}).items()):
+        for g in groups:
+            g["hooks"] = [h for h in g.get("hooks", []) if ok(h)]
+        data["hooks"][ev] = [g for g in groups if g["hooks"]]
+        if not data["hooks"][ev]:
+            del data["hooks"][ev]
+    hj.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return sorted(set(dropped))
 
 
 def git(cwd, *a, check=True):
