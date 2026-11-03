@@ -1,17 +1,33 @@
 ---
 name: update
-description: "ГАНЦ КОМАНД. Хэрэглэгч «update», «шинэчил», «өдрийн дүгнэлт» гэхэд энэ skill өөрөө юу хэрэгтэйг шийдэж бүгдийг дараалан хийнэ - ярианаас шинэ баримт, шийдвэрийг атом болгох (save), 01-GTD/Inbox-ийг ангилах (inbox, зөөхөөс өмнө асууна), task үүсгэх/шинэчлэх эзэнтэй нь (task), дурдагдсан хүмүүсийн note (people), төслийн note/_BRAIN/төлөв (project), өдрийн тэмдэглэл, энэ дүрийн STATUS мөр + зөвхөн холбоостой лог мөр, нээлттэй task-ууд; санхүү зөвхөн Finance (private) сешнд. Горимууд - `daily` (өглөөний фокус / оройн дүгнэлт), `weekly` (долоо хоногийн тойм). Хуучин /jirge, /fm:daily-г орлоно (машин солих нь /fm:sync). «update», «шинэчил», «төлөвөө шинэчил», «жиргээ», «хаана зогссон бэ», «миний task-ууд», «өдрийн тэмдэглэл», «өдрөө эхлүүлье», «daily», «өдрийн дүгнэлт», «өдрөө хаая», «долоо хоногийн тойм», «weekly review», «бүгдийг цэгцэл», «би юу хийв», «тайлан гарга», «recap», «хэрэглээгээ харуулах», «дадал», «хэдэн өдөр ажиллав» гэвэл ашигла. The one daily command: orchestrates save, inbox, task, people, project, status."
+description: "ГАНЦ КОМАНД. «update», «шинэчил», «өдрийн дүгнэлт» гэхэд юу хэрэгтэйг өөрөө шийдэж дараалан хийнэ: ярианаас атом (save), Inbox ангилах (inbox), task эзэнтэй нь (task), хүмүүс (people), төсөл (project), өдрийн тэмдэглэл, STATUS, лог, нээлттэй task-ууд. Горим: daily, weekly. Тус алхмыг дангаар нь ч дуудна — «хадгал», «checkpoint», «линк хадгал», «лог бич», «task үүсгэ», «таск дууслаа», «миний таскууд», «inbox цэгцэл», «хүн нэм», «төсөл үүсгэ», «төсөл хаа», «өдрөө эхлүүлье», «weekly review», «би юу хийв», «recap» (хуучин /fm:update save, /fm:update log, /fm:update task, /fm:update inbox, /fm:update people, /fm:update project). The one command: save, log, task, inbox, people, project, daily, weekly."
 argument-hint: "[daily [дүгнэлт] | weekly | хурдан] [нэг өгүүлбэр төлөв]"
 ---
+## Алхам бүр нэг GUIDE (2026-11-03: 21 команд → 11)
+
+Хуучин тусдаа командууд энэ skill-ийн алхам боллоо. Хэрэглэгчийн хүсэлт дараах алхмын нэгтэй таарвал **тэр GUIDE-г Read-ээр уншаад яг дага** (бүтэн `update` ажиллуулахгүй):
+
+| Хэлэх үг / хуучин команд | Алхам | Заавар |
+|---|---|---|
+| «хадгал», «checkpoint», «атом болго», линк хадгалах · `/fm:update save` | `update save [--checkpoint \| <url>]` | `../save/GUIDE.md` |
+| «лог бич», «юу хийснээ бич» · `/fm:update log` | `update log` | `../log/GUIDE.md` |
+| «task үүсгэ / авлаа / дууслаа», «миний таскууд» · `/fm:update task` | `update task` | `../task/GUIDE.md` |
+| «inbox цэгцэл» · `/fm:update inbox` | `update inbox` | `../inbox/GUIDE.md` |
+| «хүн нэм», «хүний note» · `/fm:update people` | `update people` | `../people/GUIDE.md` |
+| «төсөл үүсгэ / хаа / төлөв» · `/fm:update project` | `update project` | `../project/GUIDE.md` |
+
+GUIDE доторх `/fm:update save` г.м. хуучин нэрийг дээрх алхмаар ойлго. Скриптүүд хуучин замдаа (`skills/<нэр>/scripts/`).
+
+
 
 # fm:update - ганц команд
 
-**Хэрэглэгч зөвхөн `update` гэж бичнэ.** Бусад fm skill (`save`, `inbox`, `task`, `people`, `project`, `finance`) бол энэ командын **барилгын блок**: update тэдгээрийн журмыг (тухайн skill-ийн SKILL.md-г Read-ээр уншаад) дотроосоо гүйцэтгэнэ. Хэрэглэгчээс «одоо `/fm:save` ажиллуул» гэж хэзээ ч бүү гуй — өөрөө хий.
+**Хэрэглэгч зөвхөн `update` гэж бичнэ.** Бусад fm skill (`save`, `inbox`, `task`, `people`, `project`, `finance`) бол энэ командын **барилгын блок**: update тэдгээрийн журмыг (тухайн skill-ийн SKILL.md-г Read-ээр уншаад) дотроосоо гүйцэтгэнэ. Хэрэглэгчээс «одоо `/fm:update save` ажиллуул» гэж хэзээ ч бүү гуй — өөрөө хий.
 
 Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user_config.device}`. Дүрэм: `<V>/_system/BOOT.md`.
 
 
-> **Сешний нэр (itge.e 2026-10-15):** Шинэ сешн/agent нээх бүрт (Desktop fork, `start_session`/spawn, Workflow-ийн agent `label`, `/fm:role`/project сешн) нэрийг шууд тавина: «<ажлын icon> <ажил> › <дэд ажил>» — icon = ажлын төрөл (🎨 Creative · 🔍 Research · 📚 Wiki · 🏛️ Architect · 📁 төсөл · 📥 GTD); нээсэн сешн нь `mcp__ccd_session_mgmt__set_session_title`-аар (ToolSearch) тэр даруй нэрлэнэ.
+> **Сешний нэр (itge.e 2026-10-15):** Шинэ сешн/agent нээх бүрт (Desktop fork, `start_session`/spawn, Workflow-ийн agent `label`, `/fm:setup role`/project сешн) нэрийг шууд тавина: «<ажлын icon> <ажил> › <дэд ажил>» — icon = ажлын төрөл (🎨 Creative · 🔍 Research · 📚 Wiki · 🏛️ Architect · 📁 төсөл · 📥 GTD); нээсэн сешн нь `mcp__ccd_session_mgmt__set_session_title`-аар (ToolSearch) тэр даруй нэрлэнэ.
 
 ## 0. Горим ба бэлтгэл
 
@@ -24,7 +40,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 | «weekly», «долоо хоног», «тойм» | `weekly` | (W) долоо хоногийн тойм (+ оркестр-хурдан) |
 
 1. Огноо, цаг, гарагийг системээс ав: `date +%F`, `date +%H:%M`, `date +%u` (1 = Даваа). **Хэзээ ч бүү таа.**
-2. **Дүр.** Сешний context-ийн `Дүр: <slug>` мөр. Байхгүй бол: «Дүр тогтоогоогүй байна. `/fm:role <slug>` ажиллуулах уу, эсвэл `${user_config.member}` нэрээр шинэчлэх үү?» - хариу ирэхээс өмнө STATUS-д бүү бич.
+2. **Дүр.** Сешний context-ийн `Дүр: <slug>` мөр. Байхгүй бол: «Дүр тогтоогоогүй байна. `/fm:setup role <slug>` ажиллуулах уу, эсвэл `${user_config.member}` нэрээр шинэчлэх үү?» - хариу ирэхээс өмнө STATUS-д бүү бич.
 3. **Хувийн горим.** Context-д `PRIVATE сешн` эсвэл дүрийн note-д `private: true` (Finance) бол доорх 🔒 хэсэг хүчинтэй.
 4. **Хамрах хүрээ:** өнөөдрийн логоос энэ дүрийн сүүлийн `update`/`save` мөрийг ол — **түүнээс хойшхи** ярианы хэсгийг л боловсруул (давхардал үүсгэхгүй).
 5. Албан ёсны `productivity` plugin-ий update-ийг **бүү** ажиллуул - тэр `TASKS.md`, `memory/` бичиж хоёр дахь санах ой үүсгэдэг. Энэ skill бүгдийг vault-д хийнэ.
@@ -118,14 +134,14 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 
 1. **Хүрээ:** эхлээд хэмжилт — `fm_recap.py "<V>" --days 7 --write` (→ (R)). Тайлангийн тоог суурь болгож, дараа нь сүүлийн 7 хоногийн лог, өдрийн note, шинэ атомуудыг нэрээр нь ав.
 2. **Task-ууд** (`01-GTD/Tasks/`, нээлттэй): хугацаа хэтэрсэн; `updated` 14+ хоног хөдлөөгүй `next-action`/`waiting`; `in-progress` боловч `started` 2+ хоногийн өмнө (гацсан claim — сешн унтарсан байж магадгүй; `inbox` руу буцаах эсэхийг асуу — зөвшөөрвөл `fm_task.py set … --status inbox`: `claimed:`, `started:`, `completed:`-ийг хоосолж, bus дээрх claim-ийг `relay.py release`-ээр цуцална — тэгвэл дахин санал болгогдоно); эзэнгүй (`owner` хоосон) эсвэл `project: TBD`. Тус бүрд санал: дуусгах · хойшлуулах (`due`) · `someday` · цуцлах · эзэн оноох.
-3. **Төслүүд** (`02-Projects/`, `status: active`): энэ 7 хоногт ямар ч task, атом, `_BRAIN` хөдөлгөөнгүй төсөл → «On-hold болгох уу?» (`/fm:project`).
-4. **Хүмүүс:** `03-Areas/people/`-ийн hot list (`hot: true`) дотор `last_interaction` 30+ хоног болсон хүн → «холбогдох уу?» (`/fm:people`).
-5. **Inbox:** `01-GTD/Inbox/` дахь зүйлийн тоо; 7+ хоносон зүйл байвал `/fm:inbox` санал болго.
+3. **Төслүүд** (`02-Projects/`, `status: active`): энэ 7 хоногт ямар ч task, атом, `_BRAIN` хөдөлгөөнгүй төсөл → «On-hold болгох уу?» (`/fm:update project`).
+4. **Хүмүүс:** `03-Areas/people/`-ийн hot list (`hot: true`) дотор `last_interaction` 30+ хоног болсон хүн → «холбогдох уу?» (`/fm:update people`).
+5. **Inbox:** `01-GTD/Inbox/` дахь зүйлийн тоо; 7+ хоносон зүйл байвал `/fm:update inbox` санал болго.
 6а. **🧠 Тархины шалгалт:** `python3 "${CLAUDE_PLUGIN_ROOT}/skills/vault/scripts/fm_brain_check.py" <V> --mark-bridges` → харьяалалгүй, ашиглагдаагүй resource, эхгүй атом, «яагаад»-гүй холбоосын тоо + жишээ 3; гүүр атомуудыг тайланд нэрлэ. Засварыг зөвшөөрлөөр.
 6б. **📘 SOP loop:** `03-Areas/Business/activities/` дахь Activity бүрээр `01-GTD/Tasks/`-ийн `activity:` = тэр, `status: completed` task-ийг тоол. 3+ ба Activity note-ийн `sop:` хоосон бол `relay.py task "SOP бичих: <Activity>" --owner "<sop_owner>"` санал болго (зөвшөөрлөөр). SOP бичигдмэгц Activity-ийн `sop:`-д холбоно.
 6. **Нэр томьёо, дутуу мэдээлэл:** логт тайлагдаагүй товчлол, `TBD` үлдсэн зүйлсийг 1-3 асуултаар тодруул (нэг удаад нэг асуулт).
 7. **Тойм атом** `04-Resources/Atomic/knowledge/YYYY-MM-DD - doloo-honogiin-toim-<YYYY-Www>.md` (`kind: weekly-review`, `confidence: medium`, `areas: [дүрийн note]`): `## Энэ долоо хоногт` (3-5 гол зүйл, холбоостой) · `## Хуучирсан` (тоо + холбоос) · `## Дараагийн долоо хоногийн гол 3`. Лог: `- **HH:MM** · <дүр> → weekly: [[...]]`.
-8. Хэрэглэгч баталсан засваруудыг л хий (task-ийн `status`/`due`, төслийн төлөв нь `/fm:project`-ээр).
+8. Хэрэглэгч баталсан засваруудыг л хий (task-ийн `status`/`due`, төслийн төлөв нь `/fm:update project`-ээр).
 
 ## (S) Sidebar-ийн sync — төхөөрөмж хооронд (daily горимд, эсвэл «sidebar sync», «сешнүүдээ тааруул»)
 
@@ -135,7 +151,7 @@ Vault: `${user_config.vault_path}` (доор `<V>`). Төхөөрөмж: `${user
 3. Нөгөө төхөөрөмж дээр → `python3 "$S/fm_sidebar.py" plan "<vault>" --device <төхөөрөмж> < sessions.json` → **бүгдийг agent өөрөө хийнэ, гишүүнд даалгахгүй** (itge.e 2026-10-15: «чи бүгдийг нь нээнэ»):
    - `rename` → `set_session_title`; `move` → `mcp__ccd_sidebar__move_sessions` (id-г `list_groups`-оос);
    - `folder` → тэр сешнд `mcp__ccd_session_mgmt__send_message`: «`mcp__ccd_directory__change_directory` → <to>, дараа нь хариу бүү бич»;
-   - `missing` → `start_session` (байвал: title, cwd = загварын хавтас, эхний prompt «`/fm:role <role> --project <project>`, нэрийг «<title>» болго, `<group>` бүлэгт оруул») → буцсан id-г `move_sessions`-оор бүлэгт; `start_session` алга бол `mcp__ccd_session__spawn_task` chip (prompt: `/fm:role <role> --project <project>`, нэрийг «<title>» болго) (itge.e 2026-10-16: agent chip-ээр нээнэ → гишүүн sidebar-т тэр сешн дээр баруун товч → **Detach to top level** → agent `move_sessions`-оор зөв бүлэгт);
+   - `missing` → `start_session` (байвал: title, cwd = загварын хавтас, эхний prompt «`/fm:setup role <role> --project <project>`, нэрийг «<title>» болго, `<group>` бүлэгт оруул») → буцсан id-г `move_sessions`-оор бүлэгт; `start_session` алга бол `mcp__ccd_session__spawn_task` chip (prompt: `/fm:setup role <role> --project <project>`, нэрийг «<title>» болго) (itge.e 2026-10-16: agent chip-ээр нээнэ → гишүүн sidebar-т тэр сешн дээр баруун товч → **Detach to top level** → agent `move_sessions`-оор зөв бүлэгт);
    - `missing_sub` (нөгөө машины дэд/fork сешн) → **эцэг сешн өөрөө нээнэ**, тэгвэл апп түүнийг эцгийн доор байрлуулна (itge.e 2026-10-15): `parent_id` байвал тэр сешнд `send_message`: «`start_session`-оор (ToolSearch) дэд сешн нээ — гарчиг «<title>», cwd «<folder>», prompt: «`<task>`-ийг (эсвэл `01-GTD/Tasks/`-оос гарчгаар) уншиж, `claimed` нь нөгөө машин бол хүлээ, чөлөөтэй бол claim хий; ажлаа `fm:log`-оор тэр task-д; дуусахдаа эцэгт нэг мөр»». `start_session` эцэгт ч алга бол (2026-10-15: Mac, PC хоёуланд алга) гишүүнд нэг мөр: «<parent_title>-ийг fork хийгээд нэрийг «<title>» болго — fork эцгийн доор гарна; шинэ сешн task-аа өөрөө уншина» (chip-ээр бүү нээ: chip эцгийн доор гардаггүй). `parent_id` алга (эцэг нь өөрөө дутуу дэд сешн) бол эхлээд эцгийг нь нээлгээд дараа нь энэ алхмыг давт; эцэг огт олдохгүй бол энэ сешн өөрөө `start_session`/chip-ээр нээж, бүлэг = `group`.
    - `extra` → Archive бүлэг рүү (устгахгүй); дэд (nested) сешнийг апп тусад нь зөөхгүй бол эцэг сешний хамт зөөгөөд эцгийг буцаа, болохгүй бол тайланд нэр.
 4. **Дүрмийн шалгалт (хоёр машинд, BOOT «Sidebar бүлгийн дүрэм»):** `python3 "$S/fm_sidebar.py" check "<vault>" < sessions.json` → `move` → `move_sessions`; `detach` → тэр сешнд `send_message`: «`detach_session` self (ToolSearch), өөр юу ч бүү хий» → дараа нь `to` бүлэг рүү `move_sessions`; апп татгалзвал («user placed it under its parent» — chip-ээр нээсэн сешн) гишүүнд нэг мөр: «<title> дээр баруун товч → Detach to top level» → гишүүн салгамагц `move_sessions` `to` бүлэг рүү (itge.e 2026-10-16: agent chip-ээр нээнэ → гишүүн sidebar-т тэр сешн дээр баруун товч → **Detach to top level** → agent `move_sessions`-оор зөв бүлэгт); `archive_routine` → `archive_session` (ажиллаж байгаа бол алгас). Publish-аас **өмнө** хий — загварт буруу бүлэг орохгүй.

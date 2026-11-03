@@ -16,7 +16,7 @@ related:
 
 ## For future agent
 
-Soyol {{date}}-нд `/fm:refs`-ээр «{{topic}}» сэдвээр лавлагаа цуглуулж, Figma-ийн reference хэсэгт ангиллаар тавьж, agent-ууд зөвлөлдөж онцлохыг хүсэв. Урсгал нь `/fm:refs` skill ба [[03-Areas/AI Team/Ажлын pipeline - agent-аар ажил хийлгэх]]-ийн «судалгааны мөчлөг» өргөтгөл. `status: approved` болохоос өмнө ямар ч task, сайтын зочлолт эхлэхгүй.
+Soyol {{date}}-нд `/fm:research refs`-ээр «{{topic}}» сэдвээр лавлагаа цуглуулж, Figma-ийн reference хэсэгт ангиллаар тавьж, agent-ууд зөвлөлдөж онцлохыг хүсэв. Урсгал нь `/fm:research refs` skill ба [[03-Areas/AI Team/Ажлын pipeline - agent-аар ажил хийлгэх]]-ийн «судалгааны мөчлөг» өргөтгөл. `status: approved` болохоос өмнө ямар ч task, сайтын зочлолт эхлэхгүй.
 
 ## Зорилго
 
@@ -78,4 +78,4 @@ Soyol {{date}}-нд `/fm:refs`-ээр «{{topic}}» сэдвээр лавлаг�
 
 ## Өөрчлөлтийн түүх
 
-- **{{date}}** · `/fm:refs` · Spec-ийн draft (`status: draft`).
+- **{{date}}** · `/fm:research refs` · Spec-ийн draft (`status: draft`).

@@ -7,7 +7,7 @@ category: fm
 status: live
 pane: true
 pane_order: 2
-command: "/fm:save --checkpoint"
+command: "/fm:update save --checkpoint"
 icon: "📝"
 label: "Лог · checkpoint"
 description: "Ярианы дундах хурдан барьж авалт — гол санаа, шийдвэрийг атом болгож лог мөр бичээд яриагаа үргэлжлүүлнэ."
@@ -19,7 +19,7 @@ ai-first: true
 up: "[[03-Areas/AI Team/skills/Skills]]"
 ---
 
-# Skill - Лог · checkpoint (`/fm:save --checkpoint`)
+# Skill - Лог · checkpoint (`/fm:update save --checkpoint`)
 
 ## For future agent
 

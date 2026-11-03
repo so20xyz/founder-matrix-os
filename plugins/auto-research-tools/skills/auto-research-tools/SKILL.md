@@ -83,4 +83,4 @@ Stdlib-only; `gh api`-аар README + бодит star (`stargazers_count`) + CC 
 
 ## 6. Vault-д тэмдэглэх (сонголттой)
 
-Хэрэглэгч tool сонгосон бол шийдвэрийг `/fm:save`-ээр атом болгож болно (жишээ нь `04-Resources/Atomic/decisions/`), судалгааны сэдвийн хавтас `04-Resources/Research/<сэдэв>/`-тэй холбоно. Энэ skill өөрөө vault руу юу ч бичихгүй.
+Хэрэглэгч tool сонгосон бол шийдвэрийг `/fm:update save`-ээр атом болгож болно (жишээ нь `04-Resources/Atomic/decisions/`), судалгааны сэдвийн хавтас `04-Resources/Research/<сэдэв>/`-тэй холбоно. Энэ skill өөрөө vault руу юу ч бичихгүй.

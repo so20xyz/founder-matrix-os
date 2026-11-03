@@ -161,7 +161,7 @@ ROLE_ALIASES = {"area": "gtd", "developer": "architect", "resource": "wiki", "re
                 "creative-director": "creative", "tool-developer": "architect"}
 
 SOUL_PLACEHOLDER = "<Нэг догол мөр: юу хийдэг, юуны төлөө>"
-INDEX_PLACEHOLDER = "_(одоогоор байхгүй — `/fm:project`-оор нэм)_"
+INDEX_PLACEHOLDER = "_(одоогоор байхгүй — `/fm:update project`-оор нэм)_"
 HOME_OWNER_TBD = "> Эзэн: **TBD**"
 
 COMPANY_KINDS = {"company", "organization", "community", "client", "partner"}
@@ -813,7 +813,7 @@ class Onboard(object):
             team = ["- Хариуцах дүр: [[Project]]"]
             wslug = self._planned_work_roles().get(name)
             if wslug:
-                team.append("- Ажлын дүр: `%s` (`/fm:role %s`)" % (wslug, wslug))
+                team.append("- Ажлын дүр: `%s` (`/fm:setup role %s`)" % (wslug, wslug))
             if people:
                 team.append("- Хүмүүс: " + ", ".join(people))
             brain.set_section("Баг ба дүр", team)
@@ -1059,10 +1059,10 @@ class Onboard(object):
                 if m:
                     taken.add(int(m.group(1)))
         # itge.e 2026-10-12 (issue #7): no role per project - every project session is the Project agent
-        # (`/fm:role project --project <slug>`), each project's rules and skills live in its _BRAIN.md
+        # (`/fm:setup role project --project <slug>`), each project's rules and skills live in its _BRAIN.md
         if roles.get("work"):
             self.warnings.append("roles.work алгасав: төсөл бүрт тусдаа дүр үүсгэхгүй — сешн нь Project agent "
-                                 "(`/fm:role project --project <slug>`), дүрэм нь төслийн _BRAIN.md-д")
+                                 "(`/fm:setup role project --project <slug>`), дүрэм нь төслийн _BRAIN.md-д")
         work = []
         new_entries = {}  # type: Dict[str, Dict[str, object]]
         for i, w in enumerate(work):
@@ -1082,7 +1082,7 @@ class Onboard(object):
             title_name = clean_name(w.get("name") or pname, "Дүр", self.warnings)
             folder_rel = prel.rsplit("/", 1)[0] + "/"
             entry = {"note": "", "channel": "", "group": "projects", "folders": [folder_rel],
-                     "skills": ["fm:project", "fm:task", "fm:save", "fm:update"], "private": False,
+                     "skills": ["fm:update"], "private": False,
                      "active": True, "project": prel}
             if slug in notes:
                 self.report["skipped"].append(notes[slug] + " (дүр байна)")
@@ -1271,7 +1271,7 @@ class Onboard(object):
                                                    self.report["private"]["created"])])
             note.set_section("Юу хийж болохгүй", ["- 🔒 Санхүүгийн нэр, дүнг энэ атом, лог, STATUS-д бичихгүй."])
             note.set_section("Эргэж харах нөхцөл", ["Шинэ байгууллага, хүрээ нэмэгдэх эсвэл төсөл хаагдах бүрд "
-                                                    "`/fm:project`, `/fm:save`-ээр шинэчилнэ; том өөрчлөлт → шинэ атом."])
+                                                    "`/fm:update project`, `/fm:update save`-ээр шинэчилнэ; том өөрчлөлт → шинэ атом."])
             self.write_new(atom_rel, note.render())
         atom_link = link(atom_rel[:-3], "Онбординг")
         now = datetime.datetime.now().strftime("%H:%M")

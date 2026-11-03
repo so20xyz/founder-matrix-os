@@ -7,7 +7,7 @@ category: fm
 status: live
 pane: true
 pane_order: 6
-command: "/fm:save"
+command: "/fm:update save"
 icon: "💾"
 label: "Бүгдийг хадгалах"
 description: "Сэдэв/сешн дуусахад яриаг бүхэлд нь цэгцэлж хадгална: атом → PARA холбоос → task → хүн → лог."
@@ -19,7 +19,7 @@ ai-first: true
 up: "[[03-Areas/AI Team/skills/Skills]]"
 ---
 
-# Skill - Бүгдийг хадгалах (`/fm:save`)
+# Skill - Бүгдийг хадгалах (`/fm:update save`)
 
 ## For future agent
 

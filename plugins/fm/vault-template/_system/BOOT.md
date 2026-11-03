@@ -36,9 +36,9 @@ ai-first: true
 ## Task
 
 Агент эзэнтэй task-ийг **зөвхөн** ингэж үүсгэнэ (гараар `01-GTD/Tasks/`-д бүү бич):
-`relay.py task "<гарчиг>" --owner "<дүр, жишээ нь 📚 Wiki>" --project "<төслийн note>" --status inbox [--research "<судалгаа>"]` (эсвэл `/fm:task`).
+`relay.py task "<гарчиг>" --owner "<дүр, жишээ нь 📚 Wiki>" --project "<төслийн note>" --status inbox [--research "<судалгаа>"]` (эсвэл `/fm:update task`).
 
-- **Шилжүүлэх (delegate, {{fm:member}} 2026-10-09):** task-ийг өөр agent руу өгөх (эсвэл `inbox` руу буцаах) бол `owner` = тэр agent, `status: inbox`, `claimed:`/`started:`/`completed:` хоосон (авсан task бол `relay.py release "<task зам>" --sid <sid>`; `/fm:task set` өөрөө ажиллуулна), `delegated_from`, `delegated` огноо; «## Шилжүүлэлт»-д яагаад + юу хүлээж буй. Base шууд шинэчлэгдэнэ — Discord линк зөвхөн яаралтай үед (сэрээх дохио). **Төсөл рүү шилжүүлэх** = `owner: "💼 Project"` + `project: [[тэр төсөл]]`: төслийн сешн owner-оор биш, `project:`-оор өөрийгөө шүүнэ (төслийн note дээрх task base). Судалгаа → Wiki, дизайн/контент → Creative, төслийн ажил → төслийн сешн.
+- **Шилжүүлэх (delegate, {{fm:member}} 2026-10-09):** task-ийг өөр agent руу өгөх (эсвэл `inbox` руу буцаах) бол `owner` = тэр agent, `status: inbox`, `claimed:`/`started:`/`completed:` хоосон (авсан task бол `relay.py release "<task зам>" --sid <sid>`; `/fm:update task set` өөрөө ажиллуулна), `delegated_from`, `delegated` огноо; «## Шилжүүлэлт»-д яагаад + юу хүлээж буй. Base шууд шинэчлэгдэнэ — Discord линк зөвхөн яаралтай үед (сэрээх дохио). **Төсөл рүү шилжүүлэх** = `owner: "💼 Project"` + `project: [[тэр төсөл]]`: төслийн сешн owner-оор биш, `project:`-оор өөрийгөө шүүнэ (төслийн note дээрх task base). Судалгаа → Wiki, дизайн/контент → Creative, төслийн ажил → төслийн сешн.
 - **Төслийн визуал = төслийн сешн өөрөө ({{fm:member}} 2026-10-14):** төслийн сешнд слайд, диаграм, зураг хэрэгтэй бол Creative сешнийг хүлээхгүй — Creative дүрийг давхар авч `/fm:figma`-аар өөрөө зурна (брэндийн визуал ДНХ, wrap grid auto-layout, `creative_check.js`). 🎨 Creative-д зөвхөн том брэнд/кампанит ажил шилжинэ. Төлбөртэй зураг үүсгэх (Figma AI credit, Higgsfield) зөвхөн {{fm:member}}-ийн зөвшөөрлөөр. Жишээ: Member хичээл 3 (Figma 582:2).
 - **Төслийн inbox ({{fm:member}} 2026-10-09):** `01-GTD/Inbox` = зөвхөн ангилаагүй зүйл. Ангилсан бөгөөд нэг төсөлд хамаарах хураалт (клиентийн мессеж, хүсэлт, screenshot) → `02-Projects/<Төсөл>/Inbox/` (`type: capture`, `up` = төслийн note, `task:` холбоостой). Project Files base харуулна.
 - **Төлөв ({{fm:member}} 2026-10-09):** `inbox → in-progress → completed` (+ `next-action`, `waiting`). Нээлттэй = `inbox · next-action · in-progress · waiting`. Агентын task `inbox`-оор төрвөл дүрийн сул сешн автоматаар авна.
@@ -75,7 +75,7 @@ ai-first: true
 - Атом/note олон төсөлд хамаарвал `projects: [[A]], [[B]]`. Өөр төслийн сешнд хэрэгтэй бол тэр сувагт **зөвхөн линк** илгээ.
 - Төслийн note-ийн «🔗 Төслийн мэдлэг» Bases харагдац холбоосыг автоматаар харуулна; нийт зураглал → [[_system/project-map]].
 - **Харьяалал (up)** — note бүр өөрийн хавтасны төв note руу `up: "[[<хавтас>/<Төв>]]"` (Tasks, Atoms, Decisions, Projects, References, People…); төв note нь тэр хавтасны base-ийг embed хийнэ. Харьяалал = `up` (хавтас/base), хамаарал = `project`/`projects`/`related`.
-- **Сэдэв (topics)** — атомд `topics: [[04-Resources/Topics/<Сэдэв>]]` (1–2): хадгалсан пост → сэдэв → атом → төсөл гүүр. Harvester ба `/fm:save` өөрөө тавина.
+- **Сэдэв (topics)** — атомд `topics: [[04-Resources/Topics/<Сэдэв>]]` (1–2): хадгалсан пост → сэдэв → атом → төсөл гүүр. Harvester ба `/fm:update save` өөрөө тавина.
 - **Ажлын цикл ({{fm:member}} 2026-10-08)** — Төсөл → Task → Resource → Атом/Шийдвэр → Төсөл. Холбоос: resource (лавлагаа, social save, зураг) `task:` + `project:` (аль task-ийн төлөө олсон) · атом `from:` (ямар resource-оос гарсан) · task дуусахад `## Үр дүн`-д шийдвэрийн атом. Таамгаар холбохгүй — нотолгоотой үед л.
 - Шинэ feature/skill нэмэхдээ аль номын зарчмыг хэрэгжүүлж буйгаа нэрлэ (`04-Resources/library`).
 
@@ -83,7 +83,7 @@ ai-first: true
 
 ## Зэрэгцээ сешн ба нэг бичигч
 
-- **Сешний нэр:** Шинэ сешн/agent нээх бүрт (Desktop fork, `start_session`/spawn, Workflow-ийн agent `label`, `/fm:role`/project сешн) нэрийг шууд тавина: «<ажлын icon> <ажил> › <дэд ажил>» — icon = ажлын төрөл (🎨 Creative · 🔍 Research · 📚 Wiki · 🏛️ Architect · 📁 төсөл · 📥 GTD); нээсэн сешн нь `mcp__ccd_session_mgmt__set_session_title`-аар (ToolSearch) тэр даруй нэрлэнэ.
+- **Сешний нэр:** Шинэ сешн/agent нээх бүрт (Desktop fork, `start_session`/spawn, Workflow-ийн agent `label`, `/fm:setup role`/project сешн) нэрийг шууд тавина: «<ажлын icon> <ажил> › <дэд ажил>» — icon = ажлын төрөл (🎨 Creative · 🔍 Research · 📚 Wiki · 🏛️ Architect · 📁 төсөл · 📥 GTD); нээсэн сешн нь `mcp__ccd_session_mgmt__set_session_title`-аар (ToolSearch) тэр даруй нэрлэнэ.
 - **Дэд сешн = нэг task ({{fm:member}} 2026-10-15):** fork/spawn бүр нэг task claim хийнэ (алга бол `fm:task`), ажлаа `fm:log`-оор бичиж, «Үр дүн»-ээ эцэгт `send_message`-ээр буцаана. Нөгөө машинд дутуу дэд сешнийг эцэг нь `start_session`-оор нээнэ (fm:update (S)).
 - **Sidebar бүлэг (itge.e 2026-10-15):** дүр → бүлэг: project → Projects · architect, gtd, creative → Areas · wiki, research → Resources · finance → Finance. Төслийн доорх Research/Architect/Creative дэд сешн эцгийн доор (олон agent хамт). Дэлгэрэнгүй, шалгагч: fm:update (S).
 - Хуваалцсан файл (`_system/logs/`, `01-GTD/Daily/`, `03-Areas/people/`, `index.md`, самбар) → **зөвхөн нэмнэ**.
@@ -153,7 +153,7 @@ ai-first: true
 
 | Slug | Хариуцлага |
 |---|---|
-| `project` | Нэг Project agent: дуусдаг төсөл бүрт нэг тогтмол сешн (`/fm:role project --project <slug>`), ongoing ажлууд «📁 Project» сешнд; төслийн дүрэм, skill — `_BRAIN.md`-д; мэргэжлийн ажлыг subagent-аар (`fm:creative`, `fm:architect`, `fm:wiki`) |
+| `project` | Нэг Project agent: дуусдаг төсөл бүрт нэг тогтмол сешн (`/fm:setup role project --project <slug>`), ongoing ажлууд «📁 Project» сешнд; төслийн дүрэм, skill — `_BRAIN.md`-д; мэргэжлийн ажлыг subagent-аар (`fm:creative`, `fm:architect`, `fm:wiki`) |
 | `gtd` | Inbox/GTD, өдөр, хүмүүс, хүрээ, архив |
 | `wiki` | Лавлагаа, атом, судалгаа |
 | `architect` · `creative` | Код, vault-ийн бүтэц · дизайн, пост |

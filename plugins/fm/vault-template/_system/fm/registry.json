@@ -11,10 +11,7 @@
       ],
       "skills": [
         "fm:project",
-        "fm:task",
-        "fm:save",
         "fm:update",
-        "fm:people",
         "superpowers:brainstorming",
         "superpowers:writing-plans"
       ],
@@ -35,11 +32,7 @@
         "Home.md"
       ],
       "skills": [
-        "fm:inbox",
-        "fm:task",
         "fm:update",
-        "fm:people",
-        "fm:save",
         "fm:notion"
       ],
       "private": false,
@@ -56,8 +49,8 @@
         "04-Resources/sources/"
       ],
       "skills": [
-        "fm:save",
-        "fm:vault",
+        "fm:update",
+        "fm:setup",
         "fm:watch",
         "obsidian:defuddle",
         "obsidian:json-canvas",
@@ -77,8 +70,6 @@
       ],
       "skills": [
         "fm:setup",
-        "fm:role",
-        "fm:vault",
         "fm:relay",
         "obsidian:obsidian-bases",
         "superpowers:subagent-driven-development",
@@ -100,7 +91,7 @@
         "fm:figma",
         "fm:framer",
         "fm:watch",
-        "fm:save"
+        "fm:update"
       ],
       "private": false,
       "active": true,
@@ -115,7 +106,7 @@
       ],
       "skills": [
         "fm:finance",
-        "fm:task",
+        "fm:update",
         "finance:financial-statements",
         "finance:variance-analysis"
       ],

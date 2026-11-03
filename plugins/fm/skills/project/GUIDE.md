@@ -1,0 +1,113 @@
+---
+name: project
+description: Төсөл үүсгэх, шинэчлэх, төлөв солих (Active / Planning / On-hold / Archive), төсөл хаах шалгах жагсаалт, kanban самбарын цэгцлэл (hygiene). «төсөл», «шинэ төсөл», «төсөл үүсгэ», «төслийн төлөв», «төслийг зогсоо», «төсөл хаа», «архивла», «on-hold болго», «төслүүдийг харуул», «самбар цэгцэл», «board hygiene», «хуучирсан картууд» гэвэл энэ skill-ийг ашигла.
+argument-hint: "[нэр] [new|status|close|hygiene]"
+---
+
+# /fm:update project — төсөл ба самбар
+
+Төсөл бүр нэг хавтас, **хавтгай**: `02-Projects/<Нэр>/<Нэр>.md` + `_BRAIN.md` (layout 2026-10-09 — төлөвийн дэд хавтас байхгүй).
+
+| Төлөв | Хавтас | `status:` |
+|---|---|---|
+| Active | `02-Projects/<Нэр>/` | `active` |
+| Planning | `02-Projects/<Нэр>/` | `planning` |
+| On-hold / Waiting | `02-Projects/<Нэр>/` | `on-hold` / `waiting` |
+| Archive | `99-Archive/Projects/<Нэр>/` | `completed` эсвэл `cancelled` |
+
+**Frontmatter `status:` = цорын ганц үнэн.** Төлөв солиход хавтас зөөгдөхгүй (archive-аас бусад). File explorer дахь хавтасны өнгийг
+`.obsidian/snippets/fm-project-status.css` өгнө — `new`/`move` бүрийн дараа скрипт өөрөө дахин үүсгэнэ, гараар: `fm_project.py status-css <vault>`
+(active #3A7BF0 · planning #8FB8FF · on-hold/waiting #E0962E · бусад #6E6E6E). Гишүүн Settings → Appearance → CSS snippets-д нэг удаа асаана; бусад `.obsidian/` файлыг хөндөхгүй.
+Хуучин vault (`02-Projects/1-Active|2-Planning|3-On-hold/<Нэр>/`) ч уншигдана — тэнд төлөв солиход мөн зөвхөн frontmatter өөрчлөгдөнө.
+Эзэн дүр: **Project**. Бусад дүр төслийн хавтсанд зөвхөн өөрийн ажлын файлыг бичнэ.
+
+Vault: `${user_config.vault_path}` · Аргумент: `$ARGUMENTS`
+Скрипт: `python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py"` (Windows: `python` / `py -3`).
+
+## 0. Эхлээд тойм
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" list "${user_config.vault_path}"
+```
+
+`гэрээ n/4` = `goal`, `due`, `milestones`, `anti-goal` дөрвөөс хэд нь бөглөгдсөн. `⚠️ хавтас=archive, status=…` гарвал засахыг санал болго; `(хуучин хавтас 1-Active)` = шилжүүлээгүй хуучин бүтэц.
+
+## 1. Шинэ төсөл
+
+1. Нэрийг **хайж үз** — ойролцоо нэртэй төсөл байвал (үсгийн алдаа, галиг) түүнийг харуулж «энэ үү?» гэж асуу. Чимээгүй давхар үүсгэхгүй.
+2. Нэрийн гол үгийг **кириллээр батлуул**. Латин галиг (`u` = у/ү/ө) хоёр утгатай байж болно. Хавтасны нэр сешний cwd болдог тул дараа солиход хэцүү.
+3. Бүтэн зам 60 тэмдэгтээс урт бол богино нэр + `aliases:` санал болго.
+4. Үүсгэ:
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" new "${user_config.vault_path}" "<Нэр>" --state planning --area Business --context work --goal "<нэг мөр>"
+   ```
+   `_system/templates/Project.md` байвал түүний нэмэлт хэсгүүдийг (Bases харагдац г.м.) шинэ нот руу нэм.
+   - **Төсөлд тусдаа дүр үүсгэхгүй** (itge.e 2026-10-12): дүрэм, хориг, хэрэглэх skill — тухайн `_BRAIN.md`-д. Дуусдаг төслийн тогтмол сешн = Project agent тэр хавтастай: `/fm:setup role project --project <slug> --folder 02-Projects/<Нэр>`.
+   - **Дуусдаггүй ажил** (ажлын байр, холбоо, зөвлөлийн суудал, байнгын үйлчлүүлэгч) = `--state ongoing`, **тусдаа сешнгүй**: «📁 Project» сешн тэр ажил руу шилжихдээ `_BRAIN.md`-ийг нь бүтэн уншиж ажиллана, ажлуудын материалыг холихгүй. `03-Areas/`-д шинэ хавтас, «assistant» дүр үүсгэхгүй.
+5. Яриан дахь мэдээллээр бөглө: тойм, `goal`, `due`, `milestones`, `anti-goal`, холбогдох хүмүүс (`[[wikilink]]`). Мэдэхгүй зүйлийг `TBD`. **`goal`-ыг өөрөө зохиохгүй** — гишүүний үг.
+6. `_BRAIN.md`: «яагаад байдаг», «дууссан гэж юу вэ», «юу хамаарахгүй» — гишүүнээс асууж бөглө.
+7. **Хамааралтай судалгаа хай (connecting dots):** `04-Resources/Судалгаа ба нөөц.base` (байвал) болон `04-Resources/Research/`, `type: research|reference|atomic` + `projects:` бүхий note-уудаас шинэ төслийн гол үгээр хайж, тохирох 3–7-г төслийн `related:` болон «🔗 Холбоос — яагаад»-д `эх` гэж холбо. Шинэ төслийн судалгааг дараа нь `type: research` + `project:`-тэй бичихийг сануул.
+8. Өдрийн тэмдэглэл байвал (`01-GTD/Daily/<өнөөдөр>.md`) нэг мөр **append**: `- 🆕 [[<төслийн зам>|<Нэр>]] төсөл нээгдэв`.
+
+## 2. Шинэчлэх
+
+Төслийн нотыг унш → шинэ мэдээллийг тохирох хэсэгт нэм → `updated:` өнөөдөр. Шийдвэр гарсан бол «Гол шийдвэр» хэсэгт нэг мөр + атом руу холбоос (атомыг Resource дүр бичнэ).
+
+## 3. Төлөв солих
+
+```bash
+# эхлээд dry run (archive / архиваас сэргээх үед ямар файлын холбоос солигдохыг ч харуулна)
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${user_config.vault_path}" "<Нэр>" on-hold
+# гишүүн батласны дараа
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${user_config.vault_path}" "<Нэр>" on-hold --apply
+```
+
+- active / planning / on-hold / waiting: скрипт зөвхөн `status`, `updated`-ийг солиод CSS snippet-ийг дахин үүсгэнэ. Хавтас, холбоос хөдлөхгүй.
+- archive (эсвэл архиваас буцаах): хавтсыг `99-Archive/Projects/` руу (буцахдаа `02-Projects/` руу) зөөж, vault доторх бүх хуучин замын холбоосыг шинэ зам руу солино (`.obsidian/`, `_trash/`-ийг хөндөхгүй).
+- **Obsidian нээлттэй бол** archive-ийг түүний «Move file to…» командаар зөөх нь илүү найдвартай (Obsidian холбоосыг өөрөө шинэчилнэ) — дараа нь зөвхөн `status`-ыг засаад `status-css` ажиллуул.
+- Хоёр машин зэрэг бичиж байгаа бол зөөхгүй (Drive `(1)` давхардал үүсгэнэ).
+- Active/Planning биш төлөв рүү шилжсэн төсөлд Project agent-ийн сешн байвал гишүүнд мэдэгдэ - сешнийг архивлах эсэхийг гишүүн шийднэ (өөрөө хаахгүй).
+
+## 4. Хаах шалгах жагсаалт (Archive руу)
+
+Нэг ч алхмыг алгасахгүй. Алхам бүрийн нотолгоог гишүүнд харуул.
+
+| # | Алхам | Нотолгоо |
+|---|---|---|
+| 1 | **Тооллого** — төслийн хавтас + гадна байгаа таск, лог, атом (`project:` энэ төсөл рүү заасан) | тоо + файлын нэр |
+| 2 | **Нээлттэй таск** (`inbox · next-action · in-progress · waiting`) бүрд шийдвэр: `completed` / `cancelled` / залгамжлагч төсөл эсвэл Area руу `project:` солих. `in-progress` (▶ `claimed` · `started`) бол эхлээд түүнийг авсан сешнтэй тохир. Төлөвийг `/fm:update task` `set`-ээр солих — `completed:` цагийг бичиж, requeue/`cancelled` үед `claimed:`, `started:`, `completed:`-ийг хоосолно. Бусад дүрийн таскийг өөрөө засахгүй — эзэнд нь task үүсгэж дамжуул | таск бүрийн шинэ төлөв |
+| 3 | **Нээлттэй асуултууд бүтэн текстээр** `_BRAIN.md`-д — «3 асуулт байна» биш, асуулт өөрөө | хэсгийн агуулга |
+| 4 | **Handoff тэмдэглэл** төслийн хавтсанд: юу хийгдсэн · юу үлдсэн · мэдлэг хаана · шударга «бүртгэгдээгүй» | файлын зам |
+| 5 | **Шийдвэрийн атом** (`04-Resources/Atomic/decisions/`) — яагаад хаагдсан. Resource дүрд task болгож өгч болно | атомын зам |
+| 6 | `status: completed` (эсвэл `cancelled`) → `move … archive --status completed --apply` | скриптийн гаралт |
+| 7 | Энэ төсөлд холбогдсон **сешн** (Project agent) байвал архивлах нэр дэвшигч - `_system/fm/registry.json`-оос ол, гишүүнээр шийдүүл | registry мөр |
+| 8 | **Гишүүний зөвшөөрөл** — archive уу, `_trash` уу гэдгийг гишүүн шийднэ | гишүүний үг |
+
+## 5. Самбарын цэгцлэл (hygiene горим)
+
+**Kanban самбар архивлагдсан (itge.e)** — шинэ vault-д самбар = `01-GTD/Tasks.base`-ийн GTD view-ууд (task-ийн `status`-аас шууд). Энэ горим зөвхөн **хуучин vault-д** Kanban файл (`01-GTD/boards/` эсвэл `02-GTD/boards/`) үлдсэн үед. Шинэ самбар **үүсгэхгүй**. Kanban файл нь таскийн файлаас **тусдаа** — карт чирэхэд таскийн `status` өөрчлөгдөхгүй. Hygiene горим хоёуланг нь тулгана.
+
+1. Тайлан (зөвхөн уншина):
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" board "${user_config.vault_path}" "<самбар>" --stale-days 14
+   ```
+   Ангилал: `mismatch` (багана ≠ файлын status) · `overdue` (`@{огноо}` эсвэл таскийн `due` өнгөрсөн) · `stale` (14+ хоног хөдлөөгүй) · `broken` (таскийн файл алга) · `undated`.
+2. Зүйл бүрд **нэг** санал, нэг мөр шалтгаантай: **done** / **reschedule** (шинэ огноо) / **archive** (хэрэггүй болсон) / **keep**. `mismatch` бол аль нь үнэн бэ гэж асуу — ихэвчлэн гишүүн картыг саяхан чирсэн бол самбар үнэн.
+3. Бүгдийг нэг хүснэгтээр харуулж **батлуул**. Гишүүн засварлаж болно.
+4. Батлагдсаныг хэрэгжүүл:
+   - самбар дээр картыг зөв багана руу зөөх, `@{огноо}` шинэчлэх, хаягдлыг `✅ Completed`-д `~~зураастай~~` + «dropped» тэмдэглэлтэй;
+   - таскийн файлын `status`-ыг баганатай тааруулах (`/fm:update task`-ийн `set` команд — `started:`/`claimed:` (`in-progress`), `completed:` (`completed`)-ийг өөрөө бичнэ, буцаахад хоосолно).
+   - **Устгахгүй.** Нэмэлт зөөлт + зураас л.
+   Багана ↔ status: `📥 Inbox`→`inbox` · `⏭️ Next Action`→`next-action` · `▶️ In Progress`→`in-progress` · `⏳ Waiting On`→`waiting` · `💭 Someday / Maybe`→`someday` · `✅ Completed` (хуучин `Done`)→`completed`.
+5. Самбарын файлд `## For future agent` гарчиг **бүү нэм** — Kanban plugin түүнийг багана болгоно.
+6. Юу хаашаа зөөгдсөнийг товч тайлагна.
+
+### Долоо хоногийн task hygiene (itge.e 2026-10-26)
+
+Даваа бүр 09:00 (scheduled task) идэвхтэй төсөл бүрт: `project:`-оор шүүсэн нээлттэй task бүрийг commit, Output, шийдвэрийн атомтай тулга → нотолгоотойг `completed` + «## Үр дүн», орлогдсоныг `cancelled` + холбоос, тодорхойгүйг нэг «Асуулт - …» task (`waiting_on: me`). Тайлан = `02-Projects/<Төсөл>/Output/<огноо> - Task хяналт (hygiene).md` (хүснэгт: Task · Өмнө → Дараа · Нотолгоо), дүгнэлтийг төслийн `Chat/<огноо>.app.md`-д нэг мөр. Устгахгүй; Discord #gtd-д бичихгүй. Арга → [[04-Resources/Atomic/decisions/2026-10-26 - Task hygiene дүрэм]].
+
+## Хориг
+
+- Төслийн `goal`, хүрээг өөрөө дахин бичихгүй — хуучирсныг илрүүлж, асуулт болгон тавина.
+- Хавтас/файл устгахгүй. Archive эсвэл `_trash` нь гишүүний шийдвэр.
+- Санхүүгийн хувийн мэдээлэл (`finances/private`) төслийн нотод орохгүй. Төслийн орлого/зарлагыг төслийн frontmatter-т бичиж болно, хувийн төлбөрийг биш.

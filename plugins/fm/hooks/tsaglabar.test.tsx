@@ -403,7 +403,7 @@ test('V6 Тойм: top 3, agents from owners (Finance closed), ▷ keeps the rev
 })
 
 // V5 «Inbox» over captures in 01-GTD/Inbox: the 5 design samples, an older one, a 🔒 one; routing writes frontmatter only
-test('V5 Inbox: suggestions, ✓ Task routes a capture (frontmatter only), 🔒 rows only go to /fm:inbox', async ($, on) => {
+test('V5 Inbox: suggestions, ✓ Task routes a capture (frontmatter only), 🔒 rows only go to /fm:update inbox', async ($, on) => {
   const IB = `${V}/01-GTD/Inbox`
   const cap = (day: string, hm: string, title: string, source = 'tsaglabar') =>
     [`${IB}/${day} ${hm.replace(':', '')} - ${title.replace(/[:/]/g, ' ')}.md`, `---\ndate: ${day}\ntype: capture\nstatus: inbox\nsource: ${source}\n---\n\n# ${title}\n\n${title}\n`] as const
@@ -514,8 +514,8 @@ test('V3 Хэрэгсэл: role tools by group, live status, credits only, «С�
 })
 
 // V5 over a Save-to-Inbox web clip (status: draft, link in frontmatter url:) and an older Барих capture whose H1 was cut
-// to its file-name-safe prefix; ≡ Note marks a capture routed only once /fm:save is accepted
-test('V5 Inbox: web clips are open (Clip, → Note), a mangled H1 shows the body line, a refused /fm:save leaves it open', async ($, on) => {
+// to its file-name-safe prefix; ≡ Note marks a capture routed only once /fm:update save is accepted
+test('V5 Inbox: web clips are open (Clip, → Note), a mangled H1 shows the body line, a refused /fm:update save leaves it open', async ($, on) => {
   const IB = `${V}/01-GTD/Inbox`
   const CLIP = `${IB}/Portfolio template.md`
   const OLD = `${IB}/${DAY} 0950 - Пүрэв 15 00 — Inai багтай.md`
@@ -541,13 +541,13 @@ test('V5 Inbox: web clips are open (Clip, → Note), a mangled H1 shows the body
   for (let i = 0; i < 20 && (await ui.find({ key: `ibb-${CLIP}-note` })) === undefined; i++) await new Promise(r => setTimeout(r, 5))
   expect(WRITES[CLIP]).toBeUndefined()
   expect(await ui.find({ key: `ibb-${CLIP}-note` })).toBeDefined()
-  // accepted: /fm:save gets the frontmatter link, then the clip is routed
+  // accepted: /fm:update save gets the frontmatter link, then the clip is routed
   refuse = false
   await ui.press({ key: `ibb-${CLIP}-note` })
   for (let i = 0; i < 20 && !WRITES[CLIP]; i++) await new Promise(r => setTimeout(r, 5))
-  expect(ran).toContain('fm:save https://framer.com/marketplace')
+  expect(ran).toContain('fm:update save https://framer.com/marketplace')
   expect(WRITES[CLIP] ?? '').toContain('status: routed')
-  expect(WRITES[CLIP] ?? '').toContain('routed_to: "fm:save"')
+  expect(WRITES[CLIP] ?? '').toContain('routed_to: "fm:update save"')
   await ui.unmount()
   for (const f of [CLIP, OLD]) { delete FILES[f]; delete WRITES[f] }
 })
@@ -907,8 +907,8 @@ const pin = (order: number, command: string, icon: string, label: string, roles:
   `---\ntype: skill\npane: true\npane_order: ${order}\ncommand: "${command}"\nicon: "${icon}"\nlabel: "${label}"\ndescription: "${label} — тайлбар."\nwhen: "${label} хэрэгтэй үед."\nroles: [${roles}]\nai-first: true\n---\n\n# ${label}\n`
 const SKILL_FILES: Record<string, string> = {
   [`${CAT}/Skill - fm-update-weekly.md`]: pin(7, '/fm:update weekly', '🗓', 'Долоо хоногийн тойм', 'area'),
-  [`${CAT}/Skill - fm-save-checkpoint.md`]: pin(2, '/fm:save --checkpoint', '📝', 'Лог · checkpoint', 'all'),
-  [`${CAT}/Skill - fm-inbox.md`]: pin(4, '/fm:inbox', '📥', 'Inbox ангилах', 'area, developer'),
+  [`${CAT}/Skill - fm-save-checkpoint.md`]: pin(2, '/fm:update save --checkpoint', '📝', 'Лог · checkpoint', 'all'),
+  [`${CAT}/Skill - fm-inbox.md`]: pin(4, '/fm:update inbox', '📥', 'Inbox ангилах', 'area, developer'),
   [`${CAT}/Skill - fm-update.md`]: pin(1, '/fm:update', '🔄', 'Update', 'all'),
   // not on the pane: no `pane: true`
   [`${CAT}/Skill - research.md`]: '---\ntype: skill\ncommand: "/research"\nlabel: "Research"\nroles: [all]\n---\n',
@@ -976,7 +976,7 @@ test('⚡ Skill: a press only selects (description + «Хэзээ»); ▶ Ажи
     await ui.press({ key: 'skb-Skill - fm-save-checkpoint' })
     expect(await ui.find({ type: 'Text', text: 'Лог · checkpoint — тайлбар.' })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: 'Хэзээ: Лог · checkpoint хэрэгтэй үед.' })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: '/fm:save --checkpoint' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: '/fm:update save --checkpoint' })).toBeDefined()
     expect((await ui.find({ key: 'skb-Skill - fm-save-checkpoint' }))?.props.dimColor).toBe(false)
     // selecting never runs anything
     await new Promise(r => setTimeout(r, 20))
@@ -984,8 +984,8 @@ test('⚡ Skill: a press only selects (description + «Хэзээ»); ▶ Ажи
     // ▶: the slash command as typed (name + args), queued, with a toast
     await ui.press({ key: 'skrun-Skill - fm-save-checkpoint' })
     for (let i = 0; i < 40 && !ran.length; i++) await new Promise(r => setTimeout(r, 5))
-    expect(ran).toEqual(['fm:save --checkpoint'])
-    expect(toasts).toContain('▶ /fm:save --checkpoint')
+    expect(ran).toEqual(['fm:update save --checkpoint'])
+    expect(toasts).toContain('▶ /fm:update save --checkpoint')
     // ✎: the catalog note in Obsidian
     await ui.press({ key: 'skedit-Skill - fm-save-checkpoint' })
     for (let i = 0; i < 40 && !opened.some(o => o.includes('obsidian://')); i++) await new Promise(r => setTimeout(r, 5))
@@ -996,7 +996,7 @@ test('⚡ Skill: a press only selects (description + «Хэзээ»); ▶ Ажи
     expect(await ui.find({ type: 'Text', text: 'Лог · checkpoint — тайлбар.' })).toBeUndefined()
     await ui.press({ key: 'skb-Skill - fm-update' })
     expect(await ui.find({ key: 'skc-Skill - fm-update' })).toBeUndefined()
-    expect(ran).toEqual(['fm:save --checkpoint'])
+    expect(ran).toEqual(['fm:update save --checkpoint'])
     await ui.unmount()
   } finally {
     done()

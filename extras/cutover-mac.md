@@ -228,7 +228,7 @@ Vault дотроос **шинэ** Claude Code сешн нээ (`cd "$VAULT" && c
 | 2 | `/fm:` гэж бичих | `fm:save`, `fm:inbox`, `fm:role` … харагдана; `obsidian-second-brain:*` **байхгүй** |
 | 3 | `/obsidian-save` | shim ажиллаж `fm:save` skill дуудагдана |
 | 4 | MCP | `mcp__plugin_obsidian-second-brain_vault__*` tool **байхгүй** |
-| 5 | Дүр | registry-д `roles` нэгтгэгдээгүй бол «дүргүй: /fm:role <slug>» гэж гарна (хэвийн) |
+| 5 | Дүр | registry-д `roles` нэгтгэгдээгүй бол «дүргүй: /fm:setup role <slug>» гэж гарна (хэвийн) |
 | 6 | Relay | `relay.py inbox` мөрүүд хэвээр гарна, Stop-д baton бичигдэнэ |
 
 Терминалаас:

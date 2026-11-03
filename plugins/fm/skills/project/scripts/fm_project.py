@@ -15,7 +15,7 @@ Usage:
     fm_project.py list  <vault>                                   status table + scope-contract check
     fm_project.py new   <vault> "<Name>" [--state planning|ongoing] [--role <slug>] [--area Business] [--context work] [--goal "..."]
                      --state ongoing: never-ending work (job, association, board seat) - a project that does not close
-                     (no role per project: its session is /fm:role project --project <slug> --folder <folder>)
+                     (no role per project: its session is /fm:setup role project --project <slug> --folder <folder>)
     fm_project.py move  <vault> "<Name>" <active|planning|on-hold|waiting|archive> [--status completed|cancelled] [--apply]
     fm_project.py status-css <vault>                              only regenerate the status CSS snippet
     fm_project.py board <vault> [<board name>] [--stale-days 14]  legacy kanban hygiene report (read-only; boards archived, Tasks.base replaces them)
@@ -289,7 +289,7 @@ def cmd_new(vault: Path, args: List[str]) -> None:
     if state not in ("active", "planning", "on-hold", "waiting", "ongoing"):
         _die("--state: active | planning | on-hold | waiting | ongoing")
     if _opt(args, "--role"):
-        _die("--role хасагдсан (2026-10-12): төсөлд тусдаа дүр үүсгэхгүй. Сешн: /fm:role project --project <slug> "
+        _die("--role хасагдсан (2026-10-12): төсөлд тусдаа дүр үүсгэхгүй. Сешн: /fm:setup role project --project <slug> "
              "--folder 02-Projects/<Нэр>; дүрэм, skill нь төслийн _BRAIN.md-д.")
     role = ""
     for note, _ in find_projects(vault):
@@ -361,7 +361,7 @@ def new_role_note(vault: Path, slug: str, name: str, proj_note_rel: str, folder_
         _die("Файл байна: %s" % path.relative_to(vault).as_posix(), 2)
     roles_dir.mkdir(parents=True, exist_ok=True)
     _write_note(path, fm, body + [""])
-    return path.relative_to(vault).as_posix() + " (/fm:role %s)" % slug
+    return path.relative_to(vault).as_posix() + " (/fm:setup role %s)" % slug
 
 
 def locate(vault: Path, name: str) -> Path:

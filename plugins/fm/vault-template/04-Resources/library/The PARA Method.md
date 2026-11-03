@@ -30,7 +30,7 @@ up: "[[04-Resources/library/Ном ↔ зарчим ↔ дүрэм]]"
 - Vault-ийн `02-Projects · 03-Areas · 04-Resources · 99-Archive`
 - «Атом бүр ≥1 PARA гэртэй» (BOOT-ийн Matrix дүрэм)
 - Судалгаа нь Resource хэвээр үлдэж, төсөлд `project:` relation-оор холбогдоно — хавтас хооронд зөөхгүй
-- `/fm:project` төлөв: Active · Planning · On-hold · Archive
+- `/fm:update project` төлөв: Active · Planning · On-hold · Archive
 
 ## Миний тэмдэглэл
 

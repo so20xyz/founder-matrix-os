@@ -9,7 +9,7 @@
 
 sessions.json =`mcp__ccd_session_mgmt__list_sessions`-ийн гаралт (title, group{name}, sessionId, cwd).
 Загвар хавтсыг (vault-аас харьцангуй) ч хадгална — `folder` алхам: тэр сешнд send_message-ээр change_directory хийлгэнэ. Скрипт зөвхөн
-тооцоолно; нэр солих (set_session_title), бүлэг солих (move_sessions), шинэ сешн (/fm:role) -ийг agent хийнэ.
+тооцоолно; нэр солих (set_session_title), бүлэг солих (move_sessions), шинэ сешн (/fm:setup role) -ийг agent хийнэ.
 
 Загвар: <vault>/_system/fm/sidebar-layout-<төхөөрөмж>.json (машин бүр өөрийн файлд — Drive зөрчилгүй). plan нь бусад
 төхөөрөмжийн хамгийн сүүлийн загварыг уншина. Хэн сүүлд publish хийсэн нь загвар;

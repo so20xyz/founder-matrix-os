@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fm_sync — /fm:sync: машин солиход (PC дээр 48 цаг → Mac) нэг командаар юу болсныг нөхнө (itge.e 2026-10-21).
+"""fm_sync — /fm:setup sync: машин солиход (PC дээр 48 цаг → Mac) нэг командаар юу болсныг нөхнө (itge.e 2026-10-21).
 
   python3 fm_sync.py check  "<vault>" --device Mac [--repo <founder-matrix-os>] [--hours 48]   # JSON тайлан, юу ч бичихгүй
   python3 fm_sync.py mark   "<vault>" --device Mac                                              # «энэ машин одоо харсан» тэмдэг
@@ -212,7 +212,7 @@ def hook_wake_sessions(digest, device, sessions=None, loader=_load_sessions):
     t = digest.get("tasks", {})
     other = [r["title"] for k in t.values() for r in k
              if r.get("claimed") and device.lower() not in str(r["claimed"]).lower()]
-    lines = [f"🔄 /fm:sync ({device}): {digest.get('since', '?')}-аас хойш {digest.get('log_count', 0)} лог мөр, "
+    lines = [f"🔄 /fm:setup sync ({device}): {digest.get('since', '?')}-аас хойш {digest.get('log_count', 0)} лог мөр, "
              f"{len(digest.get('decisions', []))} шийдвэр, task {digest.get('task_counts', {})}."]
     lines += ["- " + x["text"] for x in digest.get("log", [])[-5:]]
     done = [r["title"] for r in t.get("completed", [])]

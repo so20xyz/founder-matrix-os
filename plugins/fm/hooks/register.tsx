@@ -113,7 +113,7 @@ const TOOLS: ToolDef[] = [
   { id: 'moodboard', group: 'Контент', glyph: G.grid, name: 'Moodboard', roles: ['*'], check: { kind: 'skill' } },
   { id: 'relay', group: 'Холбоо', glyph: G.chat, name: 'Discord relay', roles: ['*'], skill: 'fm:relay', check: { kind: 'watching' } },
   { id: 'notion', group: 'Холбоо', glyph: G.wiki, name: 'Notion', roles: ['*'], skill: 'fm:notion', check: { kind: 'skill' } },
-  { id: 'save', group: 'Vault', glyph: G.memo, name: 'fm:save', roles: ['*'], cmds: ['/ fm:save'], check: { kind: 'skill' } },
+  { id: 'save', group: 'Vault', glyph: G.memo, name: 'fm:update', roles: ['*'], cmds: ['/ fm:update save'], check: { kind: 'skill' } },
   { id: 'watch', group: 'Vault', glyph: G.reload, name: 'fm:watch', roles: ['*'], cmds: ['/ fm:watch'], check: { kind: 'skill' } },
   { id: 'brain', group: 'Vault', glyph: G.done, name: 'Brain check', roles: ['*'], check: { kind: 'health' } },
 ]
@@ -844,7 +844,7 @@ async function toggleSkillSel($: EngineInterface, id: string) {
   await $.state.set({ plugin: 'fm', key: 'skillSel' }, cur === id ? '' : id)
 }
 
-/** «▶ Ажиллуулах»: the pin's slash command as if typed («/fm:save --checkpoint» → fm:save + «--checkpoint»), queued till idle. */
+/** «▶ Ажиллуулах»: the pin's slash command as if typed («/fm:update save --checkpoint» → fm:save + «--checkpoint»), queued till idle. */
 async function runSkillPin($: EngineInterface, id: string) {
   const { value: pins = [] } = await $.state.get({ plugin: 'fm', key: 'skills' })
   const pin = pins.find(p => p.id === id)
@@ -1424,7 +1424,7 @@ function inboxItemOf(text: string, path: string, name: string, mtime: Date, toda
   const day = fmGet(fm, 'date').slice(0, 10) || named?.[1] || mtime.toISOString().slice(0, 10)
   const hm = named ? `${named[2]}:${named[3]}` : mtime.toISOString().slice(11, 16)
   const src = fmGet(fm, 'source').toLowerCase()
-  // a Save-to-Inbox web clip keeps its link in frontmatter `url:` → the suggestion (Note) and /fm:save see it
+  // a Save-to-Inbox web clip keeps its link in frontmatter `url:` → the suggestion (Note) and /fm:update save see it
   const url = fmGet(fm, 'url').match(/^https?:\/\/\S+/)?.[0] ?? ''
   const guess = classifyCapture({ title, body: url ? `${body}\n${url}` : body, src, today }, projectNames)
   const masked = guess.masked || /^private:\s*true/m.test(fm)
@@ -1479,7 +1479,7 @@ async function loadInbox($: EngineInterface) {
   }
 }
 
-// ▷ hand-offs whose /fm:inbox command already ran: the next main-loop turn end frees the row if the skill left it open
+// ▷ hand-offs whose /fm:update inbox command already ran: the next main-loop turn end frees the row if the skill left it open
 const handedRan = new Set<string>()
 
 /** Drop a capture's ▷ / busy mark (its route buttons come back). */
@@ -1527,9 +1527,9 @@ async function markRouted($: EngineInterface, file: string, to: string, route: s
 }
 
 /**
- * A route square on a capture: ✓ Task → a task note (due from the text) · ≡ Note → /fm:save with its link or text ·
+ * A route square on a capture: ✓ Task → a task note (due from the text) · ≡ Note → /fm:update save with its link or text ·
  * ◍ Агент → a task in that agent's inbox (delegated_from = this session's role) · ▭ Төсөл → a task of the named project, else
- * /fm:inbox route. The capture itself only gets status: routed (markRouted); a hand-off to a prompt shows ▷ («handed»).
+ * /fm:update inbox route. The capture itself only gets status: routed (markRouted); a hand-off to a prompt shows ▷ («handed»).
  */
 async function routeCapture($: EngineInterface, member: string, configured: string, file: string, route: string) {
   const { value: list = [] } = await $.state.get({ plugin: 'fm', key: 'inbox' })
@@ -1541,12 +1541,12 @@ async function routeCapture($: EngineInterface, member: string, configured: stri
   try {
     if (route === 'note') {
       const url = it.url || (`${it.title}\n${it.text}`.match(/https?:\/\/\S+/)?.[0] ?? '')
-      // ▷ until /fm:save is accepted; only then is the capture marked routed (a refused command leaves it open)
+      // ▷ until /fm:update save is accepted; only then is the capture marked routed (a refused command leaves it open)
       mark = 'handed'
       await markHanded($, file)
-      runSlash($, 'fm:save', url || it.text || it.title,
+      runSlash($, 'fm:update', 'save ' + (url || it.text || it.title),
         async () => {
-          await markRouted($, file, 'fm:save', 'note')
+          await markRouted($, file, 'fm:update save', 'note')
           await clearInboxBusy($, file)
         },
         () => clearInboxBusy($, file))
@@ -1554,7 +1554,7 @@ async function routeCapture($: EngineInterface, member: string, configured: stri
       const { value: vault = '' } = await $.state.get(VAULT)
       mark = 'handed'
       await markHanded($, file)
-      runSlash($, 'fm:inbox', `route ${vaultRel(vault, file)}`, async () => { handedRan.add(file) }, () => clearInboxBusy($, file))
+      runSlash($, 'fm:update', `inbox route ${vaultRel(vault, file)}`, async () => { handedRan.add(file) }, () => clearInboxBusy($, file))
     } else {
       const { value: names = [] } = await $.state.get(NAMES)
       const { value: devs = [] } = await $.state.get(DEVICES)
@@ -1897,7 +1897,7 @@ export const register: Register = (on, options) => {
       if (calVersion > 0) await loadSkills($)
       const { value: tabNow = '' } = await $.state.get({ plugin: 'fm', key: 'tsagTab' })
       if (tabNow === 'inbox') await loadInbox($)
-      // a ▷ /fm:inbox hand-off whose turn has ended with the capture still open gets its route buttons back
+      // a ▷ /fm:update inbox hand-off whose turn has ended with the capture still open gets its route buttons back
       await settleHanded($)
       await mirrorPlan($).catch(() => null)
     }
@@ -2740,7 +2740,7 @@ export const register: Register = (on, options) => {
               showLbl ? col(8, <Text color={C.accent} wrap="truncate-end">{`→ ${ROUTE_NAME[it.route] ?? ''}`}</Text>, false, `ibl-${it.file}`) : null,
               ...(st === 'handed' ? [<Text key={`ibh-${it.file}`} color={C.accent}>{G.run}</Text>]
                 : st ? [<Text key={`ibw-${it.file}`} color={C.muted}>…</Text>]
-                : it.masked ? [<Button key={`ibm-${it.file}`} plain dimColor label="fm:inbox" onPress={() => runSlash($, 'fm:inbox', '')} />]
+                : it.masked ? [<Button key={`ibm-${it.file}`} plain dimColor label="fm:update inbox" onPress={() => runSlash($, 'fm:update', 'inbox')} />]
                 : ROUTES.map(r => sq(`ibb-${it.file}-${r.id}`, r.glyph, r.id === it.route, () => void routeCapture($, member, configured, it.file, r.id)))),
             ], false)}
           </Box>
@@ -3465,8 +3465,8 @@ export const register: Register = (on, options) => {
         <Box marginTop={1}><Text dimColor>ҮЙЛДЭЛ</Text></Box>
         <Box flexDirection="row" columnGap={2} flexWrap="wrap">
           <Button key="sk-update" label="⟳ update" plain onPress={() => void $.prompt.submit({ text: 'fm:update skill-ийг ажиллуул', asUser: true })} />
-          <Button key="sk-save" label="⚑ checkpoint" plain onPress={() => void $.prompt.submit({ text: 'fm:save --checkpoint ажиллуул', asUser: true })} />
-          <Button key="sk-inbox" label="📥 inbox" plain onPress={() => void $.prompt.submit({ text: 'fm:inbox skill-ээр inbox-ийг ангил', asUser: true })} />
+          <Button key="sk-save" label="⚑ checkpoint" plain onPress={() => void $.prompt.submit({ text: 'fm:update save --checkpoint ажиллуул', asUser: true })} />
+          <Button key="sk-inbox" label="📥 inbox" plain onPress={() => void $.prompt.submit({ text: 'fm:update inbox алхмаар inbox-ийг ангил', asUser: true })} />
           <Button key="sk-health" label="🧠 brain check" plain onPress={() => void runBrainCheck($)} />
           <Button key="sk-goals" label="🎯 зорилго ⟳" plain onPress={() => void loadGoals($)} />
           <Button key="sk-watch" label={watching ? '📡 Discord ●' : '📡 Discord ○'} plain onPress={() => void toggleWatch($, configured)} />

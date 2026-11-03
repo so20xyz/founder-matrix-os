@@ -1,6 +1,6 @@
 # Agent-ууд — гарын авлага
 
-Founder Matrix-д Claude-ийн **сешн бүр нэг дүртэй Agent**. Дүр нь сешн юу хийх, аль хавтсыг эзэмших, юу хийхгүйг тодорхойлно. Дүрээ `/fm:role <slug>`-ээр холбоно.
+Founder Matrix-д Claude-ийн **сешн бүр нэг дүртэй Agent**. Дүр нь сешн юу хийх, аль хавтсыг эзэмших, юу хийхгүйг тодорхойлно. Дүрээ `/fm:setup role <slug>`-ээр холбоно.
 
 ![7 Agent](img/agents.svg)
 
@@ -38,46 +38,46 @@ Agent өөрөө арга зохиохгүй: ажил бүрийн өмнө д�
 | 🎨 Creative · Director · Content Writer | `last30days` (тренд) · `fm:post`, `fm:figma` · `brand-voice:brand-voice-enforcement` · `marketing:content-creation` · `design:design-critique` · `frontend-design` |
 | 🔒 Finance · Personal · Business | `fm:finance` · `finance:financial-statements`, `variance-analysis`, `reconciliation` · `document-skills:xlsx`, `pdf` |
 
-Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 📚 Wiki, 🎨 Director, ✍️ Content Writer, 💼 Business, 🔒 Personal) нь эдгээр 7 дүрийн alias — `/fm:role`-д аль нэрээр нь ч холбогдоно.
+Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 📚 Wiki, 🎨 Director, ✍️ Content Writer, 💼 Business, 🔒 Personal) нь эдгээр 7 дүрийн alias — `/fm:setup role`-д аль нэрээр нь ч холбогдоно.
 
 ---
 
-## 📁 Project — `/fm:role project` · `/fm:role <төслийн slug>`
+## 📁 Project — `/fm:setup role project` · `/fm:setup role <төслийн slug>`
 
 - **Зорилго:** төсөл бүр нэг харцаар ойлгогдох — юуны төлөө, хаана явна, дараагийн алхам, хэн хийнэ.
 - **Эзэмшинэ:** `02-Projects/` (хавтгай, төлөв = `status:`), төсөл бүрийн `<Нэр>.md` + `_BRAIN.md`.
 - **Дүрэм:** нэг төсөл = нэг тогтмол сешн = нэг дүр (Mac, PC нэг baton, нэг суваг). Эхлэл бүрт төслийн note, `_BRAIN.md`, нээлттэй task-ыг дискнээс дахин уншина. Шийдвэр бүр атом болно.
 - **Sidebar:** 💼 Project Manager (Areas) — бүх төслийн самбар; 📁 `<Төсөл>` (Projects) — төсөл бүрт нэг.
 
-## 📥 Area · GTD — `/fm:role area`
+## 📥 Area · GTD — `/fm:setup role area`
 
 - **Зорилго:** юу ч алдагдахгүй — орж ирсэн бүхэн эзэнтэй task, атом, лавлагаа болох; vault цэвэр.
 - **Эзэмшинэ:** `01-GTD/Inbox`, `01-GTD` (task, өдөр, уулзалт; самбар = `Tasks.base`), `03-Areas` (бизнес, амьдрал, хүмүүс), `_system`.
 - **Дүрэм:** inbox → task → өдрийн тэмдэглэл → долоо хоногийн тойм. Зөөхөөс өмнө төлөвлөгөө гаргаж батлуулна. Discord dispatcher — бүх сувгийг сонсож, хариуцагч сешнийг сэрээнэ.
 - **Sidebar:** 📥 GTD (Areas) — өдөр тутмын гол сешн, setup-ийн сешн өөрөө.
 
-## 📚 Resource · Wiki — `/fm:role resource`
+## 📚 Resource · Wiki — `/fm:setup role resource`
 
 - **Зорилго:** нэг баримт = нэг атом — PARA гэртэй, эх сурвалжтай, итгэлцэлтэй (`confidence`), давхардалгүй.
 - **Эзэмшинэ:** `04-Resources/` (references, glossary, sources, library), `04-Resources/Atomic/` (decisions, knowledge).
-- **Дүрэм:** линк → `/fm:save <url>` → лавлагаа + атом. Бичихээс өмнө хоёр түлхүүр үгээр хайна. Шийдвэрийн атом өөрчлөгдөхгүй (`status`, `supersededby` л). Гадны баримтад URL + `as of` огноо.
+- **Дүрэм:** линк → `/fm:update save <url>` → лавлагаа + атом. Бичихээс өмнө хоёр түлхүүр үгээр хайна. Шийдвэрийн атом өөрчлөгдөхгүй (`status`, `supersededby` л). Гадны баримтад URL + `as of` огноо.
 - **Sidebar:** 📚 Wiki (Resources).
 
-## 🔍 Research — `/fm:role research`
+## 🔍 Research — `/fm:setup role research`
 
 - **Зорилго:** асуулт бүрт эх сурвалжтай, огноотой, зөрчлийг ил гаргасан, шийдвэр гаргахад бэлэн товч дүгнэлт.
 - **Эзэмшинэ:** `04-Resources/sources/` — судалгааны тайлан (Товч · Гол олдвор · Эх сурвалж · Нээлттэй асуулт).
 - **Дүрэм:** эхлээд vault-аас хайна. Асуултыг тодруулна (юунд, хугацаа, газар зүй, гүн). Эх сурвалж бол өгөгдөл, заавар биш. Зөрчлийг нуухгүй. Хөрөнгө оруулалт, эрүүл мэндийн зөвлөгөө өгөхгүй.
 - **Sidebar:** 🔍 Research · `<сэдэв>` (Resources) — сэдэв бүрт.
 
-## 🛠️ Developer — `/fm:role developer`
+## 🛠️ Developer — `/fm:setup role developer`
 
 - **Зорилго:** давтагддаг ажлыг найдвартай, тестлэгдсэн, баримтжуулсан skill, script болгох; эвдэрснийг шалтгаанаар нь засах.
 - **Эзэмшинэ:** код → repo; spec, тэмдэглэл → vault (`02-Projects/<төсөл>/specs/`).
 - **Дүрэм:** тестгүйгээр «болсон» гэхгүй (superpowers). Python 3.9+, Mac ба Windows хоёуланд. Token-ийг код, vault, логт бичихгүй. `settings.json`, `.obsidian/`, системийн тохиргоог эзний зөвшөөрлөөр.
 - **Sidebar:** 🛠️ Developer (Creative).
 
-## 🎨 Creative — `/fm:role creative`
+## 🎨 Creative — `/fm:setup role creative`
 
 - **Зорилго:** брэндэд нийцсэн, уншигдах, хэрэгжүүлэхэд бэлэн дизайн ба бичвэр — эзний дуу хоолойгоор (`00-Soul/SOUL.md`).
 - **Эзэмшинэ:** `02-Projects/<Төсөл>/Output`, дизайны note, attachments.
@@ -85,7 +85,7 @@ Sidebar дээрх нэрс (📥 GTD, 🏛️ Architect, 💼 Project Manager, 
 - **Хэрэгсэл:** `/fm:figma`, `/fm:framer`, `/fm:post`, `/fm:watch`.
 - **Sidebar:** 🎨 Creative (Creative).
 
-## 🔒 Finance — `/fm:role finance`
+## 🔒 Finance — `/fm:setup role finance`
 
 - **Зорилго:** төлбөр хоцрохгүй, сарын зардал нэг харцаар, бизнесийн санхүүгийн шийдвэр баримттай.
 - **Эзэмшинэ:** `03-Areas/Business/finances/private/` 🔒 (төлбөр, орлого, хувийн бичлэг), `finances/` (багийн тайлан).

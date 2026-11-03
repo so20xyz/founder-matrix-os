@@ -16,7 +16,7 @@ A = [  # icon, name, slug, color, sidebar, mission, owns, rules, handoff
  ("📚", "Resource · Wiki", "resource", "#10B981", "Resources",
   "Нэг баримт = нэг атом: PARA гэртэй, эх сурвалжтай, итгэлцэлтэй.",
   "04-Resources/ (references · glossary · sources) · 04-Resources/Atomic/",
-  ["Линк → /fm:save <url> → лавлагаа + атом", "Бичихээс өмнө хайна, давхардуулахгүй", "Гадны баримтад URL + as of огноо"],
+  ["Линк → /fm:update save <url> → лавлагаа + атом", "Бичихээс өмнө хайна, давхардуулахгүй", "Гадны баримтад URL + as of огноо"],
   "Research (гүн шалгалт)"),
  ("🔍", "Research", "research", "#06B6D4", "Resources",
   "Асуулт бүрт эх сурвалжтай, огноотой, зөрчлийг ил гаргасан товч дүгнэлт.",
@@ -46,7 +46,7 @@ o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}"
      f'<rect width="{W}" height="{H}" fill="#0B0D12"/>',
      f'<text x="{M}" y="62" fill="#F5A524" font-size="15" font-weight="600" letter-spacing="2">FOUNDER MATRIX · AGENT-УУД</text>',
      f'<text x="{M}" y="112" fill="#F2F3F7" font-size="40" font-weight="700">7 Agent — сешн бүр нэг дүр</text>',
-     f'<text x="{M}" y="150" fill="#8A90A2" font-size="17">Дүрээ /fm:role &lt;slug&gt;-ээр холбоно. Дүрийн бүрэн дүрэм vault-ийн 03-Areas/AI Team/ai-workers/-д.</text>',
+     f'<text x="{M}" y="150" fill="#8A90A2" font-size="17">Дүрээ /fm:setup role &lt;slug&gt;-ээр холбоно. Дүрийн бүрэн дүрэм vault-ийн 03-Areas/AI Team/ai-workers/-д.</text>',
      f'<text x="{M}" y="176" fill="#8A90A2" font-size="17">Бүгд: frontmatter + [[wikilink]] · лог, өдрийн note-д зөвхөн append · 🔒 private-ийг уншихгүй (Finance-аас бусад).</text>']
 for i, (ic, nm, slug, col, sb, mis, owns, rules, ho) in enumerate(A):
     x = M + (i % 2) * (CW + G + 4); y = TOP + (i // 2) * (CH + G)
@@ -55,7 +55,7 @@ for i, (ic, nm, slug, col, sb, mis, owns, rules, ho) in enumerate(A):
     o.append(f'<text x="{x+28}" y="{y+50}" font-size="28" font-weight="700" fill="#F2F3F7">{e(ic+"  "+nm)}</text>')
     o.append(f'<rect x="{x+CW-150}" y="{y+26}" width="126" height="28" rx="14" fill="{col}" fill-opacity="0.15"/>')
     o.append(f'<text x="{x+CW-87}" y="{y+45}" font-size="13" font-weight="600" fill="{col}" text-anchor="middle">{e(sb)}</text>')
-    o.append(f'<text x="{x+28}" y="{y+78}" font-size="14" font-weight="500" fill="{col}">/fm:role {e(slug)}</text>')
+    o.append(f'<text x="{x+28}" y="{y+78}" font-size="14" font-weight="500" fill="{col}">/fm:setup role {e(slug)}</text>')
     o.append(f'<text x="{x+28}" y="{y+112}" font-size="16" fill="#F2F3F7">{e(mis)}</text>')
     o.append(f'<text x="{x+28}" y="{y+148}" font-size="12" font-weight="600" fill="#8A90A2" letter-spacing="1.5">ЭЗЭМШИНЭ</text>')
     o.append(f'<text x="{x+28}" y="{y+170}" font-size="14" fill="#C9CDD8">{e(owns)}</text>')

@@ -29,7 +29,7 @@ up: "[[04-Resources/library/Ном ↔ зарчим ↔ дүрэм]]"
 
 - `01-GTD/Inbox` → `01-GTD/Tasks` (`owner`, `status: inbox → next-action → in-progress → completed`)
 - `waiting` төлөв = Allen-ий «Waiting For» жагсаалт
-- `/fm:task` — үүсгэх, авах (claim), дуусгах; delegate = `owner` солих
+- `/fm:update task` — үүсгэх, авах (claim), дуусгах; delegate = `owner` солих
 - «Нэг ажлын урсгал = нэг task» + «## Өөрчлөлтийн түүх»
 - `/fm:update weekly` = долоо хоногийн тойм
 

@@ -8,7 +8,7 @@
          sessions[<session_id>].role -> roles[<role>].note
        олдвол дүрийн тэмдэглэлийн дүрмийн хэсгийг (## ...дүрэм / Rules /
        Юу хийж болохгүй / For future agent) нэмнэ;
-       олдохгүй бол "дүргүй: /fm:role <slug> ажиллуул" гэж сануулна.
+       олдохгүй бол "дүргүй: /fm:setup role <slug> ажиллуул" гэж сануулна.
   Vault-аас гадуур: юу ч хэвлэхгүй, exit 0.
   Ямар ч алдаа гарсан сешнийг зогсоохгүй: үргэлж exit 0.
 
@@ -32,7 +32,7 @@ DECISIONS_REL = ("04-Resources", "Atomic", "decisions")
 _DATED_RE = re.compile(r"^\d{4}-\d{2}-\d{2} - .+\.md$")
 _FM_FIELD_RE = re.compile(r"^(decision|role|private|supersededby):[ \t]*(.*)$", re.MULTILINE)
 
-NO_ROLE_HINT = "дүргүй: /fm:role <slug> ажиллуул"
+NO_ROLE_HINT = "дүргүй: /fm:setup role <slug> ажиллуул"
 
 RULE_HEADING_RE = re.compile(
     r"дүрэм|\brules?\b|хийж болохгүй|хориг|for future agent",

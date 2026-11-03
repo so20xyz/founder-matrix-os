@@ -56,7 +56,7 @@ const arrow = () => txt('→', 28, F.b, C.mute);
 root.appendChild(flow);
 
 // Agents
-const sa = section('01', 'Agent-ууд — хэн', 'Сешн бүрийг /fm:role <slug>-ээр нэг дүрд холбоно. Project agent мэргэжлийн ажлыг subagent-аар хийлгэнэ.');
+const sa = section('01', 'Agent-ууд — хэн', 'Сешн бүрийг /fm:setup role <slug>-ээр нэг дүрд холбоно. Project agent мэргэжлийн ажлыг subagent-аар хийлгэнэ.');
 const ra = row();
 [['📁 Project', 'project · төслийн slug', 'Нэг төсөлд нэг тогтмол сешн: task, _BRAIN.md, шийдвэр', C.project, 'Projects'],
  ['📥 Area · GTD', 'area', 'Inbox, өдөр, хүмүүс, бизнес ба амьдралын хүрээ, систем', C.area, 'Areas'],
@@ -79,7 +79,7 @@ sd.appendChild(rs); root.appendChild(sd);
 
 // Skills
 const ss = section('02', 'Skill-ууд — юу', '11 үндсэн skill vault-ийг ажиллуулна, 6 хэрэгслийн skill гадагш холбоно.');
-const core = [['/fm:update', 'Ганц команд: save → task → хүмүүс → төсөл → inbox → өдөр → STATUS'], ['/fm:save', 'Атом + PARA холбоос · --checkpoint · <url>'], ['/fm:inbox', 'Ангилж төлөвлөөд зогсоно, батласны дараа зөөнө'], ['/fm:task', 'Үүсгэх · 🙋 авах · ✅ дуусгах'], ['/fm:project', 'Нээх, төлөв, хаах, самбар'], ['/fm:people', 'Хүмүүс, харилцаа, hot list'], ['/fm:role', 'Сешнийг дүрд холбох'], ['/fm:finance 🔒', 'Сарын төлбөр, бичлэг'], ['/fm:vault', 'Vault-ийн дүрэм, синтакс'], ['/fm:setup', 'Суулгалт, онбординг, doctor']];
+const core = [['/fm:update', 'Ганц команд: save → task → хүмүүс → төсөл → inbox → өдөр → STATUS'], ['/fm:update save', 'Атом + PARA холбоос · --checkpoint · <url>'], ['/fm:update inbox', 'Ангилж төлөвлөөд зогсоно, батласны дараа зөөнө'], ['/fm:update task', 'Үүсгэх · 🙋 авах · ✅ дуусгах'], ['/fm:update project', 'Нээх, төлөв, хаах, самбар'], ['/fm:update people', 'Хүмүүс, харилцаа, hot list'], ['/fm:setup role', 'Сешнийг дүрд холбох'], ['/fm:finance 🔒', 'Сарын төлбөр, бичлэг'], ['/fm:setup vault', 'Vault-ийн дүрэм, синтакс'], ['/fm:setup', 'Суулгалт, онбординг, doctor']];
 const tools = [['/fm:figma', 'Локал bridge-ээр зурах, prototype, export'], ['/fm:framer', 'Бүтэц, style · Framer → Figma'], ['/fm:notion', 'Тэмдэглэсэн note → багийн Notion'], ['/fm:post', 'Пост, 10 слайдын carousel, poster'], ['/fm:watch', 'Бичлэг → транскрипт + кадр'], ['/fm:relay', 'Discord: Mac ↔ PC ↔ утас, baton']];
 const sk = (n, d, a, w) => { const c = box(n, 'VERTICAL', 6, 20, C.card, 12); c.counterAxisSizingMode = 'FIXED'; c.resize(w, 10); c.strokes = [hex(C.line)];
   c.appendChild(txt(n, 17, F.b, a)); c.appendChild(txt(d, 13, F.r, C.mute, w - 40)); return c; };

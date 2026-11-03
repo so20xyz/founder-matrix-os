@@ -23,8 +23,8 @@ REPO = Path(__file__).resolve().parents[1]
 PLUGIN = REPO / "plugins" / "fm"
 TOOLS = PLUGIN / "tools"
 TOOL_SKILLS = ["figma", "notion", "relay", "post", "watch", "framer"]
-CORE_SKILLS = ["setup", "vault", "save", "update", "inbox", "task", "project", "people", "role", "finance",
-               "log", "research", "refs", "sync", "help"]
+CORE_SKILLS = ["setup", "update", "finance", "research", "help"]   # 2026-11-03: 21 → 11 commands
+GUIDES = ["save", "log", "task", "inbox", "people", "project", "sync", "role", "vault", "refs"]   # steps, skills/<x>/GUIDE.md
 # client names, spelled in pieces so a history scrub (git filter-repo --replace-text) never rewrites the guard itself
 CLIENT_WORDS = re.compile("|".join(["proba" + "itsaa", "проба" + "йцаа", r"\bb" + r"yd\b", "way " + "academy", "opus" + "_ep", "mag" + "god", "go" + "pay", "ochir" + "suren", "очир" + "сүрэн", "river " + "garden", "galaxy " + "tower"]), re.I)
 
@@ -46,7 +46,7 @@ def child_env(home):
 
 # ------------------------------------------------------------------ skills
 
-def test_skill_lineup_is_15_plus_6():
+def test_skill_lineup_is_5_plus_6():
     have = sorted(p.parent.name for p in (PLUGIN / "skills").glob("*/SKILL.md"))
     assert have == sorted(CORE_SKILLS + TOOL_SKILLS), have
     for gone in ("track", "clip", "daily", "spawn", "bases", "canvas", "vault-cli"):
@@ -316,7 +316,7 @@ def test_sidebar_layout_matches_concept():
 
 
 def test_sidebar_titles_resolve_to_roles():
-    """Every concrete sidebar title (e.g. «🎨 Creative Agent») binds to its role via /fm:role (role-note aliases)."""
+    """Every concrete sidebar title (e.g. «🎨 Creative Agent») binds to its role via /fm:setup role (role-note aliases)."""
     lay = json.loads((PLUGIN / "sidebar.json").read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory() as td:
         vault = Path(td) / "v"
@@ -353,7 +353,7 @@ def test_no_stale_gtd_paths_in_repo():
                "tools/move-to-inbox.sh", "tools/screenshot-to-inbox.sh", "CHANGELOG.md",
                "plugins/fm/tools/relay/relay.py", "plugins/fm/tools/relay/relay_discord.py", "plugins/fm/skills/task/scripts/fm_task.py",
                "plugins/fm/skills/project/scripts/fm_project.py", "plugins/fm/skills/vault/scripts/fm_brain_check.py",
-               "plugins/fm/scripts/fm_onboard.py", "plugins/fm/skills/project/SKILL.md",
+               "plugins/fm/scripts/fm_onboard.py", "plugins/fm/skills/project/GUIDE.md",
                "plugins/fm/scripts/fm_migrate.py", "plugins/fm/skills/setup/SKILL.md", "plugins/fm/skills/update/SKILL.md"}
     bad = []
     for p in REPO.rglob("*"):

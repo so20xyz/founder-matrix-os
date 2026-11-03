@@ -28,8 +28,8 @@ up: "[[04-Resources/library/Ном ↔ зарчим ↔ дүрэм]]"
 ## fm-д хэрхэн хэрэгжсэн
 
 - Capture = `01-GTD/Inbox` (+ утас, чат)
-- Organize = `/fm:inbox` ангилал (task · атом · лавлагаа · төсөл)
-- Distill = `/fm:save` — яриаг атом болгоно
+- Organize = `/fm:update inbox` ангилал (task · атом · лавлагаа · төсөл)
+- Distill = `/fm:update save` — яриаг атом болгоно
 - Express = `/fm:post`, newsletter, төслийн `Output/`
 - «AI-first note» дүрэм: note бүр өөрийгөө тайлбарлах `## For future agent` хэсэгтэй
 

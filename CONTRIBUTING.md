@@ -120,7 +120,7 @@ docs/tools/<name>.md              хэрэгсэл бүрийн заавар (ю
 
 ```yaml
 ---
-name: task                      # англи kebab-case, хавтасны нэртэй ижил → /fm:task
+name: task                      # англи kebab-case, хавтасны нэртэй ижил → /fm:update task
 description: Юу хийдгийг монголоор товч. «task үүсгэ», «таск дууслаа» гэх мэт монгол trigger үгсийг заавал оруул.
 ---
 ```

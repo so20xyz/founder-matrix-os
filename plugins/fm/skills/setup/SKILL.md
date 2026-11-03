@@ -1,8 +1,19 @@
 ---
 name: setup
-description: Шинэ гишүүнийг эхнээс нь бүрэн тохируулна - (0) компьютерын шаардлагыг шалгаж (fm_doctor) дутууг албан ёсны суулгагчаар санал болгох, (1) албан ёсны plugin-уудыг (superpowers, obsidian, document-skills, finance, exa) эх сурвалжаас нь суулгах, (2) vault-ийн араг яс, (3) амьдралын онбординг ярилцлага (SOUL, бизнес ба хувийн хүрээ, төсөл, хүмүүс, хувийн санхүү, лавлагаа, зорилго), (4) Agent-уудыг идэвхжүүлэх, (5) нэмэлт хэрэгсэл (Discord relay, Figma, Notion, watch), (7) sidebar-ийн бүлэг ба сешнүүдийг Second Brain-ийн дарааллаар, (8) routine-ууд. «setup», «fm setup», «суулга», «тохируул», «шинэ vault», «эхлүүлье», «onboarding», «онбординг», «анх удаа», «компьютераа бэлд», «юу суулгах вэ», «амьдралаа цэгцэлье» гэвэл энэ skill-ийг ашигла. Байгаа гишүүний fm шинэчлэлт (repo / plugin update-ийн дараа vault-ийг шинэ хувилбарт тааруулах) — «upgrade», «шинэчлэл орлоо», «repo update хийсэн», «plugin шинэчилсэн», «шинэ хувилбар».
+description: "Шинэ гишүүнийг эхнээс нь тохируулна (fm_doctor, plugin, vault, Discord, sidebar, routine) ба upgrade. Мөн машин солиход нөхөх (sync), сешнийг дүрд холбох (role), vault-ийн цөм дүрэм (vault) — «тохируул», «суулга», «upgrade», «машин солив», «нөхөж ав», «дүр сонго», «чи ямар дүр вэ», «role тавь» (хуучин /fm:setup sync, /fm:setup role, /fm:setup vault). Setup, sync, role, vault."
 argument-hint: "[хурдан | upgrade | doctor | plugins | tools | sidebar | routines]"
 ---
+## Алхмууд (2026-11-03: 21 команд → 11)
+
+| Хэлэх үг / хуучин команд | Алхам | Заавар |
+|---|---|---|
+| «машин солив», «нөхөж ав» · `/fm:setup sync` | `setup sync` | `../sync/GUIDE.md` |
+| «дүр сонго», «энэ сешн ямар дүр» · `/fm:setup role` | `setup role [slug]` | `../role/GUIDE.md` |
+| vault олох, BOOT, цөм дүрэм · `/fm:setup vault` | `setup vault` | `../vault/GUIDE.md` |
+
+Хүсэлт эдгээрийн нэгтэй таарвал тэр GUIDE-г Read-ээр уншаад дага.
+
+
 
 # /fm:setup — гишүүнийг бүрэн тохируулах
 
@@ -40,8 +51,8 @@ Vault: `${user_config.vault_path}` (хоосон эсвэл `${...}` хэвээ�
 | 5 | Дутуу загварын файл (дүрийн note, skill каталог, template) — байгаа файлд хүрэхгүй | `python3 "$S/fm_setup.py" "<vault>" --member "<нэр>" --merge-registry --dry-run` |
 | 6 | Base-ууд = анхдагч (хуучныг `_trash/bases-<огноо>/`) | `python3 "$S/fm_bases.py" update "<vault>"` |
 | 6б | Claude-ийн ажлын урсгал = анхдагч: BOOT + 6 үндсэн дүрийн note-ийн бүтэц (дүрэм, хариуцлага, skill, base, handoff); гишүүний «Нэгтгэсэн түүх», `last-done`/`next-action` хэвээр, хуучныг `_trash/rules-<огноо>/` | `python3 "$S/fm_rules.py" update "<vault>"` |
-| 7 | Төсөл/хүрээний тусдаа дүр (assistant, 10+ дугаартай) — хэрэггүй | `python3 "$S/fm_lint.py" "<vault>/03-Areas/AI Team/ai-workers"` → тус бүрийн дүрэм, skill-ийг тэр төслийн `_BRAIN.md` руу зөөж (`_BRAIN` байхгүй бол `fm_project.py new … --state ongoing`), дүрийн note-ийг `_trash/`, сешнийг `/fm:role project --project <slug> --folder <хавтас>` (гишүүнтэй хамт) |
-| 8 | Sidebar: «📁 Portfolio» сешний нэрийг «📁 Project» болго; restart → `/fm:role <slug>` → `/tsaglabar` | — |
+| 7 | Төсөл/хүрээний тусдаа дүр (assistant, 10+ дугаартай) — хэрэггүй | `python3 "$S/fm_lint.py" "<vault>/03-Areas/AI Team/ai-workers"` → тус бүрийн дүрэм, skill-ийг тэр төслийн `_BRAIN.md` руу зөөж (`_BRAIN` байхгүй бол `fm_project.py new … --state ongoing`), дүрийн note-ийг `_trash/`, сешнийг `/fm:setup role project --project <slug> --folder <хавтас>` (гишүүнтэй хамт) |
+| 8 | Sidebar: «📁 Portfolio» сешний нэрийг «📁 Project» болго; restart → `/fm:setup role <slug>` → `/tsaglabar` | — |
 | 9 | **Юу өөрчлөгдсөн бэ** — скрипт Second Brain-ий хэсгээр (🧠 Санах ой · ⚛️ Атом ба шийдвэр · ✅ Task · 📁 Төсөл · 🤖 Дүр ба сешн · 🛠 Хэрэгсэл) бүлэглэнэ. Бүлэг бүрийг гишүүний хэлээр **гурван давхраар**: (а) *юу өөрчлөгдсөн* — ижил сэдвийг нэг өгүүлбэрт нэгтгэ, техникийн үг (файл, функц, тест) хас; (б) *чамд юугаараа ашигтай* — Second Brain, санах ой, атом, шийдвэрт бодитоор юу өөрчлөгдөх (жишээ: «сешн солиход хаана зогссоноо дахин хэлэх шаардлагагүй»); (в) *👉 цаашид ингэж ойлго* — `Ойлго:` мөр, мөн `Дүрэм:` холбоосын шийдвэрийн атомын гол санааг нэг өгүүлбэрээр (атом гишүүний vault-д байхгүй бол CHANGELOG-ийн мөрөөс). `Ном:`/`Ойлго:` мөргүй хуучин мөрд бүү зохио — «(ном: Wiki нөхнө)». Төгсгөлд «асуух зүйл байна уу?» гэж асуугаад `--mark` | `python3 "$S/fm_whatsnew.py"` (анх удаа: `--since <хуучин хувилбар>`) → тайлбар → `python3 "$S/fm_whatsnew.py" --mark` |
 
 Алхам бүрийн дараа нэг мөр тайлан. Төгсгөлд нэгдсэн тайлан: юу шинэчлэгдсэн (алхмаар) · дутуу апп/plugin ба зөвлөмж · 9-р алхмын гол 3 «цаашид ингэж ойлго». Өөрчлөх зүйлгүй алхмыг чимээгүй алгас. Obsidian-ийг 3–4-р алхмын үед хаалга. Хоёр төхөөрөмжтэй бол нэг дээр нь л apply хийнэ (registry Drive-аар sync).
@@ -195,7 +206,7 @@ Vault-д `00-GTD`, `02-GTD`, `00-Inbox`, `01-Soul`, `03-Projects` (`1-Active`…
 - **Орлого** (`finance.income[]`): эх үүсвэрийн нэр, төрөл (`salary` · `business` · `freelance` · `rent` · `other`), ердийн дүн (цэвэр тоо), сарын хэдэнд орж ирдэг (`pay_day`).
 - **Сарын төлбөр** (`finance.bills[]`): нэр, ангилал (`housing` · `utilities` · `telecom` · `loan` · `insurance` · `subscription` · `education` · `other`), ердийн дүн, төлөх өдөр (`due_day` 1–31), автомат эсэх (`autopay`), яаж төлдөг (`pay_via`: «банкны апп» гэх мэт **арга**).
 
-Хураангуйд зөвхөн тоо хэл («3 төлбөр, 1 орлого бүртгэнэ»), нэр/дүнг давтахгүй. → `03-Areas/Business/finances/private/` (`private: true`). Цаашид Finance агент: `/fm:role finance` + `/fm:finance`.
+Хураангуйд зөвхөн тоо хэл («3 төлбөр, 1 орлого бүртгэнэ»), нэр/дүнг давтахгүй. → `03-Areas/Business/finances/private/` (`private: true`). Цаашид Finance агент: `/fm:setup role finance` + `/fm:finance`.
 
 ### 3.7 Лавлагаа ба хэрэгсэл
 
@@ -209,7 +220,7 @@ Vault-д `00-GTD`, `02-GTD`, `00-Inbox`, `01-Soul`, `03-Projects` (`1-Active`…
 
 ## 4. Agent-ууд
 
-Тайлбарла: **бүгд Agent, зөвхөн дүрээрээ ялгарна.** Claude-ийн сешн бүр нэг дүрд холбогдож (`/fm:role <slug>`), тэр дүрийн дүрмээр ажиллана. Claude Desktop-ийн sidebar-т сешнүүдийг бүлгээр (`Projects · Areas · Resources · Finance`) 7-р алхамд цэгцэлнэ — яг itge.e-ийн sidebar шиг.
+Тайлбарла: **бүгд Agent, зөвхөн дүрээрээ ялгарна.** Claude-ийн сешн бүр нэг дүрд холбогдож (`/fm:setup role <slug>`), тэр дүрийн дүрмээр ажиллана. Claude Desktop-ийн sidebar-т сешнүүдийг бүлгээр (`Projects · Areas · Resources · Finance`) 7-р алхамд цэгцэлнэ — яг itge.e-ийн sidebar шиг.
 
 | Slug | Agent | Юу хийдэг | Санал |
 |---|---|---|---|
@@ -220,7 +231,7 @@ Vault-д `00-GTD`, `02-GTD`, `00-Inbox`, `01-Soul`, `03-Projects` (`1-Active`…
 | `architect` | Architect | Код, хэрэгсэл (superpowers), vault-ийн бүтэц (BOOT, template, base, registry) | хэрэгтэй бол |
 | `creative` | Creative | Moodboard (Pinterest → Soulcatcher), Figma, пост, бичвэр | хэрэгтэй бол |
 
-**Төсөлд тусдаа дүр үүсгэхгүй** (itge.e 2026-10-12): төслийн сешн бүр **Project agent** (`role: project`) тэр төслийн хавтастай — `/fm:role project --project <slug> --folder 02-Projects/<Нэр>`; төслийн дүрэм, хориг, skill — тухайн `_BRAIN.md`-д. Төсөл бүрт «дуусдаг төсөл үү, байнгын хүрээ (ажил, холбоо, зөвлөл) үү?» гэж асуу: дуусдаг бол өөрийн сешн; байнгын бол `status: ongoing`, тусдаа сешнгүй — «📁 Project» сешн хариуцна.
+**Төсөлд тусдаа дүр үүсгэхгүй** (itge.e 2026-10-12): төслийн сешн бүр **Project agent** (`role: project`) тэр төслийн хавтастай — `/fm:setup role project --project <slug> --folder 02-Projects/<Нэр>`; төслийн дүрэм, хориг, skill — тухайн `_BRAIN.md`-д. Төсөл бүрт «дуусдаг төсөл үү, байнгын хүрээ (ажил, холбоо, зөвлөл) үү?» гэж асуу: дуусдаг бол өөрийн сешн; байнгын бол `status: ongoing`, тусдаа сешнгүй — «📁 Project» сешн хариуцна.
 → `roles.activate[]` (`roles.work` хуучирсан, алгасагдана). Скрипт `_system/fm/registry.json`-ийн `roles`-д нэмнэ (сонгоогүй дүр `active: false`). Хуучин slug (`gtd`, `content-writer`, `creative-director`, `tool-developer`) автоматаар шинэ Agent руу хөрвөнө.
 
 Өдрийн тэмдэглэл ба Home-д тусдаа асуулт хэрэггүй: скрипт өнөөдрийн `01-GTD/Daily/<огноо>.md`-г (Active төслүүдийг «гол 3»-д) үүсгэж, `Home.md`, `_system/index.md`-г бөглөнө.
@@ -294,9 +305,9 @@ Vault-д `00-GTD`, `02-GTD`, `00-Inbox`, `01-Soul`, `03-Projects` (`1-Active`…
 Загвар: `${CLAUDE_PLUGIN_ROOT}/sidebar.json` — **бүлгийн дараалал, сешний дараалал, гарчиг, icon яг үүгээр.** Sidebar = PARA = Discord-ийн ангилал.
 
 1. **Бүлгүүд** (энэ дарааллаар): `Projects · Areas · Resources · Finance`. Эхлээд `mcp__ccd_sidebar__list_groups` — нэр нь таарах бүлэг байвал түүнийг ашигла, байхгүйг л `mcp__ccd_sidebar__create_group`-ээр үүсгэ. Давхар бүлэг бүү үүсгэ.
-2. **Энэ сешн = 📥 GTD.** `set_session_title("self", "📥 GTD")` → `move_sessions(["self"], Areas)` → `/fm:role area`.
-3. **Бусад сешн** `sidebar.json`-ийн `order`-оор, 6-р алхамд бичигдсэн дүрүүдэд л (`_system/fm/registry.json` → `roles`, `active: true`): 📁 Active төсөл бүр (`/fm:role project` → төслөө сонгоно) → (🎨 Creative) → (🏛️ Architect) → 📚 Wiki → 📖 Library → (🔍 Research · <сэдэв>) → (💼 Business, 🔒 Personal); `routines`-ийн 🧠 Matrix Harvester-ийг 8-р алхамд. Сешн бүрийг agent `spawn_task` chip-ээр нээнэ; chip-ийн сешн энэ сешний доор nested гардаг тул гишүүн тэр сешн дээр баруун товч → **Detach to top level**, тэгмэгц agent `move_sessions`-оор зөв бүлэгт (itge.e 2026-10-16; #14). Эсвэл гишүүн бүлгийн **+** товчоор шууд нээж болно. Сешн бүрт гишүүнд хуулах нэг мөр өг:
-   > «`<бүлэг>` бүлгийн **+** → шинэ сешнд: `/fm:role <slug>` (төсөл бол `/fm:role project --project <slug>`)» — `/fm:role` нэр, бүлэг, cwd-г өөрөө тавина.
+2. **Энэ сешн = 📥 GTD.** `set_session_title("self", "📥 GTD")` → `move_sessions(["self"], Areas)` → `/fm:setup role area`.
+3. **Бусад сешн** `sidebar.json`-ийн `order`-оор, 6-р алхамд бичигдсэн дүрүүдэд л (`_system/fm/registry.json` → `roles`, `active: true`): 📁 Active төсөл бүр (`/fm:setup role project` → төслөө сонгоно) → (🎨 Creative) → (🏛️ Architect) → 📚 Wiki → 📖 Library → (🔍 Research · <сэдэв>) → (💼 Business, 🔒 Personal); `routines`-ийн 🧠 Matrix Harvester-ийг 8-р алхамд. Сешн бүрийг agent `spawn_task` chip-ээр нээнэ; chip-ийн сешн энэ сешний доор nested гардаг тул гишүүн тэр сешн дээр баруун товч → **Detach to top level**, тэгмэгц agent `move_sessions`-оор зөв бүлэгт (itge.e 2026-10-16; #14). Эсвэл гишүүн бүлгийн **+** товчоор шууд нээж болно. Сешн бүрт гишүүнд хуулах нэг мөр өг:
+   > «`<бүлэг>` бүлгийн **+** → шинэ сешнд: `/fm:setup role <slug>` (төсөл бол `/fm:setup role project --project <slug>`)» — `/fm:setup role` нэр, бүлэг, cwd-г өөрөө тавина.
 4. Гишүүнд жагсаалтаар харуул (бүлэг → сешн), мөрүүдийг **дээрээс доош** нэг нэгээр хийхийг хэл. 🔒 Finance-ийн сешнүүд (Business, Personal тусдаа) Discord-гүй. Нэг удаагийн сешн бүлэггүй, дууссаныг апп-ын Archive руу.
 
 Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй орчинд (CLI): жагсаалтыг өгөөд гараар хийхийг хэл.

@@ -47,7 +47,7 @@ export function nextWeekday(today: string, wdName: string): string {
 /** What V5 suggests for a capture: its kind (glyph), the route (task | note | agent | project, '' when masked) and the details. */
 export type CaptureGuess = { kind: string; route: string; agent?: string; project?: string; due?: string; masked: boolean }
 
-// 🔒 a finance word together with a digit masks the capture (shown as «хувийн санхүү», routed only through /fm:inbox)
+// 🔒 a finance word together with a digit masks the capture (shown as «хувийн санхүү», routed only through /fm:update inbox)
 const FINANCE_RE = /₮|төгрөг|төлбөр|зээл|санхүү/i
 const URL_RE = /https?:\/\/\S+|(^|[^\w.@-])[\w-]+(\.[\w-]+)*\.(com|io|org|net|mn|app|dev|co|me|ai|so|site)(\/\S*)?(?![\w.])/i
 const CREATIVE_RE = /cover|moodboard|баннер|дизайн|лого|carousel|зураг|figma/i

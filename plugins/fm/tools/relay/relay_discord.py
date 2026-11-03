@@ -93,7 +93,7 @@ def _project_folder(me):
     slug, title = (me.get("project") or "").lower(), norm(cands[1])
     if root.is_dir():
         dirs = [d.name for d in root.iterdir() if d.is_dir() and not d.name.startswith(("_", "."))]
-        for d in dirs:   # «📐 Second Brain Season 2» ⊂ «Way Academy Second Brain Season 2»
+        for d in dirs:   # a session title «📐 Second Brain S2» ⊂ the folder «Academy Second Brain S2»
             if title and len(title) > 6 and title in norm(d):
                 return d
         for d in dirs:

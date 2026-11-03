@@ -7,7 +7,7 @@ category: fm
 status: live
 pane: true
 pane_order: 4
-command: "/fm:inbox"
+command: "/fm:update inbox"
 icon: "📥"
 label: "Inbox ангилах"
 description: "01-GTD/Inbox-ийн зүйлсийг ангилж төлөвлөгөөний хүснэгт гаргана — баталсны дараа л зөөнө."
@@ -19,7 +19,7 @@ ai-first: true
 up: "[[03-Areas/AI Team/skills/Skills]]"
 ---
 
-# Skill - Inbox ангилах (`/fm:inbox`)
+# Skill - Inbox ангилах (`/fm:update inbox`)
 
 ## For future agent
 

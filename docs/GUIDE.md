@@ -21,7 +21,7 @@
 
 ## 1. Agent-ууд (7) — «хэн»
 
-Сешн бүр нэг дүртэй. Дүрээ `/fm:role <slug>`-ээр холбоно. Дүрийн дүрэм vault-ийн `03-Areas/AI Team/ai-workers/`-д.
+Сешн бүр нэг дүртэй. Дүрээ `/fm:setup role <slug>`-ээр холбоно. Дүрийн дүрэм vault-ийн `03-Areas/AI Team/ai-workers/`-д.
 
 | Agent | Slug | Хариуцна | Гол skill | Sidebar |
 |---|---|---|---|---|
@@ -57,14 +57,14 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 | Skill | Нэг өгүүлбэрээр |
 |---|---|
 | `/fm:update` | **Ганц команд.** save → task → хүмүүс → төсөл → inbox → өдрийн note → STATUS. `daily`, `weekly` горимтой |
-| `/fm:save` | Яриаг атом + PARA холбоос болгоно. `--checkpoint` = дундуур барьж авах; `<url>` = лавлагаа + атом |
-| `/fm:inbox` | 01-GTD/Inbox-ийг ангилж төлөвлөгөө гаргаад **зогсоно**; батласны дараа зөөнө |
-| `/fm:task` | Task үүсгэх, 🙋 авах, ✅ дуусгах, жагсаах |
-| `/fm:project` | Төсөл нээх, төлөв (Active/Planning/On-hold/Archive), хаах, самбар цэгцлэх |
-| `/fm:people` | Хүний note, харилцааны бүртгэл, hot list |
-| `/fm:role` | Сешнийг дүрд холбох |
+| `/fm:update save` | Яриаг атом + PARA холбоос болгоно. `--checkpoint` = дундуур барьж авах; `<url>` = лавлагаа + атом |
+| `/fm:update inbox` | 01-GTD/Inbox-ийг ангилж төлөвлөгөө гаргаад **зогсоно**; батласны дараа зөөнө |
+| `/fm:update task` | Task үүсгэх, 🙋 авах, ✅ дуусгах, жагсаах |
+| `/fm:update project` | Төсөл нээх, төлөв (Active/Planning/On-hold/Archive), хаах, самбар цэгцлэх |
+| `/fm:update people` | Хүний note, харилцааны бүртгэл, hot list |
+| `/fm:setup role` | Сешнийг дүрд холбох |
 | `/fm:finance` 🔒 | Сарын төлбөр, санхүүгийн бичлэг (зөвхөн Finance сешнд) |
-| `/fm:vault` | Vault-ийн дүрэм, frontmatter, синтакс (өөрөө ачаалагдана) |
+| `/fm:setup vault` | Vault-ийн дүрэм, frontmatter, синтакс (өөрөө ачаалагдана) |
 | `/fm:setup` | Суулгалт, онбординг, `doctor` |
 
 ### Хэрэгслийн 6

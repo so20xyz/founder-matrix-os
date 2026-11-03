@@ -211,7 +211,7 @@ test('project names and session scope read like the relay (_project_key / _sessi
   expect(sessionScope({ folder: '', role: 'project', project: 'Alpha Site' }, { project: 'Other' })).toBe('Alpha Site')
   expect(sessionScope({ folder: '  ', role: 'wiki', project: 'Alpha Site' }, { project: '02-Projects/Gamma' })).toBe('02-Projects/Gamma')
   expect(sessionScope({ role: 'project', title: '💼 Alpha Site' }, undefined)).toBe('')
-  // `/fm:role project` without --project writes the role slug as project: not a scope (the pane went empty)
+  // `/fm:setup role project` without --project writes the role slug as project: not a scope (the pane went empty)
   expect(sessionScope({ role: 'project', project: 'project' }, {})).toBe('')
   expect(sessionScope({ role: 'project', project: 'Project' }, { project: '' })).toBe('')
   expect(projectOf(sessionScope({ folder: '04-Resources/Research/Мөөг/' }, null))).toBe('Мөөг')

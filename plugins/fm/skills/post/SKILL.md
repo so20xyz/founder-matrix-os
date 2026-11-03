@@ -118,7 +118,7 @@ How-to, хичээл, ажлын урсгал харуулдаг carousel-ыг �
 - Зураг: `<V>/02-Projects/<төсөл>/Output/<YYYY-MM-DD> <гарчиг>/NN.png` (эсвэл төслийн өөрийн бүтэц). Caption, hashtag → тэр хавтасны `caption.md` (frontmatter `type: reference`, `kind: doc`, `projects: [төсөл]`, `ai-first: true`).
 - Higgsfield болон бусад үүсгэсэн зураг ч мөн адил: дээрх `Output/<YYYY-MM-DD> <гарчиг>/NN.png` + `caption.md`.
 - Төслийн note-д `## Нийтлэл` хэсэгт мөр: `- YYYY-MM-DD [[.../caption]] - <гарчиг> (Figma: <линк>)`.
-- Шинэ дүрэм, сургамж гарвал `/fm:save` (атом).
+- Шинэ дүрэм, сургамж гарвал `/fm:update save` (атом).
 
 ## Хориг
 

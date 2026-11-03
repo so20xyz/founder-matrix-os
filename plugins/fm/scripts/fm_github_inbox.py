@@ -21,6 +21,9 @@ STATE = Path.home() / ".fmos" / "github-inbox.json"
 LOCAL_REPO = Path(__file__).resolve().parents[3]
 DEFAULT_AUTHORS: dict = {}  # author → {name, project} lives in the vault (_system/fm/github-authors.json), not in the repo
 
+MERGED = {"save": "update", "log": "update", "task": "update", "inbox": "update", "people": "update",
+          "project": "update", "sync": "setup", "role": "setup", "vault": "setup", "refs": "research"}
+
 AREA_RULES = [  # (regex, шошго) — эхний таарсан нь
     (r"(^|/)scripts/fm_goom_|goomnet|(^|/)goom", "Goomnet"),
     (r"(^|/)hooks/", "сешн hook, task самбар"),
@@ -44,7 +47,8 @@ def classify(path):
             return label
     m = re.search(r"(^|/)skills/([^/]+)/", path)
     if m:
-        return f"/fm:{m.group(2)} skill"
+        n = m.group(2)   # merged steps (2026-11-03): skills/role/ → «/fm:setup role»
+        return f"/fm:{MERGED[n]} {n} skill" if n in MERGED else f"/fm:{n} skill"
     return "бусад"
 
 

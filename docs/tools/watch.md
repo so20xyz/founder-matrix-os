@@ -28,4 +28,4 @@ uv tool install yt-dlp
 
 Windows: `winget install --id Gyan.FFmpeg -e`, uv (`powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`), `uv tool install yt-dlp`. fm_doctor эдгээрийг таны зөвшөөрлөөр санал болгоно.
 
-Гаралт: `~/.cache/fm-watch/<нэр>/` (Windows: `%LOCALAPPDATA%\fm-watch\<нэр>\`). Хадгалах бол `/fm:save <url>`.
+Гаралт: `~/.cache/fm-watch/<нэр>/` (Windows: `%LOCALAPPDATA%\fm-watch\<нэр>\`). Хадгалах бол `/fm:update save <url>`.

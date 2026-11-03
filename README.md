@@ -120,7 +120,7 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 
 ### 7. Эхний сешн
 
-`/fm:role area` — өдөр тутмын Area агент. Төсөл бүрт **тусдаа нэг тогтмол сешн** нээгээд `/fm:role <төслийн slug>`; хувийн санхүүд тусдаа сешн `/fm:role finance`. Дараа нь — **«update»**.
+`/fm:setup role area` — өдөр тутмын Area агент. Төсөл бүрт **тусдаа нэг тогтмол сешн** нээгээд `/fm:setup role <төслийн slug>`; хувийн санхүүд тусдаа сешн `/fm:setup role finance`. Дараа нь — **«update»**.
 
 ---
 
@@ -149,18 +149,18 @@ Settings → Core plugins → **Bases** ба **Templates** асаа (Templates �
 | Үндсэн skill | Юу | Хэрэгслийн skill | Юу |
 |---|---|---|---|
 | `/fm:update` | **Ганц команд** (дээрх) | `/fm:post` | Пост, 10 слайдын carousel, poster — brief-ээс шалгагдсан зураг хүртэл |
-| `/fm:save` | Яриаг хадгалах; `--checkpoint`; `<url>` → лавлагаа + атом | `/fm:figma` | Figma-д локал bridge-ээр зурах, export, contrast шалгах |
-| `/fm:inbox` | Inbox ангилах (батласны дараа зөөнө) | `/fm:framer` | Framer-ийн бүтэц, style; Framer → Figma |
-| `/fm:task` | Task үүсгэх, авах, дуусгах | `/fm:watch` | Бичлэг → транскрипт + кадрын хуудас |
-| `/fm:project` | Төсөл нээх, төлөв, хаах, самбар | `/fm:notion` | Vault → багийн Notion (зөвхөн тэмдэглэсэн note) |
-| `/fm:people` | Хүмүүс, харилцаа, hot list | `/fm:relay` | Discord: Mac ↔ PC ↔ утас, baton |
-| `/fm:role` | Сешнийг Agent-д холбох | | |
+| `/fm:update save` | Яриаг хадгалах; `--checkpoint`; `<url>` → лавлагаа + атом | `/fm:figma` | Figma-д локал bridge-ээр зурах, export, contrast шалгах |
+| `/fm:update inbox` | Inbox ангилах (батласны дараа зөөнө) | `/fm:framer` | Framer-ийн бүтэц, style; Framer → Figma |
+| `/fm:update task` | Task үүсгэх, авах, дуусгах | `/fm:watch` | Бичлэг → транскрипт + кадрын хуудас |
+| `/fm:update project` | Төсөл нээх, төлөв, хаах, самбар | `/fm:notion` | Vault → багийн Notion (зөвхөн тэмдэглэсэн note) |
+| `/fm:update people` | Хүмүүс, харилцаа, hot list | `/fm:relay` | Discord: Mac ↔ PC ↔ утас, baton |
+| `/fm:setup role` | Сешнийг Agent-д холбох | | |
 | `/fm:finance` 🔒 | Сарын төлбөр, санхүүгийн бичлэг | | |
-| `/fm:vault` | Vault-ийн дүрэм, синтакс | | |
+| `/fm:setup vault` | Vault-ийн дүрэм, синтакс | | |
 | `/fm:setup` | Суулгалт, онбординг | | |
-| `/fm:log` | Task-ийн «Өөрчлөлтийн түүх»-д мөр + Google Calendar | | |
+| `/fm:update log` | Task-ийн «Өөрчлөлтийн түүх»-д мөр + Google Calendar | | |
 | `/fm:research` | 🔬 Судалгаа: ангилах → brief → цуглуулах → fact-check → тайлан → Wiki | | |
-| `/fm:refs` | 🔎 Лавлагаа: spec → цуглуулах → fact-check → Figma → memo → ⭐ → таны сонголт | | |
+| `/fm:research refs` | 🔎 Лавлагаа: spec → цуглуулах → fact-check → Figma → memo → ⭐ → таны сонголт | | |
 
 Хэрэгсэл бүрийн заавар (юу, суулгах, token, аль Agent): [docs/tools/](docs/tools/). Bridge, routine, Discord-ийн дүрэм, нэмэлт хэрэгслийг нэг дор: **[docs/GUIDE.md](docs/GUIDE.md)**.
 
@@ -213,7 +213,7 @@ fm албан ёсны skill-ийг өөртөө **хуулдаггүй** — `/
 | `/fm:` команд харагдахгүй | `/reload-plugins` эсвэл Claude-ийг дахин нээ; `/plugin` → Installed-д `fm` идэвхтэй эсэх |
 | Hook алдаа, `python3` олдсонгүй (Windows) | «fm doctor ажиллуул» → Python мөрийн зөвлөмж (`uv python install 3.12 --default` `python3.exe` үүсгэнэ) |
 | «Vault олдсонгүй» | Plugin-ийн `vault_path` (`/plugin` → Installed → fm), эсвэл `~/.fmos/config.json`. Code табыг vault хавтас дээр нээ |
-| Сешн бүрт «дүргүй» | `/fm:role area` (эсвэл өөр Agent) |
+| Сешн бүрт «дүргүй» | `/fm:setup role area` (эсвэл өөр Agent) |
 | «blocked» (тэмдэглэл бичихэд) | Lint hook token эсвэл хувийн санхүүг буруу газар бичихийг зогсоосон — зөв хавтсанд бич |
 | Google Drive дээр `файл (1).md` | Хоёр машин зэрэг бичсэн — нэгийг үлдээж нэгтгэ, цаашид нэг удаа нэг машин |
 

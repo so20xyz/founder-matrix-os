@@ -178,7 +178,7 @@ def test_skill_invoke_reads_taxonomy(tmp_path):
     d.mkdir(parents=True)
     (d / "pdf.md").write_text('---\ninvoke: "anthropic-skills:pdf"\n---\n', encoding="utf-8")
     assert gd.skill_invoke("pdf", tmp_path) == "anthropic-skills:pdf"
-    assert gd.skill_invoke("fm-save", tmp_path) == "fm:save"
+    assert gd.skill_invoke("fm-save", tmp_path) == "fm:update save"
     assert gd.skill_invoke("", tmp_path) == ""
 
 

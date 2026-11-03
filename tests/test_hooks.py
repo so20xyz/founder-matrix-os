@@ -151,7 +151,7 @@ def test_ctx_boot_and_no_role_hint(v):
     assert code == 0, code
     ctx = context_of(out)
     assert "Түрүүлж SOUL.md унш." in ctx, ctx
-    assert "дүргүй: /fm:role <slug> ажиллуул" in ctx, ctx
+    assert "дүргүй: /fm:setup role <slug> ажиллуул" in ctx, ctx
 
 
 def test_ctx_missing_boot_hint(v):
@@ -195,7 +195,7 @@ def test_ctx_unknown_session_lists_roles(v):
                 "sessions": {"other": {"role": "gtd"}}})
     code, out, _ = run(CTX, ctx_payload(v.root, "nope"), {"FM_VAULT": str(v.root)})
     ctx = context_of(out)
-    assert "дүргүй: /fm:role <slug> ажиллуул" in ctx and "area, gtd" in ctx, ctx
+    assert "дүргүй: /fm:setup role <slug> ажиллуул" in ctx and "area, gtd" in ctx, ctx
 
 
 def test_ctx_boot_truncated_to_10kb(v):

@@ -16,7 +16,7 @@ class T(unittest.TestCase):
     def test_classify(self):
         self.assertEqual(gi.classify("plugins/fm/hooks/a.tsx"), "сешн hook, task самбар")
         self.assertEqual(gi.classify("plugins/fm/tools/relay/relay.py"), "relay, Discord")
-        self.assertEqual(gi.classify("plugins/fm/skills/role/SKILL.md"), "/fm:role skill")
+        self.assertEqual(gi.classify("plugins/fm/skills/role/SKILL.md"), "/fm:setup role skill")
         self.assertEqual(gi.classify("plugins/fm/scripts/fm_goom_sync.py"), "Goomnet")
         self.assertEqual(gi.classify("plugins/fm/tools/figma/x.js"), "Figma bridge")
         self.assertEqual(gi.classify("CHANGELOG.md"), "хувилбар")

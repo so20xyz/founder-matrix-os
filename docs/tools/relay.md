@@ -95,7 +95,7 @@ Vault-д `_system/fm/discord.json` үүсгэ. Server-ийн ID-г Discord-оо�
 
 ## 5. Сувгууд үүсгэх
 
-Сешнүүдээ `/fm:role`-оор дүрд холбосны дараа (ижил дүрийн Mac, PC сешн нэг сувагтай болно — `project` = дүрийн slug):
+Сешнүүдээ `/fm:setup role`-оор дүрд холбосны дараа (ижил дүрийн Mac, PC сешн нэг сувагтай болно — `project` = дүрийн slug):
 
 ```
 python3 <REPO>/tools/relay/relay.py sync-discord

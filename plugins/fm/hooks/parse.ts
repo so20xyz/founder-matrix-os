@@ -233,7 +233,7 @@ export const projectKey = (p: string) => projectOf(p).toLowerCase()
 export function sessionScope(session: Record<string, unknown>, role: unknown): string {
   const text = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
   const r = role && typeof role === 'object' ? (role as Record<string, unknown>) : {}
-  // `project:` is a project scope only when it names a project: `/fm:role project` (no --project) writes the role slug
+  // `project:` is a project scope only when it names a project: `/fm:setup role project` (no --project) writes the role slug
   // itself there, which matched no task and emptied the pane (task 2026-10-13)
   const proj = text(session.project)
   const scoped = session.role === 'project' && !!proj && !GENERIC_KEYS.has(proj.toLowerCase()) ? proj : ''

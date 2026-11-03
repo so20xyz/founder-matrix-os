@@ -33,6 +33,6 @@ hot: false
 
 <!--
 relationship: team | client | partner | mentor | network | family | friend
-hot: true = идэвхтэй харилцаатай хүн (People.base → Hot, /fm:people hot).
+hot: true = идэвхтэй харилцаатай хүн (People.base → Hot, /fm:update people hot).
 companies / projects: "[[wikilink]]" жагсаалт (байгууллага, төсөл).
 -->

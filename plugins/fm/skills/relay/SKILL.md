@@ -15,7 +15,7 @@ fm Discord-гүйгээр бүрэн ажиллана. Relay-г зөвхөн х�
 
 ## Зарчим
 
-- **Сешн = дүр.** `/fm:role <slug>` сешнийг дүрд холбоход registry-д `project = <slug>` бичигдэнэ → Mac, PC дээрх ижил дүрийн сешн **нэг** Discord сувагтай, нэг baton-той (`state/<slug>.md`).
+- **Сешн = дүр.** `/fm:setup role <slug>` сешнийг дүрд холбоход registry-д `project = <slug>` бичигдэнэ → Mac, PC дээрх ижил дүрийн сешн **нэг** Discord сувагтай, нэг baton-той (`state/<slug>.md`).
 - **Sidebar бүлэг = Discord ангилал:** дүрийн `group` (`projects`, `areas`, `resources`, `research`, `development`…) → `02 Projects`, `03 Areas`…
 - 🔒 **Хувийн** сешн/дүр (`private: true`, `finance`, `tax`, `gold`) Discord, STATUS, baton руу **хэзээ ч** орохгүй. `relay.py next` ч татгалзана. Хувийн task-ийн dispatch-аас Discord-д зөвхөн тунгалаг бус id (`p:<hex>`) гарна (доор «🔒 Хувийн task-ийн dispatch»).
 - Dispatcher-ийг хоёр төхөөрөмж дээр ажиллуулбал нэгнийх нь `~/.fmos/config.json`-д `"writer": false` (давхар бичлэгээс сэргийлнэ).

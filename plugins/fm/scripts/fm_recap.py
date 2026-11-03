@@ -733,7 +733,7 @@ def render(data, show_titles=True):
         gaps.append("**Энэ хугацаанд vault дотор сешн олдсонгүй** — Claude нээгдээгүй, "
                     "эсвэл өөр хавтсанд ажилласан (`--all-cwd`-ээр шалга).")
     elif not data["commands"]:
-        gaps.append("**Slash команд ажиллаагүй** — `/fm:update`, `/fm:task`, `/fm:save` зэрэг "
+        gaps.append("**Slash команд ажиллаагүй** — `/fm:update`, `/fm:update task`, `/fm:update save` зэрэг "
                     "журам бүхий урсгалын оронд чөлөөт чат хэрэглэгдсэн.")
     quiet = [s for s in sess if s["prompts"] >= 2 and not s["tools"]]
     if quiet:
@@ -780,7 +780,7 @@ def render(data, show_titles=True):
                   "зүгээр асуулт байв уу?" % len(quiet))
     if data["commands"]:
         top_cmd, top_n = data["commands"].most_common(1)[0]
-        unused = [c for c in ("/fm:update", "/fm:task", "/fm:save", "/fm:inbox", "/fm:log")
+        unused = [c for c in ("/fm:update", "/fm:update task", "/fm:update save", "/fm:update inbox", "/fm:update log")
                   if c not in data["commands"]]
         qs.append("**`%s` %d удаа** хэрэглэгдсэн. %s" % (
             top_cmd, top_n,

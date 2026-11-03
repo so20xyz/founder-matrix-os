@@ -228,7 +228,7 @@ def role_warnings(fields, text, vault):
     # itge.e 2026-10-12: no role per project / area - the Project agent works it from its _BRAIN.md
     return ["Дүр `%s` (`group: %s`) - төсөл/хүрээнд тусдаа дүр хэрэггүй. Дүрэм, skill-ийг төслийн `_BRAIN.md` руу "
             "зөөж (байхгүй бол `fm_project.py new … --state ongoing`), энэ note-ийг `_trash/`, сешнийг "
-            "`/fm:role project --project <slug> --folder <хавтас>`." % (slug, group)]
+            "`/fm:setup role project --project <slug> --folder <хавтас>`." % (slug, group)]
 
 
 

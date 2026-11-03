@@ -161,7 +161,7 @@ def find_role(roles: List[Dict[str, object]], query: str) -> Optional[Dict[str, 
                 return r
     by_alias = [r for r in roles if q in [str(a).lower() for a in r["aliases"]]]
     if len(by_alias) > 1:
-        _die("«%s» alias олон дүрд байна: %s - slug-аар нь сонго (/fm:role <slug>)."
+        _die("«%s» alias олон дүрд байна: %s - slug-аар нь сонго (/fm:setup role <slug>)."
              % (query, ", ".join(str(r["slug"]) for r in by_alias)))
     if by_alias:
         return by_alias[0]

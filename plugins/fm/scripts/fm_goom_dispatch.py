@@ -400,7 +400,15 @@ def skill_invoke(slug, vault=None):
                 return m.group(1).strip()
         except OSError:
             pass
-    return "fm:" + slug[3:] if slug.startswith("fm-") else slug
+    if slug.startswith("fm-"):
+        name = slug[3:]
+        return f"fm:{MERGED[name]} {name}" if name in MERGED else "fm:" + name
+    return slug
+
+
+# 2026-11-03: 21 → 11 commands — these became steps of update / setup / research (Skill «fm:update» + args «save»)
+MERGED = {"save": "update", "log": "update", "task": "update", "inbox": "update", "people": "update",
+          "project": "update", "sync": "setup", "role": "setup", "vault": "setup", "refs": "research"}
 
 
 def build_prompt(ch, r, text, chat_py=CHAT_PY, role="", vault=None):

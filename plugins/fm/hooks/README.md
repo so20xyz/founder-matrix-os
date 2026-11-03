@@ -4,7 +4,7 @@ The plugin has two hooks. Both are pure Python 3.9+ standard library, with no ba
 
 | Event | Matcher | Script | What it does |
 |---|---|---|---|
-| SessionStart | `startup\|resume\|clear\|compact` | `fm_context.py` | If the session's cwd (or `CLAUDE_PROJECT_DIR`) is inside the vault, it injects `_system/BOOT.md` plus the rules sections of the session's role note. The total is capped at 10 KB. If no role is found, it adds `дүргүй: /fm:role <slug> ажиллуул`. Outside the vault it prints nothing. |
+| SessionStart | `startup\|resume\|clear\|compact` | `fm_context.py` | If the session's cwd (or `CLAUDE_PROJECT_DIR`) is inside the vault, it injects `_system/BOOT.md` plus the rules sections of the session's role note. The total is capped at 10 KB. If no role is found, it adds `дүргүй: /fm:setup role <slug> ажиллуул`. Outside the vault it prints nothing. |
 | PostToolUse | `Write\|Edit\|MultiEdit` | `fm_lint.py` | Lints `.md` files inside the vault. Most findings are warnings. It blocks (exit 2) in only two cases: secrets, and private-finance notes saved outside `03-Areas/Business/finances/private/`. |
 
 The vault path is taken from the first of these that is set: the `vault_path` setting in the plugin config (`CLAUDE_PLUGIN_OPTION_VAULT_PATH`), then `FM_VAULT`, then `OBSIDIAN_VAULT_PATH`, then the `vault` key of the per-machine file `~/.fmos/config.json` (`FMOS_CONFIG` overrides its location; `/fm:setup` can create it). If none of them points to an existing folder, both hooks exit 0 and print nothing.
