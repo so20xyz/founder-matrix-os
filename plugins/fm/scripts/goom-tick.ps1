@@ -29,7 +29,7 @@ if ((Get-Date).Minute % 10 -lt 2) { & python "$S\fm_goom_sync.py" $V --apply @fu
 # makes duplicate starts exit at once, so starting it every tick is safe. PC only (Drive: one writer machine).
 try {
   $pyw = Join-Path (Split-Path (& python -c 'import sys;print(sys.executable)')) 'pythonw.exe'
-  if (Test-Path $pyw) { Start-Process -FilePath $pyw -WindowStyle Hidden -ArgumentList @('"$S\fm_goom_watch.py"', '$V') }
+  if (Test-Path $pyw) { Start-Process -FilePath $pyw -WindowStyle Hidden -ArgumentList @("`"$S\fm_goom_watch.py`"", "`"$V`"") }  # double quotes: single-quoted '$S'/'$V' never expanded, so the watcher never started (2026-11-03)
 } catch {}
 # Second Brain чат гацалт (2026-10-23): itge.e-ийн мессеж >=3 мин хариугүй -> сешний Discord суваг + Windows toast (шинэ гацалт бүрд нэг удаа)
 try {
