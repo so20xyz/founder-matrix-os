@@ -45,7 +45,7 @@ class Parser(unittest.TestCase):
                 gs._parse_fields([line])
 
     def test_slug_from_project_subnote(self):
-        self.assertEqual(gs._project_slug("[[02-Projects/Client B/_INDEX]]"), "client b")
+        self.assertEqual(gs._project_slug("[[02-Projects/Client B/_INDEX]]"), "client-b")
         self.assertEqual(gs._project_slug("[[03-Areas/Business/INAI/INAI]]"), "inai")
 
     def test_non_task_in_tasks_is_note(self):

@@ -289,7 +289,7 @@ class ProjectRowsTest(unittest.TestCase):
     def test_project_key_free(self):
         self.assertEqual(gs.project_key("Season 2 нийтийн сайт", set()), "SEAS2"[:4])
         self.assertEqual(gs.project_key("itge.online", {"ITGE"}), "ITG1")
-        self.assertEqual(gs.project_key("Client B", {"P"}), "P1")
+        self.assertEqual(gs.project_key("Клиент Б", {"P"}), "P1")
 
     def test_missing_projects_from_folders(self):
         items = [{"kind": "project", "source_path": "02-Projects/INAI Investment/INAI Investment.md"},

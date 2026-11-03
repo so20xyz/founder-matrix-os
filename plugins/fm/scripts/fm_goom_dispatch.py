@@ -296,7 +296,7 @@ def ask_state(text):
     return (m.group(1).strip('"') if m else ""), _section(text, "Хариу")
 
 
-# run-20261028163107-app-16da (Academy Season 2): ask-ийг хойшлуулах шийдвэрээр хаасан ч dispatcher
+# run-20261028163107-app-16da (a project channel): ask-ийг хойшлуулах шийдвэрээр хаасан ч dispatcher
 # «answered → queued» гэж үргэлжлүүлж, worker «Нөгөө сешн дуусахыг хүлээж байна» гэж хариугүй гараад failed
 # болов. Одоо: зөвхөн «Хариулах»-аар (resolution: answered / app-ийн «<хүн> (YYYY-MM-DD HH:MM): …» мөр) эсвэл
 # «үргэлжлүүл» гэсэн хариугаар resume; хаасан/цуцалсан бол run done + хаасан тайлбар.

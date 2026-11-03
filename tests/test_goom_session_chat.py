@@ -61,7 +61,7 @@ class Pure(unittest.TestCase):
         reg = {"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": {"role": "architect", "title": "🏛 Architect · PC", "device": "PC"},
                "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb": {"role": "creative", "title": "🎨 Creative · Mac", "device": "Mac"},
                "cccccccc-cccc-cccc-cccc-cccccccccccc": {"role": "finance", "device": "PC"},
-               "dddddddd-dddd-dddd-dddd-dddddddddddd": {"project": "ochir", "title": "📁 Student", "device": "PC"},
+               "dddddddd-dddd-dddd-dddd-dddddddddddd": {"project": "student", "title": "📁 Student", "device": "PC"},
                "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee": {"role": "wiki", "title": "📚 Wiki · PC", "device": "PC"}}
         have = {"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": {"chat_id": 1, "role": "architect", "title": "🏛 Architect · PC"}, "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee": {"chat_id": 4, "role": "wiki", "title": "Wiki"}}
         self.assertEqual(sorted(gc.plan_sessions(reg, "PC", have)), [("dddddddd-dddd-dddd-dddd-dddddddddddd", "project", "📁 Student"), ("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "wiki", "📚 Wiki · PC")])

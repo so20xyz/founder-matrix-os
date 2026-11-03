@@ -19,8 +19,7 @@ from pathlib import Path
 OWNERS = {"rollingbd", "Atlas322"}
 STATE = Path.home() / ".fmos" / "github-inbox.json"
 LOCAL_REPO = Path(__file__).resolve().parents[3]
-DEFAULT_AUTHORS = {"member-gh": {
-    "name": "Гишүүн", "project": "[[02-Projects/Student 1-1 Coaching/Student 1-1 Coaching]]"}}
+DEFAULT_AUTHORS: dict = {}  # author → {name, project} lives in the vault (_system/fm/github-authors.json), not in the repo
 
 AREA_RULES = [  # (regex, шошго) — эхний таарсан нь
     (r"(^|/)scripts/fm_goom_|goomnet|(^|/)goom", "Goomnet"),

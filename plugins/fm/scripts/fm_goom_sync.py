@@ -397,7 +397,7 @@ def _get(url, token, endpoint):
 
 
 def project_key(name, taken):
-    """A free key of max 4 ASCII chars from the folder name (Acme Website -> AcmeW, then Acme1..)."""
+    """A free key of max 4 ASCII chars from the folder name (Acme Website -> ACMW, then ACM1..)."""
     base = re.sub(r"[^A-Z0-9]", "", unicodedata.normalize("NFKD", name).upper())[:4] or "P"
     if base not in taken:
         return base

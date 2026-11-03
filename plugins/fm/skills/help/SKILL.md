@@ -6,7 +6,7 @@ argument-hint: "[status] [<асуулт эсвэл алдааны текст>]"
 
 # /fm:help — гишүүний тусламжийн суваг
 
-Гишүүн (Student гэх мэт) дараагийн уулзалт хүртэл ганцаараа үлддэг. Энэ skill тэр зайг нөхнө: **эхлээд өөрөө хариулна, чадахгүй бол л maintainer руу зөв бичсэн issue болгож явуулна.**
+Гишүүн дараагийн уулзалт хүртэл ганцаараа үлддэг. Энэ skill тэр зайг нөхнө: **эхлээд өөрөө хариулна, чадахгүй бол л maintainer руу зөв бичсэн issue болгож явуулна.**
 
 - Vault: `${user_config.vault_path}` (доор `<V>`). Repo: `Atlas322/founder-matrix-os`.
 - Скрипт: `python3 "${CLAUDE_PLUGIN_ROOT}/skills/help/scripts/fm_help.py"` (доор `fm_help`).
