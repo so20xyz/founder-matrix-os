@@ -419,6 +419,44 @@ def build_prompt(ch, r, text, chat_py=CHAT_PY, role="", vault=None):
     )
 
 
+
+def task_subchat(vault, ch, cur, me, role):
+    """Төслийн «Ерөнхий» сувгийн шинэ хүсэлт → task + «Task · <гарчиг>» дэд чат (itge.e 2026-11-03; шийдвэр
+    2026-10-27 «Төслийн agent чат, карт URL, step-ийн дэд чат» 6-р заалт). Богино асуулт («за юу болжийн»),
+    thread хариу, task-тай run-д хийхгүй. Хариу, явц тэр дэд чат руу очно (reply_to = thread). → task зам эсвэл ''."""
+    text = " ".join((getattr(me, "text", "") or "").replace(" ⏎ ", " ").split())
+    if role != "project" or getattr(cur, "task", "") or not text or text.startswith(("↳", "🧵")) or len(text) < 40:
+        return ""
+    store, runs = gc.vault_lib()
+    try:
+        folder = store.channel_dir(Path(vault), ch).parent
+        proj = folder.relative_to(vault).as_posix()
+    except (ValueError, OSError):
+        return ""
+    if not proj.startswith("02-Projects/"):
+        return ""
+    title = re.sub(r'[\\/:*?"<>|#^\[\]]', " ", text)[:60].rsplit(" ", 1)[0].strip(" .,") or text[:40]
+    relay = PLUGIN_REPO / "tools" / "relay" / "relay.py"
+    try:
+        out = subprocess.run([_py(), str(relay), "task", f"{ch} - {title}", "--owner", "project", "--project", ch,
+                              "--status", "in-progress"], cwd=str(vault), capture_output=True, text=True,
+                             encoding="utf-8", timeout=60, env=dict(os.environ, PYTHONIOENCODING="utf-8")).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    m = re.search(r"task → (.+?\.md)", out or "")
+    if not m:
+        return ""
+    try:
+        task = Path(m.group(1).strip()).resolve().relative_to(Path(vault).resolve()).as_posix()[:-3]
+    except ValueError:
+        return ""
+    author = gc.ROLES.get(role) or "Project"
+    root, _ = store.post_thread(Path(vault), ch, f"{proj}/Chat/Task · {title}", author,
+                                f"itge.e-ийн хүсэлт → [[{task}]]. Энэ хүсэлтийн ажил, засвар энэ дэд чатад үргэлжилнэ.",
+                                gc.vault_device(), title=f"Task · {title}")
+    runs.update_run(vault, cur.id, reply_to=f"thread:{root.path}#{root.id}")  # `task` is read-only in runs.py; the prompt carries it
+    return task
+
 def fork_prompt(prompt):
     return ("Энэ бол сувгийн ажиллаж буй ярианаас салаалсан THREAD: өмнөх яриа бүхэлдээ чамд байна, харин тэр ажил "
             "өөр worker-т үргэлжилж байна. Эхлээд энэ мессежид хэрэгтэй контекст файлуудыг (төслийн _BRAIN, task, "
@@ -808,6 +846,10 @@ class Dispatcher:
                 runs.update_run(vault, cur.id, reply_to=f"thread:{me.path}#{mid}")
             prompt = fork_prompt(prompt)
         elif not resume and not cur.ask:
+            if me is not None and (task := task_subchat(vault, ch, cur, me, role)):
+                prompt = prompt + (
+                    f"\nЭнэ хүсэлтэд task үүсэв: [[{task}]] — явц, шийдвэрээ түүний «## Өөрчлөлтийн түүх»-д бич, "
+                    "дуусахад «## Үр дүн» + status completed.\n")
             prompt = recent_context(msgs, mid) + prompt
         sid = str(uuid.uuid4()) if (fork or not resume) else ""
         runs.update_run(vault, cur.id, status="running", started=gc._now_iso(), completed="",

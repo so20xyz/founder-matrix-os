@@ -321,3 +321,15 @@ def test_post_heartbeat_python_run_without_message_id(tmp_path, monkeypatch):
     r = types.SimpleNamespace(id="run-20261029175047-pc-59f0", reply_to="", channel="Wiki")
     assert d.post_heartbeat(tmp_path, r, "wiki", "⏳ 5 мин · x") == "c.md"
     assert calls[-1].startswith("↳ #^msg-20261029175047-pc-59f0 ")
+
+
+def test_task_subchat_skips_short_pings_and_other_roles(tmp_path):
+    """Only a real request in a project's general channel becomes a task + sub-chat (itge.e 2026-11-03)."""
+    import types
+    cur = types.SimpleNamespace(id="run-x", task="")
+    ping = types.SimpleNamespace(text="за юу болжийн")
+    long = types.SimpleNamespace(text="Хичээлийн 12 удаагийн оролт, хуваарь, бэлдэх зүйлсийн жагсаалтыг гаргаж өгөөч")
+    assert gd.task_subchat(tmp_path, "Demo", cur, ping, "project") == ""
+    assert gd.task_subchat(tmp_path, "Demo", cur, long, "creative") == ""
+    assert gd.task_subchat(tmp_path, "Demo", types.SimpleNamespace(id="r", task="[[t]]"), long, "project") == ""
+    assert gd.task_subchat(tmp_path, "Demo", cur, types.SimpleNamespace(text="↳ #^msg-1 " + long.text), "project") == ""
