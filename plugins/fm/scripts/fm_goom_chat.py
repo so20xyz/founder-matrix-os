@@ -796,12 +796,17 @@ def run_reply(api, run_id, text, role=None, timeout=30, outputs=None):
     """Run-ий reply_to руу (API чат эсвэл хурлын самбарын чат) агентын нэрээр хариулж, run-ийг done болгоно."""
     _, runs = vault_lib()
     vault = vault_path()
-    r = runs._parse(runs._find(vault, run_id).read_text(encoding="utf-8"), "")
+    raw = runs._find(vault, run_id).read_text(encoding="utf-8")
+    r = runs._parse(raw, "")
     out = {"outputs": list(dict.fromkeys([*r.outputs, *outputs]))} if outputs else {}
     dest = parse_reply_to(r.reply_to)
     role = reply_role(role, r.assignee, r.channel)
     th = parse_thread_reply_to(r.reply_to)
     if th:   # item thread-ээс ирсэн run: асуусан thread-д нь хариулна
+        # itge.e asked from a thread with «also in channel» (⤴) → the answer is shown in the channel too; otherwise the
+        # run card says «хариу дээр байна» while the answer hides in the thread (2026-11-03)
+        if re.search(r"^# ↳ #\^msg-\S+ ⤴", raw, re.M) and not str(text).startswith("⤴"):
+            text = "⤴ " + str(text)
         mid, where = thread_reply_line(vault, th[0], th[1], ROLES[role], text, vault_device())
         runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="", **out)
         return {"run_id": run_id, "reply_to": r.reply_to, "thread": where, "msg": mid, "role": role}
