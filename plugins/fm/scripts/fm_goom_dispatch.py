@@ -420,6 +420,22 @@ def build_prompt(ch, r, text, chat_py=CHAT_PY, role="", vault=None):
 
 
 
+_FILLER = re.compile(r"^(?:(?:за|тэгээд|тэгвэл|тэхээр|нэмээд|мөн|бас|одоо|уг нь|харин|okay|ok|yes)[\s,.!]+)+", re.I)
+
+
+def task_title(text):
+    """Auto-task title: first sentence, leading fillers («за», «тэгээд», «нэмээд»…) dropped, ≤ 60 chars on a word
+    boundary, capitalised (itge.e 2026-11-03: «за үргэлжлүүлээд энэ html…» made an unreadable task name)."""
+    t = re.split(r"(?<=[.!?])\s|\s⏎\s|\n", text.strip(), maxsplit=1)[0]
+    t = _FILLER.sub("", t).strip()
+    t = re.sub(r'[\\/:*?"<>|#^\[\]📎]', " ", t)
+    t = re.sub(r"\s+", " ", t).strip(" .,")
+    if len(t) > 60:
+        t = t[:60].rsplit(" ", 1)[0].strip(" .,")
+    t = t or text.strip()[:40]
+    return t[:1].upper() + t[1:]
+
+
 def task_subchat(vault, ch, cur, me, role):
     """Төслийн «Ерөнхий» сувгийн шинэ хүсэлт → task + «Task · <гарчиг>» дэд чат (itge.e 2026-11-03; шийдвэр
     2026-10-27 «Төслийн agent чат, карт URL, step-ийн дэд чат» 6-р заалт). Богино асуулт («за юу болжийн»),
@@ -437,7 +453,7 @@ def task_subchat(vault, ch, cur, me, role):
         return ""
     if not proj.startswith("02-Projects/"):
         return ""
-    title = re.sub(r'[\\/:*?"<>|#^\[\]]', " ", text)[:60].rsplit(" ", 1)[0].strip(" .,") or text[:40]
+    title = task_title(text)
     relay = PLUGIN_REPO / "tools" / "relay" / "relay.py"
     try:
         # full note path: a bare [[<name>]] link is not matched by the project board (linksProject → folder prefix)

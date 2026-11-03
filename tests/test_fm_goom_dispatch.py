@@ -339,3 +339,9 @@ def test_task_subchat_skips_questions(tmp_path):
     import types
     q = types.SimpleNamespace(text="за өнөөдрийн хичээлийн сэдэв юу билээ сүүлд юун дээр зогслоо")
     assert gd.task_subchat(tmp_path, "Demo", types.SimpleNamespace(id="r", task=""), q, "project") == ""
+
+
+def test_task_title_drops_fillers_and_trims():
+    assert gd.task_title("за үргэлжлүүлээд энэ html-ийг дуусга") == "Үргэлжлүүлээд энэ html-ийг дуусга"
+    assert gd.task_title("за тэгээд нэмээд library-г public болгоод өгөөч. Мөн бас өөр") == "Library-г public болгоод өгөөч"
+    assert len(gd.task_title("а " * 80)) <= 60
