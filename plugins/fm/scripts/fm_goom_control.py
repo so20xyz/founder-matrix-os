@@ -3,14 +3,14 @@
 
 Usage: fm_goom_control.py [--once] [--device NAME] [--dry-run]
 
-Builds the snapshot with tools/fm-office/control_state.build(), drops routine sessions (recomputing counts, total
+Builds the snapshot with fm-office (its own repo, sibling clone)/control_state.build(), drops routine sessions (recomputing counts, total
 and tokens), strips private sessions' content client-side, and POSTs {workspace_id, device, payload} to
 {url}/api/web/private/vault/control/snapshot. Config and transport come from fm_goom_sync (~/.fmos/goom.json).
 --dry-run prints the payload JSON to stdout: no network, and no token is needed in the config (workspace_id
 falls back to 0). --once is accepted for Task Scheduler clarity; every run sends one snapshot.
 Stdlib only. The token is never printed.
 """
-import argparse, importlib.util, json, socket, sys, urllib.error
+import argparse, importlib.util, json, os, socket, sys, urllib.error
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -31,8 +31,16 @@ def _load(name, path):
 gs = _load("fm_goom_sync", HERE / "fm_goom_sync.py")
 
 
+def _office_dir():
+    """fm-office lives in its own repo since 2026-11-03 (sibling clone `<CodeBase>/fm-office`, or FM_OFFICE)."""
+    for d in (os.environ.get("FM_OFFICE"), ROOT.parent / "fm-office", ROOT / "tools" / "fm-office"):
+        if d and (Path(d) / "control_state.py").is_file():
+            return Path(d)
+    raise FileNotFoundError("fm-office not found: clone Atlas322/fm-office next to founder-matrix-os or set FM_OFFICE")
+
+
 def _build_state():
-    return _load("control_state", ROOT / "tools" / "fm-office" / "control_state.py").build()
+    return _load("control_state", _office_dir() / "control_state.py").build()
 
 
 def _workspace_id_lenient():
