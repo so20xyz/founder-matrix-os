@@ -184,9 +184,9 @@ def test_skill_invoke_reads_taxonomy(tmp_path):
 
 def test_pick_model_run_then_note_then_default():
     assert gd.pick_model("claude-haiku-5-5", "low", "wiki") == ("claude-haiku-5-5", "low")
-    assert gd.pick_model("claude", "", "wiki", ("opus", "")) == ("claude-opus-5-5", "high")
-    assert gd.pick_model("", "", "gtd") == ("claude-haiku-5-5", "low")
-    assert gd.pick_model("bad model", "huge", "wiki") == ("claude-sonnet-5-5", "high")
+    assert gd.pick_model("claude", "", "wiki", ("sonnet", "")) == ("claude-sonnet-5-5", "low")
+    assert gd.pick_model("", "", "gtd") == ("claude-opus-5-5", "low")
+    assert gd.pick_model("bad model", "huge", "wiki") == ("claude-opus-5-5", "low")
 
 
 def test_role_note_defaults(tmp_path):

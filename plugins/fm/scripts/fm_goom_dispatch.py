@@ -490,9 +490,8 @@ def nudge_prompt(run_id, chat_py=CHAT_PY, role=""):
 
 # Composer-ийн model/effort (run `model:`/`effort:`); хоосон эсвэл «claude» бол дүрийн note-ийн
 # `default-model` / `default-effort`, тэр ч алга бол энэ хүснэгт (itge.e 2026-10-29: Wiki = Sonnet high, GTD = Haiku).
-ROLE_DEFAULTS = {"architect": ("claude-opus-5-5", "high"), "wiki": ("claude-sonnet-5-5", "high"),
-                 "research": ("claude-sonnet-5-5", "high"), "creative": ("claude-opus-5-5", "medium"),
-                 "gtd": ("claude-haiku-5-5", "low"), "project": ("claude-sonnet-5-5", "medium")}
+# itge.e 2026-11-03: every role Opus 5.5 low (judgement over speed); a role note's default-model/effort still wins
+ROLE_DEFAULTS = {r: ("claude-opus-5-5", "low") for r in ("architect", "wiki", "research", "creative", "gtd", "project")}
 MODEL_ALIAS = {"opus": "claude-opus-5-5", "sonnet": "claude-sonnet-5-5", "haiku": "claude-haiku-5-5"}
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
 _MODEL_RE = re.compile(r"[a-z0-9][a-z0-9.\-]*")
