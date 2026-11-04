@@ -12,7 +12,7 @@ views:
   - property: file.name
     direction: ASC
 - type: table
-  name: 🧭 INAI сэдэв ба асуулт
+  name: 🧭 <байгууллага> сэдэв ба асуулт
   filters:
     and:
     - '!file.inFolder("_trash")'

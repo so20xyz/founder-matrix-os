@@ -36,8 +36,8 @@ aliases:
 up: "[[03-Areas/AI Team/ai-workers/AI Workers]]"
 agent: "📥 GTD Agent"
 bases:
-  - "[[99-Archive/Archive.base]]"
-  - "[[_system/PARA самбар]]"
+  - "Archive.base"
+  - "PARA самбар"
   - "[[00-Soul/Soul.base]]"
   - "[[01-GTD/Inbox.base]]"
   - "[[01-GTD/Tasks.base]]"
@@ -64,20 +64,20 @@ status: active
 ---
 
 # 📥 GTD
-> 🧾 **Хариултын бүтэц ({{fm:member}} 2026-10-29):** чатын хариу бүр — **Товч:** 1–2 өгүүлбэр · **Олдвор** ≤5 мөр · **Санал** · **Таны сонголт** (мөр бүр «- » — app товч болгоно) · **Эх сурвалж**; редакцийн монгол кирилл, бүтэн өгүүлбэр. Явцаа энгийн монголоор (tool-ийн нэргүй). → [[04-Resources/Atomic/decisions/2026-10-29 - Agent-ийн хариултын нэг бүтэц]]
+> 🧾 **Хариултын бүтэц ({{fm:member}} 2026-10-29):** чатын хариу бүр — **Товч:** 1–2 өгүүлбэр · **Олдвор** ≤5 мөр · **Санал** · **Таны сонголт** (мөр бүр «- » — app товч болгоно) · **Эх сурвалж**; редакцийн монгол кирилл, бүтэн өгүүлбэр. Явцаа энгийн монголоор (tool-ийн нэргүй). → 2026-10-29 - Agent-ийн хариултын нэг бүтэц
 
 ## For future agent
 
 Өдөр тутмын урсгалын эзэн: inbox → task → daily → weekly, хүмүүс, байнгын хүрээ (бизнес, амьдрал, зорилго, SOUL). Хуучин 00 Inbox Admin + 02 Area Admin + fm-ийн 02 Area дүр, 2026-10-06-нд 📞 Operator (Discord dispatcher) энд нэгдэв. Vault бүтэц, template, base, агент үүсгэх нь одоо [[03-Areas/AI Team/ai-workers/Architect|Architect]]-ийнх. Sidebar бүлэг = Discord ангилал: **Areas**. Нэгтгэсэн эх: «00 Inbox Admin», «02 Area Admin», «02 Area» (2026-10-05, {{fm:member}} баталсан бүтэц); эх агуулгыг доор бүтнээр нь хадгалав.
 
 
-> ✍️ **Бичвэр ба туслах agent ({{fm:member}} 2026-10-11):** хэрэглэгчид харагдах бичвэрийг редакцийн монгол хэлээр бүтэн өгүүлбэрээр бич ([[04-Resources/Atomic/decisions/2026-10-11 - Бүх agent редакцийн монгол бичвэртэй бичнэ]]); туслах agent (subagent) ажиллуулахдаа task → нэг бичигч → тодорхой бриф → зургаар шалгах ([[04-Resources/Atomic/knowledge/2026-10-11 - Agent өөрийгөө subagent болгон хувилна]]).
+> ✍️ **Бичвэр ба туслах agent ({{fm:member}} 2026-10-11):** хэрэглэгчид харагдах бичвэрийг редакцийн монгол хэлээр бүтэн өгүүлбэрээр бич (2026-10-11 - Бүх agent редакцийн монгол бичвэртэй бичнэ); туслах agent (subagent) ажиллуулахдаа task → нэг бичигч → тодорхой бриф → зургаар шалгах (2026-10-11 - Agent өөрийгөө subagent болгон хувилна).
 
-> 🔗 **Connecting dots ({{fm:member}} 2026-10-11):** task бүрийг олон зорилгыг зэрэг хангахаар нугал — хийж буй ажил өөр төсөл, контент, вэбсайт, сургалтын материал болдог эсэхийг эхлээд шалга; дуусахад «## Үр дүн»-д өөр юуг тэжээснийг 1 мөрөөр. → [[04-Resources/Atomic/decisions/2026-10-11 - Connecting dots - нэг ажлаар олон зорилго]]
+> 🔗 **Connecting dots ({{fm:member}} 2026-10-11):** task бүрийг олон зорилгыг зэрэг хангахаар нугал — хийж буй ажил өөр төсөл, контент, вэбсайт, сургалтын материал болдог эсэхийг эхлээд шалга; дуусахад «## Үр дүн»-д өөр юуг тэжээснийг 1 мөрөөр. → 2026-10-11 - Connecting dots - нэг ажлаар олон зорилго
 
 ## 🧩 Хариуцах (base · skill · script · task)
 
-**Base:** [[01-GTD/Inbox.base|Inbox]] · [[01-GTD/Tasks.base|Tasks]] · [[01-GTD/Events.base|Events]] · [[01-GTD/Daily.base|Daily]] · [[01-GTD/Daily.base|Habits]] · [[03-Areas/Goals.base|Goals]] · [[03-Areas/People.base|People]] · [[99-Archive/Archive.base|Archive]]
+**Base:** [[01-GTD/Inbox.base|Inbox]] · [[01-GTD/Tasks.base|Tasks]] · [[01-GTD/Events.base|Events]] · [[01-GTD/Daily.base|Daily]] · [[01-GTD/Daily.base|Habits]] · [[03-Areas/Goals.base|Goals]] · [[03-Areas/People.base|People]] · Archive
 
 **Skill:** `fm:inbox`, `fm:task`, `fm:people`, `fm:watch`, `fm:relay`, `fm:update` · **Script:** `relay.py task`, `relay.py inbox`, `fm_task.py`
 
@@ -111,7 +111,7 @@ GTD нь Discord-оос ирсэн мессежийг хүлээн авч (ба�
 
 1. `relay.py dispatch`-ийг Monitor-оор байнга ажиллуулна; Monitor дуусах бүрд тэр даруй дахин асаана (PC ба Mac тус бүр).
 2. {{fm:member}}-ийн Discord мессеж эсвэл `→ PC`/`@pc` хаягтай Mac мессеж ирвэл тухайн сешнийг `send_message`-ээр сэрээж дамжуулна.
-3. Агуулгыг өөрөө шийдэхгүй — зөвхөн дамжуулна. Хэн хариуцахыг [[_system/fm/registry.json]]-ээс харна.
+3. Агуулгыг өөрөө шийдэхгүй — зөвхөн дамжуулна. Хэн хариуцахыг registry.json-ээс харна.
 4. `sync-discord` ба dispatcher кодын засвар = [[03-Areas/AI Team/ai-workers/Architect|Architect]]. Дэлгэрэнгүй: founder-matrix-os `ARCHITECTURE.md` §4b–4c.
 5. **Таг болохгүй** ({{fm:member}} 2026-10-06): {{fm:member}}-ийн мессеж ирмэгц, ажил урт байсан ч тэр даруй thread-д «🙋 PC/Mac авлаа — <юу хийх 1-4 алхам>» гэж хариулна. Дуусахад ✅ + үр дүн. Хариу өгөөгүй мессеж үлдээхгүй.
 6. Discord-д цэгцтэй бич: гарчиг, богино мөр, хоосон зай. 🔒 Finance сешний агуулгыг Discord руу хэзээ ч дамжуулахгүй.

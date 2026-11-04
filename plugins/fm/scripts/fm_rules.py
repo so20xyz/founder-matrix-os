@@ -188,6 +188,44 @@ def tokens(vault):
     return tok
 
 
+CODE = re.compile(r"```.*?```|`[^`\n]*`", re.S)
+LINK = re.compile(r"\[\[([^\]|#]+)(#[^\]|]*)?(?:\|([^\]]+))?\]\]")
+
+
+def targets():
+    """Every note / base the template ships - by full path, by path without .md, by basename."""
+    out = set()
+    for f in TEMPLATE.rglob("*"):
+        if not f.is_file() or f.suffix not in (".md", ".base"):
+            continue
+        rel = f.relative_to(TEMPLATE).as_posix()
+        out.add(rel.lower())
+        out.add((rel[:-3] if f.suffix == ".md" else rel).lower())
+        out.add(f.stem.lower())
+        if f.suffix == ".base":
+            out.add(f.name.lower())
+    return out
+
+
+def delink(text, known):
+    """itge.e 2026-11-04 (issue #10): a wikilink the member's vault will not have becomes plain text,
+    so an exported BOOT / role note never ships a broken link to a maintainer-only atom.
+    Links inside code spans or fences are examples, not links - left alone."""
+    def one(part):
+        def f(m):
+            tgt = m.group(1).strip()
+            alias = (m.group(3) or "").strip()
+            if tgt.lower() in known or tgt.rsplit("/", 1)[-1].lower() in known:
+                return m.group(0)
+            return alias or tgt.rsplit("/", 1)[-1]
+        return LINK.sub(f, part)
+    chunks, last = [], 0
+    for m in CODE.finditer(text):
+        chunks.append(one(text[last:m.start()])); chunks.append(m.group(0)); last = m.end()
+    chunks.append(one(text[last:]))
+    return "".join(chunks)
+
+
 def export(vault, apply):
     rules = json.loads(RULES.read_text(encoding="utf-8")) if RULES.is_file() else {}
     names = [n for n in rules.get("member_names", []) + [member_of()] if n]
@@ -196,6 +234,7 @@ def export(vault, apply):
     if local.is_file():
         rewrite.update(json.loads(local.read_text(encoding="utf-8")))
     tok = tokens(vault) - set(rewrite)
+    known = targets()
     log = []
     for rel in files(vault):
         src = vault / rel
@@ -224,6 +263,8 @@ def export(vault, apply):
             out = out.replace(a, rewrite[a])
         for n in sorted(names, key=len, reverse=True):
             out = re.sub(r"(?<![\w.-])%s(?!\w)" % re.escape(n), "{{fm:member}}", out)   # «itge.e-ийн» too
+        if rel.endswith("BOOT.md") or _is_role(rel):
+            out = delink(out, known)                                            # issue #10
         hits = sorted(t for t in tok if re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(t), out))
         if hits:
             log.append("REFUSED  %s (нэр үлдсэн: %s — fm_rules.json rewrite-д нэм)" % (rel, ", ".join(hits[:8]))); continue
