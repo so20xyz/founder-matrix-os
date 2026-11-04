@@ -1,221 +1,221 @@
 filters:
   or:
-  - and:
-    - file.inFolder("04-Resources/Research")
-    - file.ext == "md"
-  - and:
-    - file.ext == "md"
-    - '!file.inFolder("_system")'
-    - '!file.inFolder("_trash")'
-    - '!file.inFolder("99-Archive")'
-    - '!file.inFolder(".backups")'
-    - private != true
-    - or:
-      - type == "research"
-      - tags.contains("research")
-      - tags.contains("судалгаа")
-      - and:
+    - and:
+        - file.inFolder("04-Resources/Research")
+        - file.ext == "md"
+    - and:
+        - file.ext == "md"
+        - '!file.inFolder("_system")'
+        - '!file.inFolder("_trash")'
+        - '!file.inFolder("99-Archive")'
+        - '!file.inFolder(".backups")'
+        - private != true
         - or:
-          - type == "reference"
-          - type == "atomic"
-        - or:
-          - '!project.isEmpty()'
-          - '!projects.isEmpty()'
-          - '!areas.isEmpty()'
+            - type == "research"
+            - tags.contains("research")
+            - tags.contains("судалгаа")
+            - and:
+                - or:
+                    - type == "reference"
+                    - type == "atomic"
+                - or:
+                    - "!project.isEmpty()"
+                    - "!projects.isEmpty()"
+                    - "!areas.isEmpty()"
 properties:
   project:
     displayName: Төсөл
   file.folder:
     displayName: Хавтас
 views:
-- type: table
-  name: Судалгаа
-  filters:
-    and:
-    - file.inFolder("04-Resources/Research")
-    - file.ext == "md"
-  order:
-  - file.name
-  - file.folder
-  - date
-  - confidence
-  - status
-  sort:
-  - property: file.mtime
-    direction: DESC
-- type: table
-  name: 🌱 Төсөлгүй (үр)
-  filters:
-    and:
-    - file.inFolder("04-Resources/Research")
-    - file.ext == "md"
-    - type == "research"
-    - research.isEmpty()
-    - project.isEmpty()
-  order:
-  - file.basename
-  - project
-  - status
-  - closed
-  - date
-  sort:
-  - property: date
-    direction: DESC
-- type: table
-  name: 🟢 Идэвхтэй
-  filters:
-    and:
-    - file.inFolder("04-Resources/Research")
-    - file.ext == "md"
-    - type == "research"
-    - research.isEmpty()
-    - status == "active"
-  order:
-  - file.basename
-  - project
-  - status
-  - closed
-  - date
-  sort:
-  - property: date
-    direction: DESC
-- type: table
-  name: ✅ Дууссан
-  filters:
-    and:
-    - file.inFolder("04-Resources/Research")
-    - file.ext == "md"
-    - type == "research"
-    - research.isEmpty()
-    - status == "done"
-  order:
-  - file.basename
-  - project
-  - status
-  - closed
-  - date
-  sort:
-  - property: closed
-    direction: DESC
-- type: table
-  name: Бүх төслөөр
-  filters:
-    and:
-    - file.ext == "md"
-    - '!file.inFolder("_system")'
-    - '!file.inFolder("_trash")'
-    - '!file.inFolder("99-Archive")'
-    - '!file.inFolder(".backups")'
-    - private != true
-    - or:
-      - type == "research"
-      - tags.contains("research")
-      - tags.contains("судалгаа")
-      - and:
+  - type: table
+    name: Судалгаа
+    filters:
+      and:
+        - file.inFolder("04-Resources/Research")
+        - file.ext == "md"
+    order:
+      - file.name
+      - file.folder
+      - date
+      - confidence
+      - status
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: 🌱 Төсөлгүй (үр)
+    filters:
+      and:
+        - file.inFolder("04-Resources/Research")
+        - file.ext == "md"
+        - type == "research"
+        - research.isEmpty()
+        - project.isEmpty()
+    order:
+      - file.basename
+      - project
+      - status
+      - closed
+      - date
+    sort:
+      - property: date
+        direction: DESC
+  - type: table
+    name: 🟢 Идэвхтэй
+    filters:
+      and:
+        - file.inFolder("04-Resources/Research")
+        - file.ext == "md"
+        - type == "research"
+        - research.isEmpty()
+        - status == "active"
+    order:
+      - file.basename
+      - project
+      - status
+      - closed
+      - date
+    sort:
+      - property: date
+        direction: DESC
+  - type: table
+    name: ✅ Дууссан
+    filters:
+      and:
+        - file.inFolder("04-Resources/Research")
+        - file.ext == "md"
+        - type == "research"
+        - research.isEmpty()
+        - status == "done"
+    order:
+      - file.basename
+      - project
+      - status
+      - closed
+      - date
+    sort:
+      - property: closed
+        direction: DESC
+  - type: table
+    name: Бүх төслөөр
+    filters:
+      and:
+        - file.ext == "md"
+        - '!file.inFolder("_system")'
+        - '!file.inFolder("_trash")'
+        - '!file.inFolder("99-Archive")'
+        - '!file.inFolder(".backups")'
+        - private != true
         - or:
-          - type == "reference"
-          - type == "atomic"
+            - type == "research"
+            - tags.contains("research")
+            - tags.contains("судалгаа")
+            - and:
+                - or:
+                    - type == "reference"
+                    - type == "atomic"
+                - or:
+                    - "!project.isEmpty()"
+                    - "!projects.isEmpty()"
+                    - "!areas.isEmpty()"
+    groupBy:
+      property: project
+      direction: ASC
+    order:
+      - file.name
+      - type
+      - projects
+      - file.folder
+      - updated
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Энэ төслийн судалгаа
+    filters:
+      and:
+        - file.ext == "md"
+        - '!file.inFolder("_system")'
+        - '!file.inFolder("_trash")'
+        - '!file.inFolder("99-Archive")'
+        - '!file.inFolder(".backups")'
+        - private != true
         - or:
-          - '!project.isEmpty()'
-          - '!projects.isEmpty()'
-          - '!areas.isEmpty()'
-  groupBy:
-    property: project
-    direction: ASC
-  order:
-  - file.name
-  - type
-  - projects
-  - file.folder
-  - updated
-  sort:
-  - property: file.mtime
-    direction: DESC
-- type: table
-  name: Энэ төслийн судалгаа
-  filters:
-    and:
-    - file.ext == "md"
-    - '!file.inFolder("_system")'
-    - '!file.inFolder("_trash")'
-    - '!file.inFolder("99-Archive")'
-    - '!file.inFolder(".backups")'
-    - private != true
-    - or:
-      - type == "research"
-      - tags.contains("research")
-      - tags.contains("судалгаа")
-      - and:
+            - type == "research"
+            - tags.contains("research")
+            - tags.contains("судалгаа")
+            - and:
+                - or:
+                    - type == "reference"
+                    - type == "atomic"
+                - or:
+                    - "!project.isEmpty()"
+                    - "!projects.isEmpty()"
+                    - "!areas.isEmpty()"
         - or:
-          - type == "reference"
-          - type == "atomic"
+            - list(project).contains(this)
+            - list(projects).contains(this)
+            - projects.contains(this.file.name)
+    order:
+      - file.name
+      - type
+      - file.folder
+      - updated
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: Өөр төслөөс авч болох
+    filters:
+      and:
+        - file.ext == "md"
+        - '!file.inFolder("_system")'
+        - '!file.inFolder("_trash")'
+        - '!file.inFolder("99-Archive")'
+        - '!file.inFolder(".backups")'
+        - private != true
         - or:
-          - '!project.isEmpty()'
-          - '!projects.isEmpty()'
-          - '!areas.isEmpty()'
-    - or:
-      - list(project).contains(this)
-      - list(projects).contains(this)
-      - projects.contains(this.file.name)
-  order:
-  - file.name
-  - type
-  - file.folder
-  - updated
-  sort:
-  - property: file.mtime
-    direction: DESC
-- type: table
-  name: Өөр төслөөс авч болох
-  filters:
-    and:
-    - file.ext == "md"
-    - '!file.inFolder("_system")'
-    - '!file.inFolder("_trash")'
-    - '!file.inFolder("99-Archive")'
-    - '!file.inFolder(".backups")'
-    - private != true
-    - or:
-      - type == "research"
-      - tags.contains("research")
-      - tags.contains("судалгаа")
-      - and:
-        - or:
-          - type == "reference"
-          - type == "atomic"
-        - or:
-          - '!project.isEmpty()'
-          - '!projects.isEmpty()'
-          - '!areas.isEmpty()'
-    - '!list(project).contains(this)'
-    - '!list(projects).contains(this)'
-  groupBy:
-    property: project
-    direction: ASC
-  order:
-  - file.name
-  - type
-  - project
-  - updated
-  sort:
-  - property: file.mtime
-    direction: DESC
-- type: table
-  name: 🔬 Судалгаа
-  filters:
-    and:
-    - '!file.inFolder("_trash")'
-    - '!file.inFolder("_system")'
-    - '!file.inFolder("03-Areas/Business/finances")'
-    - file.inFolder("04-Resources/Research")
-    - type == "research"
-  order:
-  - file.basename
-  - scope
-  - status
-  - project
-  - topics
-  - date
-  sort:
-  - property: file.mtime
-    direction: DESC
+            - type == "research"
+            - tags.contains("research")
+            - tags.contains("судалгаа")
+            - and:
+                - or:
+                    - type == "reference"
+                    - type == "atomic"
+                - or:
+                    - "!project.isEmpty()"
+                    - "!projects.isEmpty()"
+                    - "!areas.isEmpty()"
+        - "!list(project).contains(this)"
+        - "!list(projects).contains(this)"
+    groupBy:
+      property: project
+      direction: ASC
+    order:
+      - file.name
+      - type
+      - project
+      - updated
+    sort:
+      - property: file.mtime
+        direction: DESC
+  - type: table
+    name: 🔬 Судалгаа
+    filters:
+      and:
+        - '!file.inFolder("_trash")'
+        - '!file.inFolder("_system")'
+        - '!file.inFolder("03-Areas/Business/finances")'
+        - file.inFolder("04-Resources/Research")
+        - type == "research"
+    order:
+      - file.basename
+      - scope
+      - status
+      - project
+      - topics
+      - date
+    sort:
+      - property: file.mtime
+        direction: DESC

@@ -112,11 +112,11 @@ views:
   - property: file.mtime
     direction: DESC
 - type: table
-  name: <байгууллага>
+  name: INAI
   filters:
     and:
     - note.type == "tool"
-    - org.toString().contains("<байгууллага>")
+    - org.toString().contains("INAI")
   order:
   - file.name
   - status

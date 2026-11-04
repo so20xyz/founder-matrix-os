@@ -1,13 +1,13 @@
 filters:
   or:
-  - and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "ai-worker"
-  - and:
-    - file.inFolder("03-Areas/AI Team")
-    - file.ext == "md"
+    - and:
+        - '!file.inFolder("_system/templates")'
+        - '!file.inFolder("_trash")'
+        - file.ext == "md"
+        - note.type == "ai-worker"
+    - and:
+        - file.inFolder("03-Areas/AI Team")
+        - file.ext == "md"
 formulas:
   name_ok: if(note["session-title"] && note["session-title"].replace(" · ", " ").contains(file.basename), "✅", "⚠️")
   domain_set: if(note.domain, "✅", "🔴")
@@ -46,7 +46,7 @@ properties:
   blocked-on:
     displayName: ⛔ Хүлээж буй
   order:
-    displayName: '#'
+    displayName: "#"
   level:
     displayName: Lv
   xp:
@@ -70,158 +70,158 @@ properties:
   formula.win_rate:
     displayName: Win %
 views:
-- type: table
-  name: Ростер
-  filters:
-    and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "ai-worker"
-  order:
-  - order
-  - file.basename
-  - formula.name_ok
-  - domain
-  - formula.skill_count
-  columnSize:
-    note.next-action: 420
-    note.last-done: 300
-    note.blocked-on: 260
-    file.basename: 190
-    note.domain: 343
-- type: table
-  name: Бүлгээр (sidebar = Discord)
-  filters:
-    and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "ai-worker"
-  groupBy:
-    property: group
-    direction: ASC
-  order:
-  - order
-  - file.basename
-  - formula.name_ok
-  - domain
-  - owns
-  - formula.skill_count
-  sort:
-  - property: order
-    direction: ASC
-  columnSize:
-    file.basename: 190
-    note.domain: 320
-    note.owns: 360
-- type: table
-  name: ⚠️ Нэрийн зөрчил
-  filters:
-    and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "ai-worker"
-    - formula.name_ok == "⚠️"
-  order:
-  - file.basename
-  - order
-  columnSize:
-    file.basename: 210
-    session-title: 210
-- type: table
-  name: Домэйн ба эзэмшил
-  filters:
-    and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "ai-worker"
-  order:
-  - order
-  - file.basename
-  - domain
-  - owns
-  columnSize:
-    file.basename: 180
-    domain: 320
-    owns: 320
-- type: table
-  name: Skills relation
-  filters:
-    and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "ai-worker"
-  order:
-  - order
-  - file.basename
-  - skills
-  - formula.skill_count
-  columnSize:
-    file.basename: 190
-    skills: 420
-- type: cards
-  name: Cards
-  filters:
-    and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "ai-worker"
-  order:
-  - file.basename
-  - owns
-  - done-today
-- type: table
-  name: 🎮 Party (game HUD)
-  filters:
-    and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "ai-worker"
-  order:
-  - order
-  - file.basename
-  - formula.level_badge
-  - formula.xp_bar
-  - formula.quest_status
-  - unlocked-skills
-  - formula.win_rate
-  - quest-count-total
-  - quest-count-done
-  - quest-count-failed
-  columnSize:
-    file.basename: 190
-    formula.quest_status: 340
-    unlocked-skills: 260
-- type: cards
-  name: 🎮 Party Cards
-  filters:
-    and:
-    - '!file.inFolder("_system/templates")'
-    - '!file.inFolder("_trash")'
-    - file.ext == "md"
-    - note.type == "ai-worker"
-  order:
-  - file.basename
-  - formula.level_badge
-  - formula.quest_status
-  - done-today
-- type: table
-  name: AI Team
-  filters:
-    and:
-    - file.inFolder("03-Areas/AI Team")
-    - file.ext == "md"
-  order:
-  - file.name
-  - type
-  - status
-  - file.mtime
-  sort:
-  - property: file.mtime
-    direction: DESC
+  - type: table
+    name: Ростер
+    filters:
+      and:
+        - '!file.inFolder("_system/templates")'
+        - '!file.inFolder("_trash")'
+        - file.ext == "md"
+        - note.type == "ai-worker"
+    order:
+      - order
+      - file.basename
+      - formula.name_ok
+      - domain
+      - formula.skill_count
+    columnSize:
+      note.next-action: 420
+      note.last-done: 300
+      note.blocked-on: 260
+      file.basename: 190
+      note.domain: 343
+  - type: table
+    name: Бүлгээр (sidebar = Discord)
+    filters:
+      and:
+        - '!file.inFolder("_system/templates")'
+        - '!file.inFolder("_trash")'
+        - file.ext == "md"
+        - note.type == "ai-worker"
+    groupBy:
+      property: group
+      direction: ASC
+    order:
+      - order
+      - file.basename
+      - formula.name_ok
+      - domain
+      - owns
+      - formula.skill_count
+    sort:
+      - property: order
+        direction: ASC
+    columnSize:
+      file.basename: 190
+      note.domain: 320
+      note.owns: 360
+  - type: table
+    name: ⚠️ Нэрийн зөрчил
+    filters:
+      and:
+        - '!file.inFolder("_system/templates")'
+        - '!file.inFolder("_trash")'
+        - file.ext == "md"
+        - note.type == "ai-worker"
+        - formula.name_ok == "⚠️"
+    order:
+      - file.basename
+      - order
+    columnSize:
+      file.basename: 210
+      session-title: 210
+  - type: table
+    name: Домэйн ба эзэмшил
+    filters:
+      and:
+        - '!file.inFolder("_system/templates")'
+        - '!file.inFolder("_trash")'
+        - file.ext == "md"
+        - note.type == "ai-worker"
+    order:
+      - order
+      - file.basename
+      - domain
+      - owns
+    columnSize:
+      file.basename: 180
+      domain: 320
+      owns: 320
+  - type: table
+    name: Skills relation
+    filters:
+      and:
+        - '!file.inFolder("_system/templates")'
+        - '!file.inFolder("_trash")'
+        - file.ext == "md"
+        - note.type == "ai-worker"
+    order:
+      - order
+      - file.basename
+      - skills
+      - formula.skill_count
+    columnSize:
+      file.basename: 190
+      skills: 420
+  - type: cards
+    name: Cards
+    filters:
+      and:
+        - '!file.inFolder("_system/templates")'
+        - '!file.inFolder("_trash")'
+        - file.ext == "md"
+        - note.type == "ai-worker"
+    order:
+      - file.basename
+      - owns
+      - done-today
+  - type: table
+    name: 🎮 Party (game HUD)
+    filters:
+      and:
+        - '!file.inFolder("_system/templates")'
+        - '!file.inFolder("_trash")'
+        - file.ext == "md"
+        - note.type == "ai-worker"
+    order:
+      - order
+      - file.basename
+      - formula.level_badge
+      - formula.xp_bar
+      - formula.quest_status
+      - unlocked-skills
+      - formula.win_rate
+      - quest-count-total
+      - quest-count-done
+      - quest-count-failed
+    columnSize:
+      file.basename: 190
+      formula.quest_status: 340
+      unlocked-skills: 260
+  - type: cards
+    name: 🎮 Party Cards
+    filters:
+      and:
+        - '!file.inFolder("_system/templates")'
+        - '!file.inFolder("_trash")'
+        - file.ext == "md"
+        - note.type == "ai-worker"
+    order:
+      - file.basename
+      - formula.level_badge
+      - formula.quest_status
+      - done-today
+  - type: table
+    name: AI Team
+    filters:
+      and:
+        - file.inFolder("03-Areas/AI Team")
+        - file.ext == "md"
+    order:
+      - file.name
+      - type
+      - status
+      - file.mtime
+    sort:
+      - property: file.mtime
+        direction: DESC

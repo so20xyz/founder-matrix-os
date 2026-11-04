@@ -14,3 +14,18 @@ views:
     sort:
       - property: status
         direction: DESC
+  - type: table
+    name: Хувийн захиалгууд
+    filters:
+      and:
+        - type == "bill" || type == "finance-record"
+        - category == "subscription" || kind == "subscription"
+        - file.inFolder("03-Areas/Business/finances/private")
+    order:
+      - file.name
+      - amount
+      - due_day
+      - valid-until
+      - status
+    summaries:
+      amount: Sum

@@ -63,4 +63,11 @@ views:
       or:
         - relationship == "client"
         - status == "client"
-    order: [file.name, legal_name, reg_no_masked, ebarimt.required, ebarimt.type, contact_person, contracts]
+    order:
+      - file.name
+      - legal_name
+      - reg_no_masked
+      - ebarimt.required
+      - ebarimt.type
+      - contact_person
+      - contracts

@@ -1,0 +1,41 @@
+filters:
+  and:
+    - type == "finance-record"
+    - kind == "subscription"
+    - scope == "team"
+formulas:
+  days_left: 'if(note["valid-until"], (date(note["valid-until"]) - today()).days, "")'
+  renew: 'if(note["valid-until"], if((date(note["valid-until"]) - today()).days <= 7, "🟡 сунгах", "✅"), "")'
+properties:
+  company:
+    displayName: "Үйлчилгээ"
+  amount:
+    displayName: "Дүн (MNT)"
+  usd-amount:
+    displayName: "USD"
+  valid-until:
+    displayName: "Хүчинтэй хүртэл"
+  used_by:
+    displayName: "Ашиглагч төсөл"
+  formula.days_left:
+    displayName: "Хоног"
+  formula.renew:
+    displayName: ""
+views:
+  - type: table
+    name: "INAI захиалгууд"
+    order:
+      - formula.renew
+      - company
+      - amount
+      - usd-amount
+      - valid-until
+      - formula.days_left
+      - used_by
+      - status
+    sort:
+      - property: valid-until
+        direction: ASC
+    summaries:
+      amount: Sum
+      usd-amount: Sum

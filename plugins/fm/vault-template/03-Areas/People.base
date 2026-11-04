@@ -2,7 +2,7 @@ filters:
   and:
     - type == "person"
 formulas:
-  group: if(relationship == "team", "1 · 🏢 Баг (<байгууллага>)", if(relationship == "client", "2 · 🤝 Харилцагч", if(relationship == "partner", "3 · 🎵 Хамтрагч", if(relationship == "network", "4 · 🔗 Сүлжээ", if(relationship == "personal", "5 · ❤️ Хувийн", "6 · ❓ Ангилаагүй")))))
+  group: if(relationship == "team", "1 · 🏢 Баг (Inai)", if(relationship == "client", "2 · 🤝 Харилцагч", if(relationship == "partner", "3 · 🎵 Хамтрагч", if(relationship == "network", "4 · 🔗 Сүлжээ", if(relationship == "personal", "5 · ❤️ Хувийн", "6 · ❓ Ангилаагүй")))))
 properties:
   formula.group:
     displayName: Бүлэг
@@ -51,4 +51,10 @@ views:
     filters:
       and:
         - ebarimt.required == true
-    order: [file.name, kind, reg_no_masked, ebarimt.type, contact_email, contracts]
+    order:
+      - file.name
+      - kind
+      - reg_no_masked
+      - ebarimt.type
+      - contact_email
+      - contracts
