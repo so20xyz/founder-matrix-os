@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""fm_release_check — fm-ийн release-ийн өмнөх/дараах 6 шалгалт (itge.e 2026-11-04: founder-matrix-os нь
+"""fm_release_check — fm-ийн release-ийн өмнөх/дараах 7 шалгалт (itge.e 2026-11-04: founder-matrix-os нь
 Monton 1-1, Second Brain Season 2-ын эх сурвалж болсон тул «release-ийн дүрэм хүний толгойд байж болохгүй»).
 
 Шалгалт автомат, PUSH-ИЙН ШИЙДВЭР ХҮНИЙХ. Нэг шалгуур унавал exit 1 — release зогсоно, шалтгааныг нэрлэнэ.
 
   Push-ийн өмнө (анхдагч):
     1 clean     plugins/ дор commit хийгээгүй файл байхгүй (хувилбар өссөн ч тэд гишүүнд хүрэхгүй)
-    2 version   plugins/fm/-д origin/main-аас хойш өөрчлөлт байвал plugin.json-ийн version өссөн
+    2 orphan    scripts/ дахь скрипт бүрийг skill, hook эсвэл баримт дууддаг (үхсэн модуль хүргэхгүй)
+    3 version   plugins/fm/-д origin/main-аас хойш өөрчлөлт байвал plugin.json-ийн version өссөн
                 (2026-11-04: fm_loop 3f8f40f-д орсон ч version өсөөгүй тул `claude plugin update fm` татаагүй)
-    3 changelog CHANGELOG.md-д тэр хувилбарын «## fm X.Y.Z» эсвэл «## X.Y.Z» гарчиг бий
-    4 export    `fm_rules.py export` ба `fm_bases.py export` (dry run) хүлээгдэж буй өөрчлөлтгүй —
+    4 changelog CHANGELOG.md-д тэр хувилбарын «## fm X.Y.Z» эсвэл «## X.Y.Z» гарчиг бий
+    5 export    `fm_rules.py export` ба `fm_bases.py export` (dry run) хүлээгдэж буй өөрчлөлтгүй —
                 maintainer vault-ийн дүрэм, base загварт хүрсэн (REFUSED = хувийн, тооцохгүй)
-    5 loop      vault-template дээр fm_loop 0/5 (эсрэг туршилт: загвар хуулсан нь «амьд» гэсэн үг биш)
+    6 loop      vault-template дээр fm_loop 0/5 (эсрэг туршилт: загвар хуулсан нь «амьд» гэсэн үг биш)
   Push-ийн дараа (--pushed):
-    6 remote    `git ls-remote origin main` == локал HEAD
+    7 remote    `git ls-remote origin main` == локал HEAD
 
   python3 fm_release_check.py <maintainer vault> [--pushed] [--json]
 """
@@ -24,6 +25,9 @@ PLUG = Path(__file__).resolve().parents[1]          # plugins/fm
 REPO = PLUG.parents[1]                              # founder-matrix-os
 PJ = "plugins/fm/.claude-plugin/plugin.json"
 PENDING = re.compile(r"^\s+(update|new|add|create|write)\b", re.M)
+# 2026-11-04-ны байдлаар дуудагддаггүй 4 скрипт (fm_base_audit, fm_lift_related,
+# fm_prop_relations, fm_vault_fix) — issue-д бүртгэгдсэн. Үүнээс хэтэрвэл шинэ өр.
+KNOWN_ORPHANS = 4
 
 
 def git(*a):
@@ -33,6 +37,33 @@ def git(*a):
 
 def vtuple(v):
     return tuple(int(x) for x in re.findall(r"\d+", v)[:3])
+
+
+def check_orphans():
+    """Project 2026-11-04: fm_release.py нь fe736fd-д санамсаргүй орж, гишүүнд хоёр release гарц хүрэв
+    (хоёр agent нэг repo-д ажиллахад `git add -A` нөгөөгийн ноорогийг хамт авдаг). Ямар ч skill, hook,
+    баримт, скрипт дуудахгүй скрипт = үхсэн модуль — гишүүнд хүргэхгүй."""
+    sd = PLUG / "scripts"
+    orphans = []
+    for f in sorted(sd.glob("fm_*.py")):
+        # Нэрийг нь дуудаж байгаа ЯМАР НЭГ файл (өөрөөсөө бусад): skill, hook, баримт, эсвэл
+        # нөгөө скрипт (fm_common.py мэт дэд модуль импортлогддог тул үхсэн биш).
+        _, hits = git("grep", "-l", "-F", f.name.replace(".py", ""), "--",
+                      "plugins/fm", "docs", "README.md", "CHANGELOG.md")
+        # Өөрийгөө болон ЭНЭ шалгагчийг тооцохгүй: шалгагчийн тайлбарт нэр дурдсанаас
+        # болж орфан «дуудагдсан» болж харагдах урхи (2026-11-04-нд өөрөө дээр нь унасан).
+        live = [h for h in hits.splitlines()
+                if h.strip() and Path(h).name not in (f.name, "fm_release_check.py")]
+        if not live:
+            orphans.append(f.name)
+    if not orphans:
+        return True, "скрипт бүрийг skill эсвэл баримт дууддаг"
+    # ⚠ бөгөөд унагахгүй: өмнөөс хуримтлагдсан өрийг release-ийн замд тавихгүй. Шинээр
+    # орсныг харахын тулд тоо нь KNOWN_ORPHANS-аас хэтэрвэл л унана.
+    ok = len(orphans) <= KNOWN_ORPHANS
+    return ok, "⚠ дуудагддаггүй %d скрипт (%s)%s" % (
+        len(orphans), ", ".join(orphans[:4]),
+        "" if ok else " — ШИНЭ үхсэн модуль орсон, холбо эсвэл хас")
 
 
 def check_clean():
@@ -126,13 +157,14 @@ def main(argv=None):
     git("fetch", "-q", "origin")
     rows = []
     if a.pushed:
-        rows.append(("6 remote",) + check_remote())
+        rows.append(("7 remote",) + check_remote())
     else:
         rows.append(("1 clean",) + check_clean())
-        ok, ver, d = check_version(); rows.append(("2 version", ok, d))
-        rows.append(("3 changelog",) + check_changelog(ver))
-        rows.append(("4 export",) + check_export(V))
-        rows.append(("5 loop",) + check_loop())
+        rows.append(("2 orphan",) + check_orphans())
+        ok, ver, d = check_version(); rows.append(("3 version", ok, d))
+        rows.append(("4 changelog",) + check_changelog(ver))
+        rows.append(("5 export",) + check_export(V))
+        rows.append(("6 loop",) + check_loop())
     failed = [r[0] for r in rows if not r[1]]
     if a.json:
         print(json.dumps({"checks": [{"check": c, "ok": ok, "detail": d} for c, ok, d in rows], "failed": failed},
