@@ -52,7 +52,9 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 
 ## 2. Skill-ууд (16) — «юу»
 
-### Үндсэн 10
+### Үндсэн 14
+
+> **Жинхэнэ команд 11.** `SKILL.md`-тай буюу `/fm:<нэр>` гэж шууд дуудагдах нь: `update · setup · finance · help · research · figma · framer · notion · post · watch · relay`. Доорх `/fm:update <алхам>`, `/fm:setup <алхам>` мөрүүд бол **тэдгээрийн дэд урсгал** — өөрийн GUIDE, script-тэй ч тусдаа команд биш.
 
 | Skill | Нэг өгүүлбэрээр |
 |---|---|
@@ -60,12 +62,16 @@ Project agent мэргэжлийн ажлыг (дизайн, код, судал�
 | `/fm:update save` | Яриаг атом + PARA холбоос болгоно. `--checkpoint` = дундуур барьж авах; `<url>` = лавлагаа + атом |
 | `/fm:update inbox` | 01-GTD/Inbox-ийг ангилж төлөвлөгөө гаргаад **зогсоно**; батласны дараа зөөнө |
 | `/fm:update task` | Task үүсгэх, 🙋 авах, ✅ дуусгах, жагсаах |
+| `/fm:update log` | Хийгдэж буй task-ийн «## Өөрчлөлтийн түүх»-д цагтай мөр — Цаглабарын «Өнөөдөр»-т харагдана |
 | `/fm:update project` | Төсөл нээх, төлөв (Active/Planning/On-hold/Archive), хаах, самбар цэгцлэх |
 | `/fm:update people` | Хүний note, харилцааны бүртгэл, hot list |
 | `/fm:setup role` | Сешнийг дүрд холбох |
 | `/fm:finance` 🔒 | Сарын төлбөр, санхүүгийн бичлэг (зөвхөн Finance сешнд) |
 | `/fm:setup vault` | Vault-ийн дүрэм, frontmatter, синтакс (өөрөө ачаалагдана) |
-| `/fm:setup` | Суулгалт, онбординг, `doctor` |
+| `/fm:setup sync` | Машин солиход нэг командаар нөхөх — repo, plugin, sidebar, Drive, лог, шийдвэр, task |
+| `/fm:setup` | Суулгалт, онбординг, `doctor`, `upgrade` |
+| `/fm:research` | Судалгааны урсгал — ангилал, brief, цуглуулга, бие даасан fact-check, Wiki-д атомын task |
+| `/fm:help` | Гишүүн гацахад vault, BOOT, CHANGELOG, номын зарчмаас хариу олно; шийдэгдэхгүй бол GitHub issue |
 
 ### Хэрэгслийн 6
 
