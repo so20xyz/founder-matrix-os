@@ -1,3 +1,17 @@
+## fm 0.10.6 · 2026-11-04 · release-ийн гарц
+
+- `plugins/fm/scripts/fm_release_check.py` **шинэ** — release-ийн 6 шалгалт. Шалгалт автомат, **push-ийн шийдвэр хүнийх**.
+  Push-ийн өмнө: `clean` (plugins/ дор commit хийгээгүй файл байхгүй) · `version` (origin/main-аас хойш
+  plugins/fm өөрчлөгдвөл хувилбар өссөн) · `changelog` · `export` (`fm_rules.py`, `fm_bases.py` dry run цэвэр;
+  загварыг гараар ерөнхийлсөн файлыг ⚠ гэж тэмдэглэнэ, унагахгүй) · `loop` (`fm_loop` нь `vault-template`
+  дээр 0/5 — эсрэг туршилт). Push-ийн дараа `--pushed`: `remote` (`git ls-remote origin main` == локал HEAD).
+- `docs/RELEASE.md` **шинэ** — issue triage-ийн шошго, гишүүний upgrade-ийн зам.
+- Яагаад: repo нь Monton 1-1 ба Second Brain Season 2-ын эх сурвалж болов, release-ийн дүрэм хүний толгойд
+  байж болохгүй. 2026-11-04-нд `fm_loop` `3f8f40f`-д орсон ч хувилбар өсөөгүй тул `claude plugin update fm`
+  татахгүй байж бараг тасарсан. `clean` шалгалт нь хувилбар өссөн ч commit хийгдээгүй ажил гишүүнд
+  хүрэхгүйг барина — `version` шалгалт дангаараа үүнийг давуулдаг.
+- Нооргийг Architect бичиж (export шалгалт, RELEASE.md), Project `clean` шалгалтыг нэмж дуусгав.
+
 ## fm 0.10.5 · 2026-11-04 · update all, weekly гинж
 
 - **Нэмсэн** `/fm:update all` горим (issue #21) — `scripts/fm_update_all.py plan` Harvester-ийн digest-ийг сешнээр хувааж эзэн дүрийг олно, PRIVATE-ийг алгасна; сешн тутам дэд agent, лог эзэн дүрийн нэрээр, бүх agent амжилттай бол л `commit` (offset). Transcript бүтнээр уншдаггүй.
