@@ -1,3 +1,10 @@
+## fm 0.10.5 · 2026-11-04 · update all, weekly гинж
+
+- **Нэмсэн** `/fm:update all` горим (issue #21) — `scripts/fm_update_all.py plan` Harvester-ийн digest-ийг сешнээр хувааж эзэн дүрийг олно, PRIVATE-ийг алгасна; сешн тутам дэд agent, лог эзэн дүрийн нэрээр, бүх agent амжилттай бол л `commit` (offset). Transcript бүтнээр уншдаггүй.
+  - Яагаад: өдрийн төгсгөлд бүх сешнийг нэг командаар шинэчилнэ, зардал өсгөхгүйгээр · Дүрэм: [[04-Resources/Atomic/decisions/2026-11-04 - update all нь тусдаа skill биш, update-ийн горим]]
+- **Өөрчилсөн** `fm_loop` — тасарсан эхний шатаас «Эхлэх:» алхам санал болгоно (`--json`-д `next`); weekly-ийн 6в заавал болж хүснэгт нь тайланд орно.
+- Тест: `tests/test_fm_loop.py` (хоосон vault 5/5 ❌, хагас vault 3 task, 4 log), `tests/test_fm_update_all.py`.
+
 ## fm 0.10.4 · 2026-11-04 · fm_loop — тархи ажиллаж байна уу
 
 - `plugins/fm/scripts/fm_loop.py` **шинэ**. capture → атом → task → лог → base гэсэн 5 үйлдлийн гинжийг хугацааны цонхонд тоолж, тасарсан шатыг нэрлэнэ. Бусад 5 шалгагч (`fm_doctor`, `fm_health`, `fm_vault_check`, `fm_brain_check`, `fm_recap`) **бүтцийг** хэмждэг; vault «амьд» эсэхийг хэмжих хэрэгсэл байхгүй байсан. Эталон (itge.e-ийн vault, 7 хоног): capture 3 · атом 167 (167 PARA гэртэй) · task 132 (132 эзэнтэй) · лог 262 мөр / 8 өдөр · base 167/167 → 5/5 ✅. Эсрэг туршилт: `vault-template` дээр 5/5 ❌.

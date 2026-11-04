@@ -26,6 +26,14 @@ DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 LINK = re.compile(r"\[\[[^\]]+\]\]")
 INFOLDER = re.compile(r'file\.inFolder\(\s*"([^"]+)"')
 PARA = ("projects", "areas", "resources", "project", "area", "up", "from")
+# Тасарсан шат бүрээс эхлэх алхам (weekly тайланд нэрлэнэ)
+NEXT = {
+    "1 capture": "Санаа, линкээ 01-GTD/Inbox-д хурааж эхэл (`/fm:update save <url>` эсвэл Inbox note)",
+    "2 atom":    "Inbox-оос нэг баримт/шийдвэрийг атом болгож PARA гэрт холбо (`/fm:update save`)",
+    "3 task":    "Атомаас гарсан дараагийн алхмыг эзэнтэй task болго (`/fm:update task`)",
+    "4 log":     "Хийснээ логт [[холбоос]]-той мөрөөр бич (`/fm:update log`)",
+    "5 base":    "Атомын хавтсыг шүүдэг .base нэм эсвэл атомыг base-тэй хавтас руу зөө",
+}
 
 
 def skip(p: Path) -> bool:
@@ -147,7 +155,8 @@ def main() -> int:
     if a.json:
         print(json.dumps({"vault": str(V), "days": a.days,
                           "stages": [{"stage": s, "n": n, "ok": ok} for s, n, _, ok in stages],
-                          "broken": broken}, ensure_ascii=False, indent=2))
+                          "broken": broken, "next": NEXT[broken[0]] if broken else None},
+                         ensure_ascii=False, indent=2))
     else:
         print("🧠 fm_loop · %s · сүүлийн %d хоног\n" % (V.name, a.days))
         print("| Шат | Тоо | Юу |")
@@ -158,6 +167,7 @@ def main() -> int:
         if broken:
             print("❌ Гинж тасарсан: %s" % ", ".join(broken))
             print("   Тархи дохио дамжуулахгүй байна — тасарсан шатаас эхэл.")
+            print("   Эхлэх: %s — %s" % (broken[0], NEXT[broken[0]]))
         else:
             print("✅ 5 шат бүрэн — тархи ажиллаж байна.")
     return 1 if broken else 0
