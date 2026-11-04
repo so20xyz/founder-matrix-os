@@ -46,7 +46,7 @@ aliases:
 
 | Slug | Agent | Юу хийдэг |
 |---|---|---|
-| `project` | [[Project]] | Төслүүд; төсөл бүр өөрийн ажлын дүртэй (`10+`) |
+| `project` | [[03-Areas/AI Team/ai-workers/Project|Project]] | Төслүүд; төсөл бүр өөрийн ажлын дүртэй (`10+`) |
 | `gtd` | [[GTD]] | Inbox, task, өдөр, хүмүүс, хүрээ, архив |
 | `wiki` | [[Wiki]] | Лавлагаа, атом, fact-check, гүн судалгаа |
 | `architect` | [[Architect]] | Код, хэрэгсэл, plugin, vault-ийн бүтэц |

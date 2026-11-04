@@ -42,7 +42,7 @@ aliases: []
 | Юу | Хэнд |
 |---|---|
 | Inbox, хуваарь, хүмүүс | [[GTD]] |
-| Төслийн төлөв, хаах | [[Project]] |
+| Төслийн төлөв, хаах | [[03-Areas/AI Team/ai-workers/Project|Project]] |
 | Судалгаа, атом | [[Wiki]] |
 | Дизайн, пост | [[Creative Director]] |
 | Код, хэрэгсэл | [[Architect]] |

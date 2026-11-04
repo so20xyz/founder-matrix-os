@@ -281,12 +281,14 @@ def cmd_bind(vault: Path, args: List[str]) -> None:
     if not sid:
         _die("Session id олдсонгүй. Хэрэглэгчээс асууж --sid <id>-ээр дахин ажиллуул.", 3)
     device = detect_device(_opt(args, "--device"))
-    title = _opt(args, "--title") or "%s · %s" % (role["name"], device)
     # 2026-10-12: a project session = the Project agent scoped to one project (no role per project)
     proj, folder = _opt(args, "--project").strip(), _opt(args, "--folder").strip().strip("/")
+    # 2026-11-04 (issue #11): a project session is named after its PROJECT, not after the role, so two
+    # project sessions never share one title (their channel and baton are already per project). --title wins.
+    title = _opt(args, "--title") or "%s · %s" % (proj or role["name"], device)
     if folder and not (vault / folder).is_dir():
         _die("--folder олдсонгүй: %s" % folder, 2)
-    # 2026-10-19 (Oji): a sub-session of a role («🏛️ Architect › Danista») gets its own baton state/<baton>.md,
+    # 2026-10-19 (Oji): a sub-session of a role («🏛️ Architect › <төсөл>») gets its own baton state/<baton>.md,
     # so its request / where-it-stopped / task never shows up in the role's other sessions
     baton = _opt(args, "--baton").strip()
     with registry_lock():

@@ -18,7 +18,7 @@ ai-first: true
 
 | Дүр | Сүүлд (огноо · төхөөрөмж) | Хаана зогссон → дараагийн алхам |
 |---|---|---|
-| [[Project]] | — | — |
+| [[03-Areas/AI Team/ai-workers/Project|Project]] | — | — |
 | [[GTD]] | — | — |
 | [[Wiki]] | — | — |
 | [[Wiki]] | — | — |
