@@ -1,3 +1,9 @@
+## 2026-11-04 · fm_loop — тархи ажиллаж байна уу
+
+- `plugins/fm/scripts/fm_loop.py` **шинэ**. capture → атом → task → лог → base гэсэн 5 үйлдлийн гинжийг хугацааны цонхонд тоолж, тасарсан шатыг нэрлэнэ. Бусад 5 шалгагч (`fm_doctor`, `fm_health`, `fm_vault_check`, `fm_brain_check`, `fm_recap`) **бүтцийг** хэмждэг; vault «амьд» эсэхийг хэмжих хэрэгсэл байхгүй байсан. Эталон (itge.e-ийн vault, 7 хоног): capture 3 · атом 167 (167 PARA гэртэй) · task 132 (132 эзэнтэй) · лог 262 мөр / 8 өдөр · base 167/167 → 5/5 ✅. Эсрэг туршилт: `vault-template` дээр 5/5 ❌.
+- frontmatter-ийн утга бүрээс CRLF тайлна — Drive-аар PC-ээс ирсэн note-д `status: completed\r` байх тул тэнцүүгээр шалгахад таардаггүй байсан.
+- `skills/update/SKILL.md` weekly-д 6в алхам болгож бүртгэв.
+
 # Өөрчлөлтийн түүх (CHANGELOG)
 
 Хувилбарын дугаар нь `plugins/fm/.claude-plugin/plugin.json`-ийн `version`. Гишүүд `/plugin marketplace update founder-matrix`-аар шинэчилнэ.

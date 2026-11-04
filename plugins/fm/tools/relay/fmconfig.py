@@ -75,7 +75,7 @@ REG = DATA / "registry.json"
 
 
 def baton_key(me):
-    """Baton file key for a session: its own `baton` (a sub-session sharing a role, e.g. «🏛️ Architect › Danista»)
+    """Baton file key for a session: its own `baton` (a sub-session sharing a role, e.g. «🏛️ Architect › <төсөл>»)
     or else its project. Without this every sub-session of one role wrote and read the same state/<role>.md."""
     return (me or {}).get("baton") or (me or {}).get("project")
 

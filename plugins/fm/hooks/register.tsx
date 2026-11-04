@@ -893,7 +893,7 @@ async function resolveContext($: EngineInterface, configured: string): Promise<{
   let priv = false
   let secret: string[] = []
   let regOk = false
-  // 2026-10-19 (Oji): projects that another session is scoped to (a 📁 project session, a sub-session «🏛️ Architect › Danista»
+  // 2026-10-19 (Oji): projects that another session is scoped to (a 📁 project session, a sub-session «🏛️ Architect › <төсөл>»
   // bound with --folder) — an unscoped role session (GTD, Architect) leaves those projects' tasks to that session, even when
   // it owns them (owner: gtd), instead of listing them in every session
   let taken: string[] = []
