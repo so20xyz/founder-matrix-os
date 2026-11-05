@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plain-script tests for the fm tool skills (figma, notion, relay, post, watch, framer) and their code.
+"""Plain-script tests for the fm tool skills (figma, notion, relay, post, watch, framer, mn-check) and their code.
 
   python3 tests/test_tools.py      → PASS/FAIL per test, exit 1 on any failure
 
@@ -22,7 +22,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 PLUGIN = REPO / "plugins" / "fm"
 TOOLS = PLUGIN / "tools"
-TOOL_SKILLS = ["figma", "notion", "relay", "post", "watch", "framer"]
+TOOL_SKILLS = ["figma", "notion", "relay", "post", "watch", "framer", "mn-check"]
 CORE_SKILLS = ["setup", "update", "finance", "research", "help"]   # 2026-11-03: 21 → 11 commands
 GUIDES = ["save", "log", "task", "inbox", "people", "project", "sync", "role", "vault", "refs"]   # steps, skills/<x>/GUIDE.md
 # client names, spelled in pieces so a history scrub (git filter-repo --replace-text) never rewrites the guard itself
@@ -46,7 +46,7 @@ def child_env(home):
 
 # ------------------------------------------------------------------ skills
 
-def test_skill_lineup_is_5_plus_6():
+def test_skill_lineup_is_5_plus_7():
     have = sorted(p.parent.name for p in (PLUGIN / "skills").glob("*/SKILL.md"))
     assert have == sorted(CORE_SKILLS + TOOL_SKILLS), have
     for gone in ("track", "clip", "daily", "spawn", "bases", "canvas", "vault-cli"):
