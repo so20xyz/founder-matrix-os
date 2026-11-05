@@ -1,3 +1,15 @@
+## fm 0.10.8 · 2026-11-05 · /fm:mn-check ба vault-ийн BM25 хайлт
+
+- `/fm:mn-check` **шинэ** (хэрэгсэл, lineup 5 + 7) — монгол бичвэрийн QA. `scripts/mn_check.py` нь
+  латин/кирилл ижил дүрстэй үсэг холилдсон үг, далд тэмдэгт, NFC, монгол бус кирилл үсгийг codepoint ба
+  мөр:баганаар олж, skill ачаалагдахад `!` injection-оор ажиллана; дараа нь model утга, зөв бичгийг уншина.
+  promptfoo (15 кейс × 3): answer 30/30, trigger 15/15, нэг ажиллуулалт 45.5k → 22.3k токен. (#29)
+- `skills/vault/scripts/fm_search.py` **шинэ** — vault-ийн BM25 хайлт, машин бүрт локал qmd 2.8.3 (MIT)-ээр.
+  Vector, LLM, MCP хаалттай; qmd суугаагүй бол exit 3 → Grep (суулгаагүй гишүүнд өөрчлөлтгүй).
+  `fm_search.py setup "<vault>"` нь `~/.fmos/qmd`-д суулгаж, `finances/private`, `.obsidian`, `.trash`,
+  `_trash`, `* (1).md`-ийг хасаад индексэд хасагдсан зам орвол exit 4-өөр зогсоно. GUIDE §1.4: эхлээд
+  2–3 түлхүүр үгээр `fm_search`, дараа нь Grep. Туршилт 2026-11-16 хүртэл (blind bench 19/28 vs grep 5/28). (#30)
+
 ## fm 0.10.7 · 2026-11-04 · 0.10.6-д хоёр release гарц хүрсний засвар
 
 - `plugins/fm/scripts/fm_release.py` **хасав.** 0.10.6-д санамсаргүй орж, гишүүнд хоёр release гарц
