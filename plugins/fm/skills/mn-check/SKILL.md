@@ -2,6 +2,7 @@
 name: mn-check
 description: "Монгол бичвэрийн хэл ба бичгийн QA - латин/кирилл ижил дүрстэй үсэг холилдсон үг, далд тэмдэгт, NFC, ү/ө фонтын subset-ийг скриптээр (codepoint, мөр:багана), дараа нь утга, зөв бичгийн уншлага. Хүлээлгэн өгөх файлыг (`.md`, `.html`, `.txt`) `/deliver`-ээс өмнө. «найруулга шалга», «үг үсгийн алдаа», «текст шалга», «монгол бичгээ шалга», «nairuulga shalga», «ug usegiin aldaa shalga», «aldaa baigaa esehiig shalga», «mn-check» гэвэл ашигла. Mongolian language and typography QA on a deliverable - mixed-script words, ү/ө font subset, invisible characters, then a reading pass."
 argument-hint: "[файл ... | \"бичвэр\"]"
+allowed-tools: Bash(python3 *mn_check.py*)
 ---
 
 Quality-check Mongolian text in a deliverable (`.md`, `.html`, `.txt`). With no argument, use the files written or edited in this session. **Report in Mongolian.** Runs before `/deliver`.

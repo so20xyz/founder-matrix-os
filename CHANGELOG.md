@@ -1,3 +1,10 @@
+## fm 0.10.9 · 2026-11-05 · /fm:mn-check скрипт өөрөө ажиллана
+
+- `skills/mn-check/SKILL.md`-д `allowed-tools: Bash(python3 *mn_check.py*)`. Desktop апп ба auto/default
+  горимд Bash-ийн зөвшөөрөлгүй үед `!` injection ажиллахгүй, оронд нь «эхлээд үүнийг ажиллуул» гэсэн заавар
+  ирж model нэмэлт алхам хийдэг байв (0.10.8, Mac 2026-11-05). Эрх зөвхөн `mn_check.py`-г дуудах python3-д,
+  skill идэвхтэй үед л.
+
 ## fm 0.10.8 · 2026-11-05 · /fm:mn-check ба vault-ийн BM25 хайлт
 
 - `/fm:mn-check` **шинэ** (хэрэгсэл, lineup 5 + 7) — монгол бичвэрийн QA. `scripts/mn_check.py` нь
