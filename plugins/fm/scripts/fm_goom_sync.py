@@ -264,7 +264,8 @@ def collect(vault, kinds):
                 continue
             # A non-task note inside 01-GTD/Tasks is still mirrored (decision 2026-10-25), as kind note.
             ikind = "note" if kind == "task" and str(fm.get("type", "")).strip() != "task" else kind
-            slug = _project_slug(fm.get("project") or fm.get("projects"))
+            # A project note (02-Projects/<P>/<P>.md) belongs to its own folder; same slugify as ensure_projects.
+            slug = slugify(f.parent.name) if kind == "project" else _project_slug(fm.get("project") or fm.get("projects"))
             topics = fm.get("tags", fm.get("topics"))
             if isinstance(topics, str):
                 topics = [topics]

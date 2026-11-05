@@ -189,6 +189,9 @@ def main(argv=None):
         if disp:
             for _ch, r, role, why in disp.tick():
                 log(f"dispatch {r.id} → {role} ({why})")
+            if disp.stale and not disp.procs:   # fm repo HEAD өөрчлөгдсөн: goom-tick шинэ кодоор дахин асаана
+                log("watch exit: repo updated (dispatcher stale)")
+                return 0
         new_idx = snapshot(vault)
         if new_idx != idx:
             try:

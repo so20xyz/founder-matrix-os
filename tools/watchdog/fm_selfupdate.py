@@ -33,6 +33,9 @@ NO_WINDOW = 0x08000000
 SERVICES = [
     (("plugins/fm/tools/figma/bridge/",), "FM Figma Bridge", "com.foundermatrix.figma-bridge", "server.mjs"),
     (("tools/relay/dispatcher/", "plugins/fm/tools/relay/dispatcher/"), "FM Relay Dispatcher", None, "dispatcher.mjs"),
+    # Mac only (PC runs the dispatcher inside fm_goom_watch): fm_goom_agent.py's LaunchAgent. The sync job is
+    # StartInterval-based and picks up new code on its next tick, so only the long-lived dispatcher is kickstarted.
+    (("plugins/fm/scripts/fm_goom_", "tools/watchdog/fm_goom_agent.py"), None, "com.fmos.goom-dispatch", "fm_goom_dispatch.py"),
 ]
 NPM_DIRS = ["tools/relay/dispatcher", "plugins/fm/tools/relay/dispatcher", "plugins/fm/tools/figma/bridge"]
 MAC_PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"  # launchd starts with a bare PATH
@@ -129,6 +132,8 @@ def _update(post, log, repo, force, restart, every):
             notes.append(f"npm ci {d.split('/')[-1]}{'' if r.returncode == 0 else ' ⚠'}")
     for prefixes, win_task, mac_label, script in SERVICES:
         task = mac_label if IS_MAC else win_task
+        if IS_MAC and task == "com.fmos.goom-dispatch" and not (HOME / "Library/LaunchAgents" / f"{task}.plist").exists():
+            continue  # goom agent not installed on this Mac: nothing to kickstart
         if task and any(p.startswith(prefixes) for p in changed):
             ok = restart(task, script)
             notes.append(f"{task} дахин асав" if ok else f"{task} дахин асаж чадсангүй ⚠")

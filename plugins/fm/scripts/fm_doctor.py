@@ -151,6 +151,17 @@ ITEMS = [
                     "interactive": False, "note": ""},
     },
     {
+        "id": "python312", "name": "Python 3.12 (goom)", "level": "optional", "min_version": "3.12",
+        "why": "Second Brain чат dispatcher, vault→DB sync (fm_goom_*.py) 3.12+ шаарддаг; системийн python3 хуучин байж болно.",
+        "skills": ["goom"], "link": "https://www.python.org/downloads/",
+        "detect": {"kind": "cli", "exe": ["python3.12"], "flag": "--version",
+                   "mac_paths": ["/opt/homebrew/bin/python3.12", "/usr/local/bin/python3.12"]},
+        "mac": {"command": "brew install python@3.12", "interactive": False,
+                "note": "fm_goom_agent.py install энэ python-ийг тодорхой замаар LaunchAgent-д бичнэ."},
+        "windows": {"command": "winget install --id Python.Python.3.12 -e --source winget",
+                    "interactive": False, "note": ""},
+    },
+    {
         "id": "ffmpeg", "name": "ffmpeg", "level": "optional",
         "why": "Бичлэгээс дуу, кадр гаргах.",
         "skills": ["watch"], "link": "https://ffmpeg.org/download.html",

@@ -295,10 +295,12 @@ def test_finish_silent_exit_nudges_once(monkeypatch):
 
 
 def test_wake_answered_closes_instead_of_resuming(tmp_path, monkeypatch):
-    RW = namedtuple("RW", "id ask")
+    RW = namedtuple("RW", "id ask path")
     (tmp_path / "a.md").write_text(_ask("completed", "одоохондоо хойшлуулав"), encoding="utf-8")
     (tmp_path / "b.md").write_text(_ask("completed", "itge.e (2026-10-29 17:50): тийм"), encoding="utf-8")
-    monkeypatch.setattr(gd, "all_runs", lambda *a: [("ch", RW("run-a", "a.md")), ("ch", RW("run-b", "b.md"))])
+    (tmp_path / "r.md").write_text("---\nstatus: waiting\nclaimed_by: pc\n---\n", encoding="utf-8")
+    monkeypatch.setattr(gd, "all_runs", lambda *a: [("ch", RW("run-a", "a.md", "r.md")),
+                                                    ("ch", RW("run-b", "b.md", "r.md"))])
     monkeypatch.setattr(gd, "_agent_beat", lambda *a, **k: None)
     seen = {}
 
@@ -306,6 +308,7 @@ def test_wake_answered_closes_instead_of_resuming(tmp_path, monkeypatch):
         def update_run(self, vault, rid, **kw):
             seen[rid] = kw
     d = gd.Dispatcher(cfg=dict(gd.DEFAULTS))
+    d.device = "pc"
     assert d.wake_answered(tmp_path, None, U()) == 1
     assert seen["run-a"]["status"] == "done" and "хойшлуулав" in seen["run-a"]["progress"]
     assert seen["run-b"]["status"] == "queued"
@@ -345,3 +348,205 @@ def test_task_title_drops_fillers_and_trims():
     assert gd.task_title("за үргэлжлүүлээд энэ html-ийг дуусга") == "Үргэлжлүүлээд энэ html-ийг дуусга"
     assert gd.task_title("за тэгээд нэмээд library-г public болгоод өгөөч. Мөн бас өөр") == "Library-г public болгоод өгөөч"
     assert len(gd.task_title("а " * 80)) <= 60
+# ---------- 2026-11-02: fail loud, preflight, liveness, device ownership, routing ----------
+import contextlib, io, json, tempfile, types  # noqa: E402
+from unittest import mock  # noqa: E402
+
+RUN_Q = ("---\ntype: agent-run\nchannel: Demo\nmessage: \"[[x]]\"\nmode: null\nmodel: claude\nstatus: queued\n"
+         "{extra}context: []\noutputs: []\nstarted:\ncompleted:\ntokens: 0\n---\n# a\n")
+
+
+def _vault(tmp, extra="", name="run-20261102100000-app-0001.md"):
+    d = Path(tmp) / "02-Projects" / "Demo" / "Chat" / "runs"
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / name
+    f.write_text(RUN_Q.format(extra=extra), encoding="utf-8")
+    return f
+
+
+class _Isolated(unittest.TestCase):
+    """~/.fmos-д юу ч бичихгүй: LOG/STATE/ALIVE түр хавтсанд, notify барина, repo_sha тогтмол."""
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.sent = []
+        self.sha = "aaa111"
+        for k, v in (("LOG", Path(self.tmp) / "d.log"), ("STATE", Path(self.tmp) / "s.json"),
+                     ("ALIVE", Path(self.tmp) / "d.alive"), ("CONFIG", Path(self.tmp) / "config.json"),
+                     ("GOOM_CFG", Path(self.tmp) / "goom.json")):
+            p = mock.patch.object(gd, k, v)
+            p.start()
+            self.addCleanup(p.stop)
+        for k, v in (("notify", self.sent.append), ("repo_sha", lambda *a: self.sha),
+                     ("_agent_beat", lambda *a, **k: None)):
+            p = mock.patch.object(gd, k, v)
+            p.start()
+            self.addCleanup(p.stop)
+        self.vault = Path(self.tmp) / "vault"
+        self.vault.mkdir()
+
+    def disp(self, device="pc"):
+        d = gd.Dispatcher(cfg=dict(gd.DEFAULTS), dry=True)
+        d.device, d.default_device = device, "PC"
+        return d
+
+
+class Ownership(unittest.TestCase):
+    def test_device_field_and_default(self):
+        self.assertTrue(gd.owns_run({"device": "Mac"}, "mac"))
+        self.assertFalse(gd.owns_run({"device": "Mac"}, "pc"))
+        self.assertTrue(gd.owns_run({}, "pc", "PC"))           # device-гүй → PC хуучнаараа
+        self.assertFalse(gd.owns_run({}, "mac", "PC"))
+        self.assertTrue(gd.owns_run({}, "mac", "Mac"))
+        self.assertFalse(gd.owns_run({"device": "PC", "claimed_by": "mac"}, "pc"))   # өөр claim давуу
+
+    def test_run_meta_and_set_frontmatter_crlf(self):
+        with tempfile.TemporaryDirectory() as t:
+            f = Path(t) / "r.md"
+            f.write_bytes(("﻿" + RUN_Q.format(extra="device: \"Mac\"\n")).replace("\n", "\r\n").encode())
+            gd.set_frontmatter(f, claimed_by="mac", error="dispatcher: SystemExit: a: b")
+            raw = f.read_bytes().decode()
+            self.assertTrue(raw.startswith("﻿---\r\n"))
+            self.assertIn("claimed_by: mac\r\n", raw)
+            self.assertIn('error: "dispatcher: SystemExit: a: b"\r\n', raw)
+            self.assertTrue(raw.rstrip("\r\n").endswith("# a"))
+            m = gd.run_meta(raw)
+            self.assertEqual((m["device"], m["claimed_by"], m["status"]), ("Mac", "mac", "queued"))
+            self.assertEqual(m["error"], "dispatcher: SystemExit: a: b")
+
+    def test_claim(self):
+        with tempfile.TemporaryDirectory() as t:
+            f = _vault(t)
+            self.assertTrue(gd.claim_run(f, "pc"))
+            self.assertTrue(gd.claim_run(f, "PC"))      # өөрийн claim (Дахин) — дахин авна
+            self.assertFalse(gd.claim_run(f, "mac"))
+            g = _vault(t, name="run-20261102100001-app-0002.md")
+            g.write_text(g.read_text(encoding="utf-8").replace("status: queued", "status: running"), encoding="utf-8")
+            self.assertFalse(gd.claim_run(g, "pc"))
+
+    def test_default_device_config(self):
+        with tempfile.TemporaryDirectory() as t:
+            c = Path(t) / "config.json"
+            self.assertEqual(gd.default_device(c), "PC")
+            c.write_text('{"dispatch_default_device": "Mac"}', encoding="utf-8")
+            self.assertEqual(gd.default_device(c), "Mac")
+
+
+class _Store:
+    def __init__(self, chans):
+        self.chans = chans
+
+    def list_channels(self, vault):
+        return self.chans
+
+    def read_messages(self, vault, ch):
+        return []
+
+
+class TickOwnership(_Isolated):
+    def test_only_owned_runs_planned(self):
+        mine = _vault(self.vault, name="run-20261026020742-app-0001.md")
+        other = _vault(self.vault, extra="device: \"Mac\"\n", name="run-20261026020743-app-0002.md")
+        RR = namedtuple("RR", "id status assignee path context task reply_to session ask")
+        rr = [RR(f.stem, "queued", "Project", f.relative_to(self.vault).as_posix(), [], "", "", "", "")
+              for f in (mine, other)]
+        runs = types.SimpleNamespace(list_runs=lambda v, ch, st=None: [r for r in rr if st in (None, r.status)])
+        with mock.patch.object(gc, "vault_lib", lambda: (_Store(["Demo"]), runs)), \
+             mock.patch.object(gc, "vault_path", lambda: self.vault), \
+             contextlib.redirect_stdout(io.StringIO()):
+            plan = self.disp("pc").tick(now=T0 + 100)
+            self.assertEqual([r.id for _c, r, *_ in plan], [mine.stem])
+            plan = self.disp("mac").tick(now=T0 + 100)
+            self.assertEqual([r.id for _c, r, *_ in plan], [other.stem])
+
+
+class FailLoud(_Isolated):
+    def test_error_marks_owned_runs_once_then_clears(self):
+        mine = _vault(self.vault)
+        other = _vault(self.vault, extra="device: \"Mac\"\n", name="run-20261102100001-app-0002.md")
+        d = self.disp("pc")
+
+        def boom():
+            raise SystemExit("Vault чатын сан олдсонгүй: SB_TOOLS")
+        with mock.patch.object(gc, "vault_lib", boom), mock.patch.object(gc, "vault_path", lambda: self.vault):
+            self.assertEqual(d.tick(), [])
+            d.tick()
+        self.assertEqual(len(self.sent), 1)                          # давхар мэдэгдэхгүй
+        self.assertIn("SB_TOOLS", self.sent[0])
+        m = gd.run_meta(mine.read_text(encoding="utf-8"))
+        self.assertIn("SB_TOOLS", m["error"])
+        self.assertIn("progress: ", mine.read_text(encoding="utf-8"))
+        self.assertEqual(gd.run_meta(other.read_text(encoding="utf-8"))["error"], "")   # Mac-ийн run-д хүрэхгүй
+        alive = json.loads(gd.ALIVE.read_text(encoding="utf-8"))
+        self.assertIn("SB_TOOLS", alive["error"])
+        runs = types.SimpleNamespace(list_runs=lambda *a, **k: [])
+        with mock.patch.object(gc, "vault_lib", lambda: (_Store([]), runs)), \
+             mock.patch.object(gc, "vault_path", lambda: self.vault):
+            d.tick()
+        self.assertEqual(len(self.sent), 2)
+        self.assertIn("арилсан", self.sent[1])
+        t = mine.read_text(encoding="utf-8")
+        self.assertEqual(gd.run_meta(t)["error"], "")
+        self.assertIn("status: queued", t)
+
+
+class Liveness(_Isolated):
+    def test_alive_file_and_stale_on_new_sha(self):
+        d = self.disp()
+        d.beat()
+        j = json.loads(gd.ALIVE.read_text(encoding="utf-8"))
+        self.assertEqual(set(j), {"ts", "pid", "device", "python", "git_sha", "error"})
+        self.assertEqual((j["git_sha"], j["device"]), ("aaa111", "pc"))
+        self.assertFalse(d.stale)
+        self.sha = "bbb222"
+        d.beat()
+        self.assertTrue(d.stale)
+        runs = types.SimpleNamespace(list_runs=lambda *a, **k: [])
+        with mock.patch.object(gc, "vault_lib", lambda: (_Store(["Demo"]), runs)), \
+             mock.patch.object(gc, "vault_path", lambda: self.vault):
+            self.assertEqual(d.tick(), [])                           # stale: шинэ worker асаахгүй
+
+    def test_loop_exits_when_stale(self):
+        def fake_tick(self_, now=None):
+            self_.stale = True
+            return []
+        with mock.patch.object(gd, "preflight", lambda: None), mock.patch.object(gd.Dispatcher, "tick", fake_tick), \
+             mock.patch.object(gd.time, "sleep", lambda s: None):
+            self.assertEqual(gd.main(["--loop"]), 0)
+
+
+class Preflight(unittest.TestCase):
+    def test_messages_and_exit_code(self):
+        def boom():
+            raise SystemExit("Vault чатын сан олдсонгүй")
+        with mock.patch.object(gc, "vault_lib", boom):
+            self.assertIn("чатын сан", gd.preflight())
+        with tempfile.TemporaryDirectory() as t, mock.patch.object(gc, "vault_lib", lambda: (None, None)), \
+             mock.patch.object(gc, "vault_path", lambda: Path(t)), mock.patch.object(gd.shutil, "which", lambda n: None):
+            self.assertIn("claude CLI", gd.preflight())
+            err = io.StringIO()
+            with mock.patch.object(gd, "log", lambda m: None), contextlib.redirect_stderr(err):
+                self.assertEqual(gd.main(["--once"]), 2)
+            self.assertEqual(len(err.getvalue().strip().splitlines()), 1)
+        with tempfile.TemporaryDirectory() as t, mock.patch.object(gc, "vault_lib", lambda: (None, None)), \
+             mock.patch.object(gc, "vault_path", lambda: Path(t)), mock.patch.object(gd.shutil, "which", lambda n: "/x"):
+            self.assertIsNone(gd.preflight())
+
+
+class OwnerAndRouting(_Isolated):
+    def test_owner_name_from_goom_json(self):
+        self.assertEqual(gd.owner_name(), "itge.e")
+        gd.GOOM_CFG.write_text('{"owner_name": "Soyol"}', encoding="utf-8")
+        self.assertEqual(gd.owner_name(), "Soyol")
+        p = gd.build_prompt("INAI Investment", run("20261026020742"), "сүү авах", role="project")
+        self.assertNotIn("itge.e", p)
+        self.assertIn("Soyol-ийн мессеж", p)
+        self.assertIn('owner: "Soyol"', gd.ask_note("q?", ["a"], "run-1", "x.md", "Demo"))
+        self.assertNotIn("itge.e", gd.answer_prompt("run-1", "q", "a"))
+
+    def test_routing_paragraph(self):
+        p = gd.build_prompt("INAI Investment", run("20261026020742"), "x", role="project")
+        self.assertIn("«INAI Investment» төслийн суваг", p)
+        self.assertIn("01-GTD/Inbox", p)
+        self.assertIn("misroute: <зөв дүр>", p)
+        self.assertIn("x.md", p)
+        self.assertIn("дүрийн суваг", gd.build_prompt("Wiki", run("20261026020742"), "x", role="wiki"))

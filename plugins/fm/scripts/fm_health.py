@@ -170,7 +170,40 @@ def check_task_flow():
     add("⚠" if pct < 50 else "✅", "task flow", f"төсөлтэй {len(rows)} task-ийн {pct}% нь өмнөх task руугаа холбоостой (зорилт ≥50%)")
 
 
-for f in (check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text, check_goom_sync, check_task_flow, check_strays):
+def check_goom():
+    """Second Brain chat dispatcher (Mac: LaunchAgent com.fmos.goom-dispatch via tools/watchdog/fm_goom_agent.py)."""
+    import subprocess, time
+    cfg = rj(HOME / ".fmos/goom.json")
+    if not isinstance(cfg, dict): return
+    miss = [k for k in ("url", "token", "workspace_id", "vault", "sb_repo") if not cfg.get(k)]
+    add("❌" if miss else "✅", "goom config", f"goom.json-д дутуу: {', '.join(miss)}" if miss else "goom.json түлхүүрүүд бүгд бий")
+    sb = Path(cfg.get("sb_repo") or "")
+    has_store = bool(cfg.get("sb_repo")) and (sb / "tools/chat/store.py").exists()
+    add("✅" if has_store else "❌", "goom sb_repo", str(sb) if has_store else f"{sb}/tools/chat/store.py алга (sb_repo буруу эсвэл repo татагдаагүй)")
+    alive = HOME / ".fmos/goom-dispatch.alive"
+    if not alive.exists(): add("⚠", "goom dispatch", "~/.fmos/goom-dispatch.alive алга (dispatcher ажиллаагүй эсвэл heartbeat-гүй хувилбар)")
+    else:
+        age = int(time.time() - alive.stat().st_mtime)
+        add("❌" if age >= 60 else "✅", "goom dispatch", f"heartbeat {age} с өмнө" + (" — dispatcher гацсан/зогссон" if age >= 60 else ""))
+    if sys.platform == "darwin":
+        r = subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/com.fmos.goom-dispatch"], capture_output=True, text=True)
+        add("✅" if r.returncode == 0 else "⚠", "goom launchd", "com.fmos.goom-dispatch ачаалагдсан" if r.returncode == 0 else
+            "com.fmos.goom-dispatch ачаалагдаагүй — `python3.12 tools/watchdog/fm_goom_agent.py install`")
+    if has_store and cfg.get("vault"):
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import fm_goom_chat as gc
+        store, runs = gc._vault_mods(sb)
+        vault, now, oldest = Path(cfg["vault"]), time.time(), None
+        for ch in store.list_channels(vault):
+            for r in runs.list_runs(vault, ch, "queued"):
+                try: m = (vault / r.path).stat().st_mtime
+                except OSError: continue
+                oldest = m if oldest is None else min(oldest, m)
+        age = int((now - oldest) // 60) if oldest else 0
+        add("⚠" if age > 5 else "✅", "goom queue", f"хамгийн хуучин queued run {age} мин" + (" — dispatcher авахгүй байна" if age > 5 else "") if oldest else "queued run алга")
+
+
+for f in (check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text, check_goom_sync, check_task_flow, check_strays, check_goom):
     try: f()
     except Exception as e: add("❌", f.__name__, f"шалгалт унав: {e}")
 

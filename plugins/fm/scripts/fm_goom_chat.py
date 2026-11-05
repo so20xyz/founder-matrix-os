@@ -52,14 +52,19 @@ LOGIN = _login_path()
 STATE = FMOS / "goom-chat.json"            # хуучин (нэг чат)
 SESSIONS = FMOS / "goom-sessions.json"     # sid → {chat_id, role, title, seen}
 TOKENS = FMOS / "goom-agent-tokens.json"   # role → JWT кэш (Stop hook хурдан байх)
-ITGE_EMAIL = "bd@inai.local"
-ITGE_ID = 199                               # локал dev: itge.e = user 199
+try:                                        # _goom_cfg() доор тодорхойлогдсон тул энд шууд уншина (анхдагч = PC-ийн утга)
+    _CFG = json.loads((FMOS / "goom.json").read_text(encoding="utf-8"))
+except Exception:
+    _CFG = {}
+ITGE_EMAIL = _CFG.get("owner_email") or "bd@inai.local"
+ITGE_ID = int(_CFG.get("owner_user_id") or 199)   # локал dev: itge.e = user 199
+OWNER_NAME = _CFG.get("owner_name") or "itge.e"
 WORKSPACE_ID = 1                            # «Inai»
 LEGACY_SID = "6a1a3d03-66a3-4e80-8a4a-86fed2e7e058"   # 🏛 Architect · PC — чат 1-ийн эзэн
 ROLES = {"architect": "🏛 Architect", "creative": "🎨 Creative", "wiki": "📚 Wiki",
          "gtd": "📥 GTD", "project": "📁 Project", "research": "🔍 Research"}   # 🔒 finance — хасагдсан
 EXCLUDED = {"finance"}
-PG = ["docker", "exec", "-i", "postgres_db", "psql", "-U", "postgres", "-d", "goomnet_db", "-v", "ON_ERROR_STOP=1", "-tA"]
+PG = ["docker", "exec", "-i", _CFG.get("pg_container") or "postgres_db", "psql", "-U", "postgres", "-d", "goomnet_db", "-v", "ON_ERROR_STOP=1", "-tA"]
 
 
 # ---------- цэвэр хэсгүүд (тест) ----------
@@ -150,7 +155,7 @@ def stall_hint(stalled, sid):
     e = (stalled or {}).get(sid)
     if not e:
         return ""
-    return (f"[Second Brain] «{e.get('title') or 'чат'}» чатад (chat {e.get('chat_id')}) itge.e-ийн {e.get('count', 1)} "
+    return (f"[Second Brain] «{e.get('title') or 'чат'}» чатад (chat {e.get('chat_id')}) {OWNER_NAME}-ийн {e.get('count', 1)} "
             f"мессеж хариугүй байна. Хариулаад (fm_goom_chat.py say --sid {sid}) дараа нь "
             f"`fm_goom_chat.py watch --sid {sid}`-г background-оор дахин асаа.")
 
@@ -867,7 +872,7 @@ def vault_run_ask(run_id, question, options=(), vault=None):
     f.write_text(gd.ask_note(question, list(options), run_id, rel_run.removesuffix(".md"), r.channel),
                  encoding="utf-8", newline=chr(10))
     rel = f.relative_to(vault).as_posix()
-    runs.update_run(vault, run_id, status="waiting", ask=rel, progress="❓ itge.e-ийн шийдвэр хүлээж байна")
+    runs.update_run(vault, run_id, status="waiting", ask=rel, progress=f"❓ {OWNER_NAME}-ийн шийдвэр хүлээж байна")
     return {"run_id": run_id, "status": "waiting", "ask": rel,
             "next": "Одоо ажлаа зогсоож гар — хариу ирэхэд чамайг үргэлжлүүлнэ."}
 
@@ -942,8 +947,9 @@ def stall_check(api, threshold=180, now=None, notify=True):
         new = r["notified"] is None
         dis = None
         if new and notify:
-            dis = _discord_wake(sid, f"⏰ Second Brain: «{r['title'] or 'чат'}» чатад itge.e-ийн {len(pend)} мессеж "
-                                     f"{int(((pend[0]["_age"]) if pend[0].get("_run") else (now - (_ts(pend[0]) or now))) // 60)} минут хариугүй — сешн сонсохоо больсон. "
+            age_min = int(((pend[0]["_age"]) if pend[0].get("_run") else (now - (_ts(pend[0]) or now))) // 60)
+            dis = _discord_wake(sid, f"⏰ Second Brain: «{r['title'] or 'чат'}» чатад {OWNER_NAME}-ийн {len(pend)} мессеж "
+                                     f"{age_min} минут хариугүй — сешн сонсохоо больсон. "
                                      f"Хариулаад watch-оо дахин асаа.")
             r["notified"] = int(now)
         cur[sid] = r

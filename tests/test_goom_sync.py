@@ -285,6 +285,26 @@ class TestNoteKind(unittest.TestCase):
 
 
 
+class ProjectKindSlugTest(unittest.TestCase):
+    def test_project_note_slug_from_own_folder(self):
+        # project-kind items carry their own folder's slug, same slugify as ensure_projects (not the project: field)
+        vault = Path(tempfile.mkdtemp()) / "vault"
+        w(vault / "02-Projects/INAI Investment/INAI Investment.md", "---\ntype: project\n---\n# x\n")
+        w(vault / "02-Projects/Lab/Lab.md", "---\ntype: project\nproject: \"[[02-Projects/Other/Other]]\"\n---\n# y\n")
+        items, _ = gs.collect(vault, {"project"})
+        slugs = {i["source_path"]: i.get("project_slug") for i in items}
+        self.assertEqual(slugs["02-Projects/INAI Investment/INAI Investment.md"], "inai-investment")
+        self.assertEqual(slugs["02-Projects/Lab/Lab.md"], "lab")
+
+    def test_other_kinds_keep_project_field_slug(self):
+        vault = Path(tempfile.mkdtemp()) / "vault"
+        w(vault / "02-Projects/Lab/Lab.md", "---\ntype: project\n---\n# y\n")
+        w(vault / "01-GTD/Tasks/t.md", "---\ntype: task\nproject: \"[[02-Projects/Нарны сайт/Нарны сайт]]\"\n---\nB\n")
+        items, _ = gs.collect(vault, {"project", "task"})
+        task = next(i for i in items if i["kind"] == "task")
+        self.assertEqual(task["project_slug"], "нарны-сайт")
+
+
 class ProjectRowsTest(unittest.TestCase):
     def test_project_key_free(self):
         self.assertEqual(gs.project_key("Season 2 нийтийн сайт", set()), "SEAS2"[:4])

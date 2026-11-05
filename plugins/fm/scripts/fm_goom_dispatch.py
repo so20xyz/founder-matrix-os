@@ -19,6 +19,10 @@ itge.e (2026-10-26): «Би Second Brain дээрээ л ажилламаар б
   «Дахин» → queued (session хадгалагдана).
 - Аюулгүй байдал: bypassPermissions зөвхөн vault + `headless.repos` (--add-dir); `git push`, `rm -rf` хориотой
   (--disallowedTools); 🔒 finance хэзээ ч headless биш; мэдэгдэл зөвхөн #sys-dispatch (хэзээ ч #gtd биш).
+- Төхөөрөмж (2026-11-02): Drive run файлыг PC, Mac хоёуланд хуулдаг тул run-ийг зөвхөн `device:` (backend
+  GOOM_DEVICE) нь таарах dispatcher авна; `device:`-гүй бол ~/.fmos/config.json `dispatch_default_device` (PC).
+  Авахдаа `claimed_by: <device>` бичнэ. Tick алдаа → queued run-д error/progress + #sys-dispatch (нэг удаа);
+  tick бүр ~/.fmos/goom-dispatch.alive; repo HEAD өөрчлөгдвөл шинэ worker асаахгүй, дуусгаад гарна.
 
 Ажиллуулах: fm_goom_watch.py-ийн давталтад tick() дуудагдана (goom-tick.ps1 watcher-ийг асаадаг). Гараар:
   python fm_goom_dispatch.py --once [--dry-run]      # нэг алхам (тест/шалгалт)
@@ -40,6 +44,9 @@ DEFAULTS = {"concurrency": 4, "per_project": 2, "timeout_min": 240, "resume_wind
             "repos": []}   # repos: bypassPermissions-ийн нэмэлт хүрээ (--add-dir); fm repo өөрөө үргэлж орно
 PLUGIN_REPO = Path(__file__).resolve().parents[3]
 LOG = gc.FMOS / "goom-dispatch.log"
+ALIVE = gc.FMOS / "goom-dispatch.alive"   # tick бүр: {ts, pid, device, python, git_sha} (watchdog/health уншина)
+GOOM_CFG = gc.FMOS / "goom.json"
+DEFAULT_DEVICE = "PC"   # `device:`-гүй run-ийг зөвхөн энэ төхөөрөмж авна (~/.fmos/config.json dispatch_default_device)
 STATE = gc.FMOS / "goom-dispatch.json"   # run_id → {pid, started, role, channel, log}
 LOGDIR = gc.FMOS / "goom-dispatch"
 CHAT_PY = Path(__file__).resolve().parent / "fm_goom_chat.py"
@@ -60,6 +67,138 @@ def load_cfg(path=CONFIG):
     except (OSError, ValueError, AttributeError):
         pass
     return out
+
+
+def owner_name(path=None):
+    """App-ийн хэрэглэгчийн нэр (prompt, ask note): ~/.fmos/goom.json «owner_name», анхдагч «itge.e»."""
+    try:
+        v = json.loads(Path(path or GOOM_CFG).read_text(encoding="utf-8-sig")).get("owner_name")
+        return str(v or "").strip() or "itge.e"
+    except (OSError, ValueError, AttributeError):
+        return "itge.e"
+
+
+def default_device(path=CONFIG):
+    """~/.fmos/config.json «dispatch_default_device» (анхдагч PC): `device:`-гүй хуучин run-ийг авах ганц төхөөрөмж."""
+    try:
+        v = json.loads(Path(path).read_text(encoding="utf-8-sig")).get("dispatch_default_device")
+        return str(v or "").strip() or DEFAULT_DEVICE
+    except (OSError, ValueError, AttributeError):
+        return DEFAULT_DEVICE
+
+
+def this_device():
+    """Энэ dispatcher-ийн төхөөрөмж (FM_DEVICE эсвэл pc/mac) — `device:`/`claimed_by:`-тэй том жижиг үсэг үл харгалзан."""
+    return gc.vault_device()
+
+
+def _same_dev(a, b):
+    return (a or "").strip().lower() == (b or "").strip().lower()
+
+
+def run_meta(text):
+    """Run файлын frontmatter → {device, claimed_by, status, error} (runs.Run-д байхгүй түлхүүрүүд)."""
+    m = re.match(r"\ufeff?---\r?\n(.*?)\r?\n---", text or "", re.S)
+    out = {}
+    for k in ("device", "claimed_by", "status", "error"):
+        v = re.search(rf"^{k}:[ \t]*(.*?)\r?$", m.group(1), re.M) if m else None
+        out[k] = v.group(1).strip().strip('"') if v else ""
+    return out
+
+
+def owns_run(meta, me, default=DEFAULT_DEVICE):
+    """Drive хоёр машинд run файлыг хуулдаг тул нэг run-ийг ганц dispatcher авна: өөр төхөөрөмж claim хийсэн бол
+    үгүй; `device:` байвал тэр төхөөрөмж; байхгүй бол зөвхөн dispatch_default_device (PC хуучнаараа)."""
+    if meta.get("claimed_by") and not _same_dev(meta["claimed_by"], me):
+        return False
+    return _same_dev(meta.get("device") or default, me)
+
+
+def set_frontmatter(path, **kv):
+    """Run файлын frontmatter-т түлхүүр бичнэ/солино (байхгүй бол хаалтын «---»-ийн өмнө нэмнэ), атомаар (tmp →
+    replace). runs.update_run-ийн MUTABLE-д ороогүй түлхүүр (claimed_by) ба сан ачаалагдаагүй үед (tick алдаа)."""
+    p = Path(path)
+    raw = p.read_bytes().decode("utf-8")
+    bom = "\ufeff" if raw.startswith("\ufeff") else ""
+    lines = raw[len(bom):].split("\n")
+    if not lines or lines[0].rstrip("\r") != "---":
+        raise ValueError("no frontmatter")
+    end = next(i for i in range(1, len(lines)) if lines[i].rstrip("\r") == "---")
+    cr = "\r" if lines[0].endswith("\r") else ""
+    for k, v in kv.items():
+        v = " ".join(str(v or "").split())
+        val = json.dumps(v, ensure_ascii=False) if v and re.search(r"[:#\[\]{}\"']", v) else v
+        line = f"{k}:{' ' + val if val else ''}{cr}"
+        i = next((n for n in range(1, end) if lines[n].startswith(k + ":")), None)
+        if i is None:
+            lines.insert(end, line)
+            end += 1
+        else:
+            lines[i] = line
+    tmp = p.with_name(f".{p.name}.{os.getpid()}.tmp")
+    tmp.write_bytes((bom + "\n".join(lines)).encode("utf-8"))
+    os.replace(tmp, p)
+
+
+def claim_run(path, me):
+    """Авахаас өмнө дахин уншиж queued + өөрийн эзэмшил эсэхийг шалгаад `claimed_by: <me>` бичээд дахин уншина.
+    Файл атомын lock биш (Drive хоцорч хуулна) — жинхэнэ хамгаалалт нь owns_run; энэ нь давхар бүс."""
+    try:
+        meta = run_meta(Path(path).read_text(encoding="utf-8"))
+        if meta["status"] != "queued" or (meta["claimed_by"] and not _same_dev(meta["claimed_by"], me)):
+            return False
+        if not meta["claimed_by"]:
+            set_frontmatter(path, claimed_by=me)
+        return _same_dev(run_meta(Path(path).read_text(encoding="utf-8"))["claimed_by"], me)
+    except (OSError, ValueError, StopIteration):
+        return False
+
+
+def queued_run_files(vault, max_depth=6):
+    """runs сан ачаалагдахгүй үед (tick алдаа) queued run файлууд: */Chat/**/runs/run-*.md (.obsidian, 🔒 private алгасна)."""
+    vault = Path(vault)
+    out = []
+    for root, dirs, files in os.walk(vault):
+        rel = Path(root).relative_to(vault)
+        dirs[:] = [d for d in dirs if not d.startswith((".", "_trash")) and len(rel.parts) < max_depth
+                   and (rel / d).as_posix() != "03-Areas/Business/finances"]
+        if Path(root).name != "runs" or "Chat" not in rel.parts:
+            continue
+        for f in sorted(files):
+            if f.startswith("run-") and f.endswith(".md"):
+                fp = Path(root) / f
+                try:
+                    if run_meta(fp.read_text(encoding="utf-8"))["status"] == "queued":
+                        out.append(fp)
+                except OSError:
+                    continue
+    return out
+
+
+def repo_sha(repo=None):
+    """fm repo-ийн HEAD sha ('' = git биш / алга)."""
+    try:
+        r = subprocess.run(["git", "-C", str(repo or PLUGIN_REPO), "rev-parse", "HEAD"], capture_output=True,
+                           text=True, timeout=5, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def preflight():
+    """main()-ийн эхний шалгалт → алдааны ганц мөр эсвэл None."""
+    if sys.version_info < (3, 12):
+        return f"Python 3.12+ хэрэгтэй (одоо {sys.version.split()[0]}: {sys.executable})"
+    try:
+        gc.vault_lib()
+        v = gc.vault_path()
+    except SystemExit as ex:
+        return str(ex)
+    if not Path(v).is_dir():
+        return f"Vault хавтас алга: {v}"
+    if not (shutil.which("claude") or shutil.which("claude.cmd")):
+        return "claude CLI PATH-д олдсонгүй (launchd/Task Scheduler-ийн PATH-ийг шалга)"
+    return None
 
 
 def run_ts(run_id):
@@ -336,7 +475,7 @@ def ask_note(question, options, run_id, run_path, channel, today=None):
     today = today or time.strftime("%Y-%m-%d")
     opts = "".join(f"- {o}\n" for o in options if o.strip())
     return ("---\n"
-            f"date: {today}\ntype: task\nstatus: waiting\nwaiting_on: me\nowner: \"itge.e\"\npriority: 🟡\n"
+            f"date: {today}\ntype: task\nstatus: waiting\nwaiting_on: me\nowner: \"{owner_name()}\"\npriority: 🟡\n"
             f"project: \"[[{channel}]]\"\ntags:\n  - task\n  - ask\nai-first: true\nrun: {run_id}\n"
             "up: \"[[01-GTD/Tasks/Tasks]]\"\n---\n\n"
             f"## Асуулт\n{question.strip()}\n{opts}\n"
@@ -352,7 +491,7 @@ REPLY_FORMAT = (
     "**Олдвор**\n- ≤5 мөр, тус бүр нэг бүтэн өгүүлбэр (тоо, огноо, эх сурвалжтай)\n"
     "**Санал**\n- юу хийхийг зөвлөж байгаа, яагаад\n"
     "**Таны сонголт**\n- <сонголт 1 — товч, үйл үгээр>\n- <сонголт 2>\n"
-    "  (itge.e шийдэх зүйл байхгүй бол энэ хэсгийг бүү бич; мөр бүр «- »-ээр эхэлнэ — app товч болгоно)\n"
+    "  ({owner} шийдэх зүйл байхгүй бол энэ хэсгийг бүү бич; мөр бүр «- »-ээр эхэлнэ — app товч болгоно)\n"
     "**Эх сурвалж**\n- линк, vault зам (app эвхэж харуулна)\n"
 )
 
@@ -360,11 +499,12 @@ REPLY_FORMAT = (
 def _rules(chat_py, run_id, py, role="", reply_file=""):
     rf = reply_file or f"<түр файл, ж: ~/.fmos/goom-dispatch/{run_id}.reply.md>"
     rl = f" --role {role}" if role else ""
+    who = owner_name()
     return (
-        "Ажиллах дүрэм (Claude цонхгүй, itge.e app-аас харж байна):\n"
+        f"Ажиллах дүрэм (Claude цонхгүй, {who} app-аас харж байна):\n"
         f"- Алхам бүрийн дараа явцаа энгийн МОНГОЛ хэлээр нэг өгүүлбэрээр мэдээл (tool-ийн англи нэргүй, ж: "
         f"«эх сурвалжуудыг уншиж байна», «тайлан бичиж байна»): \"{py}\" \"{chat_py}\" progress --run {run_id} \"<алхам>\"\n"
-        "- itge.e-ийн шийдвэр хэрэгтэй бол (устгах, гадагш илгээх, push, мөнгө, тодорхойгүй) ӨӨРӨӨ бүү шийд:\n"
+        f"- {who}-ийн шийдвэр хэрэгтэй бол (устгах, гадагш илгээх, push, мөнгө, тодорхойгүй) ӨӨРӨӨ бүү шийд:\n"
         f"  \"{py}\" \"{chat_py}\" ask --run {run_id} \"<асуулт>\" --option \"<сонголт 1>\" --option \"<сонголт 2>\"\n"
         "  гэж асуугаад шууд дуусга (хариу ирэхэд чамайг үргэлжлүүлнэ).\n"
         "- Төсөл, repo өөр сешнд завгүй бол хариугүй бүү гар — дараалалд үлдээд дараа үргэлжилнэ:\n"
@@ -376,7 +516,7 @@ def _rules(chat_py, run_id, py, role="", reply_file=""):
         "уншихгүй.\n"
         "- Task-тай ажил бол: дуусахад task-аа өөрөө хаа — status: completed, completed: огноо, «## Хүргэсэн»-д "
         "файл/commit/шийдвэр; «## Өөрчлөлтийн түүх»-д мөр нэм.\n"
-        + REPLY_FORMAT +
+        + REPLY_FORMAT.format(owner=who) +
         "- Дуусаад ЗААВАЛ ганц удаа хариул (run-ийг done болгоно, гаралтыг --output-оор). Олон мөртэй тул хариугаа "
         f"Write tool-оор {rf} файлд бичээд:\n"
         f"  \"{py}\" \"{chat_py}\" reply --run {run_id}{rl} --file \"{rf}\" --output \"<vault зам>\"\n"
@@ -416,14 +556,15 @@ def build_prompt(ch, r, text, chat_py=CHAT_PY, role="", vault=None):
     task = f"\nTask: {r.task}" if getattr(r, "task", "") else ""
     who = f"\nДүр: {gc.ROLES.get(role, role)} — хариу энэ дүрийн нэрээр гарна." if role else ""
     sk = skill_invoke(getattr(r, "skill", ""), vault)
-    skill = (f"\nitge.e энэ ажилд «{sk}» skill сонгосон — эхлээд Skill tool-оор ачаалж, аргыг нь дага.\n"
+    owner = owner_name()
+    skill = (f"\n{owner} энэ ажилд «{sk}» skill сонгосон — эхлээд Skill tool-оор ачаалж, аргыг нь дага.\n"
              if sk else "")
     return (
-        f"Чи Second Brain OS-ийн headless worker. itge.e Claude нээлгүй app-аас ажил өгсөн.\n"
+        f"Чи Second Brain OS-ийн headless worker. {owner} Claude нээлгүй app-аас ажил өгсөн.\n"
         f"Суваг: {ch}{who}\nRun: {r.id} (файл: {r.path}){task}\nКонтекст:\n{ctx}\n\n"
-        f"itge.e-ийн мессеж:\n«{text}»\n{skill}\n"
+        f"{owner}-ийн мессеж:\n«{text}»\n{skill}\n"
         "Дүрийн note, контекст файлуудыг уншаад ажлыг бодитоор гүйцэтгэ (судалгаа бол огноотой эх сурвалжтай, "
-        "тоо зохиохгүй).\n" + _rules(chat_py, r.id, _py(), role, str(LOGDIR / f"{r.id}.reply.md"))
+        "тоо зохиохгүй).\n" + routing_note(ch, role, r.path) + _rules(chat_py, r.id, _py(), role, str(LOGDIR / f"{r.id}.reply.md"))
     )
 
 
@@ -483,6 +624,14 @@ def task_subchat(vault, ch, cur, me, role):
                                 gc.vault_device(), title=f"Task · {title}")
     runs.update_run(vault, cur.id, reply_to=f"thread:{root.path}#{root.id}")  # `task` is read-only in runs.py; the prompt carries it
     return task
+def routing_note(ch, role, run_path):
+    """Буруу сувагт ирсэн хувийн GTD зүйлд гүн ажил хийлгэхгүй (2026-11-02)."""
+    kind = (f"«{ch}» төслийн суваг" if (role or "project") == "project" else f"{gc.ROLES.get(role, role)} дүрийн суваг")
+    return (f"Чиглүүлэлт: энэ бол {kind} — зөвхөн энэ хүрээний ажил. Мессеж илт өөр хүрээний хувийн GTD зүйл "
+            "(хувийн сануулга, худалдан авалт, өөр төслийн жижиг ажил) бол гүн ажил бүү хий: 01-GTD/Inbox-д "
+            "`owner: gtd` бүхий capture note болгон бич (эсвэл хаана бичихийг нэг мөрөөр зааж хариул), run файлын "
+            f"({run_path}) frontmatter-т `misroute: <зөв дүр>` мөр нэмээд богино хариул.\n")
+
 
 def fork_prompt(prompt):
     return ("Энэ бол сувгийн ажиллаж буй ярианаас салаалсан THREAD: өмнөх яриа бүхэлдээ чамд байна, харин тэр ажил "
@@ -500,7 +649,7 @@ def recent_context(msgs, upto_id, n=12):
 
 
 def answer_prompt(run_id, question, answer, chat_py=CHAT_PY, role=""):
-    return (f"itge.e таны асуултад хариуллаа.\nАсуулт: {question}\nХариу: «{answer or '(хоосон — батлав)'}»\n\n"
+    return (f"{owner_name()} таны асуултад хариуллаа.\nАсуулт: {question}\nХариу: «{answer or '(хоосон — батлав)'}»\n\n"
             "Энэ хариугаар ажлаа үргэлжлүүлж дуусга.\n"
             + _rules(chat_py, run_id, _py(), role, str(LOGDIR / f"{run_id}.reply.md")))
 
@@ -687,6 +836,12 @@ class Dispatcher:
         self.orphans = gc._load(STATE, {})
         self.hold = {}    # run_id → epoch: төсөл завгүй тул энэ хүртэл дахин бүү асаа
         self.nudged = set()   # хариугүй rc=0 гарсны дараа нэг удаа «дуусга» гэж үргэлжлүүлсэн run-ууд
+        self.device = this_device()
+        self.default_device = default_device()
+        self.sha = repo_sha()   # эхлэх үеийн HEAD: өөрчлөгдвөл stale → loop цэвэр гарна (launchd/watcher дахин асаана)
+        self.stale = False
+        self.err = ""           # сүүлийн tick алдаа (давхардуулахгүй мэдэгдэнэ)
+        self.err_marked = []    # тэр алдааг бичсэн run файлууд (шийдэгдэхэд цэвэрлэнэ)
 
     @property
     def timeout(self):
@@ -818,7 +973,7 @@ class Dispatcher:
         """waiting run-ийн ask task хариулагдсан бол → queued (хариу spawn-д уншигдана)."""
         n = 0
         for ch, r in all_runs(vault, store, runs, "waiting"):
-            if not r.ask:
+            if not r.ask or not self.owns(vault, r):   # хариуг асуусан төхөөрөмж л үргэлжлүүлнэ
                 continue
             try:
                 kind, note = ask_decision((Path(vault) / r.ask).read_text(encoding="utf-8"))
@@ -835,6 +990,13 @@ class Dispatcher:
                 _agent_beat("finish", r.id, status="done", note="itge.e асуултыг хаасан")
         return n
 
+    def owns(self, vault, r):
+        try:
+            return owns_run(run_meta((Path(vault) / r.path).read_text(encoding="utf-8")), self.device,
+                            self.default_device)
+        except OSError:
+            return False
+
     def spawn(self, vault, store, runs, ch, r, role, reason):
         if not self.claude:
             runs.update_run(vault, r.id, status="failed", error="claude CLI олдсонгүй")
@@ -843,6 +1005,9 @@ class Dispatcher:
         cur = next((x for x in runs.list_runs(vault, ch, "queued") if x.id == r.id), None)
         if cur is None:
             return   # энэ хооронд сешн авчээ
+        if not claim_run(Path(vault) / cur.path, self.device):
+            log(f"skip {cur.id}: өөр төхөөрөмж claim хийсэн / queued биш")
+            return
         siblings = runs.list_runs(vault, ch)
         resume = resume_session(cur, siblings, time.time(), float(self.cfg["resume_window_min"]) * 60)
         me, msgs = None, []
@@ -854,7 +1019,7 @@ class Dispatcher:
             st, ans = ask_state(atext)
             q = _section(atext, "Асуулт").splitlines()[0] if _section(atext, "Асуулт") else ""
             if st == "cancelled":
-                ans = ans or "(itge.e асуултыг цуцалсан — тэр алхмыг хийхгүй)"
+                ans = ans or f"({owner_name()} асуултыг цуцалсан — тэр алхмыг хийхгүй)"
             prompt = answer_prompt(cur.id, q, ans, role=role)
         elif cur.id in self.nudged and resume:
             prompt = nudge_prompt(cur.id, role=role)
@@ -919,38 +1084,97 @@ class Dispatcher:
         notify(f"⚙ headless {AGENTS[role]} → «{ch}» {cur.id} ({reason}{', үргэлжлэл' if resume else ''})")
 
     def tick(self, now=None):
-        """Нэг алхам: reap → хариулагдсан ask → төлөвлө → асаа. Хэзээ ч exception гаргахгүй (watcher-ийг унагахгүй)."""
+        """Нэг алхам: reap → хариулагдсан ask → төлөвлө → асаа. Хэзээ ч exception гаргахгүй (watcher-ийг унагахгүй);
+        алдааг run card + #sys-dispatch-д нэг удаа харуулна, tick бүр ~/.fmos/goom-dispatch.alive бичнэ."""
+        plan, err = [], ""
         try:
-            store, runs = gc.vault_lib()
-            vault = gc.vault_path()
-            now = now or time.time()
-            self.reap(vault, runs, now)
-            self.wake_answered(vault, store, runs)
-            queued = all_queued(vault, store, runs)
-            busy = {w.get("session") for w in self.procs.values() if w.get("session")}
-            self.hold = {k: t for k, t in self.hold.items() if t > now}
-            blocked = set(self.hold)   # төсөл завгүй гэж буцсан run-ууд HOLD хүлээнэ
-            if busy:
-                win = float(self.cfg["resume_window_min"]) * 60
-                for ch, r in queued:
-                    s = resume_session(r, runs.list_runs(vault, ch), now, win)
-                    if s and s in busy:
-                        blocked.add(r.id)   # тэр session ажиллаж байна — дараалал хадгална
-            plan = plan_dispatch(queued, listeners(), self.active(), now, self.cap,
-                                 per_project=int(self.cfg["per_project"]), blocked=blocked)
-            for ch, r, role, reason in plan:
-                busy = {w.get("session") for w in self.procs.values() if w.get("session")}
-                s = resume_session(r, runs.list_runs(vault, ch), now, float(self.cfg["resume_window_min"]) * 60)
-                if s and s in busy:
-                    continue   # энэ tick-д асаасан run-ий session — дараагийн tick хүлээнэ
-                if self.dry:
-                    print(json.dumps({"dispatch": r.id, "channel": ch, "role": role, "reason": reason}, ensure_ascii=False))
-                    continue
-                self.spawn(vault, store, runs, ch, r, role, reason)
-            return plan
+            plan = self._tick(now)
         except BaseException as ex:   # SystemExit (тохиргоо алга) ч орно
-            log(f"tick error: {type(ex).__name__}: {ex}")
+            err = f"{type(ex).__name__}: {ex}"
+            log(f"tick error: {err}")
+        try:
+            self._report(err)
+        except Exception as ex:  # noqa: BLE001 — мэдэгдэл бичигдэхгүй байх нь watcher-ийг унагах шалтгаан биш
+            log(f"report error: {ex}")
+        self.beat(err)
+        return plan
+
+    def beat(self, err=""):
+        """Амьд байгаагийн тэмдэг + repo шинэчлэгдсэн эсэх (HEAD өөр бол stale → loop гарна)."""
+        sha = repo_sha()
+        try:
+            gc._save(ALIVE, {"ts": time.time(), "pid": os.getpid(), "device": self.device,
+                             "python": sys.version.split()[0], "git_sha": sha, "error": err})
+        except OSError:
+            pass
+        if self.sha and sha and sha != self.sha and not self.stale:
+            self.stale = True
+            log(f"repo HEAD {self.sha[:8]} → {sha[:8]}: dispatcher дахин асахаар гарна")
+
+    def _report(self, err):
+        """Шинэ алдаа → энэ төхөөрөмжийн queued run бүрт error/progress + #sys-dispatch (нэг удаа); шийдэгдвэл цэвэрлэнэ."""
+        if err == self.err:
+            return
+        prev, self.err = self.err, err
+        if prev:   # өмнөх алдааны тэмдгийг арилгана (run хэвээр queued, бидний бичсэн алдаатай бол)
+            for f in self.err_marked:
+                try:
+                    m = run_meta(f.read_text(encoding="utf-8"))
+                    if m["status"] == "queued" and m["error"] == _clip(f"dispatcher: {prev}", 200):
+                        set_frontmatter(f, error="", progress="")
+                except (OSError, ValueError, StopIteration):
+                    continue
+            self.err_marked = []
+            if not err:
+                log("tick error resolved")
+                notify(f"✅ goom-dispatch ({self.device}): алдаа арилсан — дараалал үргэлжилнэ")
+        if not err:
+            return
+        notify(f"⚠ goom-dispatch ({self.device}): {_clip(err, 300)} — queued run хүлээгдэж байна")
+        try:
+            vault = gc.vault_path()
+        except SystemExit:
+            return
+        for f in queued_run_files(vault):
+            try:
+                if not owns_run(run_meta(f.read_text(encoding="utf-8")), self.device, self.default_device):
+                    continue
+                set_frontmatter(f, error=_clip(f"dispatcher: {err}", 200),
+                                progress=f"⚠ dispatcher ({self.device}) ажиллахгүй байна — засагдмагц эхэлнэ")
+                self.err_marked.append(f)
+            except (OSError, ValueError, StopIteration):
+                continue
+
+    def _tick(self, now=None):
+        store, runs = gc.vault_lib()
+        vault = gc.vault_path()
+        now = now or time.time()
+        self.reap(vault, runs, now)
+        if self.stale:   # repo шинэчлэгдсэн: шинэ worker асаахгүй, байгаагаа дуусгаад гарна
             return []
+        self.wake_answered(vault, store, runs)
+        queued = [(ch, r) for ch, r in all_queued(vault, store, runs) if self.owns(vault, r)]
+        busy = {w.get("session") for w in self.procs.values() if w.get("session")}
+        self.hold = {k: t for k, t in self.hold.items() if t > now}
+        blocked = set(self.hold)   # төсөл завгүй гэж буцсан run-ууд HOLD хүлээнэ
+        if busy:
+            win = float(self.cfg["resume_window_min"]) * 60
+            for ch, r in queued:
+                s = resume_session(r, runs.list_runs(vault, ch), now, win)
+                if s and s in busy:
+                    blocked.add(r.id)   # тэр session ажиллаж байна — дараалал хадгална
+        plan = plan_dispatch(queued, listeners(), self.active(), now, self.cap,
+                             per_project=int(self.cfg["per_project"]), blocked=blocked)
+        for ch, r, role, reason in plan:
+            busy = {w.get("session") for w in self.procs.values() if w.get("session")}
+            s = resume_session(r, runs.list_runs(vault, ch), now, float(self.cfg["resume_window_min"]) * 60)
+            if s and s in busy:
+                continue   # энэ tick-д асаасан run-ий session — дараагийн tick хүлээнэ
+            if self.dry:
+                print(json.dumps({"dispatch": r.id, "channel": ch, "role": role, "reason": reason}, ensure_ascii=False))
+                continue
+            self.spawn(vault, store, runs, ch, r, role, reason)
+        return plan
 
 
 def _tail(path, n=4000):
@@ -967,6 +1191,11 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--interval", type=float, default=10)
     a = ap.parse_args(argv)
+    bad = preflight()
+    if bad:
+        print(f"fm_goom_dispatch: {bad}", file=sys.stderr)
+        log(f"preflight failed: {bad}")
+        return 2
     d = Dispatcher(dry=a.dry_run)
     if not a.loop:
         d.tick()
@@ -974,9 +1203,11 @@ def main(argv=None):
             time.sleep(5)
             d.reap(gc.vault_path(), gc.vault_lib()[1])
         return 0
-    while True:
+    while not (d.stale and not d.procs):   # repo шинэчлэгдсэн: шинэ worker асаахгүй, байгаагаа дуусгаад гарна
         d.tick()
         time.sleep(a.interval)
+    log("exit: repo шинэчлэгдсэн (launchd/watcher дахин асаана)")
+    return 0
 
 
 if __name__ == "__main__":
