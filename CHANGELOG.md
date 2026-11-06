@@ -1,3 +1,13 @@
+## fm 0.10.12 · 2026-11-06 · Figma bridge — хуудасгүй thread
+
+- `tools/figma/bridge/plugin/ui.html`: Claude Bridge панел зөвхөн одоогийн Figma хуудсанд холбогдсон
+  thread-ийг харуулж байв. Frame сонголгүй бичсэн, эсвэл агентын хариулт зэрэг **хуудасны мэдээлэлгүй**
+  thread аль ч хуудсанд харагдахгүй, панел «Коммент алга» гэж хоосон гардаг байв. Одоо хуудасгүй thread
+  бүх хуудсанд харагдана, «Бусад хуудасны thread» товч хоосон үед ч гарч, дарагдана.
+  - Эх: Orgio (rollingbd/orgio-second-brain#1) — downstream repo нь үүсгэсэн хуулбар тул засварыг эх
+    repo-д авав, эс тэгвээс дараагийн sync дарж бичнэ. Шалгасан: `node --check`, Figma desktop (Windows)
+    дээр нуугдаж байсан 4 thread гарч ирэв.
+
 ## fm 0.10.11 · 2026-11-06 · 🔒 Headless worker-ийн кодын хамгаалалт
 
 - 🔒 **`scripts/fm_headless_guard.py` шинэ** — апп-ын чатаас асдаг headless worker-ийн PreToolUse hook.

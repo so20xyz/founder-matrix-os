@@ -260,11 +260,14 @@ function render() {
 let showDone = false, curPage = null, allPages = false;
 function renderInner() {
   const inFile = all.filter(c => !c.parent && (!c.file || info.file === '?' || c.file === info.file));
-  const onPage = (c) => !curPage || allPages || (c.node && c.node.page ? c.node.page === curPage : (c.nodes || []).some(n => n.page === curPage));
+  // хуудасны мэдээлэлгүй (файл даяарх) thread бүх хуудсанд харагдана (Orgio 2026-11-06)
+  const pageOf = (c) => (c.node && c.node.page) || ((c.nodes || []).find(n => n.page) || {}).page || null;
+  const onPage = (c) => !curPage || allPages || !pageOf(c) || pageOf(c) === curPage;
   const roots = inFile.filter(onPage), other = inFile.filter(c => !c.resolved).length - roots.filter(c => !c.resolved).length;
   const open = roots.filter(r => !r.resolved).length, done = roots.length - open; $('n').textContent = open || '';
   const pg = curPage && (other > 0 || allPages) && !replyTo ? '<div class="more" id="tgpage">' + (allPages ? '▴ Зөвхөн «' + esc(curPage) + '» хуудас' : '◎ Бусад хуудасны ' + other + ' нээлттэй thread') + '</div>' : '';
-  if (!roots.length) { C.innerHTML = '<div class="empty"><i>◎</i><b>Коммент алга</b>Figma-д frame сонгоод доор бичвэл энд thread үүснэ.</div>'; return; }
+  if (!roots.length) { C.innerHTML = pg + '<div class="empty"><i>◎</i><b>Коммент алга</b>Figma-д frame сонгоод доор бичвэл энд thread үүснэ.</div>';
+    const tp0 = $('tgpage'); if (tp0) tp0.onclick = () => { allPages = !allPages; render(); }; return; }
   if (replyTo && !roots.some(r => r.id === replyTo)) replyTo = null;
   const list = replyTo ? roots.filter(r => r.id === replyTo) : roots.filter(r => showDone || !r.resolved);
   const tog = !replyTo && done ? '<div class="more" id="tgdone">' + (showDone ? '▴ Шийдсэн ' + done + '-г нуух' : '✓ Шийдсэн ' + done + ' thread харах') + '</div>' : '';
