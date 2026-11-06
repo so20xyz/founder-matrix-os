@@ -3,6 +3,7 @@
 
   python3 fm_sync.py check  "<vault>" --device Mac [--repo <founder-matrix-os>] [--hours 48]   # JSON тайлан, юу ч бичихгүй
   python3 fm_sync.py mark   "<vault>" --device Mac                                              # «энэ машин одоо харсан» тэмдэг
+  python3 fm_sync.py version [--repo <founder-matrix-os>]                                       # зөвхөн 1-р алхам: суусан fm ↔ repo (exit 1 = хоцорсон)
 
 check-ийн алхамууд (skill нь JSON-ийг уншаад үйлдлийг хийнэ):
   1 repo   — git fetch, хэдэн commit хоцорсон, суусан plugin ↔ repo-гийн хувилбар → хийх командууд
@@ -249,11 +250,54 @@ def mark(vault, device):
     return str(p)
 
 
+def _vtuple(v):
+    """«0.10.12» → (0, 10, 12); тоо биш хэсгийг 0 болгоно (харьцуулалт мөрөөр биш тоогоор: 0.9.131 < 0.10.12)."""
+    out = []
+    for part in str(v or "").split("."):
+        m = re.match(r"\d+", part.strip())        # «3-rc1» → 3 (бүх цифрийг цуглуулбал 31 болно)
+        out.append(int(m.group(0)) if m else 0)
+    return tuple(out)
+
+
+def version_report(repo):
+    """Гишүүнд: суусан fm нь repo-гийнхаас хоцорсон уу. Богино мөр + хийх командууд, exit 1 = хоцорсон.
+
+    Яагаад тусдаа команд вэ (itge.e 2026-11-06): энэ шалгалт `check`-ийн 1-р алхамд аль хэдийн байсан
+    ч `check` нь зөвхөн `/fm:setup sync` (машин солиход) ажилладаг. Нэг машинтай гишүүн түүнийг хэзээ ч
+    дуудахгүй тул хувилбарын зөрүүг мэдэх дохио байгаагүй — Очирсүрэн 0.9.131 дээр 3 хоногт 13 хувилбар
+    хоцров. Одоо `/fm:update` энэ командыг өдөр бүр дуудна.
+    """
+    r = step_repo(repo)
+    if r.get("error"):
+        print("⚠ fm хувилбар шалгагдсангүй: %s" % r["error"])
+        return 0                                  # repo байхгүй гишүүнд саад болохгүй
+    inst, have = r.get("installed_version"), r.get("repo_version")
+    behind, dirty, do = r.get("behind", 0), r.get("dirty", 0), r.get("do", [])
+    if not do:
+        print("✅ fm %s · хамгийн сүүлийнх" % (inst or have or "?"))
+        return 0
+    # Хувилбарын зөрүүг ҮРГЭЛЖ эхэнд хэл: dirty clone нь хоцрогдлыг далдлах ёсгүй (анхны хувилбарт далдалж байв).
+    gap = " → %s" % have if inst and have and _vtuple(inst) < _vtuple(have) else ""
+    head = "⬆ fm %s%s" % (inst or "?", gap)
+    if behind:
+        head += " · repo %d commit хоцорсон" % behind
+    print(head + ". Дараах %d командыг дараалан ажиллуул, дараа нь Claude-г бүрэн хаа:" % len(do))
+    for c in do:
+        print("   %s" % c)
+    if dirty:
+        print("   ⚠ repo-д commit хийгээгүй %d файл байна — pull хийхээс өмнө шалга" % dirty)
+    return 1
+
+
 def main(argv):
     getattr(sys.stdout, "reconfigure", lambda **k: None)(encoding="utf-8")
-    if len(argv) < 2 or argv[0] not in ("check", "mark"):
+    if not argv or argv[0] not in ("check", "mark", "version"):
         print(__doc__); return 2
     arg = lambda k, d=None: argv[argv.index(k) + 1] if k in argv else d
+    if argv[0] == "version":
+        return version_report(arg("--repo") or os.environ.get("FM_REPO") or str(FM.parents[1]))
+    if len(argv) < 2:
+        print(__doc__); return 2
     vault, device = Path(argv[1]).expanduser(), arg("--device", "Mac" if sys.platform == "darwin" else "PC")
     if argv[0] == "mark":
         print(mark(vault, device)); return 0
