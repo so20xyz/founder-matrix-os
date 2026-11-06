@@ -2,7 +2,7 @@
 """Claude-гүй ажиллагаа (2026-10-26): config, fairness, stream-json progress, resume, ask, cancel, prompt."""
 import importlib.util, json, sys, tempfile, unittest
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 SD = Path(__file__).resolve().parents[1] / "plugins" / "fm" / "scripts"
@@ -91,9 +91,12 @@ class Resume(unittest.TestCase):
     def test_channel_recent_only(self):
         prev = run("20261026020742", status="done", session="s-ch", completed="2026-10-26T02:10:00+08:00")
         r = run("20261026021500")
-        now = datetime(2026, 10, 26, 2, 15).timestamp()
+        # `completed` нь +08:00-той тул `now`-г ч мөн +08:00-оор ав: наалдсан local цагаар бодвол
+        # UTC runner-т 8 цагийн зөрүү гарч тест унадаг (CI 2026-11-06).
+        UB = timezone(timedelta(hours=8))
+        now = datetime(2026, 10, 26, 2, 15, tzinfo=UB).timestamp()
         self.assertEqual(gd.resume_session(r, [prev], now, window=30 * 60), "s-ch")
-        later = datetime(2026, 10, 26, 4, 0).timestamp()
+        later = datetime(2026, 10, 26, 4, 0, tzinfo=UB).timestamp()
         self.assertEqual(gd.resume_session(r, [prev], later, window=30 * 60), "")
 
     def test_never_resume_running_sibling(self):

@@ -1,3 +1,23 @@
+## fm 0.10.11 · 2026-11-06 · 🔒 Headless worker-ийн кодын хамгаалалт
+
+- 🔒 **`scripts/fm_headless_guard.py` шинэ** — апп-ын чатаас асдаг headless worker-ийн PreToolUse hook.
+  Өмнө нь хамгаалалт зөвхөн prompt-ийн текст байсан: worker нь хувийн өгөгдөл (vault,
+  `finances/private`, `~/.fmos`-ийн token), итгэмжлэгдээгүй оролт (чатын текст, сувгийн түүх) ба
+  гадагш хүрэх зам (бүх MCP сервер) гурвууланг нэг дор агуулдаг байв. Одоо кодоор хаагдана, бүтэлгүйтвэл
+  хориглоно: `finances/private`, `~/.fmos` (`qmd/bin/fm-qmd`-аас бусад), token, `~/.ssh`, gh token,
+  рекурсив `rm`, `find -exec rm`, `git push`/`commit`/`clean -f`/`reset --hard`/`alias`, PR merge.
+  Зам нормальчлагддаг тул `<run>.reply.md/../..` гэх мэтээр гарах боломжгүй.
+- Dispatcher: `--strict-mcp-config`, `--max-budget-usd 3`, 60 минутын timeout, STATE-д 3 хүртэл давталт,
+  нэг инстансын lock, гарц бүрийн дараа процессын бүлгийг бүрэн унтраах. Auth-ийн circuit breaker зөвхөн
+  бодит auth алдаанд унаж, зөвхөн амжилттай хариунд сэргэнэ. Хэрэглэгчийн текст `<user_message>` /
+  `<channel_history>` гэсэн өгөгдлийн хүрээнд орно.
+- Чат / sync / pull: зөвхөн өөрийн run-ийг claim хийнэ, vault-ийн зам хүрээндээ үлдэнэ, API тохиргоогүй ч
+  хариу бичнэ, state 0600, эзний нэр `goom.json`-оос.
+- Тест: `tests/conftest.py` түр HOME хэрэглэж, бодит `~/.fmos` хөндөгдөөгүйг шалгана. Fake-`claude` offline
+  e2e harness (14 кейс) хоёр race илрүүлж, хоёуланг зассан. `tests/evals/goom_live_cases.json`-д L1–L10.
+  CI-д pytest-ийн алхам нэмэгдэв (py3.12, ubuntu + macOS).
+  - Яагаад: чатаас асдаг worker нь хүний баталгаагүй ажилладаг тул хориг prompt-д бус кодод байх ёстой · PR #34
+
 ## fm 0.10.10 · 2026-11-06 · 🧪 Context Engineer дүр
 
 - 🧪 **Context Engineer** дүр **шинэ** — `fm:context-engineer` skill, `fm:context-engineer` agent, `scripts/fm_ce.py`

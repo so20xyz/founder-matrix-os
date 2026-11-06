@@ -637,6 +637,9 @@ def main():
     if "--sid" in a:
         i = a.index("--sid"); sid = a[i + 1]; del a[i:i + 2]
     if not a or a[0] == "inbox":
+        # Soyol 2026-11-06 (review F2): headless worker-т (fm_goom_dispatch, FM_HEADLESS_RUN) Discord-ийн бичвэр
+        # SessionStart / UserPromptSubmit hook-оор additionalContext болж орохгүй — no-op.
+        if os.environ.get("FM_HEADLESS_RUN"): return
         try: hook = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace"))
         except Exception: hook = {}
         try: _rekey(hook.get("session_id", ""))

@@ -111,6 +111,14 @@ class TestGoomPull(unittest.TestCase):
         self.assertEqual(self.task.read_text(encoding="utf-8"), once)
         self.assertEqual(once.count("Goomnet-оос төлөв"), 1)
 
+    def test_vault_through_symlink(self):
+        # (Soyol 2026-11-06: F13) FM_VAULT = ~/Documents/Founder.Matrix symlink → relative_to ValueError байв
+        link = self.tmp / "link"
+        link.symlink_to(self.vault, target_is_directory=True)
+        res = gp.process(link, [self.status_change()], True, FakeClient(), NOW)
+        self.assertEqual((res[0]["action"], res[0]["path"]), ("write", "01-GTD/Tasks/Хурлын бэлтгэл.md"))
+        self.assertIn("status: in-progress", self.task.read_text(encoding="utf-8"))
+
     def test_private_path_rejected(self):
         priv = self.vault / "01-GTD" / "Tasks" / "🔒 Нууц.md"
         priv.write_text(TASK, encoding="utf-8")

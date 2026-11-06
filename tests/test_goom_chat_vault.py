@@ -5,7 +5,21 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 D = Path(__file__).resolve().parents[1] / "plugins" / "fm" / "scripts"
-SB = os.environ.get("SB_TOOLS") or "D:/CodeBase/goomnet"
+sys.path.insert(0, str(D))   # fm_goom_chat нь fm_goom_dispatch-ийг lazy import хийнэ (файлыг дангаар ажиллуулахад)
+
+
+def _sb():
+    """second-brain repo: SB_TOOLS > PC-ийн D:/CodeBase/goomnet > Mac-ийн ~/Workspace/second-brain (Soyol 2026-11-06: F17 —
+    Mac дээр 20 тест чимээгүй skip хийж байв)."""
+    if os.environ.get("SB_TOOLS"):
+        return os.environ["SB_TOOLS"]
+    for c in ("D:/CodeBase/goomnet", str(Path.home() / "Workspace" / "second-brain")):
+        if (Path(c) / "tools" / "chat" / "store.py").exists():
+            return c
+    return "D:/CodeBase/goomnet"
+
+
+SB = _sb()
 SID = "11111111-2222-3333-4444-555555555555"
 
 
@@ -160,13 +174,56 @@ class VaultBackend(unittest.TestCase):
         self.run_main("watch", "--backend", "vault", "--sid", sid2, "--timeout", "0")
         self.run_main("say", "--backend", "vault", "--sid", sid2, "x")
 
-    def test_watch_skips_run_claimed_by_other(self):
+    def test_watch_skips_running_run(self):
         self.bind()
         m = self.store.append_message(self.vault, "proj", "itge.e", "хий", "pc")
         run = self.runs.create_run(self.vault, m, [])
         self.runs.update_run(self.vault, run.id, status="running")
         rc, out = self.run_main("watch", "--backend", "vault", "--sid", SID, "--timeout", "0")
         self.assertEqual(json.loads(out.strip()), {"timeout": True})
+
+    def _queued(self, **extra):
+        m = self.store.append_message(self.vault, "proj", "itge.e", "хий", "pc")
+        run = self.runs.create_run(self.vault, m, [])
+        f = self.vault / self.runs.list_runs(self.vault, "proj")[0].path
+        add = "".join(f"{k}: {v}" + chr(10) for k, v in extra.items())
+        f.write_text(f.read_text(encoding="utf-8").replace("status: queued" + chr(10), "status: queued" + chr(10) + add, 1),
+                     encoding="utf-8")
+        return run, f
+
+    def test_watch_skips_run_claimed_by_other(self):
+        # (Soyol 2026-11-06: F7) Mac-ийн dispatcher claim хийсэн run-ийг PC-ийн сонсогч авахгүй
+        self.bind()
+        run, f = self._queued(claimed_by="mac")
+        rc, out = self.run_main("watch", "--backend", "vault", "--sid", SID, "--timeout", "0")
+        self.assertEqual(json.loads(out.strip()), {"timeout": True})
+        self.assertEqual(self.runs.list_runs(self.vault, "proj")[0].status, "queued")
+
+    def test_watch_skips_run_for_other_device(self):
+        self.bind()
+        run, f = self._queued(device="mac")
+        rc, out = self.run_main("watch", "--backend", "vault", "--sid", SID, "--timeout", "0")
+        self.assertEqual(json.loads(out.strip()), {"timeout": True})
+        self.assertNotIn("claimed_by", f.read_text(encoding="utf-8"))
+
+    def test_watch_claims_own_run_with_claimed_by(self):
+        self.bind()
+        run, f = self._queued(device="PC")
+        rc, out = self.run_main("watch", "--backend", "vault", "--sid", SID, "--timeout", "0")
+        self.assertEqual(json.loads(out.strip())["run_id"], run.id)
+        t = f.read_text(encoding="utf-8")
+        self.assertIn(chr(10) + "claimed_by: pc", t)
+        self.assertIn(chr(10) + "status: running", t)
+
+    def test_save_is_owner_only(self):
+        # (Soyol 2026-11-06: F16) token кэш зэрэг ~/.fmos/*.json 0600
+        import stat
+        p = Path(self.tmp.name) / "fmos" / "tok.json"
+        p.with_suffix(".json.tmp").write_text("{}", encoding="utf-8"); os.chmod(p.with_suffix(".json.tmp"), 0o644)
+        self.gc._save(p, {"a": 1})
+        if os.name != "nt":
+            self.assertEqual(stat.S_IMODE(p.stat().st_mode), 0o600)
+        self.assertEqual(json.loads(p.read_text(encoding="utf-8")), {"a": 1})
 
     def test_vault_entries_ignored_by_sync(self):
         sid2 = "99999999-2222-3333-4444-555555555555"

@@ -325,7 +325,7 @@ PLANNERS = {"capture": plan_capture, "status": plan_status, "decision": plan_dec
 
 def process(vault, changes, apply, client=None, now=None):
     """Returns a list of result dicts. Writes and marks applied only when apply=True."""
-    vault = Path(vault)
+    vault = Path(vault).resolve()   # (Soyol 2026-11-06: F13) _resolve() resolve хийдэг: symlink vault-д relative_to унаж байв
     now = now or datetime.now(UB)
     results = []
     for ch in sorted(changes, key=lambda c: c.get("change_id", 0)):

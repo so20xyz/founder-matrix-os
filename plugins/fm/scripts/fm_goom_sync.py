@@ -252,6 +252,9 @@ def _covered(rel):
 
 
 def _sources(vault, kind):
+    if kind == "media":   # (Soyol 2026-11-06: F17) KINDS-д media нэмэгдсэн ч энд салаагүй → watch/vault_fix KeyError
+        return [f for f in _media_sources(vault)
+                if media_mime(unicodedata.normalize("NFC", f.relative_to(vault).as_posix()))]
     if kind == "day":
         return sorted(vault.glob("01-GTD/Daily/*.md"))
     if kind == "person":

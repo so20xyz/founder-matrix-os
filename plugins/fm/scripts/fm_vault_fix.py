@@ -187,7 +187,7 @@ def main(argv=None):
         known = {l.strip() for l in Path(a.known).read_text(encoding="utf-8").splitlines() if l.strip()}
     if a.mode == "yaml":
         files = []
-        for k in gs.KINDS:
+        for k in gs.MD_KINDS:   # yaml засвар зөвхөн .md-д (media файлыг уншихгүй)
             files += gs._sources(vault, k)
     else:
         files = sorted(vault.glob("01-GTD/Tasks/*.md"))

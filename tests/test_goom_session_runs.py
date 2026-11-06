@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 """API-горимын watch --sid vault run-ийг дүрээрээ авна; reply --run done болгоно; stall queued run тоолно."""
-import importlib.util, io, json, os, tempfile, time, unittest
+import importlib.util, io, json, os, sys, tempfile, time, unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
 D = Path(__file__).resolve().parents[1] / "plugins" / "fm" / "scripts"
-SB = os.environ.get("SB_TOOLS") or "D:/CodeBase/goomnet"
+sys.path.insert(0, str(D))   # reply_role/claim нь fm_goom_dispatch-ийг lazy import хийнэ — файлыг дангаар ажиллуулахад ModuleNotFoundError байв
+
+
+def _sb():
+    """second-brain repo: SB_TOOLS > PC-ийн D:/CodeBase/goomnet > Mac-ийн ~/Workspace/second-brain (Soyol 2026-11-06: F17)."""
+    if os.environ.get("SB_TOOLS"):
+        return os.environ["SB_TOOLS"]
+    for c in ("D:/CodeBase/goomnet", str(Path.home() / "Workspace" / "second-brain")):
+        if (Path(c) / "tools" / "chat" / "store.py").exists():
+            return c
+    return "D:/CodeBase/goomnet"
+
+
+SB = _sb()
 SID = "aaaaaaaa-2222-3333-4444-555555555555"
 
 
@@ -77,6 +90,38 @@ class SessionRuns(unittest.TestCase):
         self.gc.main(["reply", "--run", f"run-{m.id}", "хийлээ"])
         self.assertEqual(self.runs.list_runs(self.vault, "GTD")[0].status, "done")
         self.assertTrue(any(b and b.get("content") == "хийлээ" for _m, _u, b in self.posts))
+
+    def test_claim_skips_other_device(self):
+        # (Soyol 2026-11-06: F7) API-горимын сешн ч өөр төхөөрөмжийн run-ийг авахгүй
+        self.mk("GTD", "mac-ийнх", assignee="GTD", device="mac")
+        self.assertIsNone(self.gc.claim_session_run(SID))
+        self.assertEqual(self.runs.list_runs(self.vault, "GTD")[0].status, "queued")
+
+    def test_claim_writes_claimed_by_before_running(self):
+        m = self.mk("GTD", "минийх", assignee="GTD")
+        self.assertEqual(self.gc.claim_session_run(SID)["run_id"], f"run-{m.id}")
+        t = (self.vault / self.runs.list_runs(self.vault, "GTD")[0].path).read_text(encoding="utf-8")
+        self.assertIn("claimed_by: pc", t)
+        self.assertIn("status: running", t)
+
+    def test_vault_reply_needs_no_api_config(self):
+        # (Soyol 2026-11-06: M1, L2) vault сувгийн run-ийн хариу goom.json «url»-гүй ч бичигдэнэ; progress цэвэрлэгдэнэ
+        os.environ["FM_DEVICE"] = "mac"
+        (Path(self.tmp.name) / "fmos" / "goom.json").write_text("{}", encoding="utf-8")
+        m = self.mk("GTD", "хариул", assignee="GTD")
+        rid = f"run-{m.id}"
+        self.runs.update_run(self.vault, rid, status="running", progress="▶ эхэлж байна")
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = self.gc.main(["reply", "--run", rid, "болсон"])
+        self.assertEqual(rc, 0)
+        r = self.runs.list_runs(self.vault, "GTD")[0]
+        self.assertEqual((r.status, r.progress), ("done", ""))
+        from datetime import date
+        mac = [f for f in self.vault.rglob(f"{date.today():%Y-%m-%d}.mac.md")]
+        self.assertEqual(len(mac), 1)
+        self.assertIn("болсон", mac[0].read_text(encoding="utf-8"))
+        self.assertEqual(self.posts, [])
 
     def test_stall_counts_old_queued_runs(self):
         m = self.mk("GTD", "удаан", assignee="GTD")

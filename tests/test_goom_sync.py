@@ -306,6 +306,14 @@ class TestGoomSync(unittest.TestCase):
         # every path belongs to exactly one kind
         self.assertEqual(len(kinds), len(items))
 
+    def test_sources_every_kind(self):
+        # (Soyol 2026-11-06: F17) _sources("media") KeyError → fm_goom_watch.scope_files, fm_vault_fix унаж байв
+        self._world_vault()
+        rels = {k: {f.relative_to(self.vault).as_posix() for f in gs._sources(self.vault, k)} for k in gs.KINDS}
+        items, _ = gs.collect(self.vault, {"media"})
+        self.assertTrue({i["source_path"] for i in items} <= rels["media"])
+        self.assertTrue(all(gs.media_mime(r) for r in rels["media"]))
+
     def test_world_private_filtering(self):
         self._world_vault()
         items, skipped = gs.collect(self.vault, set(gs.KINDS))

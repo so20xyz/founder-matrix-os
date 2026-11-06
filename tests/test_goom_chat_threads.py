@@ -117,3 +117,17 @@ class ThreadReplyToTest(unittest.TestCase):
             self.assertEqual(where, "02-Projects/INAI Investment/Chat/2026-10-26.pc.md")
             line = (Path(v) / where).read_text(encoding="utf-8")
             self.assertEqual(line, f"- 02:37 · 🗂 Project · ↳ #^msg-20261026023715-app-2ef0 хариу ⏎ мөр ^msg-{mid}\n")
+
+    def test_paths_stay_inside_vault(self):
+        # (Soyol 2026-11-06: F15) run файлын reply_to-оор vault-аас гадуур / 🔒 хавтсанд бичүүлэхгүй
+        import tempfile
+        for rt in ("thread:../x/a.md#20261026023715-app-2ef0", "thread:/etc/x/a.md#20261026023715-app-2ef0",
+                   "thread:C:/x/a.md#20261026023715-app-2ef0", "thread:01-GTD/../../x/a.md#20261026023715-app-2ef0"):
+            self.assertIsNone(gc.parse_thread_reply_to(rt), rt)
+        with tempfile.TemporaryDirectory() as t:
+            v = Path(t) / "vault"; v.mkdir()
+            for bad in ("../x", "/etc/x", "01-GTD/../../x", "03-Areas/Business/finances/private/Chat"):
+                with self.assertRaises(ValueError, msg=bad):
+                    gc.thread_reply_line(v, bad, "20261026023715-app-2ef0", "🗂 Project", "x", "pc")
+            self.assertEqual(sorted(p.name for p in Path(t).iterdir()), ["vault"])
+            self.assertFalse(any(v.rglob("*.md")))

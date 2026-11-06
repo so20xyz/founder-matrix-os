@@ -58,7 +58,7 @@ except Exception:
     _CFG = {}
 ITGE_EMAIL = _CFG.get("owner_email") or "bd@inai.local"
 ITGE_ID = int(_CFG.get("owner_user_id") or 199)   # локал dev: itge.e = user 199
-OWNER_NAME = _CFG.get("owner_name") or "itge.e"
+OWNER_NAME = _CFG.get("owner_name") or "хэрэглэгч"   # нэр зөвхөн goom.json-оос, хүн таахгүй (Soyol 2026-11-06)
 WORKSPACE_ID = 1                            # «Inai»
 LEGACY_SID = "6a1a3d03-66a3-4e80-8a4a-86fed2e7e058"   # 🏛 Architect · PC — чат 1-ийн эзэн
 ROLES = {"architect": "🏛 Architect", "creative": "🎨 Creative", "wiki": "📚 Wiki",
@@ -171,7 +171,14 @@ def _load(p, d):
 def _save(p, data):
     p = Path(p); p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(p.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    # (Soyol 2026-11-06: F16) goom-agent-tokens.json = дүрийн JWT — 0644 биш, зөвхөн эзэн уншина
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(data, ensure_ascii=False, indent=1))
+    try:
+        os.chmod(tmp, 0o600)   # өмнөх .tmp 0644-өөр үлдсэн байж болно
+    except OSError:
+        pass
     os.replace(tmp, p)
 
 
@@ -642,6 +649,22 @@ def listen_beat(ch):
         pass
 
 
+def claim_own_run(vault, r):
+    """(Soyol 2026-11-06: F7) Сонсогч ч dispatcher шиг зөвхөн өөрийн төхөөрөмжийн run-ийг авна: Drive run файлыг
+    хоёр машинд хуулдаг тул `device:`/`claimed_by:` өөр бол алгасна; авахдаа running-аас ӨМНӨ `claimed_by` бичнэ."""
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import fm_goom_dispatch as gd
+    p = Path(vault) / r.path
+    me = vault_device()
+    try:
+        meta = gd.run_meta(p.read_text(encoding="utf-8"))
+    except OSError:
+        return False
+    return gd.owns_run(meta, me, gd.default_device()) and gd.claim_run(p, me)
+
+
 def vault_watch(sid, timeout=None, every=3):
     store, runs = vault_lib()
     ch, _e = vault_channel(sid)
@@ -653,6 +676,8 @@ def vault_watch(sid, timeout=None, every=3):
             cur = next((x for x in runs.list_runs(vault, ch, "queued") if x.id == r.id), None)   # claim-ийн өмнө дахин шалга
             if cur is None:
                 continue   # өөр watcher авчээ
+            if not claim_own_run(vault, r):
+                continue   # өөр төхөөрөмжийн run (device/claimed_by)
             try:
                 runs.update_run(vault, r.id, status="running", started=_now_iso())
             except ValueError:
@@ -700,6 +725,8 @@ def claim_session_run(sid, now=None):
         cur = next((x for x in runs.list_runs(vault, ch, "queued") if x.id == r.id), None)
         if cur is None:
             continue
+        if not claim_own_run(vault, r):
+            continue   # өөр төхөөрөмжийн run (device/claimed_by)
         try:
             runs.update_run(vault, r.id, status="running", started=_now_iso())
         except ValueError:
@@ -756,9 +783,29 @@ def parse_reply_to(v):
 
 
 def parse_thread_reply_to(v):
-    """«thread:<vault path of channel file>#<root msg id>» → (dir, root_id) эсвэл None."""
+    """«thread:<vault path of channel file>#<root msg id>» → (dir, root_id) эсвэл None.
+    (Soyol 2026-11-06: F15) абсолют зам, «..» хэсэгтэй замыг хүлээж авахгүй — run файл vault-аас гадуур бичүүлэхгүй."""
     m = re.fullmatch(r"thread:(.+)#([0-9]{14}-[a-z0-9]+-[0-9a-f]{4})", (v or "").strip())
-    return (m.group(1).rsplit("/", 1)[0], m.group(2)) if m else None
+    if not m:
+        return None
+    d = m.group(1).replace(chr(92), "/").rsplit("/", 1)[0]
+    if d.startswith("/") or re.match(r"[A-Za-z]:", d) or ".." in d.split("/"):
+        return None
+    return d, m.group(2)
+
+
+def vault_subpath(vault, rel):
+    """Frontmatter-ээс ирсэн vault-ын харьцангуй зам → resolve хийсэн абсолют зам. Vault-аас гадуур эсвэл
+    🔒 finances/private бол ValueError (Soyol 2026-11-06: F15)."""
+    root = Path(vault).resolve()
+    p = (root / str(rel or "")).resolve()
+    try:
+        inner = p.relative_to(root).as_posix()
+    except ValueError:
+        raise ValueError(f"vault-аас гадуур зам: {rel!r}")
+    if "finances/private" in inner.lower():
+        raise ValueError(f"🔒 хувийн зам: {rel!r}")
+    return p
 
 
 def encode_lines(text):
@@ -789,16 +836,18 @@ def thread_reply_line(vault, chat_dir, root_id, author, text, device, now=None):
     dev = re.sub(r"[^a-z0-9]", "", (device or "pc").lower()) or "pc"
     mid = f"{now:%Y%m%d%H%M%S}-{dev}-{secrets.token_hex(2)}"
     body = encode_lines(text)
-    folder = Path(vault) / chat_dir
+    folder = vault_subpath(vault, chat_dir)
     folder.mkdir(parents=True, exist_ok=True)
     f = folder / f"{now:%Y-%m-%d}.{dev}.md"
     with open(f, "a", encoding="utf-8", newline=chr(10)) as fh:
         fh.write(f"- {now:%H:%M} · {author} · ↳ #^msg-{root_id} {body} ^msg-{mid}" + chr(10))
-    return mid, f.relative_to(vault).as_posix()
+    return mid, f.relative_to(Path(vault).resolve()).as_posix()
 
 
 def run_reply(api, run_id, text, role=None, timeout=30, outputs=None):
-    """Run-ий reply_to руу (API чат эсвэл хурлын самбарын чат) агентын нэрээр хариулж, run-ийг done болгоно."""
+    """Run-ий reply_to руу (API чат эсвэл хурлын самбарын чат) агентын нэрээр хариулж, run-ийг done болгоно.
+    api=None бол зөвхөн chat/board хариунд ~/.fmos/goom.json «url»-ийг уншина (vault-only хариу API тохиргоо шаардахгүй).
+    Done болгохдоо `progress`-ийг цэвэрлэнэ — run card дээр хуучин алхам үлдэхгүй (Soyol 2026-11-06: M1, L2)."""
     _, runs = vault_lib()
     vault = vault_path()
     raw = runs._find(vault, run_id).read_text(encoding="utf-8")
@@ -813,13 +862,15 @@ def run_reply(api, run_id, text, role=None, timeout=30, outputs=None):
         if re.search(r"^# ↳ #\^msg-\S+ ⤴", raw, re.M) and not str(text).startswith("⤴"):
             text = "⤴ " + str(text)
         mid, where = thread_reply_line(vault, th[0], th[1], ROLES[role], text, vault_device())
-        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="", **out)
+        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="", progress="", **out)
         return {"run_id": run_id, "reply_to": r.reply_to, "thread": where, "msg": mid, "role": role}
     if not dest:   # vault сувгийн run (app чат): тэр сувагт бичээд хаана — reply үргэлж run-ийг хаана
         store, _ = vault_lib()
-        store.append_message(vault, r.channel, ROLES[role], text, vault_device())
-        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="", **out)
+        # төгсгөлийн мөр шилжилт store._clean-д « ⏎» болж үлддэг байв (thread-ийн encode_lines шиг тайрна)
+        store.append_message(vault, r.channel, ROLES[role], str(text).rstrip(), vault_device())
+        runs.update_run(vault, run_id, status="done", completed=_now_iso(), error="", progress="", **out)
         return {"run_id": run_id, "channel": r.channel, "role": role}
+    api = api or _cfg_url()
     tok = agent_token(api, role, timeout=timeout)
     kind, ident, _mid = dest
     if kind == "chat":
@@ -828,7 +879,7 @@ def run_reply(api, run_id, text, role=None, timeout=30, outputs=None):
     else:
         _req("POST", f"{api}/api/web/private/vault/boards/{ident}/messages", tok,
              {"text": text, "author_label": ROLES[role]}, timeout=timeout)
-    runs.update_run(vault, run_id, status="done", completed=_now_iso(), **out)
+    runs.update_run(vault, run_id, status="done", completed=_now_iso(), progress="", **out)
     return {"run_id": run_id, "reply_to": r.reply_to, "role": role}
 
 
@@ -1023,12 +1074,16 @@ def main(argv=None):
             print(json.dumps(vault_say(sid, a.text), ensure_ascii=False)); return 0
         if a.cmd == "watch":
             return vault_watch(sid, a.timeout)
-    api = _cfg_url()
-    if a.cmd == "reply":
+    if a.cmd == "reply":   # (Soyol 2026-11-06: M1) хаашаа хариулахыг эхэлж мэдээд API url-ийг зөвхөн chat/board-д
         text = Path(a.file).expanduser().read_text(encoding="utf-8-sig") if a.file else a.text
         if not (text or "").strip():
             raise SystemExit("reply: хариу хоосон (text эсвэл --file)")
-        print(json.dumps(run_reply(api, a.run, text, a.role, outputs=a.outputs), ensure_ascii=False)); return 0
+        try:
+            res = run_reply(None, a.run, text, a.role, outputs=a.outputs)
+        except ValueError as ex:   # vault-аас гадуур / 🔒 thread зам (F15)
+            raise SystemExit(f"reply алдаа: {ex}")
+        print(json.dumps(res, ensure_ascii=False)); return 0
+    api = _cfg_url()
     if a.cmd == "ensure-agents":
         for role, uid, st in ensure_agents(api):
             print(f"{ROLES[role]}: user {uid} — {st}")

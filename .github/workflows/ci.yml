@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 15
     # macOS runner GitHub-аас олгогдохгүй цуцлагдах нь давтагддаг (2026-11-03) - мэдээллийн job, CI-г унагахгүй.
     continue-on-error: ${{ matrix.os == 'macos-latest' }}
+    env:
+      SB_READ_TOKEN: ${{ secrets.SB_READ_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +45,34 @@ jobs:
       # SKILL.md frontmatter, and a personal-path scan of shipped files.
       - name: Tests and checks
         run: uv run --no-project --python ${{ matrix.python }} python .github/scripts/ci_checks.py
+
+      # The offline e2e harness and vault tests need second-brain's tools/chat (private repo).
+      # Without the SB_READ_TOKEN secret (read-only PAT for Atlas322/second-brain) they skip.
+      - name: Check out second-brain tools (optional)
+        if: (success() || failure()) && matrix.python == '3.12' && matrix.os != 'windows-latest' && env.SB_READ_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          repository: Atlas322/second-brain
+          token: ${{ secrets.SB_READ_TOKEN }}
+          path: _second-brain
+          sparse-checkout: tools
+
+      # Goom chat pipeline (dispatcher, headless guard, isolation, offline e2e harness) is
+      # pytest-only and needs Python 3.12+ (fm_goom_dispatch preflight). Windows is not a
+      # dispatcher host, so it is left out. tests/conftest.py points HOME at a temp dir.
+      - name: Goom pipeline tests (pytest)
+        # Runs even when ci_checks fails (pre-existing test_onboard failure), so it is never hidden.
+        if: (success() || failure()) && matrix.python == '3.12' && matrix.os != 'windows-latest'
+        env:
+          SB_TOOLS: ${{ github.workspace }}/_second-brain
+        run: >-
+          uv run --no-project --python 3.12 --with pytest python -m pytest -q
+          tests/test_headless_guard.py tests/test_headless_worker.py
+          tests/test_goom_isolation.py tests/test_goom_pipeline_e2e.py
+          tests/test_fm_goom_dispatch.py tests/test_fm_goom_control.py
+          tests/test_goom_agent.py tests/test_goom_chat_threads.py tests/test_goom_chat_vault.py
+          tests/test_goom_mirror.py tests/test_goom_pull.py tests/test_goom_session_chat.py
+          tests/test_goom_session_runs.py tests/test_goom_stall.py tests/test_goom_sync.py
 
   validate-plugin:
     name: claude plugin validate
