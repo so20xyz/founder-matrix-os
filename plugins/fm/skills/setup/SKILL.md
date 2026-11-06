@@ -324,10 +324,11 @@ Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй о
 | 💰 Төлөгдөөгүй сануулга (`finance-month-20.md`) | Сарын 20, 09:00 | `finance` идэвхтэй |
 | 🧠 Harvester (`harvester.md`) — чатыг автоматаар атом болгоно | 2 цаг тутам | `~/.fmos/config.json` бий (Discord хэрэггүй) |
 | 🆘 Гишүүний дэмжлэг (`support.md`) — GitHub-ийн issue, PR-ыг inbox-д оруулж, хариугүй хоцорсныг нэрлэнэ | Өдөрт 2 удаа 09:00, 17:00 | `~/.fmos/config.json` бий + `gh` нэвтэрсэн |
+| 🧪 Context Engineer (`context-engineer.md`) — сешнүүдийг review хийж шошголох карт бэлдэнэ | Баасан 16:00 | `~/.fmos/config.json` бий |
 
-**Нэг машин эсвэл машин бүр (`scope`):** `one-device` (vault руу бичдэг — daily, weekly, санхүү) зөвхөн **гол машин** дээр; `per-device` (Harvester) машин бүрт. Хоёр дахь төхөөрөмж дээр (registry-д өөр `device`-ийн сешн аль хэдийн бий, эсвэл гишүүн «энэ 2 дахь компьютер» гэвэл) зөвхөн `per-device`-ийг санал болго; `one-device`-ийг гол машин руу заа — давхар ажиллавал Drive-д `файл (1).md` үүснэ.
+**Нэг машин эсвэл машин бүр (`scope`):** `one-device` (vault руу бичдэг — daily, weekly, санхүү) зөвхөн **гол машин** дээр; `per-device` (Harvester, Context Engineer) машин бүрт. Хоёр дахь төхөөрөмж дээр (registry-д өөр `device`-ийн сешн аль хэдийн бий, эсвэл гишүүн «энэ 2 дахь компьютер» гэвэл) зөвхөн `per-device`-ийг санал болго; `one-device`-ийг гол машин руу заа — давхар ажиллавал Drive-д `файл (1).md` үүснэ.
 
-Тийм гэсэн бүрд: файлыг унш → биеийн `{{VAULT}}`, `{{MEMBER}}`, `{{DEVICE}}`, `{{HARVEST}}`-г (`routines/README.md`) бодит утгаар соль → `mcp__scheduled-tasks__list_scheduled_tasks`-аар ижил `id` байгаа эсэхийг шалга (байвал алгас, дарж бичихгүй) → `mcp__scheduled-tasks__create_scheduled_task(taskId=id, title, description, cronExpression=cron, prompt=бие)`. Цаг гишүүнд тохирохгүй бол cron-ыг тэр үед нь солиод үүсгэ.
+Тийм гэсэн бүрд: файлыг унш → биеийн `{{VAULT}}`, `{{MEMBER}}`, `{{DEVICE}}`, `{{HARVEST}}`, `{{PLUGIN_ROOT}}`-г (`routines/README.md`) бодит утгаар соль → `mcp__scheduled-tasks__list_scheduled_tasks`-аар ижил `id` байгаа эсэхийг шалга (байвал алгас, дарж бичихгүй) → `mcp__scheduled-tasks__create_scheduled_task(taskId=id, title, description, cronExpression=cron, prompt=бие)`. Цаг гишүүнд тохирохгүй бол cron-ыг тэр үед нь солиод үүсгэ.
 
 Гишүүнд хэл: routine Claude апп **нээлттэй** үед ажиллана (хаалттай байсан бол дараа нээхэд). Sidebar-ийн **Routines** хэсгээс харж, унтрааж болно. Хэрэгсэл байхгүй (CLI) бол жагсаалтыг өгөөд Desktop → Scheduled-аас гараар үүсгэхийг хэл.
 

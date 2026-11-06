@@ -1,3 +1,17 @@
+## fm 0.10.10 · 2026-11-06 · 🧪 Context Engineer дүр
+
+- 🧪 **Context Engineer** дүр **шинэ** — `fm:context-engineer` skill, `fm:context-engineer` agent, `scripts/fm_ce.py`
+  (`review`, `label`, `verdict`, `agreement`, `audit`, `publish-taxonomy`), `scripts/ce_regress.py` (vault-ийн түр
+  хуулбар дээрх baseline/candidate regression eval) ба долоо хоногийн routine (Баасан 16:00, `per-device`).
+  Сешнүүдийг картаар review хийж алдааны ангилал гаргана, шошголох 5–10 картыг локал store-д
+  (`~/.fmos/context-engineer/`) бэлдэнэ; vault руу зөвхөн нэр хаяггүй ангилал орно. Хувийн (finance) сешн
+  хаалттай-аар алгасагдана. UserPromptSubmit-д `fm_ce_gate.py` — анхны интерактив prompt-д л товч шалгуур нэмнэ.
+  - Яагаад: ажиллаж байгаа сешнүүдийн давтагдах алдааг нотолгоотой олж, засварыг өмнөх/дараах оноотойгоор санал болгоно · Дүрэм: [[_system/BOOT]]
+- Skill-д чанарын гурван арга: шинэ зүйл гарахгүй болтол дахин код хийх (loop-until-dry), ангилал бүрийг
+  publish-ээс өмнө шинэ subagent няцаах (adversarial verification), шүүгчид итгэгдээгүй үед 3 шүүгчийн самбар
+  (judge panel). Самбар нь n ≥ 30, agreement ≥ 0.8 калибровкын босгыг орлохгүй.
+- Тест: `tests/test_ce_*.py` (6 файл), CI-д нэмэгдэв.
+
 ## fm 0.10.9 · 2026-11-05 · /fm:mn-check скрипт өөрөө ажиллана
 
 - `skills/mn-check/SKILL.md`-д `allowed-tools: Bash(python3 *mn_check.py*)`. Desktop апп ба auto/default

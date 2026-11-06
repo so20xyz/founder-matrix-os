@@ -81,6 +81,23 @@
       "active": true,
       "agent": "fm:architect"
     },
+    "context-engineer": {
+      "note": "03-Areas/AI Team/ai-workers/Context Engineer.md",
+      "channel": "context-engineer",
+      "group": "development",
+      "folders": [
+        "03-Areas/AI Team/context-engineering/"
+      ],
+      "skills": [
+        "fm:context-engineer",
+        "superpowers:brainstorming",
+        "superpowers:writing-skills",
+        "superpowers:dispatching-parallel-agents"
+      ],
+      "private": false,
+      "active": true,
+      "agent": "fm:context-engineer"
+    },
     "creative": {
       "note": "03-Areas/AI Team/ai-workers/Creative Director.md",
       "channel": "05-creative",

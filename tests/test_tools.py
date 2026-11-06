@@ -23,7 +23,7 @@ REPO = Path(__file__).resolve().parents[1]
 PLUGIN = REPO / "plugins" / "fm"
 TOOLS = PLUGIN / "tools"
 TOOL_SKILLS = ["figma", "notion", "relay", "post", "watch", "framer", "mn-check"]
-CORE_SKILLS = ["setup", "update", "finance", "research", "help"]   # 2026-11-03: 21 → 11 commands
+CORE_SKILLS = ["setup", "update", "finance", "research", "help", "context-engineer"]   # 2026-11-03: 21 → 11 commands
 GUIDES = ["save", "log", "task", "inbox", "people", "project", "sync", "role", "vault", "refs"]   # steps, skills/<x>/GUIDE.md
 # client names, spelled in pieces so a history scrub (git filter-repo --replace-text) never rewrites the guard itself
 CLIENT_WORDS = re.compile("|".join(["proba" + "itsaa", "проба" + "йцаа", r"\bb" + r"yd\b", "way " + "academy", "opus" + "_ep", "mag" + "god", "go" + "pay", "ochir" + "suren", "очир" + "сүрэн", "river " + "garden", "galaxy " + "tower"]), re.I)
@@ -46,7 +46,7 @@ def child_env(home):
 
 # ------------------------------------------------------------------ skills
 
-def test_skill_lineup_is_5_plus_7():
+def test_skill_lineup_is_6_plus_7():
     have = sorted(p.parent.name for p in (PLUGIN / "skills").glob("*/SKILL.md"))
     assert have == sorted(CORE_SKILLS + TOOL_SKILLS), have
     for gone in ("track", "clip", "daily", "spawn", "bases", "canvas", "vault-cli"):
@@ -93,7 +93,7 @@ def test_boot_and_role_rules_fit_session_context():
         assert r.returncode == 0, r.stderr
         regp = vault / "_system" / "fm" / "registry.json"
         reg = json.loads(regp.read_text(encoding="utf-8"))
-        assert set(reg["roles"]) == {"project", "gtd", "wiki", "architect", "creative", "finance"}
+        assert set(reg["roles"]) == {"project", "gtd", "wiki", "architect", "context-engineer", "creative", "finance"}
         notes = [vault / "_system" / "BOOT.md"] + sorted((vault / "03-Areas" / "AI Team" / "ai-workers").glob("*.md"))
         for eol in ("LF", "CRLF"):   # a Windows checkout (core.autocrlf) gives the templates CRLF
             if eol == "CRLF":

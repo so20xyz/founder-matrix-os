@@ -174,7 +174,7 @@ def test_setup_creates_fm_registry_not_relay(c):
     assert not (c.vault / "_system/relay").exists(), "template must not ship _system/relay"
     reg = json.loads(c.read("_system/fm/registry.json"))
     assert reg["sessions"] == {} and reg.get("version") == 1
-    want = {"project", "gtd", "wiki", "architect", "creative", "finance"}
+    want = {"project", "gtd", "wiki", "architect", "context-engineer", "creative", "finance"}
     assert set(reg["roles"]) == want, reg["roles"].keys()
     for slug, info in reg["roles"].items():
         assert (c.vault / info["note"]).is_file(), (slug, info)

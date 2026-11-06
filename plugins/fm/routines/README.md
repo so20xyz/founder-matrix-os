@@ -19,6 +19,6 @@
 | `scope` | Утга | Routine |
 |---|---|---|
 | `one-device` | Vault руу бичдэг → **зөвхөн нэг машин** (гол машин). Хоёр машинд зэрэг ажиллавал өдрийн тэмдэглэл давхар бичигдэж Drive-д `файл (1).md` үүснэ | daily, weekly, support, finance-month-start, finance-month-20 |
-| `per-device` | Тухайн машины Claude чатыг уншдаг → **машин бүрт** нэг (`{{DEVICE}}`) | harvester |
+| `per-device` | Тухайн машины Claude чатыг уншдаг → **машин бүрт** нэг (`{{DEVICE}}`) | harvester, context-engineer |
 
 Хоёр дахь төхөөрөмж (PC г.м.) дээр `/fm:setup routines` → зөвхөн `per-device` routine-ийг санал болгоно; `one-device`-ийг «гол машин дээр бий юу?» гэж асуугаад, гол машинаа солих бол л тэнд үүсгэнэ (хуучин машинаас нь унтраа).

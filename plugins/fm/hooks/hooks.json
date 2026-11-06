@@ -119,6 +119,14 @@
               "hook"
             ],
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/fm_ce_gate.py"
+            ],
+            "timeout": 5
           }
         ]
       }

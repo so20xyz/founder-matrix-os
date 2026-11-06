@@ -28,6 +28,12 @@ TESTS = [
     "tests/test_recap.py",
     "tests/test_refs.py",
     "tests/test_migrate.py",
+    "tests/test_ce_traces.py",
+    "tests/test_ce_privacy.py",
+    "tests/test_ce_cli.py",
+    "tests/test_ce_gate.py",
+    "tests/test_ce_regress.py",
+    "tests/test_ce_role.py",
     "plugins/auto-research-tools/tests/test_refresh_catalog.py",
     "tools/relay/tests/test_relay_config.py",
 ]
