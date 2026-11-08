@@ -829,6 +829,20 @@ def role_note_defaults(vault, role):
     return get("default-model").strip().lower(), get("default-effort").strip().lower()
 
 
+# Like the Claude app: an effort the user names in the message itself ("effort max", "max effort", "ultrathink",
+# Latin or Cyrillic) wins over the role default; an explicit Composer choice still wins over the text.
+_EFFORT_TEXT = re.compile(r"\b(?:effort|эффорт)\s*[:=]?\s*(low|medium|high|xhigh|max)\b"
+                          r"|\b(low|medium|high|xhigh|max)\s+(?:effort|эффорт)\b|\b(ultrathink)\b", re.I)
+
+
+def text_effort(text):
+    """Мессежийн текстэд нэрлэсэн effort → утга, эс бөгөөс ""."""
+    m = _EFFORT_TEXT.search(text or "")
+    if not m:
+        return ""
+    return "max" if m.group(3) else (m.group(1) or m.group(2)).lower()
+
+
 def pick_model(run_model, run_effort, role, note=("", "")):
     """→ (model, effort) claude CLI-д: run > дүрийн note > ROLE_DEFAULTS. Буруу утгыг алгасна."""
     base = ROLE_DEFAULTS.get(role, ("", ""))
@@ -1290,6 +1304,7 @@ class Dispatcher:
         siblings = runs.list_runs(vault, ch)
         resume = resume_session(cur, siblings, time.time(), float(self.cfg["resume_window_min"]) * 60)
         me, msgs = None, []
+        text = ""
         if cur.ask:   # ask-ийн хариутай үргэлжлүүлэх
             try:
                 atext = gc.vault_subpath(vault, cur.ask).read_text(encoding="utf-8")
@@ -1339,7 +1354,8 @@ class Dispatcher:
         logp = LOGDIR / f"{cur.id}.log"
         lf = os.fdopen(os.open(logp, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600), "a", encoding="utf-8")
         start_off = logp.stat().st_size
-        model, effort = pick_model(cur.model, getattr(cur, "effort", ""), role, role_note_defaults(vault, role))
+        model, effort = pick_model(cur.model, getattr(cur, "effort", "") or text_effort(text), role,
+                                   role_note_defaults(vault, role))
         settings = None
         if os.name == "nt":   # claude.cmd-ийн cmd.exe JSON хашилтыг эвддэг тул файлаар
             settings = str(LOGDIR / "headless-settings.json")
