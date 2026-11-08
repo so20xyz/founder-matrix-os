@@ -331,8 +331,6 @@ def main():
 
     payload = read_stdin_json()
     vault = configured_vault()
-    if vault is None:
-        return 0
     candidates = []
     cwd = payload.get("cwd")
     if isinstance(cwd, str) and cwd.strip():
@@ -340,6 +338,17 @@ def main():
     proj = os.environ.get("CLAUDE_PROJECT_DIR", "").strip()
     if proj:
         candidates.append(proj)
+    if vault is None:
+        # itge.e 2026-11-04: тохиргоогүй шинэ машин (сурагчийн багц) — cwd-ээс дээш vault-ийг өөрөө ол
+        for c in candidates:
+            for d in [Path(c)] + list(Path(c).parents):
+                if (d / "_system" / "BOOT.md").is_file() and (d / "_system" / "fm" / "registry.json").is_file():
+                    vault = d
+                    break
+            if vault is not None:
+                break
+    if vault is None:
+        return 0
     if not any(is_inside(c, vault) for c in candidates):
         # Mac GTD 2026-10-15: сешн хуучин (read-only) vault-аас ажилладаг — ижил бүтэцтэй өөр хавтас бол анхааруулна
         for c in candidates:
