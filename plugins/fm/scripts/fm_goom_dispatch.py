@@ -46,7 +46,9 @@ CONFIG = gc.FMOS / "config.json"
 # MCP-гүй анхдагч, 60 мин, дахин оролдлогын дээд хязгаар. (--max-turns CLI 2.1.296-д алга тул тавиагүй.)
 DEFAULTS = {"concurrency": 4, "per_project": 2, "timeout_min": 60, "resume_window_min": 30,
             "repos": [],   # repos: bypassPermissions-ийн нэмэлт хүрээ (--add-dir); fm repo зөвхөн architect-д
-            "max_budget_usd": 3, "strict_mcp": True, "max_attempts": 3, "stale_drain_s": 120,
+            # itge.e 2026-11-08 «limit тавих сонин, зорилгодоо л хүрмээр»: no $ cap by default (subscription = weekly
+            # usage, not money); a runaway is still stopped by the timeout, longer for deep effort (see DEEP_TIMEOUT_MIN)
+            "max_budget_usd": 0, "strict_mcp": True, "max_attempts": 3, "stale_drain_s": 120,
             "auth_retry_min": 10}
 PLUGIN_REPO = Path(__file__).resolve().parents[3]
 LOG = gc.FMOS / "goom-dispatch.log"
@@ -833,6 +835,7 @@ def role_note_defaults(vault, role):
 # → one-line JSON on the run (`trace:`) that the app's «Ажиллагаа» page shows: effort actually used, tool counts,
 # each subagent with its type, task, state and the skills it called.
 CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
+DEEP_TIMEOUT_MIN = 240
 TRACE_EVERY_S = 20
 
 
@@ -1274,6 +1277,12 @@ class Dispatcher:
                 log(f"heartbeat {rid}: {e}")
         return dict(acc)
 
+    def _timeout_for(self, w):
+        """high/xhigh/max effort-ийн ажил урт үргэлжилнэ: ердийн хугацааны оронд DEEP_TIMEOUT_MIN."""
+        if w.get("effort") in ("high", "xhigh", "max"):
+            return max(self.timeout, DEEP_TIMEOUT_MIN * 60)
+        return self.timeout
+
     def _trace(self, vault, runs, rid, w, now, force=False):
         """Ажиллаж буй run-ий trace-ийг ~20 с тутам (өөрчлөгдсөн үед л) run файлд бичнэ."""
         if not force and now - w.get("trace_t", 0) < TRACE_EVERY_S:
@@ -1302,7 +1311,7 @@ class Dispatcher:
                 _kill_tree(p.pid, p)
                 rc = "cancelled"
                 log(f"cancel {rid} (app «Зогсоох»)")
-            if rc is None and now - w["t0"] > self.timeout:
+            if rc is None and now - w["t0"] > self._timeout_for(w):
                 _kill_tree(p.pid, p)
                 rc = "timeout"
             if rc is None:

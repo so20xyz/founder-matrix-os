@@ -578,7 +578,9 @@ def _flag(cmd, name):
 
 def test_worker_cmd_budget_mcp_settings_and_disallowed(tmp_path):
     cmd = gd.worker_cmd("claude", "project", "", "sid", [], mcp=tmp_path / "none.json")
-    assert _flag(cmd, "--max-budget-usd") == "3"
+    assert "--max-budget-usd" not in cmd                                 # анхдагч: $ хязгааргүй (itge.e 2026-11-08)
+    assert _flag(gd.worker_cmd("claude", "project", "", "s", [], mcp=tmp_path / "none.json",
+                               cfg=dict(gd.DEFAULTS, max_budget_usd=3)), "--max-budget-usd") == "3"
     assert "--strict-mcp-config" in cmd and "--mcp-config" not in cmd     # анхдагч: MCP-гүй
     assert "--max-turns" not in cmd                                      # CLI 2.1.296-д алга
     st = json.loads(_flag(cmd, "--settings"))
