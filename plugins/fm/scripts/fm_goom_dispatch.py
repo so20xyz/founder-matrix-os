@@ -749,6 +749,91 @@ def task_subchat(vault, ch, cur, me, role):
                                 gc.vault_device(), title=f"Task · {title}")
     runs.update_run(vault, cur.id, reply_to=f"thread:{root.path}#{root.id}")  # `task` is read-only in runs.py; the prompt carries it
     return task
+
+# Every run that spends tokens is a task (itge.e 2026-11-08 «чамаар token урж байгаа зүйл болгон task»): a run with no
+# task of its own (non-project channels, short asks, thread replies) gets one here, and every run's start/end lands in
+# its task's «Өөрчлөлтийн түүх» with real times, so the day's timeline and the 🤝 calendar see all of it.
+_TASK_LINK = re.compile(r"\[\[(01-GTD/Tasks/[^\]|#]+?)(?:\.md)?(?:[|#][^\]]*)?\]\]")
+
+
+def thread_task(msgs, text):
+    """«↳ #^msg-…» thread хариу → эх мессеж (эсвэл түүний thread)-д холбосон task, эс бөгөөс ""."""
+    m = re.search(r"#\^(msg-[\w-]+)", text or "")
+    if not m:
+        return ""
+    for x in msgs:
+        if x.id == m.group(1) or m.group(1) in (getattr(x, "thread_root", "") or ""):
+            t = _TASK_LINK.search(x.text or "")
+            if t:
+                return t.group(1)
+    return ""
+
+
+def run_task(vault, ch, role, text, msgs):
+    """Run-ий task: thread-ийн эх task, эс бөгөөс шинэ task (owner = дүр, төслийн сувагт project холбоостой)."""
+    t = thread_task(msgs, text)
+    if t and (Path(vault) / f"{t}.md").is_file():
+        return t
+    store, _ = gc.vault_lib()
+    proj = ""
+    try:
+        folder = store.channel_dir(Path(vault), ch).parent.relative_to(vault).as_posix()
+        proj = f"{folder}/{ch}" if folder.startswith("02-Projects/") else ""
+    except (ValueError, OSError):
+        pass
+    body = " ".join((text or "").replace(" ⏎ ", " ").split())
+    body = re.sub(r"^↳\s*#\^\S+\s*(⤴\s*)?", "", body)
+    title = f"{ch} - {task_title(body or ch)}"
+    cmd = [_py(), str(PLUGIN_REPO / "tools" / "relay" / "relay.py"), "task", title, "--owner", role or "project",
+           "--status", "in-progress"] + (["--project", proj] if proj else [])
+    try:
+        out = subprocess.run(cmd, cwd=str(vault), capture_output=True, text=True, encoding="utf-8", timeout=60,
+                             env=dict(os.environ, PYTHONIOENCODING="utf-8")).stdout
+        m = re.search(r"task → (.+?\.md)", out or "")
+        return Path(m.group(1).strip()).resolve().relative_to(Path(vault).resolve()).as_posix()[:-3] if m else ""
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return ""
+
+
+def task_stamp(vault, task, when, what, where, done=False):
+    """Task-д цагтай түүхийн мөр (`| YYYY-MM-DD HH:MM | юу | хаана |`) + started/completed. Хоосон task → алгас."""
+    if not task:
+        return
+    f = Path(vault) / f"{task}.md"
+    try:
+        t = f.read_text(encoding="utf-8")
+    except OSError:
+        return
+    crlf = "\r\n" in t
+    t = t.replace("\r\n", "\n")
+    stamp = when.strftime("%Y-%m-%d %H:%M")
+    what = " ".join(what.replace("|", "/").split())[:160]
+    row = f"| {stamp} | {what} | {where.replace('|', '/')} |"
+    if row in t:
+        return
+    m = re.match(r"(---\n.*?\n)(---\n)", t, re.S)
+    if m:
+        fm = m.group(1)
+        iso = when.strftime("%Y-%m-%dT%H:%M")
+        if not re.search(r"^started:\s*\S", fm, re.M):
+            fm = re.sub(r"^started:.*\n", "", fm, flags=re.M) + f"started: {iso}\n"
+        if done:
+            fm = re.sub(r"^completed:.*\n", "", fm, flags=re.M) + f"completed: {iso}\n"
+            fm = re.sub(r"^status:.*$", "status: completed", fm, count=1, flags=re.M)
+        t = fm + m.group(2) + t[m.end():]
+    h = "## Өөрчлөлтийн түүх"
+    if h in t:
+        i = t.index(h)
+        j = t.find("\n## ", i + len(h))
+        j = len(t) if j < 0 else j
+        sec = t[i:j].rstrip("\n")
+        sec += ("\n" if "|---|" in sec else "\n\n| Цаг | Юу | Хаана |\n|---|---|---|\n") + row
+        t = t[:i] + sec + "\n" + ("\n" + t[j:].lstrip("\n") if j < len(t) else "")
+    else:
+        t = t.rstrip("\n") + f"\n\n{h}\n\n| Цаг | Юу | Хаана |\n|---|---|---|\n{row}\n"
+    f.write_text(t.replace("\n", "\r\n") if crlf else t, encoding="utf-8")
+
+
 def routing_note(ch, role, run_path):
     """Буруу сувагт ирсэн хувийн GTD зүйлд гүн ажил хийлгэхгүй (2026-11-02)."""
     kind = (f"«{ch}» төслийн суваг" if (role or "project") == "project" else f"{gc.ROLES.get(role, role)} дүрийн суваг")
@@ -1323,6 +1408,11 @@ class Dispatcher:
             # гарах үед бичигдсэн сүүлийн мөрүүд (result/usage) — poll()-оос өмнөх _pump-д ороогүй байж болно
             s = self._pump(vault, runs, rid, w, _read_run(vault, runs, rid))
             self._trace(vault, runs, rid, w, now, force=True)
+            end = _read_run(vault, runs, rid)
+            ok = end is not None and end.status in ("done", "completed")
+            task_stamp(vault, w.get("task", ""), datetime.now(),
+                       ("дууссан" if ok else f"зогссон ({getattr(end, 'status', rc)})") + (f": {end.progress}" if end and end.progress and not ok else ""),
+                       f"{w.get('ch', '')} чат", done=ok and not w.get("thread"))
             del self.procs[rid]
             try:
                 w["lf"].close()
@@ -1394,7 +1484,7 @@ class Dispatcher:
         siblings = runs.list_runs(vault, ch)
         resume = resume_session(cur, siblings, time.time(), float(self.cfg["resume_window_min"]) * 60)
         me, msgs = None, []
-        text = ""
+        text, task = "", ""
         if cur.ask:   # ask-ийн хариутай үргэлжлүүлэх
             try:
                 atext = gc.vault_subpath(vault, cur.ask).read_text(encoding="utf-8")
@@ -1431,6 +1521,9 @@ class Dispatcher:
                     "дуусахад «## Үр дүн» + status completed.\n")
             if not resume:
                 prompt = recent_context(msgs, mid) + prompt
+        thread = bool(me is not None and not task and thread_task(msgs, me.text))
+        if not cur.ask and not task and me is not None:
+            task = run_task(vault, ch, role, me.text, msgs)
         sid = str(uuid.uuid4()) if (fork or not resume) else ""
         runs.update_run(vault, cur.id, status="running", started=gc._now_iso(), completed="",
                         worker=f"headless {gc.vault_device()}", error="", ask="",
@@ -1467,7 +1560,9 @@ class Dispatcher:
             pass
         self.procs[cur.id] = {"p": p, "t0": time.time(), "ch": ch, "role": role, "lf": lf, "log": str(logp),
                               "off": start_off, "progress": "", "session": resume or sid,
-                              "effort": effort, "model": model, "trace": "", "trace_t": 0.0}
+                              "effort": effort, "model": model, "trace": "", "trace_t": 0.0, "task": task,
+                              "thread": thread}
+        task_stamp(vault, task, datetime.now(), f"эхлэв ({role}, effort {effort or '-'})", f"{ch} чат")
         try:
             runs.update_run(vault, cur.id, pid=str(p.pid))
         except ValueError:

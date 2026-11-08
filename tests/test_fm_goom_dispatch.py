@@ -922,3 +922,24 @@ def test_session_trace_lists_subagents_and_their_skills(tmp_path, monkeypatch):
     assert t["effort"] == "max" and t["skills"] == ["superpowers:dispatching-parallel-agents"]
     assert [(a["state"], a["bg"], a["skills"]) for a in t["agents"]] == [("done", True, ["better-layout"]), ("running", False, [])]
     assert gd.session_trace("missing") is None
+
+
+def test_task_stamp_adds_timed_rows_and_times(tmp_path):
+    from datetime import datetime as _dt
+    (tmp_path / "01-GTD" / "Tasks").mkdir(parents=True)
+    f = tmp_path / "01-GTD" / "Tasks" / "Wiki - x.md"
+    f.write_text("---\ntype: task\nstatus: in-progress\n---\n\n# x\n\n## Үр дүн\n\n- a\n", encoding="utf-8")
+    gd.task_stamp(tmp_path, "01-GTD/Tasks/Wiki - x", _dt(2026, 11, 8, 14, 30), "эхлэв", "Wiki чат")
+    gd.task_stamp(tmp_path, "01-GTD/Tasks/Wiki - x", _dt(2026, 11, 8, 14, 43), "дууссан", "Wiki чат", done=True)
+    gd.task_stamp(tmp_path, "01-GTD/Tasks/Wiki - x", _dt(2026, 11, 8, 14, 43), "дууссан", "Wiki чат", done=True)
+    t = f.read_text(encoding="utf-8")
+    assert "started: 2026-11-08T14:30" in t and "completed: 2026-11-08T14:43" in t and "status: completed" in t
+    assert t.count("| 2026-11-08 14:43 | дууссан | Wiki чат |") == 1
+    assert t.index("## Үр дүн") < t.index("## Өөрчлөлтийн түүх") and "| 2026-11-08 14:30 | эхлэв |" in t
+
+
+def test_thread_task_follows_the_reply_to_its_task():
+    M = namedtuple("M", "id text thread_root")
+    msgs = [M("msg-1", "itge.e-ийн хүсэлт → [[01-GTD/Tasks/Inai Website - Localhost]]. Энэ…", "")]
+    assert gd.thread_task(msgs, "↳ #^msg-1 ⤴ дахиад") == "01-GTD/Tasks/Inai Website - Localhost"
+    assert gd.thread_task(msgs, "шинэ хүсэлт") == ""
