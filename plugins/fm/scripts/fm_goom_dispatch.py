@@ -36,6 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fm_goom_chat as gc  # noqa: E402
+import fm_runner_adapters as ra  # noqa: E402  (openai:/xai:/gemini:/ollama:/codex: model → өөр AI)
 
 GRACE = 30            # секунд: сонсогч claim хийх хугацаа
 LISTEN_FRESH = 20     # heartbeat ийм шинэ бол сонсогч амьд
@@ -1471,7 +1472,12 @@ class Dispatcher:
             return False
 
     def spawn(self, vault, store, runs, ch, r, role, reason):
-        if not self.claude:
+        adapter = ra.adapter_for(getattr(r, "model", "") or "")
+        if adapter != "claude" and (why := ra.unavailable(r.model)):   # түлхүүргүй / CLI алга → claim хийхгүй, шалтгаантай
+            runs.update_run(vault, r.id, status="failed", error=why)
+            log(f"failed {r.id}: {why}")
+            return
+        if adapter == "claude" and not self.claude:
             runs.update_run(vault, r.id, status="failed", error="claude CLI олдсонгүй")
             log(f"failed {r.id}: claude CLI алга")
             return
@@ -1524,11 +1530,13 @@ class Dispatcher:
         thread = bool(me is not None and not task and thread_task(msgs, me.text))
         if not cur.ask and not task and me is not None:
             task = run_task(vault, ch, role, me.text, msgs)
+        if adapter != "claude":   # өөр AI: Claude session-ийг үргэлжлүүлэхгүй/fork хийхгүй, session хадгалахгүй
+            resume = fork = ""
         sid = str(uuid.uuid4()) if (fork or not resume) else ""
         runs.update_run(vault, cur.id, status="running", started=gc._now_iso(), completed="",
                         worker=f"headless {gc.vault_device()}", error="", ask="",
                         progress="▶ эхэлж байна" + (" (thread · ярианаас салаалсан)" if fork else " (үргэлжлэл)" if resume else ""),
-                        session=sid or resume)
+                        session="" if adapter != "claude" else (sid or resume))
         LOGDIR.mkdir(parents=True, exist_ok=True)
         try:   # F16: worker-ийн лог (уншсан файлын агуулга орно) зөвхөн эзэнд
             os.chmod(LOGDIR, 0o700)
@@ -1543,8 +1551,12 @@ class Dispatcher:
         if os.name == "nt":   # claude.cmd-ийн cmd.exe JSON хашилтыг эвддэг тул файлаар
             settings = str(LOGDIR / "headless-settings.json")
             Path(settings).write_text(json.dumps(headless_settings(), ensure_ascii=False), encoding="utf-8")
-        cmd = worker_cmd(self.claude, role, resume, sid, worker_repos(self.cfg, role),
-                         fork=bool(fork), model=model, effort=effort, cfg=self.cfg, settings=settings)
+        if adapter != "claude":
+            model, effort = cur.model, ""
+            cmd = ra.runner_cmd(cur.model, cur.id, role, vault, _py())
+        else:
+            cmd = worker_cmd(self.claude, role, resume, sid, worker_repos(self.cfg, role),
+                             fork=bool(fork), model=model, effort=effort, cfg=self.cfg, settings=settings)
         env = dict(os.environ, FM_VAULT=str(vault), FM_HEADLESS_RUN=cur.id)
         tokf = gc.FMOS / "claude-token"   # `claude setup-token`-ий урт хугацааны token (desktop host refresh-гүй үед)
         if tokf.is_file() and not env.get("CLAUDE_CODE_OAUTH_TOKEN"):
