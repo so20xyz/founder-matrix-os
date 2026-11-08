@@ -636,6 +636,14 @@ def cmd_done(vault: Path, args: List[str]) -> None:
     body = append_progress(body, "- %s ✅ дууслаа: %s (%s)" % (now_stamp(), summary, who))
     write(path, join_note(fm, body))
     _out("✅ дууслаа → %s" % path.relative_to(vault).as_posix())
+    try:  # evals (2026-11-09): CLI-ээр дуусгасан Wiki task-ийг ч шалгана (hook нь Bash-ийг харахгүй)
+        sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+        import fm_eval
+        r = fm_eval.completed_hook(vault, path)
+        if r:
+            _out("🧪 " + fm_eval.summary_line(r))
+    except Exception:
+        pass
 
 
 def cmd_set(vault: Path, args: List[str]) -> None:

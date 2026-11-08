@@ -225,6 +225,11 @@ def main():
         announce_completed(ev, vault)
     except Exception:
         pass
+    try:   # evals (2026-11-09): Wiki-ийн task completed болоход гаралтыг нь шалгаж `checks:` бичнэ
+        import fm_eval
+        fm_eval.on_completed(ev, vault)
+    except Exception:
+        pass
     if follow_task(ev.get("session_id"), ev, vault):
         return   # task note-ийг өөрийг нь засаж байна — түүхэнд «засвар · task» мөр нэмэхгүй
     rel = active_task(ev.get("session_id"))
