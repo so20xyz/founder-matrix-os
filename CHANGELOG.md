@@ -1,3 +1,7 @@
+## fm 0.10.16 · 2026-11-08 · Run бүрийн ажиллагааг хянах (trace)
+
+- Dispatcher ажиллаж буй run бүрийн бичлэгийг ~20 с тутам уншиж run файлд `trace:` бичнэ: ашигласан effort, model, үйлдлийн тоо, subagent бүр (төрөл, даалгавар, төлөв, дуудсан skill). Second Brain app-ын Agent → «Ажиллагаа» дэлгэц үүнийг харуулна.
+
 ## fm 0.10.15 · 2026-11-08 · Second Brain app: мессежид бичсэн effort-ийг дагана
 
 - Claude app шиг: мессежид «effort max», «max effort», «ultrathink» гэж бичвэл dispatcher тэр effort-оор асаана. Composer-ийн сонголт түрүүлнэ, дараа нь текст, дараа нь дүрийн анхдагч.

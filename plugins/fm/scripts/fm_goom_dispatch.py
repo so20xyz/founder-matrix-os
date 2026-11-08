@@ -829,6 +829,69 @@ def role_note_defaults(vault, role):
     return get("default-model").strip().lower(), get("default-effort").strip().lower()
 
 
+# Run tracking (itge.e 2026-11-08 «workflow-г хаанаас хянах»): the worker's own transcript (and its subagents')
+# → one-line JSON on the run (`trace:`) that the app's «Ажиллагаа» page shows: effort actually used, tool counts,
+# each subagent with its type, task, state and the skills it called.
+CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
+TRACE_EVERY_S = 20
+
+
+def _scan_jsonl(path):
+    """→ (tool Counter, skills list, [(tool_use_id, Agent input)], first-call order) of one transcript."""
+    from collections import Counter
+    tools, skills, agents = Counter(), [], []
+    try:
+        fh = open(path, encoding="utf-8", errors="replace")
+    except OSError:
+        return tools, skills, agents
+    with fh:
+        for line in fh:
+            if '"tool_use"' not in line:
+                continue
+            try:
+                m = json.loads(line).get("message") or {}
+            except ValueError:
+                continue
+            for b in m.get("content") if isinstance(m, dict) and isinstance(m.get("content"), list) else []:
+                if not isinstance(b, dict) or b.get("type") != "tool_use":
+                    continue
+                name, inp = b.get("name", ""), b.get("input") or {}
+                tools[name] += 1
+                if name == "Skill" and inp.get("skill") and inp["skill"] not in skills:
+                    skills.append(str(inp["skill"]))
+                if name == "Agent":
+                    agents.append((b.get("id", ""), inp))
+    return tools, skills, agents
+
+
+def session_trace(session, effort="", model=""):
+    """Claude session id → trace dict, эсвэл None (бичлэг хараахан алга)."""
+    if not session:
+        return None
+    main = next(iter(CLAUDE_PROJECTS.glob(f"*/{session}.jsonl")), None)
+    if main is None:
+        return None
+    tools, skills, calls = _scan_jsonl(main)
+    metas = {}
+    for mf in (main.with_suffix("") / "subagents").glob("*.meta.json"):
+        try:
+            meta = json.loads(mf.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        metas[meta.get("toolUseId", "")] = (mf.with_name(mf.name[: -len(".meta.json")] + ".jsonl"), meta)
+    agents = []
+    for tid, inp in calls[:30]:
+        f, meta = metas.get(tid, (None, {}))
+        st, sk, _ = _scan_jsonl(f) if f else ({}, [], [])
+        agents.append({"type": str(inp.get("subagent_type") or "general-purpose"),
+                       "desc": str(inp.get("description") or "")[:80],
+                       "bg": bool(inp.get("run_in_background")),
+                       "state": "done" if meta.get("finished") else "running",
+                       "tools": sum(st.values()) if st else 0, "skills": sk[:12]})
+    return {"effort": effort or "", "model": model or "", "tools": dict(tools.most_common(12)),
+            "skills": skills[:12], "agents": agents}
+
+
 # Like the Claude app: an effort the user names in the message itself ("effort max", "max effort", "ultrathink",
 # Latin or Cyrillic) wins over the role default; an explicit Composer choice still wins over the text.
 _EFFORT_TEXT = re.compile(r"\b(?:effort|эффорт)\s*[:=]?\s*(low|medium|high|xhigh|max)\b"
@@ -1211,12 +1274,29 @@ class Dispatcher:
                 log(f"heartbeat {rid}: {e}")
         return dict(acc)
 
+    def _trace(self, vault, runs, rid, w, now, force=False):
+        """Ажиллаж буй run-ий trace-ийг ~20 с тутам (өөрчлөгдсөн үед л) run файлд бичнэ."""
+        if not force and now - w.get("trace_t", 0) < TRACE_EVERY_S:
+            return
+        w["trace_t"] = now
+        try:
+            t = session_trace(w.get("session", ""), w.get("effort", ""), w.get("model", ""))
+            if t is None:
+                return
+            js = json.dumps(t, ensure_ascii=False, separators=(",", ":"))
+            if js != w.get("trace"):
+                runs.update_run(vault, rid, trace=js)
+                w["trace"] = js
+        except Exception as ex:  # noqa: BLE001 — tracking алдаа run-ийг унагахгүй
+            log(f"trace {rid}: {type(ex).__name__}: {ex}")
+
     def reap(self, vault, runs, now=None):
         now = now or time.time()
         for rid, w in list(self.procs.items()):
             p = w["p"]
             cur = _read_run(vault, runs, rid)
             s = self._pump(vault, runs, rid, w, cur)
+            self._trace(vault, runs, rid, w, now)
             rc = p.poll()
             if rc is None and cur is not None and cur.status == "cancelled":
                 _kill_tree(p.pid, p)
@@ -1233,6 +1313,7 @@ class Dispatcher:
                 pass
             # гарах үед бичигдсэн сүүлийн мөрүүд (result/usage) — poll()-оос өмнөх _pump-д ороогүй байж болно
             s = self._pump(vault, runs, rid, w, _read_run(vault, runs, rid))
+            self._trace(vault, runs, rid, w, now, force=True)
             del self.procs[rid]
             try:
                 w["lf"].close()
@@ -1376,7 +1457,8 @@ class Dispatcher:
         except OSError:
             pass
         self.procs[cur.id] = {"p": p, "t0": time.time(), "ch": ch, "role": role, "lf": lf, "log": str(logp),
-                              "off": start_off, "progress": "", "session": resume or sid}
+                              "off": start_off, "progress": "", "session": resume or sid,
+                              "effort": effort, "model": model, "trace": "", "trace_t": 0.0}
         try:
             runs.update_run(vault, cur.id, pid=str(p.pid))
         except ValueError:

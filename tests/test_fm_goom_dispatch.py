@@ -892,3 +892,31 @@ def test_wake_answered_ignores_ask_outside_vault(tmp_path, monkeypatch):
     d = gd.Dispatcher(cfg=dict(gd.DEFAULTS))
     d.device = "pc"
     assert d.wake_answered(v, None, U) == 0 and seen == {}
+
+
+def test_text_effort_reads_the_effort_named_in_the_message():
+    assert gd.text_effort("za odoo buh huudsiig effort max bolgood") == "max"
+    assert gd.text_effort("High effort-оор хий") == "high"
+    assert gd.text_effort("effort: medium") == "medium"
+    assert gd.text_effort("ultrathink") == "max"
+    assert gd.text_effort("energiin effort sain") == ""
+    # the Composer's explicit choice still wins over the text
+    assert gd.pick_model("", "low" or gd.text_effort("effort max"), "project")[1] == "low"
+
+
+def test_session_trace_lists_subagents_and_their_skills(tmp_path, monkeypatch):
+    import json as _json
+    proj = tmp_path / "p"
+    (proj / "s1" / "subagents").mkdir(parents=True)
+    tu = lambda i, n, inp: _json.dumps({"message": {"content": [{"type": "tool_use", "id": i, "name": n, "input": inp}]}})
+    (proj / "s1.jsonl").write_text("\n".join([
+        tu("a", "Skill", {"skill": "superpowers:dispatching-parallel-agents"}),
+        tu("b", "Agent", {"subagent_type": "fm:creative", "description": "нүүр", "run_in_background": True}),
+        tu("c", "Agent", {"subagent_type": "fm:creative", "description": "tab"})]), encoding="utf-8")
+    (proj / "s1" / "subagents" / "agent-x.meta.json").write_text(_json.dumps({"toolUseId": "b", "finished": True}))
+    (proj / "s1" / "subagents" / "agent-x.jsonl").write_text(tu("d", "Skill", {"skill": "better-layout"}), encoding="utf-8")
+    monkeypatch.setattr(gd, "CLAUDE_PROJECTS", tmp_path)
+    t = gd.session_trace("s1", "max", "claude-opus-5-5")
+    assert t["effort"] == "max" and t["skills"] == ["superpowers:dispatching-parallel-agents"]
+    assert [(a["state"], a["bg"], a["skills"]) for a in t["agents"]] == [("done", True, ["better-layout"]), ("running", False, [])]
+    assert gd.session_trace("missing") is None
