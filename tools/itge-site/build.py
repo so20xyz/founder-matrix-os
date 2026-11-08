@@ -206,8 +206,13 @@ def discover_articles(cfg: dict) -> list[dict]:
         ov = cards.get(slug, {})
         img = ov.get("img")
         if not img:
-            im = re.search(r'<img[^>]+src="\.\./\.\./(assets/img/[^"]+)"', s)
-            img = im.group(1) if im else "assets/img/og.jpg"
+            # 1) уншварын өөрийн thumbnail (thumbs.mjs эсвэл Figma-гаас) 2) хуудсан доторх эхний зураг
+            th = SITE / "assets/img" / f"th-{slug}.png"
+            if th.is_file():
+                img = f"assets/img/th-{slug}.png"
+            else:
+                im = re.search(r'<img[^>]+src="\.\./\.\./(assets/img/[^"]+)"', s)
+                img = im.group(1) if im else "assets/img/og.jpg"
         out.append(
             {
                 "slug": slug,
@@ -1008,6 +1013,16 @@ def homework_html(L):
             % (clean(hw["title"]), cols, cells))
 
 
+def lesson_standard_check(lessons):
+    """Дүрэм (itge.e 2026-11-05): уншвартай хичээл бүр доороо «Хийх зүйл · NN»-тэй байна."""
+    bad = [L for L in lessons if L.get("readings") and not homework_html(L)]
+    if bad:
+        print("⚠ Уншвартай атлаа «Хийх зүйл»-гүй хичээл (%d):" % len(bad))
+        for L in bad:
+            print("  · хичээл %s — Data/homework.json-д «%s» нэм" % (L["slug"], L["slug"]))
+    return bad
+
+
 def lesson_readings_html(L, prefix):
     reads = L["readings"]
     if reads:
@@ -1392,7 +1407,7 @@ def build_resources(cfg, articles) -> bool:
         RESOURCES_PAGE.replace("__HEADER__", nav_html(cfg, "../", "resources", False))
         .replace("__TITLE__", esc(res["title"]))
         .replace("__COUNT__", str(len(gal)))
-        .replace("__INTRO__", esc(res["intro"]))
+        .replace("__INTRO__", '</p><p class="legend" style="margin:0 0 20px">'.join(esc(x) for x in res["intro"].split("\n\n")))
         .replace("__CHIPS__", chips)
         .replace("__CARDS__", "".join(h for _, h in gal))
         .replace("__NWATCH__", str(len(watch)))
@@ -1513,6 +1528,7 @@ def main() -> int:
         n = build_search_index(cfg, articles, lessons, journal)
         print(f"Хайлтын индекс: {n} бичлэг → search-index.json")
 
+    lesson_standard_check(lessons)
     problems = link_check()
 
     print(f"Уншвар: {len(articles)} · Хичээлийн хуудас: {sum(1 for L in lessons if L['exists'])}/12")

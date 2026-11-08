@@ -21,10 +21,36 @@ const SITE = __VAULT + '/02-Projects/itge.online/Output/site'
 const OUT = path.join(SITE, 'assets/img')
 const W = 396, H = 280, SCALE = 2
 
+// Figma-гаас гарсан thumbnail (itge.e 2026-11-05 шийдвэр) — энэ script дарж бичихгүй.
+// Дахин зурах шаардлагатай бол: node thumbs.mjs --force
+const FIGMA_SLUGS = new Set([
+  'th-tarhia-gadagsh.png', 'th-ooriigoo-tanih.png', 'th-bugdiig-neg-gazar.png',
+  'th-sedveer-bish-uildleer.png', 'th-neg-claude-zurgaan-dur.png',
+])
+const FORCE = process.argv.includes('--force')
+
 const INK = '#080808', PAPER = '#F0EDE4', BLUE = '#1B5CFF'
 const SAND = '#E2DDD1', NAVY = '#0E1A3D'
 
 const CARDS = [
+  {
+    file: 'th-repo-dotor-yu-baina.png', bg: SAND, fg: INK, accent: BLUE,
+    no: '05', kicker: 'Хичээл 05 · Лавлагаа', title: 'Repo дотор<br>юу байна вэ',
+    art: `<svg viewBox="0 0 220 120" fill="none">
+      ${[0,1,2].map(r => [0,1,2,3].map(c => `<rect x="${12 + c*52}" y="${14 + r*36}" width="44" height="28" rx="4" stroke="${INK}" stroke-width="2" fill="${(r*4+c)%5===0 ? BLUE : 'none'}" opacity="${(r*4+c)%5===0 ? 1 : .55}"/>`).join('')).join('')}
+    </svg>`,
+  },
+  {
+    file: 'th-neg-claude-zurgaan-dur.png', bg: INK, fg: PAPER, accent: BLUE,
+    no: '05', kicker: 'Хичээл 05 · Гол уншвар', title: 'Нэг Claude,<br>зургаан дүр',
+    art: `<svg viewBox="0 0 220 120" fill="none">
+      <circle cx="110" cy="26" r="15" fill="${BLUE}"/>
+      ${[20, 62, 104, 146, 188].map((x, i) => `
+        <path d="M110 41L${x + 11} ${72}" stroke="${PAPER}" stroke-width="2" opacity=".45"/>
+        <rect x="${x}" y="72" width="22" height="30" rx="4" stroke="${PAPER}" stroke-width="2.5" fill="${INK}"/>
+        <rect x="${x + 5}" y="${80 + (i % 2) * 4}" width="12" height="3" rx="1.5" fill="${i === 2 ? BLUE : PAPER}" opacity="${i === 2 ? 1 : .5}"/>`).join('')}
+    </svg>`,
+  },
   {
     file: 'th-tarhia-gadagsh.png', bg: INK, fg: PAPER, accent: BLUE,
     no: '01', kicker: 'Хичээл 01 · Гол уншвар', title: 'Тархиа<br>гадагш',
@@ -144,6 +170,7 @@ const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleF
 const p = await ctx.newPage()
 fs.mkdirSync(OUT, { recursive: true })
 for (const c of CARDS) {
+    if (FIGMA_SLUGS.has(c.file) && !FORCE) { console.log('· алгаслаа (Figma):', c.file); continue }
   await p.setContent(page(c), { waitUntil: 'networkidle' })
   await p.evaluate(() => document.fonts.ready)
   const f = path.join(OUT, c.file)
