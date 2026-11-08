@@ -173,6 +173,12 @@ def check_summary(rel, fm, body, siblings):
         if not any((fm or {}).get(k) for k in ("from", "projects", "source", "sources", "up")):
             return 1, "атомд from/projects/source алга"
         return 0, ""
+    run = longest = 0
+    for line in strip_code(body).split("\n"):   # 10-22 Journal: CSS-ийн алдаагаар жагсаалт үг бүрийг шинэ мөрөнд гаргасан
+        run = run + 1 if re.fullmatch(r"\s*(?:[-*]\s+)?[^\s|#>`-]{1,24}\s*", line) else 0
+        longest = max(longest, run)
+    if longest >= 6:
+        return 2, f"{longest} мөр дараалан ганц үгтэй — жагсаалт үг бүрээр тасарсан"
     if kind not in ("reference", "research"):
         return 0, ""   # hub, project note, жагсаалт: Дүгнэлт шаардахгүй
     d = section(body, "Дүгнэлт")
@@ -303,7 +309,7 @@ def summary_line(r):
     return head + ((" · " + " · ".join(issues[:3])) if issues else "")
 
 
-def write_task(task_path, r, dry=False):
+def write_task(task_path, r, dry=False, msg=None, set_field=True):
     """`checks:` frontmatter (нэмэх/шинэчлэх) + changelog мөр. CRLF/LF хадгална, safe_write-аар."""
     import fm_changelog as fc
     p = Path(task_path)
@@ -320,7 +326,9 @@ def write_task(task_path, r, dry=False):
         return False
     val = f'checks: "{r["badge"]}"'
     k = next((i for i in range(1, end) if lines[i].startswith("checks:")), None)
-    if k is None:
+    if not set_field:
+        pass
+    elif k is None:
         lines.insert(end, val)
     else:
         lines[k] = val
@@ -328,7 +336,7 @@ def write_task(task_path, r, dry=False):
     head = re.search(r"^##\s+Өөрчлөлтийн түүх\s*$(.*?)(?=^##\s|\Z)", text.replace("\r\n", "\n"), re.M | re.S)
     hdr = re.search(r"^\|(.*)\|\s*$", head.group(1), re.M).group(1) if head and re.search(r"^\|", head.group(1), re.M) else ""
     now = datetime.datetime.now()
-    msg = fc.cell(summary_line(r), 300)
+    msg = fc.cell(msg or summary_line(r), 300)
     if "Хэн" in hdr:
         row = f"| {now:%Y-%m-%d %H:%M} | 🧪 fm_eval | {msg} |"
     else:
@@ -506,6 +514,10 @@ def judge_ingest(vault, table_text, ids):
              "per_check": {"judge": worst}, "date": datetime.date.today().isoformat(), "no_outputs": False,
              "kind": "judge"}
         log_run(vault, r)
+        tp = Path(vault) / t
+        if tp.is_file():
+            note = " · ".join(f"{c} {BADGE[l]} {cf:.2f}" for l, cf, c in items)
+            write_task(tp, r, msg=f"judge {r['badge']} {r['score']:.2f} · {note}", set_field=False)
     return per, rerun
 
 

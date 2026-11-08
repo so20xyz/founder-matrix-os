@@ -1,29 +1,75 @@
 {
-  "_doc": "fm_eval.py regression: 4 real failures from «Second Brain-ийн 6 давхарга ба evals - судалгааны үндэслэл» (10-22…11-09) + clean control. Each case = synthetic notes under 04-Resources, expected badge per check. Run: python tests/test_eval.py",
-  "today": "2026-11-09",
-  "cases": [
-    {"id": "R1-stale-media", "failure": "10-27 fm:watch returned an old video; 3 reels parsed as «Artemis»",
-     "note": "04-Resources/references/Reel A.md",
-     "text": "---\ntype: reference\ndate: 2026-10-27\nsource: https://www.instagram.com/reel/AAA111/\natoms: [\"[[04-Resources/Atomic/knowledge/Atom A]]\"]\n---\n# A\n\n## Дүгнэлт\nReel нь Artemis хөтөлбөрийн тухай өгүүлнэ, гэхдээ энэ бол өөр бичлэгийн агуулга байж болох юм.\n\n## Бичлэгээс (fm:watch, 18.9 секунд)\n- кадр\n",
-     "watch_cache": {"dir": "www.instagram.com_reel_AAA111_-deadbeef", "meta": {"url": "https://www.instagram.com/reel/ZZZ999/", "duration": 61.0}},
-     "expect": {"source": "❌"}},
-    {"id": "R2-future-date", "failure": "10-30 subagent wrote a future date 2026-10-31, mass replace broke due dates",
-     "note": "04-Resources/references/Future.md",
-     "text": "---\ntype: reference\ndate: 2026-11-30\ncreated: 2026-11-09\ndue: 2026-10-01\natoms: [\"[[04-Resources/Atomic/knowledge/Atom A]]\"]\n---\n# F\n\n## Дүгнэлт\nЭнэ бол ирээдүйн огноотой бичигдсэн, шалгалтаар баригдах ёстой лавлагаа note юм.\n",
-     "expect": {"date": "❌"}},
-    {"id": "R3-shell-run", "failure": "11-09 atom text passed through the shell; 2 commands inside ran",
-     "note": "04-Resources/Atomic/knowledge/Shell atom.md",
-     "text": "---\ntype: atom\ndate: 2026-11-09\nfrom: \"[[04-Resources/references/Clean]]\"\n---\n# Shell\n\nСуулгахдаа `` ажиллуулаад дараа нь $(  гэж бичнэ. Энэ мөрүүд shell-ээр дамжиж командууд нь алга болсон атом юм.\n",
-     "expect": {"mn": "❌"}},
-    {"id": "R4-stale-summary", "failure": "10-22 Journal №010 kept №009's «Дүгнэлт»",
-     "note": "04-Resources/references/Journal 010.md",
-     "text": "---\ntype: reference\ndate: 2026-10-22\natoms: [\"[[04-Resources/Atomic/knowledge/Atom A]]\"]\n---\n# 010\n\n## Дүгнэлт\nЕсдүгээр дугаарын гол санаа нь өдөр бүр жижиг алхмаар урагшлах, тэмдэглэлээ тогтмол хөтлөх явдал байв.\n",
-     "sibling": {"note": "04-Resources/references/Journal 009.md",
-                 "text": "---\ntype: reference\ndate: 2026-10-15\n---\n# 009\n\n## Дүгнэлт\nЕсдүгээр дугаарын гол санаа нь өдөр бүр жижиг алхмаар урагшлах, тэмдэглэлээ тогтмол хөтлөх явдал байв.\n"},
-     "expect": {"summary": "❌"}},
-    {"id": "C0-clean", "failure": "control",
-     "note": "04-Resources/references/Clean.md",
-     "text": "---\ntype: reference\ndate: 2026-11-01\nsource: https://github.com/acme/tool\natoms: [\"[[04-Resources/Atomic/knowledge/Atom A]]\"]\n---\n# Clean\n\n## Дүгнэлт\nRepo нь MIT лицензтэй, telemetry анхдагчаар унтраалттай гэж кодоос шалгав. [[Atom A]]\n",
-     "expect": {"date": "✅", "mn": "✅", "links": "✅", "summary": "✅", "source": "✅"}}
-  ]
+ "_doc": "fm_eval.py regression: 4 real failures from «Second Brain-ийн 6 давхарга ба evals - судалгааны үндэслэл» (10-22…11-09) + clean control. Each case = synthetic notes under 04-Resources, expected badge per check. Run: python tests/test_eval.py",
+ "today": "2026-11-09",
+ "cases": [
+  {
+   "id": "R1-stale-media",
+   "failure": "10-27 fm:watch returned an old video; 3 reels parsed as «Artemis»",
+   "note": "04-Resources/references/Reel A.md",
+   "text": "---\ntype: reference\ndate: 2026-10-27\nsource: https://www.instagram.com/reel/AAA111/\natoms: [\"[[04-Resources/Atomic/knowledge/Atom A]]\"]\n---\n# A\n\n## Дүгнэлт\nReel нь Artemis хөтөлбөрийн тухай өгүүлнэ, гэхдээ энэ бол өөр бичлэгийн агуулга байж болох юм.\n\n## Бичлэгээс (fm:watch, 18.9 секунд)\n- кадр\n",
+   "watch_cache": {
+    "dir": "www.instagram.com_reel_AAA111_-deadbeef",
+    "meta": {
+     "url": "https://www.instagram.com/reel/ZZZ999/",
+     "duration": 61.0
+    }
+   },
+   "expect": {
+    "source": "❌"
+   }
+  },
+  {
+   "id": "R2-future-date",
+   "failure": "10-30 subagent wrote a future date 2026-10-31, mass replace broke due dates",
+   "note": "04-Resources/references/Future.md",
+   "text": "---\ntype: reference\ndate: 2026-11-30\ncreated: 2026-11-09\ndue: 2026-10-01\natoms: [\"[[04-Resources/Atomic/knowledge/Atom A]]\"]\n---\n# F\n\n## Дүгнэлт\nЭнэ бол ирээдүйн огноотой бичигдсэн, шалгалтаар баригдах ёстой лавлагаа note юм.\n",
+   "expect": {
+    "date": "❌"
+   }
+  },
+  {
+   "id": "R3-shell-run",
+   "failure": "11-09 atom text passed through the shell; 2 commands inside ran",
+   "note": "04-Resources/Atomic/knowledge/Shell atom.md",
+   "text": "---\ntype: atom\ndate: 2026-11-09\nfrom: \"[[04-Resources/references/Clean]]\"\n---\n# Shell\n\nСуулгахдаа `` ажиллуулаад дараа нь $(  гэж бичнэ. Энэ мөрүүд shell-ээр дамжиж командууд нь алга болсон атом юм.\n",
+   "expect": {
+    "mn": "❌"
+   }
+  },
+  {
+   "id": "R4-stale-summary",
+   "failure": "10-22 Journal №010 kept №009's «Дүгнэлт»",
+   "note": "04-Resources/references/Journal 010.md",
+   "text": "---\ntype: reference\ndate: 2026-10-22\natoms: [\"[[04-Resources/Atomic/knowledge/Atom A]]\"]\n---\n# 010\n\n## Дүгнэлт\nЕсдүгээр дугаарын гол санаа нь өдөр бүр жижиг алхмаар урагшлах, тэмдэглэлээ тогтмол хөтлөх явдал байв.\n",
+   "sibling": {
+    "note": "04-Resources/references/Journal 009.md",
+    "text": "---\ntype: reference\ndate: 2026-10-15\n---\n# 009\n\n## Дүгнэлт\nЕсдүгээр дугаарын гол санаа нь өдөр бүр жижиг алхмаар урагшлах, тэмдэглэлээ тогтмол хөтлөх явдал байв.\n"
+   },
+   "expect": {
+    "summary": "❌"
+   }
+  },
+  {
+   "id": "R5-word-per-line",
+   "failure": "10-22 Journal №010: list CSS put every word on its own line",
+   "note": "04-Resources/references/Journal 011.md",
+   "text": "---\ntype: reference\ndate: 2026-10-22\natoms: [\"[[04-Resources/Atomic/knowledge/Atom A]]\"]\n---\n# 011\n\n## Дүгнэлт\nЭнэ дугаарт өдөр тутмын дадал, тэмдэглэл хөтлөх аргын тухай товч өгүүлнэ.\n\n## Жагсаалт\n- Өдөр\nбүр\nжижиг\nалхмаар\nурагшлах\nхэрэгтэй\n",
+   "expect": {
+    "summary": "❌"
+   }
+  },
+  {
+   "id": "C0-clean",
+   "failure": "control",
+   "note": "04-Resources/references/Clean.md",
+   "text": "---\ntype: reference\ndate: 2026-11-01\nsource: https://github.com/acme/tool\natoms: [\"[[04-Resources/Atomic/knowledge/Atom A]]\"]\n---\n# Clean\n\n## Дүгнэлт\nRepo нь MIT лицензтэй, telemetry анхдагчаар унтраалттай гэж кодоос шалгав. [[Atom A]]\n",
+   "expect": {
+    "date": "✅",
+    "mn": "✅",
+    "links": "✅",
+    "summary": "✅",
+    "source": "✅"
+   }
+  }
+ ]
 }
