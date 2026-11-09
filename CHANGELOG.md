@@ -1,3 +1,13 @@
+## fm 0.10.22 · 2026-11-09 · Нөхцөлт гох 2: mn-check, code review, finance хамгаалалт
+
+- Soyol: «skill-үүд нөхцөлөөр өөрөө дуудагддаг болго». 0.10.21 qmd, 200k, routine-ийг хамарсан; mn-check, PR-ийн өмнөх review, finances/private-ийн дүрэм текстээр л байсан.
+- `fm_triggers.py guard` (PreToolUse `Read|Grep|Glob|Bash|Edit|Write|MultiEdit|NotebookEdit`), эхний хориг хүчинтэй:
+  - T6: `finances/private`-ийг нэрлэсэн зам, команд, pattern, glob-ийг Finance (эсвэл private) дүргүй сешнд хориглоно.
+  - T4: Chrome `--print-to-pdf`-ээр `.html` хөрвүүлэхийн өмнө `mn_check.py --no-text` ажиллана; алдаатай бол файл+mtime бүрт нэг удаа хориглож эхний 6 мөрийг харуулна.
+  - T5: `gh pr create`-ийг transcript-д `*code-review` Skill эсвэл review Agent байхгүй бол HEAD бүрт нэг удаа хориглоно.
+- T7 (сешн дуусахад хадгалах)-д код нэмээгүй: 🧠 Harvester routine 6 цаг тутам бүх сешнийг атом болгодог.
+- Event log: `finance`, `mn-check`, `review` (denied / allowed / clean), агуулгагүй. Тест: `tests/test_triggers_guard.py` (41; Opus review-ийн 3 Important + 4 Minor RED→GREEN).
+
 ## fm 0.10.21 · 2026-11-09 · Нөхцөлт гох: qmd хаалга, 200k анхааруулга, routine watchdog
 
 - Soyol: «skill-ээ гараар дуудаж чадахгүй, нөхцөлөөр өөрөө ажилладаг бол». W46: CLAUDE.md-ийн «qmd эхэлж» дүрэмтэй байхад qmd 7 хоногт 1 удаа, Даваагийн routine 4 ц 53 мин хоцорсныг хэн ч мэдээгүй.

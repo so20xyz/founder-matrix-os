@@ -489,7 +489,7 @@ def test_hooks_json_shape(v):
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     hooks = data["hooks"]
     # Stop = Goom session sync (f71c24c), UserPromptSubmit = Goom stall-hint (99c3752),
-    # PreToolUse = fm_triggers qmd gate (auto-trigger spec 2026-11-09)
+    # PreToolUse = fm_triggers qmd gate + guard (auto-trigger spec 2026-11-09)
     assert set(hooks) == {"SessionStart", "PreToolUse", "PostToolUse", "Stop", "UserPromptSubmit"}, hooks.keys()
     for ev in ("Stop", "UserPromptSubmit"):
         h = hooks[ev][0]["hooks"][0]
