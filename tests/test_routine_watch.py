@@ -69,6 +69,29 @@ def checks_list():
     u3, st = w.check(None, st, mon)
     c.append(("unreadable warns again after recovery", u3 == u1))
 
+    # one-time tasks (fireAt epoch ms, no cronExpression; the app disables them after the run) - 2026-11-09
+    def once(fire, last=None, enabled=True):
+        t = task(tid="once", cron=None, last=last, enabled=enabled, name="📏 once")
+        del t["cronExpression"]
+        t["fireAt"] = int(fire.timestamp() * 1000)
+        return t
+    fire = at(2026, 11, 23, 10, 0)
+    c.append(("one-time future silent", w.check([once(fire)], {}, at(2026, 11, 9, 13, 0))[0] == []))
+    c.append(("one-time within grace silent", w.check([once(fire)], {}, at(2026, 11, 23, 10, 59))[0] == []))
+    o1, st = w.check([once(fire)], {}, at(2026, 11, 23, 11, 5))
+    c.append(("one-time missed alerts once", o1 == ["⏰ 📏 once 10:00-д ажиллаагүй (сүүлд хэзээ ч)"]))
+    o2, st = w.check([once(fire)], st, at(2026, 11, 23, 11, 35))
+    c.append(("one-time no repeat", o2 == []))
+    o3, st = w.check([once(fire, last=at(2026, 11, 23, 12, 0), enabled=False)], st, at(2026, 11, 23, 12, 5))
+    c.append(("one-time late recovery after app disables it", o3 == ["✅ 📏 once 120 мин хоцорч ажиллав"]))
+    c.append(("one-time ran on time silent", w.check([once(fire, last=at(2026, 11, 23, 10, 0), enabled=False)], {}, at(2026, 11, 24, 9, 0))[0] == []))
+    neither = task(tid="adhoc", cron=None, last=None)
+    del neither["cronExpression"]
+    c.append(("ad-hoc task (no cron, no fireAt) silent", w.check([neither] + [task(last=at(2026, 11, 9, 9, 3))], {}, mon)[0] == []))
+    s1, st = w.check([neither], {}, mon)
+    s2, st = w.check([neither], st, mon)
+    c.append(("all tasks unscheduled warns once (shape change)", s1 == ["⚠ routine-watch: scheduled-tasks.json уншиж чадсангүй"] and s2 == []))
+
     tmp = Path(tempfile.mkdtemp())
     for i, last in enumerate((at(2026, 11, 2, 9, 3), at(2026, 11, 9, 13, 53))):
         d = tmp / ("acct%d" % i) / "org"
