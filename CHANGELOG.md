@@ -1,4 +1,4 @@
-## fm (дараагийн хувилбар) · 2026-11-09 · Нөхцөлт гох: qmd хаалга, 200k анхааруулга, routine watchdog
+## fm 0.10.21 · 2026-11-09 · Нөхцөлт гох: qmd хаалга, 200k анхааруулга, routine watchdog
 
 - Soyol: «skill-ээ гараар дуудаж чадахгүй, нөхцөлөөр өөрөө ажилладаг бол». W46: CLAUDE.md-ийн «qmd эхэлж» дүрэмтэй байхад qmd 7 хоногт 1 удаа, Даваагийн routine 4 ц 53 мин хоцорсныг хэн ч мэдээгүй.
 - `fm_triggers.py pre-search` (PreToolUse `Grep|Bash`): сешнд qmd дуудахаас өмнөх vault-ийн grep-ийг нэг удаа хориглож qmd-ийн командыг заана. `FM_QMD_GATE=deny|remind|off`. qmd суугаагүй, vault-аас гадуур, `finances/`, `.obsidian/` → чимээгүй.
