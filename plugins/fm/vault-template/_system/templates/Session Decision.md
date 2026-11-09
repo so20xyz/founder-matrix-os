@@ -8,7 +8,7 @@ tags:
 ai-first: true
 from:
 topics:
-up: "[[04-Resources/Atomic/decisions/Decisions]]"
+up: "[[04-Resources/Atomic/decisions/README]]"
 decision: "<нэг мөр, .base мөрөнд задлахгүй харагдана>"
 status: accepted
 changetype: <task|project|skill|structure|tool|schema|config|content>

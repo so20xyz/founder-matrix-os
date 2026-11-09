@@ -1,5 +1,8 @@
 ---
 type: project-brain
+date: {{date:YYYY-MM-DD}}
+tags:
+  - project-brain
 project: "[[<< төслийн зам >>]]"
 updated: << огноо >>
 ai-first: true

@@ -1,5 +1,6 @@
 ---
 type: product
+aliases: []
 date: << YYYY-MM-DD >>
 updated: << YYYY-MM-DD >>
 kind: << product | service >>
@@ -11,7 +12,7 @@ org: <байгууллага>                     # байгууллага: <б�
 area: "[[03-Areas/Business/<байгууллага>]]"
 projects: []          # энэ бүтээгдэхүүнийг хөгжүүлж буй дотоод төслүүд ([[02-Projects/<P>/<P>]])
 repo:                 # GitHub URL
-repo_path:            # локал repo (D:/CodeBase/<нэр>) — app commit-ыг эндээс уншина
+repo_path:            # локал repo (<repo хавтас>/<нэр>) — app commit-ыг эндээс уншина
 dev_path:             # хөгжүүлэлтийн хуулбар (заавал биш)
 url:
 figma:

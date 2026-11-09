@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: meeting
+aliases: []
 status: upcoming
 scheduled:
 met:

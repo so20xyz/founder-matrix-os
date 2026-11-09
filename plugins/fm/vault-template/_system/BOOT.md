@@ -27,7 +27,7 @@ ai-first: true
 5. **Skill-ийг дуудна, цээжлэхгүй.**
 - ⛔ Devlog бичихгүй (`99-Archive/devlogs/`, `99-Archive/system-relay/` хаалттай). Dev ажил → атом + төслийн note + лог мөр.
 - Engine өгөгдөл → `_system/fm/`. Төлөв → [[_system/STATUS]].
-- **Хэрэгслийн бүртгэл:** татсан repo бүр `D:/CodeBase/<нэр>` (туршилт `_sandbox/`) + `03-Areas/Business/tools/`-д `type: tool` note; жагсаалт `03-Areas/Tools.base`.
+- **Хэрэгслийн бүртгэл:** татсан repo бүр `<repo хавтас>/<нэр>` (туршилт `_sandbox/`) + `03-Areas/Business/tools/`-д `type: tool` note; жагсаалт `03-Areas/Tools.base`.
 - **Асуулт = task:** {{fm:member}}-ээс асуух бүрд `01-GTD/Tasks/`-д «Асуулт - …» (`status: waiting`, `waiting_on: me`, `tags: [ask]`). Хариу ирмэгц `completed`.
 6. **Ганц команд: `update`.** Хэрэглэгч «update», «шинэчил», «өдрийн дүгнэлт» гэхэд `/fm:update` бүгдийг өөрөө дараалан хийнэ: атом (save) → task → хүн → төсөл → inbox (зөөхөөс өмнө асууна) → өдрийн note → STATUS + лог → нээлттэй task. `save`, `inbox`, `task`, `people`, `project` бол барилгын блок — хэрэглэгчээр дуудуулахгүй, шаардлагатай үед өөрөө ажиллуул. Өглөө `update daily`, долоо хоногт `update weekly`.
 

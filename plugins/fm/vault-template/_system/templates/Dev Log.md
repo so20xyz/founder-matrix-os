@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: devlog
+aliases: []
 tags:
   - devlog
 ai-first: true

@@ -207,7 +207,7 @@ def targets():
     return out
 
 
-def delink(text, known):
+def delink(text, known, only=""):
     """itge.e 2026-11-04 (issue #10): a wikilink the member's vault will not have becomes plain text,
     so an exported BOOT / role note never ships a broken link to a maintainer-only atom.
     Links inside code spans or fences are examples, not links - left alone."""
@@ -215,6 +215,10 @@ def delink(text, known):
         def f(m):
             tgt = m.group(1).strip()
             alias = (m.group(3) or "").strip()
+            if re.search(r"<<|\{\{|<%|<[^>\s]+>|\.\.\.", tgt):   # a placeholder / example, not a note
+                return m.group(0)
+            if only and not tgt.startswith(only):              # templates: only maintainer atoms
+                return m.group(0)
             if tgt.lower() in known or tgt.rsplit("/", 1)[-1].lower() in known:
                 return m.group(0)
             return alias or tgt.rsplit("/", 1)[-1]
@@ -224,6 +228,35 @@ def delink(text, known):
         chunks.append(one(text[last:m.start()])); chunks.append(m.group(0)); last = m.end()
     chunks.append(one(text[last:]))
     return "".join(chunks)
+
+
+NO_ALIASES = {"daily", "bill", "income", "project-brain", "session-decision"}   # dated / one-per-project notes
+
+
+def normalize_template(text):
+    """Soyol 2026-11-09: a template the member gets must carry the frontmatter every note needs
+    (`type`, `date`, `ai-first`, `tags`, `aliases`) - the maintainer's own templates sometimes omit `date`/`tags`
+    (Project Brain), and every note onboarding made from them failed fm_lint. Only adds lines."""
+    if not text.startswith("---"):
+        return text
+    end = text.find("\n---", 3)
+    if end < 0:
+        return text
+    fm = text[4:end].split("\n")
+    keys = {l.split(":", 1)[0].strip() for l in fm if l and not l.startswith((" ", "\t", "-", "#")) and ":" in l}
+    typ = next((l.split(":", 1)[1].strip().strip("\"'") for l in fm if l.startswith("type:")), "")
+    add = []
+    if "date" not in keys:
+        add.append("date: {{date:YYYY-MM-DD}}")
+    if "tags" not in keys and typ:
+        add += ["tags:", "  - %s" % typ]
+    if "aliases" not in keys and typ and typ not in NO_ALIASES:
+        add.append("aliases: []")
+    if not add:
+        return text
+    i = next((n + 1 for n, l in enumerate(fm) if l.startswith("type:")), 0)
+    fm[i:i] = add
+    return "---\n" + "\n".join(fm) + text[end:]
 
 
 def export(vault, apply):
@@ -240,6 +273,8 @@ def export(vault, apply):
         src = vault / rel
         if not src.is_file():
             log.append("missing  %s" % rel); continue
+        if rel.endswith(".base") and rel.count("/") > 1:   # 2026-10-09 rule: a .base sits in a PARA top folder
+            log.append("REFUSED  %s (base-ийг PARA-гийн дээд хавтас руу зөө: %s/)" % (rel, rel.split("/", 1)[0])); continue
         text = src.read_text(encoding="utf-8")
         if not rel.endswith("BOOT.md") and not _is_role(rel):
             out = text                                                          # base / template / workflow: whole
@@ -265,6 +300,9 @@ def export(vault, apply):
             out = re.sub(r"(?<![\w.-])%s(?!\w)" % re.escape(n), "{{fm:member}}", out)   # «itge.e-ийн» too
         if rel.endswith("BOOT.md") or _is_role(rel):
             out = delink(out, known)                                            # issue #10
+        elif rel.startswith("_system/templates/"):
+            # templates keep their own links ([[_BRAIN]], examples); a dated maintainer atom becomes text
+            out = delink(normalize_template(out), known, only="04-Resources/Atomic/")
         hits = sorted(t for t in tok if re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(t), out))
         if hits:
             log.append("REFUSED  %s (нэр үлдсэн: %s — fm_rules.json rewrite-д нэм)" % (rel, ", ".join(hits[:8]))); continue

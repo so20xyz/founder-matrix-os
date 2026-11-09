@@ -2,6 +2,7 @@
 date: {{date:YYYY-MM-DD}}
 updated: {{date:YYYY-MM-DD}}
 type: topic
+aliases: []
 tags: [topic, hub]
 scope: inai            # inai = өдрийн судалгааны цикл/newsletter-т орно · internal = дотоод
 open-questions:
@@ -13,7 +14,7 @@ up: "[[04-Resources/Topics/Topics]]"
 
 ## For future agent
 
-Сэдвийн hub = судалгааны хөдөлгүүр ([[04-Resources/Atomic/decisions/2026-10-14 - Сэдэв = судалгааны хөдөлгүүр]]). `open-questions:`-оор өдрийн хайлт хийгдэнэ (`collect.py --questions`, зөвхөн `scope: inai`); асуулт хариулагдвал хасаж, доорх хураангуйд нэм.
+Сэдвийн hub = судалгааны хөдөлгүүр (2026-10-14 - Сэдэв = судалгааны хөдөлгүүр). `open-questions:`-оор өдрийн хайлт хийгдэнэ (`collect.py --questions`, зөвхөн `scope: inai`); асуулт хариулагдвал хасаж, доорх хураангуйд нэм.
 
 ## Одоо бид юу мэдэх вэ
 
@@ -21,7 +22,7 @@ up: "[[04-Resources/Topics/Topics]]"
 
 ## Холбогдсон (`topics:`)
 
-> Сэдэв = судалгааны хөдөлгүүр ([[04-Resources/Atomic/decisions/2026-10-14 - Сэдэв = судалгааны хөдөлгүүр]]). Note-ийн `topics:`-д энэ сэдвийг бичвэл энд автоматаар гарна.
+> Сэдэв = судалгааны хөдөлгүүр (2026-10-14 - Сэдэв = судалгааны хөдөлгүүр). Note-ийн `topics:`-д энэ сэдвийг бичвэл энд автоматаар гарна.
 
 ```base
 filters:

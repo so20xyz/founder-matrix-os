@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: research
+aliases: []
 status: active
 closed:
 project:

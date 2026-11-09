@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: goal
+aliases: []
 tags:
   - goal
 ai-first: true
