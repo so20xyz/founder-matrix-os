@@ -32,6 +32,8 @@ TESTS = [
     "tests/test_ce_privacy.py",
     "tests/test_ce_cli.py",
     "tests/test_ce_gate.py",
+    "tests/test_triggers.py",
+    "tests/test_routine_watch.py",
     "tests/test_ce_regress.py",
     "tests/test_ce_role.py",
     "tests/test_fm_sync_version.py",

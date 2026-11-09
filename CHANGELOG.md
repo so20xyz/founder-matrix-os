@@ -1,3 +1,11 @@
+## fm 0.10.21 · 2026-11-09 · Нөхцөлт гох: qmd хаалга, 200k анхааруулга, routine watchdog
+
+- Soyol: «skill-ээ гараар дуудаж чадахгүй, нөхцөлөөр өөрөө ажилладаг бол». W46: CLAUDE.md-ийн «qmd эхэлж» дүрэмтэй байхад qmd 7 хоногт 1 удаа, Даваагийн routine 4 ц 53 мин хоцорсныг хэн ч мэдээгүй.
+- `fm_triggers.py pre-search` (PreToolUse `Grep|Bash`): сешнд qmd дуудахаас өмнөх vault-ийн grep-ийг нэг удаа хориглож qmd-ийн командыг заана. `FM_QMD_GATE=deny|remind|off`. qmd суугаагүй, vault-аас гадуур, `finances/`, `.obsidian/` → чимээгүй.
+- `fm_triggers.py context` (UserPromptSubmit): context 200k (`FM_CONTEXT_WARN`) давахад сешнд нэг удаа checkpoint + шинэ сешн санал болгоно.
+- `tools/watchdog/fm_routine_watch.py`: desktop app-ийн scheduled task товлосноосоо 60 мин хоцорвол relay `sys` + macOS мэдэгдэл, хожим ажиллавал «N мин хоцорч ажиллав». `--install-mac` = launchd 30 мин тутам.
+- Гох бүр `~/.fmos/triggers/events.jsonl`-д агуулгагүй мөр бичнэ (хэмжилт).
+
 ## fm 0.10.20 · 2026-11-08 · Токен зарцуулсан ажил бүр task
 
 - Dispatcher: run бүр task-тай — төслийн урт хүсэлт өмнөх шигээ дэд чаттай task, бусад (Wiki г.м. дүрийн суваг, богино хүсэлт) шинэ task, thread хариу эх task-даа. Run эхлэх, дуусахад task-ийн түүхэнд цагтай мөр + started/completed → timeline, calendar бүгдийг харна.

@@ -34,6 +34,22 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Grep|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/fm_triggers.py",
+              "pre-search"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
@@ -125,6 +141,15 @@
             "command": "python3",
             "args": [
               "${CLAUDE_PLUGIN_ROOT}/scripts/fm_ce_gate.py"
+            ],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/fm_triggers.py",
+              "context"
             ],
             "timeout": 5
           }
