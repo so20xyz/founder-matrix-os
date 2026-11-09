@@ -91,7 +91,7 @@ def t4():
     chrome = '"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --print-to-pdf="out.pdf" '
     d1 = run(pl("p1", "Bash", {"command": chrome + '"file://%s"' % bad}))
     d2 = run(pl("p1", "Bash", {"command": chrome + '"file://%s"' % bad}))
-    enc = "file://" + str(bad).replace(" ", "%20")
+    enc = bad.resolve().as_uri()  # file:///.../My%20Out/bad.html (file:///C:/... on Windows)
     checks = [
         ("bad html denied with findings", deny(d1) is not None and deny(d1).startswith(MN_HEADER) and "MIXED" in deny(d1)),
         ("same file twice allowed", silent(d2)),
