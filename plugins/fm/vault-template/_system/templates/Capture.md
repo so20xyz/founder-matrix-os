@@ -1,6 +1,7 @@
 ---
 date: {{date}}
 type: capture
+aliases: []
 tags:
   - capture
 ai-first: true

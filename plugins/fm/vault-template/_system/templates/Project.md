@@ -2,9 +2,10 @@
 date: << YYYY-MM-DD >>
 updated: << YYYY-MM-DD >>
 type: project
+aliases: []
 status: active
 project-type:   # software | course | investment | content | website | coaching | research — хоосон = generic
-area: "[[03-Areas/Business/<байгууллага>]]"   # эсвэл [[03-Areas/Personal/Life/Life]] · [[03-Areas/Personal/Freelancer/Freelancer]]
+area: "[[03-Areas/Business/<байгууллага>]]"   # эсвэл [[03-Areas/Life/<хүрээ>/<хүрээ>]]
 business: << client | internal >>
 scope: << mine | team >>
 accountable:
@@ -60,7 +61,7 @@ ai-first: true
 
 ## 📚 Судалгаа ба нөөц
 
-> Энэ төслийн явцад үүссэн судалгаа, лавлагаа, атомууд (`project:`/`projects:` = энэ төсөл), мөн өөр төслүүдээс авч ашиглаж болох судалгаа. Шинэ судалгаа бичихдээ `type: research` (эсвэл `tags: [research]`) ба `project:` холбоосыг заавал тавь → [[04-Resources/Atomic/decisions/2026-10-11 - Төслийн судалгаа нэг base-д цугларна]]
+> Энэ төслийн явцад үүссэн судалгаа, лавлагаа, атомууд (`project:`/`projects:` = энэ төсөл), мөн өөр төслүүдээс авч ашиглаж болох судалгаа. Шинэ судалгаа бичихдээ `type: research` (эсвэл `tags: [research]`) ба `project:` холбоосыг заавал тавь → 2026-10-11 - Төслийн судалгаа нэг base-д цугларна
 
 ![[04-Resources/Research.base#Энэ төслийн судалгаа]]
 
@@ -307,5 +308,5 @@ views:
 
 ## 🪐 Гарагууд
 
-- Энэ төслийн task-ууд → [[01-GTD/Tasks/Tasks]] (`project:` талбараар)
-- Энэ төслийн атом, шийдвэр → [[04-Resources/Atomic/Atomic]] (`projects:` талбараар)
+- Энэ төслийн task-ууд → [[01-GTD/Tasks/README]] (`project:` талбараар)
+- Энэ төслийн атом, шийдвэр → [[04-Resources/Atomic/README]] (`projects:` талбараар)

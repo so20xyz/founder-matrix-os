@@ -40,6 +40,25 @@ def main():
               ("member: new rules, own history + state kept", "Дүрэм" in mg and "my history" in mg and 'last-done: "mine"' in mg and "old rules" not in mg),
               ("member: old copy in _trash", any((m / "_trash").glob("rules-*/" + A + "GTD.md"))),
               ("member: second update no-op", fr.update(m, True) == [])]
+    # Soyol 2026-11-09: exported templates (fm 0.10.2) must still onboard cleanly
+    nt = fr.normalize_template("---\ntype: project-brain\nai-first: true\n---\n\n# B\n")
+    ng = fr.normalize_template("---\ntype: goal\ndate: x\ntags:\n  - goal\n---\n")
+    tl = fr.delink("[[_BRAIN]] [[x/...]] [[03-Areas/<а>]] [[04-Resources/Atomic/decisions/2026-10-11 - Хувийн]]",
+                   set(), only="04-Resources/Atomic/")
+    w(v / "03-Areas/Docs/Docs.base", "filters: x\n")
+    real_files = fr.files
+    fr.files = lambda root=None: iter(["03-Areas/Docs/Docs.base"])
+    try:
+        nested = fr.export(v, True)
+    finally:
+        fr.files = real_files
+    checks += [("template gets date + tags", "date: {{date:YYYY-MM-DD}}" in nt and "  - project-brain" in nt
+                and "aliases" not in nt),
+               ("template with fields: aliases only", ng.count("date:") == 1 and "aliases: []" in ng),
+               ("template delink: atoms only, placeholders kept",
+                tl == "[[_BRAIN]] [[x/...]] [[03-Areas/<а>]] 2026-10-11 - Хувийн"),
+               ("nested base refused", any(l.startswith("REFUSED") and "Docs.base" in l for l in nested)
+                and not (tpl / "03-Areas/Docs/Docs.base").exists())]
     shutil.rmtree(tmp, ignore_errors=True)
     bad = [n for n, ok in checks if not ok]
     for n, ok in checks: print(("PASS  " if ok else "FAIL  ") + n)

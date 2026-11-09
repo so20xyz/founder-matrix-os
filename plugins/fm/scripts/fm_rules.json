@@ -10,6 +10,11 @@
     "Inai Website": "<вэб төсөл>",
     "INAI": "<байгууллага>",
     "Inai": "<байгууллага>",
-    "02-Projects/Lab/Lab.md": "02-Projects/<төсөл>/<төсөл>.md"
+    "02-Projects/Lab/Lab.md": "02-Projects/<төсөл>/<төсөл>.md",
+    "[[01-GTD/Tasks/Tasks]]": "[[01-GTD/Tasks/README]]",
+    "[[04-Resources/Atomic/Atomic]]": "[[04-Resources/Atomic/README]]",
+    "# эсвэл [[03-Areas/Personal/Life/Life]] · [[03-Areas/Personal/Freelancer/Freelancer]]": "# эсвэл [[03-Areas/Life/<хүрээ>/<хүрээ>]]",
+    "[[04-Resources/Atomic/decisions/Decisions]]": "[[04-Resources/Atomic/decisions/README]]",
+    "[[04-Resources/Atomic/knowledge/Knowledge]]": "[[04-Resources/Atomic/knowledge/README]]"
   }
 }

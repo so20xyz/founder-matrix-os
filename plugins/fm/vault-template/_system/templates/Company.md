@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: company
+aliases: []
 tags:
   - company
 ai-first: true

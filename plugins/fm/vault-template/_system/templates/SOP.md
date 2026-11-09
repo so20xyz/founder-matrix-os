@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: sop
+aliases: []
 tags:
   - sop
 ai-first: true

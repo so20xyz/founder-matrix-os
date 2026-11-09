@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: person
+aliases: []
 tags:
   - person
 ai-first: true

@@ -30,7 +30,7 @@ up: "[[03-Areas/AI Team/ai-workers/AI Workers]]"
 agent: "🔒 Finance Agent"
 bases:
   - "[[03-Areas/Finances.base]]"
-  - "[[03-Areas/Docs/Docs.base]]"
+  - "[[03-Areas/Docs.base]]"
   - "[[03-Areas/Private Finance.base]]"
   - "[[03-Areas/Finances.base]]"
   - "[[03-Areas/Finances.base]]"
@@ -57,7 +57,7 @@ status: active
 
 ## 🧩 Хариуцах (base · skill · script · task)
 
-**Base:** [[03-Areas/Finances.base|Finances]] · [[03-Areas/Docs/Docs.base|Docs (гэрээ)]] · [[03-Areas/Private Finance.base|Private Finance]] · [[03-Areas/Finances.base|Cash Flow]] · [[03-Areas/Finances.base|Finance Records]]
+**Base:** [[03-Areas/Finances.base|Finances]] · [[03-Areas/Docs.base|Docs (гэрээ)]] · [[03-Areas/Private Finance.base|Private Finance]] · [[03-Areas/Finances.base|Cash Flow]] · [[03-Areas/Finances.base|Finance Records]]
 
 **Skill:** `fm:finance`, `fm:task` · **Script:** `fm_bills.py`
 

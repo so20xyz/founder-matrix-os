@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: task
+aliases: []
 tags:
   - task
 ai-first: true
@@ -23,7 +24,7 @@ task-type:  # хийц: build | research | design | lesson | content | decision 
 job:
 requested_by:
 resources:
-up: "[[01-GTD/Tasks/Tasks]]"
+up: "[[01-GTD/Tasks/README]]"
 next_action:   # дараагийн ганц алхам (Next action хэсгийн товч)
 outputs: []    # гаралтын эх сурвалж: [[Output/...]] эсвэл код зам
 due:

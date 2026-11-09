@@ -1,6 +1,7 @@
 ---
 date: {{date:YYYY-MM-DD}}
 type: finance-record
+aliases: []
 tags:
   - finance-record
 ai-first: true

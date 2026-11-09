@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: contract
+aliases: []
 tags:
   - contract
 ai-first: true

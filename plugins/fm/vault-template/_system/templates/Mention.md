@@ -1,6 +1,7 @@
 ---
 date: <% tp.date.now("YYYY-MM-DD") %>
 type: mention
+aliases: []
 tags:
   - mention
 ai-first: true

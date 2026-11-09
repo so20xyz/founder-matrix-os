@@ -272,7 +272,8 @@ def test_argv_contract(pipe):
     (c,) = pipe.calls()
     a, p = c["argv"], c["prompt"]
     assert a[:4] == ["-p", "--agent", "fm:project", "--permission-mode"] and "--verbose" in a
-    assert _flag(a, "--max-budget-usd") == "3" and "--strict-mcp-config" in a and "--mcp-config" not in a
+    # itge.e 2026-11-08 (fa703ed): no dollar cap by default - only the timeout stops a stuck run
+    assert "--max-budget-usd" not in a and "--strict-mcp-config" in a and "--mcp-config" not in a
     st = json.loads(_flag(a, "--settings"))
     hook = st["hooks"]["PreToolUse"][0]
     assert hook["matcher"] == "*" and str(gd.GUARD_PY) in hook["hooks"][0]["command"]
