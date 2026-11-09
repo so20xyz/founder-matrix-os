@@ -4,7 +4,8 @@ W46: `inai-research-weekly` was due Mon 09:00, ran 13:53 (the Mac was asleep) an
 task's cron and lastRunAt in ~/Library/Application Support/Claude/claude-code-sessions/*/*/scheduled-tasks.json
 (app-internal: if the shape changes this warns once instead of going quiet).
 
-Each tick: for every enabled task, the previous due time from its cron (local time); lastRunAt before it and now past
+Each tick: for every enabled task, the previous due time from its cron (local time) or its one-time fireAt; ad-hoc
+tasks (neither) are skipped. lastRunAt before it and now past
 due + 60 min -> one «⏰» on relay `sys` + a macOS notification; when it later runs -> one «✅ N мин хоцорч ажиллав».
 State ~/.fmos/routine-watch.json (FM_ROUTINE_STATE); events go to fm_triggers' events.jsonl (trigger «routine»).
 
@@ -113,6 +114,13 @@ def check(tasks, state, now, grace_min=GRACE_MIN):
             msgs.append(UNREADABLE)
         return msgs, st
     st["warned"].pop("unreadable", None)
+    live = [t for t in tasks if isinstance(t, dict) and t.get("enabled", True)]
+    if live and not any(t.get("cronExpression") or t.get("fireAt") for t in live):
+        if not st["warned"].get("noschedule"):  # every task ad-hoc: the app's field names likely changed
+            st["warned"]["noschedule"] = True
+            msgs.append(UNREADABLE)
+    else:
+        st["warned"].pop("noschedule", None)
     for t in tasks:
         try:
             msgs.extend(_check_one(t, st, now, grace_min))
@@ -124,23 +132,32 @@ def check(tasks, state, now, grace_min=GRACE_MIN):
 def _check_one(t, st, now, grace_min):
     msgs = []
     tz = now.tzinfo
-    if not t.get("enabled", True):
-        return msgs
     tid, name, cron = t.get("id"), t.get("displayName") or t.get("id"), t.get("cronExpression") or ""
-    due = prev_fire(cron, now - timedelta(minutes=grace_min))  # the run that should be done by now
-    if due is None:
-        key = "cron:%s:%s" % (tid, cron)
-        if not st["warned"].get(key):
-            st["warned"][key] = True
-            msgs.append("⚠ routine-watch: %s cron «%s» танихгүй" % (tid, cron))
-        return msgs
     last = _parse(t.get("lastRunAt"))
+    # recovery first: the app disables a one-time (fireAt) task right after its late run
     for key in [k for k in st["alerted"] if k.startswith(tid + "@")]:
         due_k = _parse(key.split("@", 1)[1])
         if last and due_k and last >= due_k:
             late = int((last - due_k).total_seconds() // 60)
             msgs.append("✅ %s %d мин хоцорч ажиллав" % (name, late))
             del st["alerted"][key]
+    if not t.get("enabled", True):
+        return msgs
+    fire_at = t.get("fireAt")
+    if not cron and isinstance(fire_at, (int, float)) and not isinstance(fire_at, bool):
+        due = datetime.fromtimestamp(fire_at / 1000.0, tz=timezone.utc).astimezone(tz)  # one-time task
+        if now - timedelta(minutes=grace_min) < due:
+            return msgs
+    elif not cron:
+        return msgs  # ad-hoc task: started by hand, nothing is due
+    else:
+        due = prev_fire(cron, now - timedelta(minutes=grace_min))  # the run that should be done by now
+    if due is None:
+        key = "cron:%s:%s" % (tid, cron)
+        if not st["warned"].get(key):
+            st["warned"][key] = True
+            msgs.append("⚠ routine-watch: %s cron «%s» танихгүй" % (tid, cron))
+        return msgs
     if last is None or last < due:
         key = "%s@%s" % (tid, due.isoformat())
         if key not in st["alerted"]:
