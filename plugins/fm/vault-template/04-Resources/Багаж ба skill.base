@@ -1,0 +1,46 @@
+filters:
+  and:
+    - file.inFolder("04-Resources/library/repos")
+    - note.type == "tool"
+formulas:
+  Төлөв: if(note.status == "бэлэн", "✅ Бэлэн", if(note.status == "туршигдаагүй", "🧪 Туршигдаагүй", if(note.status == "ажиглаж-буй", "👀 Ажиглаж буй", note.status)))
+properties:
+  cover:
+    displayName: Зураг
+  formula.Төлөв:
+    displayName: Төлөв
+  kind:
+    displayName: Төрөл
+  installed:
+    displayName: Хаана суусан
+  url:
+    displayName: Эх сурвалж
+  creator:
+    displayName: Зохиогч
+views:
+  - type: cards
+    name: Галерей
+    order:
+      - file.name
+      - formula.Төлөв
+      - kind
+      - creator
+      - installed
+      - url
+    sort:
+      - property: date
+        direction: DESC
+    image: note.cover
+    imageAspectRatio: 0.5
+  - type: table
+    name: Хүснэгт
+    groupBy:
+      property: formula.Төлөв
+      direction: ASC
+    order:
+      - file.name
+      - formula.Төлөв
+      - kind
+      - installed
+      - date
+      - url

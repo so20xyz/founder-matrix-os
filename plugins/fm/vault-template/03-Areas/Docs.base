@@ -1,0 +1,81 @@
+filters:
+  and:
+    - '!file.inFolder("_system/templates")'
+    - '!file.inFolder("_trash")'
+    - file.ext == "md"
+    - or:
+        - note.type == "official-letter"
+        - note.type == "official-notice"
+        - note.type == "order"
+        - note.type == "contract"
+properties:
+  area:
+    displayName: Area
+  project:
+    displayName: Төсөл
+  doc_type:
+    displayName: Төрөл
+  number:
+    displayName: Дугаар
+  org:
+    displayName: Гаргагч
+  party:
+    displayName: Хаяглагдсан тал
+  status:
+    displayName: Төлөв
+  date:
+    displayName: Огноо
+  sent:
+    displayName: Илгээсэн
+  signed_by:
+    displayName: Гарын үсэг зурах
+views:
+  - type: table
+    name: Бүгд
+    order: [file.name, doc_type, number, party, status, date]
+    sort:
+      - property: date
+        direction: DESC
+  - type: table
+    name: Төрлөөр
+    groupBy:
+      property: doc_type
+      direction: ASC
+    order: [file.name, number, party, status, date]
+  - type: table
+    name: Төлвөөр
+    groupBy:
+      property: status
+      direction: ASC
+    order: [file.name, doc_type, party, date]
+  - type: table
+    name: Хянах, батлах
+    filters:
+      or:
+        - status == "review"
+        - status == "approved"
+    order: [file.name, doc_type, party, signed_by, date]
+  - type: table
+    name: Талаар
+    groupBy:
+      property: party
+      direction: ASC
+    order: [file.name, doc_type, number, status, date]
+  - type: table
+    name: Area-аар
+    groupBy:
+      property: area
+      direction: ASC
+    order: [file.name, org, doc_type, number, status, date]
+  - type: table
+    name: Гаргагчаар
+    groupBy:
+      property: org
+      direction: ASC
+    order: [file.name, doc_type, number, party, status]
+  - type: table
+    name: Төслөөр
+    groupBy:
+      property: project
+      direction: ASC
+    order: [file.name, doc_type, party, status, date]

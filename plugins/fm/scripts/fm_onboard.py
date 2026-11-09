@@ -369,12 +369,20 @@ class Note(object):
 
 def fill_placeholders(raw, title, today):
     # type: (str, str, datetime.date) -> str
-    def date_fmt(m):
-        fmt = (m.group(1) or ":YYYY-MM-DD")[1:]
+    def fmt_date(fmt):
         out = fmt.replace("YYYY", "%04d" % today.year).replace("MM", "%02d" % today.month)
         out = out.replace("DD", "%02d" % today.day).replace("dddd", WEEKDAYS_MN[today.weekday()])
         return out
-    raw = re.sub(r"\{\{date(:[^}]*)?\}\}", date_fmt, raw)
+    raw = re.sub(r"\{\{date(:[^}]*)?\}\}", lambda m: fmt_date((m.group(1) or ":YYYY-MM-DD")[1:]), raw)
+    # Soyol 2026-11-09: `fm_rules export` ships the maintainer's Templater templates (fm 0.10.2) -
+    # onboarding has no Templater, so the common tags are filled here instead of left as `<% … %>`.
+    raw = re.sub(r"<%\s*tp\.date\.now\(\s*(?:[\"']([^\"']*)[\"'])?\s*\)\s*%>",
+                 lambda m: fmt_date(m.group(1) or "YYYY-MM-DD"), raw)
+    raw = re.sub(r"<%\s*tp\.file\.title\s*%>", lambda m: title, raw)
+    raw = re.sub(r"<%\s*tp\.file\.cursor\(\s*\d*\s*\)\s*%>", "", raw)
+    raw = re.sub(r"<<\s*(?:YYYY-MM-DD|огноо)\s*>>", today.isoformat(), raw)   # the exported templates' date slot
+    # an example link (`[[companies/...]]`) in a template comment is not a note - a member's note gets plain text
+    raw = re.sub(r"\[\[([^\]\n]*\.\.\.[^\]\n]*)\]\]", r"\1", raw)
     raw = raw.replace("{{fm:date}}", today.isoformat())
     raw = re.sub(r"\{\{time(:[^}]*)?\}\}", datetime.datetime.now().strftime("%H:%M"), raw)
     return raw.replace("{{title}}", title)
@@ -435,8 +443,9 @@ class Onboard(object):
         for base in (self.vault, TEMPLATE_VAULT):
             p = base / TEMPLATES / (name + ".md")
             if p.is_file():
-                raw = p.read_text(encoding="utf-8-sig")
-                return Note.parse(fill_placeholders(raw, title, self.today))
+                raw = fill_placeholders(p.read_text(encoding="utf-8-sig"), title, self.today)
+                # exported templates name the owner as {{fm:member}} (fm_rules export) - this vault's member
+                return Note.parse(raw.replace("{{fm:member}}", text(self.a.get("member")) or "хэрэглэгч"))
         raise InputError("загвар олдсонгүй: %s" % name)
 
     def exists(self, rel):
@@ -1291,10 +1300,11 @@ class Onboard(object):
         active = [n for n, s in self.project_state.items() if s == "active"][:3]
         if active:
             marks = ["🔴", "🟡", "🟢"]
-            note.set_section("🎯 Өнөөдрийн гол 3", ["- %s #%d: %s" % (marks[i], i + 1,
-                                                                       link(self.projects[n], n))
-                                                    for i, n in enumerate(active)])
-        note.set_section("💼 Ажил", lines)
+            focus = ["- %s #%d: %s" % (marks[i], i + 1, link(self.projects[n], n)) for i, n in enumerate(active)]
+            note.set_section("🎯 Өнөөдрийн гол 3", focus) or note.set_section("🎯 Today's Focus", focus)
+        # the exported maintainer template names the section «💼 Work Log»; a template with neither gets one
+        if not (note.set_section("💼 Ажил", lines) or note.set_section("💼 Work Log", lines)):
+            note.body += ["", "## 💼 Ажил", ""] + lines
         self.write_new(daily_rel, note.render())
 
     # ------------------------------------------------------------ run
