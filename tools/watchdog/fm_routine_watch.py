@@ -183,8 +183,13 @@ def tick(dry_run=False):
         state = {}
     msgs, new = check(load_tasks(_sched_root()), state if isinstance(state, dict) else {}, datetime.now().astimezone())
     for m in msgs:
-        if dry_run:
-            print(m)
+        if dry_run:  # bytes: a Windows console (cp1252) cannot encode Mongolian text
+            out = getattr(sys.stdout, "buffer", None)
+            if out is not None:
+                out.write((m + "\n").encode("utf-8"))
+                out.flush()
+            else:
+                print(m)
         else:
             _notify(m)
             _log(m)

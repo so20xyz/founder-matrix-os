@@ -83,7 +83,7 @@ def checks_list():
 
     env = {k: v for k, v in os.environ.items()}
     env.update({"FM_SCHED_ROOT": str(tmp / "nope"), "FM_ROUTINE_STATE": str(tmp / "state.json"),
-                "FM_TRIGGERS_DIR": str(tmp / "trig")})
+                "FM_TRIGGERS_DIR": str(tmp / "trig"), "PYTHONIOENCODING": "cp1252"})  # Windows console
     p = subprocess.run([sys.executable, str(SCRIPT), "--dry-run"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                        env=env, timeout=30)
     c.append(("dry-run prints, exit 0", p.returncode == 0 and "уншиж чадсангүй" in p.stdout.decode("utf-8")))
