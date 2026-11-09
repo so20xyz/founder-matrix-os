@@ -58,6 +58,9 @@ def checks_list():
     except Exception as exc:
         c.append(("naive timestamp does not silence others: %r" % (exc,), False))
     c.append(("never ran alerts", len(w.check([task(last=None)], {}, at(2026, 11, 9, 12, 0))[0]) == 1))
+    fresh = dict(task(tid="fresh", cron="0 16 * * 5", last=None), createdAt=int(at(2026, 11, 9, 21, 42).timestamp() * 1000))
+    c.append(("task created after its last due is silent", w.check([fresh], {}, at(2026, 11, 9, 22, 0))[0] == []))
+    c.append(("task created before a missed due alerts", len(w.check([fresh], {}, at(2026, 11, 13, 17, 30))[0]) == 1))
     bad = [task(cron="0 9 1 * *", last=at(2026, 11, 2, 9, 3))]
     m1, st = w.check(bad, {}, mon)
     m2, st = w.check(bad, st, mon)

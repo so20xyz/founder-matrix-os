@@ -158,6 +158,10 @@ def _check_one(t, st, now, grace_min):
             st["warned"][key] = True
             msgs.append("⚠ routine-watch: %s cron «%s» танихгүй" % (tid, cron))
         return msgs
+    created = t.get("createdAt")
+    if isinstance(created, (int, float)) and not isinstance(created, bool) and \
+            due < datetime.fromtimestamp(created / 1000.0, tz=timezone.utc):
+        return msgs  # the task did not exist yet at that due time
     if last is None or last < due:
         key = "%s@%s" % (tid, due.isoformat())
         if key not in st["alerted"]:
