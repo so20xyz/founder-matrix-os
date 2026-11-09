@@ -1,3 +1,10 @@
+## fm 0.10.23 · 2026-11-09 · CE хаалганы тэмдэг, шинэ routine-ийг upgrade-д санал болгох
+
+- Soyol: «Context Engineer бүх сешнтэй хамгийн түрүүнд холбогдож байх ёстой». Claude Flow-д CE → сешн холбоос харагдахгүй байсан.
+- `fm_ce_gate.py`: хаалга ажиллах бүрт `additionalContext`-ийн эхний мөр яг `[ce-gate] v1` (агуулгагүй тэмдэг). Transcript-д `attachment.type = hook_additional_context`, `hookName = UserPromptSubmit`. Хаалганы дүрэм өөрчлөгдөөгүй.
+- Setup-ийн Upgrade 5б: `routines/*.md`-ийн `id` scheduled task-д байхгүй бол асаах эсэхийг асууна. CE routine 0.10.10-д нэмэгдсэн ч upgrade хийсэн машинд хэзээ ч санал болгогдоогүй байсан.
+- Хэмжилт (Mac, 7 хоног): хаалганд хамаарах 7 сешнээс 1-д ажилласан; үлдсэн 6-ийн анхны prompt 0.10.10-аас өмнөх fm дээр (эсвэл compact-ын үргэлжлэл). Суусан цагаас хойш 1/1. Тест: `tests/test_ce_gate.py` (14).
+
 ## fm 0.10.22 · 2026-11-09 · Нөхцөлт гох 2: mn-check, code review, finance хамгаалалт
 
 - Soyol: «skill-үүд нөхцөлөөр өөрөө дуудагддаг болго». 0.10.21 qmd, 200k, routine-ийг хамарсан; mn-check, PR-ийн өмнөх review, finances/private-ийн дүрэм текстээр л байсан.

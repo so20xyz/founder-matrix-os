@@ -6,6 +6,9 @@ ONE short clarifying question (goal / output / done-criteria) when any is unclea
 Silent for later prompts, slash commands, non-human messages, headless/SDK runs,
 compacted continuations and cwd outside the vault. Always exits 0.
 
+The injected text starts with GATE_MARKER on its own line: a stable, content-free
+tag that transcript readers (ce_traces, Claude Flow) match to see the gate fired.
+
 Python 3.9+, standard library only, Windows-safe.
 """
 
@@ -13,7 +16,8 @@ import json
 import os
 import sys
 
-GATE_TEXT = 'Context Engineer хаалга: хэрэглэгчийн энэ анхны хүсэлтэд (1) зорилго, (2) хүлээн авах гаралт, (3) «болсон» гэх шалгуурын аль нэг нь тодорхойгүй бол ажил эхлэхээс өмнө монголоор НЭГ богино асуулт асуу, боломжит утгыг санал болгож «тийм» гэхэд хангалттай болго. Гурвуулаа тодорхой бол асуулгүй шууд ажилла.'
+GATE_MARKER = "[ce-gate] v1"
+GATE_TEXT = GATE_MARKER + '\nContext Engineer хаалга: хэрэглэгчийн энэ анхны хүсэлтэд (1) зорилго, (2) хүлээн авах гаралт, (3) «болсон» гэх шалгуурын аль нэг нь тодорхойгүй бол ажил эхлэхээс өмнө монголоор НЭГ богино асуулт асуу, боломжит утгыг санал болгож «тийм» гэхэд хангалттай болго. Гурвуулаа тодорхой бол асуулгүй шууд ажилла.'
 
 COMPACT_PREFIX = "This session is being continued"
 

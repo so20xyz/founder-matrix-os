@@ -38,7 +38,7 @@ def transcript(path, texts):
 
 
 def main():
-    from fm_ce_gate import GATE_TEXT
+    from fm_ce_gate import GATE_MARKER, GATE_TEXT
     tmp = Path(tempfile.mkdtemp())
     vault = tmp / "vault"; vault.mkdir()
     outside = tmp / "outside"; outside.mkdir()
@@ -58,6 +58,7 @@ def main():
         ("first prompt in vault -> gate", ctx_of(run(first, vault)) == GATE_TEXT),
         ("missing transcript counts as first", ctx_of(run(pl("Landing page хий", t_missing), vault)) == GATE_TEXT),
         ("size", len(GATE_TEXT.encode("utf-8")) <= 1024),
+        ("marker is the exact first line", GATE_MARKER == "[ce-gate] v1" and ctx_of(run(first, vault)).split("\n", 1)[0] == GATE_MARKER),
         ("second prompt silent", run(pl("Дараагийнх", t_second), vault).stdout.strip() == b""),
         ("resume/compact silent", run(pl("Үргэлжлүүл", t_compact), vault).stdout.strip() == b""),
         ("slash silent", run(pl("/fm:role gtd", t_first), vault).stdout.strip() == b""),
