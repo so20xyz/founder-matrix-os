@@ -22,7 +22,7 @@ spec.loader.exec_module(fs)
 
 
 def git(repo, *a):
-    return subprocess.run(["git", "-C", str(repo), *a], capture_output=True, text=True)
+    return subprocess.run(["git", "-C", str(repo), *a], capture_output=True, text=True, encoding="utf-8")
 
 
 def make_repo(d, version):
@@ -107,16 +107,16 @@ class Cli(unittest.TestCase):
     def test_version_needs_no_vault_argument(self):
         """`version` нь vault шаардахгүй — `check`/`mark` шаарддаг."""
         p = subprocess.run([sys.executable, str(SD / "fm_sync.py"), "version", "--repo", "/nonexistent-fm-repo"],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding="utf-8")
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertIn("шалгагдсангүй", p.stdout)
 
     def test_unknown_command_prints_usage(self):
-        p = subprocess.run([sys.executable, str(SD / "fm_sync.py"), "nope"], capture_output=True, text=True)
+        p = subprocess.run([sys.executable, str(SD / "fm_sync.py"), "nope"], capture_output=True, text=True, encoding="utf-8")
         self.assertEqual(p.returncode, 2)
 
     def test_check_still_requires_vault(self):
-        p = subprocess.run([sys.executable, str(SD / "fm_sync.py"), "check"], capture_output=True, text=True)
+        p = subprocess.run([sys.executable, str(SD / "fm_sync.py"), "check"], capture_output=True, text=True, encoding="utf-8")
         self.assertEqual(p.returncode, 2)
 
 

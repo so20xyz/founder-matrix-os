@@ -22,6 +22,13 @@ def real(p):
     return os.path.realpath(str(p))
 
 
+def env_of(env, key):
+    """Windows env names are case-insensitive: the child sees one upper-cased key per name."""
+    if os.name == "nt":
+        return {k.upper(): v for k, v in env.items()}.get(key.upper(), "")
+    return env.get(key, "")
+
+
 def ok_of(res, typ):
     return all(c["ok"] for c in res["checks"] if c["type"] == typ) and any(c["type"] == typ for c in res["checks"])
 
@@ -184,7 +191,7 @@ def main():
         ("copy excludes .obsidian/.trash", not (dst / ".obsidian").exists() and not (dst / ".trash").exists()),
         ("cmd isolates", {"--strict-mcp-config", "--setting-sources"} <= set(cmd) and "Bash(git push:*)" in cmd),
         ("cmd exact", cmd == ["claude", "-p", "hi", "--output-format", "stream-json", "--verbose", "--strict-mcp-config",
-                              "--mcp-config", "e.json", "--plugin-dir", "plugins/fm", "--setting-sources", "project",
+                              "--mcp-config", "e.json", "--plugin-dir", str(Path("plugins/fm")), "--setting-sources", "project",
                               "--permission-mode", "acceptEdits", "--disallowedTools", "Bash(git push:*)"]),
         ("file_exists ok", ok_of(res, "file_exists") and ok_of(res, "file_absent")),
         ("asked_question ok", ok_of(res, "asked_question") and not ev_none[0]["ok"] and ev_yes[0]["ok"]),
@@ -211,7 +218,7 @@ def main():
          and json.loads((dst / ".claude" / "settings.json").read_text(encoding="utf-8")) == {}),
         ("run sees isolated settings", seen["settings"] is not None and json.loads(seen["settings"]) == {}
          and seen["claude_dir"] == ["settings.json"] and seen["mcp_json"] is False),
-        ("every VAULT_ENV_KEY -> temp copy", all(real(seen["env"].get(k, "")) == real(seen["cwd"]) for k in VAULT_ENV_KEYS)),
+        ("every VAULT_ENV_KEY -> temp copy", all(real(env_of(seen["env"], k)) == real(seen["cwd"]) for k in VAULT_ENV_KEYS)),
         ("FMOS_CONFIG -> temp config with copy", real(seen["env"].get(CONFIG_ENV, "")).startswith(work + os.sep)
          and real(json.loads(seen["config"] or "{}").get("vault", "")) == real(seen["cwd"])),
         ("finance skip ignores casing", not (dst / "04-Areas/Business/Finances/Private").exists()
