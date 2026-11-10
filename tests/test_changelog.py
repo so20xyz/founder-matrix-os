@@ -110,6 +110,18 @@ def main():
         check((home / ".fmos" / "active-task" / "sid1").read_text(encoding="utf-8") == "01-GTD/Tasks/Шинэ ажил.md",
               "editing a completed task note does not steal the claim")
 
+        # itge.e 2026-11-10: the app queued two tasks at once; the 2nd claim overwrote the 1st, so the 1st task's work
+        # (task note edited via Bash, no Edit) was logged to the 2nd. A prompt naming one in-progress task moves the claim.
+        (home / ".fmos" / "active-task" / "sid1").write_text("01-GTD/Tasks/Шинэ ажил.md", encoding="utf-8")
+        fire(mod, {"session_id": "sid1", "hook_event_name": "UserPromptSubmit",
+                   "prompt": "Vault-ийн task-ийг гүйцэтгэ (in-progress болсон): [[01-GTD/Tasks/Тест task]] — эхлээд унш"})
+        claim = (home / ".fmos" / "active-task" / "sid1").read_text(encoding="utf-8")
+        check(claim == "01-GTD/Tasks/Тест task.md", "a prompt naming an in-progress task moves the claim to it", claim)
+        fire(mod, {"session_id": "sid1", "hook_event_name": "UserPromptSubmit", "prompt": "see [[01-GTD/Tasks/Дууссан]]"})
+        check((home / ".fmos" / "active-task" / "sid1").read_text(encoding="utf-8") == "01-GTD/Tasks/Тест task.md",
+              "a prompt naming a completed task does not move the claim")
+        (home / ".fmos" / "active-task" / "sid1").write_text("01-GTD/Tasks/Шинэ ажил.md", encoding="utf-8")
+
         # scratchpad / memory / Temp edits are noise, never history rows
         before = new.read_text(encoding="utf-8")
         for p in ("C:/Users/U/AppData/Local/Temp/claude/x/scratchpad/rm23.js", "C:/Users/U/.claude/projects/p/memory/figma.md"):

@@ -211,6 +211,31 @@ def announce_completed(ev, vault, today=None):
     return msg
 
 
+PROMPT_TASK = re.compile(r"\[\[(" + re.escape(TASKS_DIR) + r"[^\]|#/]+?)(?:\.md)?(?:[|#][^\]]*)?\]\]")
+
+
+def follow_prompt(sid, prompt, vault):
+    """UserPromptSubmit: мессеж яг нэг in-progress task-ийг [[01-GTD/Tasks/…]]-ээр нэрлэвэл claim тийшээ шилжинэ
+    (itge.e 2026-11-10: апп хоёр task-ийг зэрэг claim хийхэд 2 дахь нь 1-рийг дарж, 1-рийн ажил 2 дахьд бичигдэв)."""
+    hits = []
+    for m in PROMPT_TASK.finditer(prompt or ""):
+        rel = m.group(1).strip() + ".md"
+        try:
+            head = (vault / rel).read_text(encoding="utf-8")[:1500]
+        except OSError:
+            continue
+        s = re.search(r"^status:\s*(\S+)", head, re.M)
+        if s and s.group(1).strip("\"'") == "in-progress" and not re.search(r"^private:\s*true", head, re.M):
+            hits.append(rel)
+    if len(set(hits)) != 1 or hits[0] == active_task(sid):
+        return ""
+    try:
+        f = _claim_file(sid); f.parent.mkdir(parents=True, exist_ok=True); f.write_text(hits[0], encoding="utf-8")
+    except OSError:
+        return ""
+    return hits[0]
+
+
 def main():
     try:
         ev = json.load(sys.stdin)
@@ -220,6 +245,9 @@ def main():
         import fmconfig
         vault = Path(fmconfig.vault_dir())
     except Exception:
+        return
+    if ev.get("hook_event_name") == "UserPromptSubmit":
+        follow_prompt(ev.get("session_id"), ev.get("prompt", ""), vault)
         return
     try:
         announce_completed(ev, vault)
