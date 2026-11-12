@@ -132,7 +132,8 @@ def find_role(vault, session_id):
         return ({"slug": slug, "path": None, "private": private},
                 "дүр '%s'-ийн тэмдэглэл олдсонгүй (registry roles.%s.note)" % (slug, slug),
                 slugs)
-    return {"slug": slug, "path": path, "private": private}, None, slugs
+    return ({"slug": slug, "path": path, "private": private,
+             "folder": str(entry.get("folder") or "").strip().strip("/")}, None, slugs)
 
 
 def extract_rules(text):
@@ -206,6 +207,59 @@ def open_workflows(vault, role, limit=3):
     return out
 
 
+SYNC_TIMEOUT_S = 4             # project sync at session start: vault read only (no gh), must stay fast
+SYNC_MAX_BYTES = 1800
+SYNC_SECTION_LINES = {"Лог": 5, "Нээлттэй task": 8, "Inbox": 3}
+
+
+def project_sync(vault, folder, timeout=SYNC_TIMEOUT_S):
+    """Short `fm_project.py sync` report for a Project session (itge.e 2026-11-12: auto sync at start).
+    Returns "" on any failure or timeout - session start must never break."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    from fm_common import truncate_utf8
+    name = folder.rstrip("/").split("/")[-1]
+    if not name:
+        return ""
+    script = Path(__file__).resolve().parents[1] / "skills" / "project" / "scripts" / "fm_project.py"
+    try:
+        p = subprocess.run([sys.executable, str(script), "sync", str(vault), name, "--no-gh", "--days", "1"],
+                           capture_output=True, timeout=timeout, env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if p.returncode != 0:
+        return ""
+    sections, order, section = {}, [], "skip"
+    for line in p.stdout.decode("utf-8", "replace").splitlines():
+        if line.startswith("# ") or not line.strip():
+            continue
+        if line.startswith("## "):
+            section = line[3:].split(" (")[0].strip()
+            if section in SYNC_SECTION_LINES:
+                order.append(section)
+                sections[section] = ([], [])  # (items, other lines)
+            else:
+                section = "skip"
+            continue
+        if section != "skip":
+            sections[section][0 if line.startswith("- ") else 1].append(line)
+    out = []
+    for name_ in order:
+        items, rest = sections[name_]
+        # what needs the member first: in progress, or missing owner / priority
+        urgent = [i for i in items if "⚠️" in i or "· in-progress ·" in i]
+        pick = (urgent + [i for i in items if i not in urgent])[:SYNC_SECTION_LINES[name_]]
+        out.append("**%s**" % name_)
+        out.extend([i for i in items if i in pick])
+        if len(items) > len(pick):
+            out.append("- …+%d" % (len(items) - len(pick)))
+        out.extend(rest)
+    text, _ = truncate_utf8("\n".join(out), SYNC_MAX_BYTES)
+    return text
+
+
 def build_context(vault, session_id, reserve=0):
     from fm_common import BOOT_REL, byte_len, read_text, rel_posix, truncate_utf8
 
@@ -251,6 +305,11 @@ def build_context(vault, session_id, reserve=0):
         if wf:
             role_block += ("\n## Нээлттэй ажилбар (алхам алгасахгүй; алгасвал task-д «алгассан — яагаад»)\n\n%s\n"
                            % "\n".join(wf))
+
+    if role and role.get("slug") == "project" and role.get("folder") and not private:
+        sync = project_sync(vault, role["folder"])
+        if sync:
+            role_block += ("\n## 📁 Төслийн sync (автомат; бүтэн нь `/fm:update project sync`)\n\n%s\n" % sync)
 
     head_text = "\n".join(header) + "\n"
     boot_path = vault / BOOT_REL

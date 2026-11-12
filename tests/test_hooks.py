@@ -181,6 +181,30 @@ def test_ctx_role_from_registry(v):
     assert "дүргүй" not in ctx, ctx
 
 
+def test_ctx_project_session_auto_sync(v):
+    v.write("_system/BOOT.md", "# BOOT\n")
+    v.write("03-Areas/AI Team/ai-workers/Project.md",
+            "---\ntype: agent-role\nrole: project\n---\n\n## Дүрэм\n\n- нэг цонх\n")
+    v.write("02-Projects/Alpha/Alpha.md", "---\ntype: project\nstatus: active\n---\n# Alpha\n")
+    proj = 'project: "[[02-Projects/Alpha/Alpha]]"\n'
+    v.write("01-GTD/Tasks/A1.md", "---\ntype: task\nstatus: next-action\n" + proj + "---\n")
+    for i in range(12):  # more than the per-section cap
+        v.write("01-GTD/Tasks/T%02d.md" % i,
+                "---\ntype: task\nstatus: next-action\nowner: x\npriority: low\n" + proj + "---\n")
+    v.registry({"roles": {"project": {"note": "Project"}},
+                "sessions": {"sess-1": {"role": "project", "project": "alpha", "folder": "02-Projects/Alpha"},
+                             "sess-2": {"role": "project", "project": "project"}}})
+    code, out, _ = run(CTX, ctx_payload(v.root), {"FM_VAULT": str(v.root)})
+    ctx = context_of(out)
+    assert "Төслийн sync" in ctx and "эзэнгүй" in ctx and "Нийт 13" in ctx, ctx
+    assert ctx.count("· next-action ·") <= 8, ctx  # capped
+    assert "Repo PR" not in ctx and "Linked session" not in ctx, ctx
+    p = ctx_payload(v.root)
+    p["session_id"] = "sess-2"  # project session without a folder -> no sync block
+    code, out, _ = run(CTX, p, {"FM_VAULT": str(v.root)})
+    assert "Төслийн sync" not in context_of(out)
+
+
 def test_ctx_role_scan_fallback(v):
     v.write("03-Areas/AI Team/ai-workers/GTD.md",
             "---\ntype: agent-role\nrole: area\n---\n\n## Rules\n\narea-rule-marker\n")
