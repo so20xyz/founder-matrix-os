@@ -143,3 +143,21 @@ python3 "$F/fig.py" --doc "<файл>" ask --title "Аль чиглэлийг ү
 2. `powershell -NoProfile -ExecutionPolicy Bypass -File "$F/open_plugin.ps1"` — Figma-г урд гаргаж, Ctrl+/ → «Claude Bridge» → Enter. Дараа нь `fig.py status` дахин шалга (`plugin: True`).
 3. Шинэ файл хэрэгтэй бол одоо нээлттэй файлд шинэ page үүсгэ (өөр файлын page-д бүү хүр); шинэ файл үүсгэх нь UI хэрэгтэй тул зөвхөн itge.e хүсвэл.
 Баталгаажсан: 2026-11-03 PC (Windows), Figma 126.x — plugin 5 секундэд холбогдсон.
+
+## 🔁 Код → бодит Figma давхарга (DOM хөрвүүлэлт) (itge.e 2026-11-12: «алдаатай юм шиг байна… skill-ээ алдаан дээрээсээ сайжруул»)
+
+Вэб компонентыг screenshot биш, бодит давхарга болгох: `tools/figma/dom2fig/` — `dump.mjs` (playwright-core, DOM → JSON + лавлах PNG) → `build.js` (`fig.py run -f build.js --inject TREE=… --inject META=…`) → `diff.py` (Figma export ↔ лавлах PNG, ангилал + хос зургийн хуудас). Judge-bracket гэх мэт 92 компонентын туршлагаас гарсан дүрэм:
+
+1. **SVG-ийн будгийг computed style-аас хадгал.** `outerHTML` нь CSS class-аар өгсөн `fill:none`, `stroke`-ийг алддаг → шугам бүдүүн хар дүүргэлт болно. Элемент бүрийн `getComputedStyle`-ийн fill/stroke/stroke-width/…-ийг attribute болгож (px-гүй) бичээд дараа нь `createNodeFromSvg`.
+2. **Хөдөлгөөнт/state компонентыг дууссан төлөвөөр нь.** `reducedMotion: 'reduce'` + ≥ 5 с хүлээ (`SETTLE`); хоосон нүд, «Thinking» шиг хагас төлөв гарвал хүлээлтийг нэм эсвэл state-ийг товшиж тогтоо.
+3. **Компонент бүр өөрийн surface-тэй.** Root дэвсгэр тунгалаг бол хамгийн ойрын тунгалаг биш эцгийнх нь өнгийг (studio-ийн preview) root-д тавь — section-ий бараан дэвсгэр дээр contrast унахгүй.
+4. **Нуугдсан текстийг алгас.** sr-only (1×1 px, `clip: rect(0…)`, `clip-path: inset(50%)`) элемент Figma-д харагдах текст болдог («, Done», «done:»).
+5. **Form-ийн утга.** `input/textarea/select`-ийн `value` (эсвэл `placeholder`-ийг placeholder өнгөөр) текст болго — эс бөгөөс талбар хоосон.
+6. **Ellipsis, nowrap.** `text-overflow: ellipsis` → `textTruncation='ENDING'`, `maxLines=1`, тогтмол өргөн; `nowrap` → тогтмол хэмжээ. Үгүй бол текст хальж эсвэл үсэг үсгээрээ босоо задарна.
+7. **Run бүрийн жин, өнгө.** `<strong>`, gradient (`background-clip:text`) текст: run-д `setRangeFontName`; тунгалаг өнгөтэй текстэд саарал fallback.
+8. **Тасархай хүрээ.** `border-style: dashed/dotted` → `dashPattern`.
+9. **Хүрээний өнгө өргөнтэй талаасаа.** Зөвхөн доод хүрээтэй мөрөнд `borderTopColor` (ихэвчлэн хар currentColor) авбал бүх мөр хар зураастай болно — өргөн > 0 талын өнгийг ав.
+10. **Орчин үеийн өнгийг rgb болго.** `color(srgb …)`, `oklab()`, `color-mix()`-ийг Figma (SVG parser, paint) уншдаггүй → хар. 1×1 canvas-д зурж `getImageData`-аар rgba болго; SVG gradient-ийн `stop-color`-ыг ч inline бич.
+11. **Auto layout-оор илэрхийлэгдэхгүй байрлал.** `margin:auto`, absolute хүүхэд, wrap: build-ийн дараа хүүхэд бүрийн байрлалыг DOM-той харьцуул, > 3 px зөрвөл `layoutPositioning='ABSOLUTE'` болгож DOM-ийн x/y-д тогтоо.
+12. **Хөрвүүлсний дараа заавал diff.** `python diff.py <figma_exports> <dumps> <out>` (fig.py export 2x-ийг хагасална) → `darkExcess` (хар блок), `inkLoss` (дутуу агуулга), `sizeDelta` (зай/хэмжээ) + `sheets/*.png`-г Read-ээр нүдээр хар. «Болсон» гэхээс өмнө ангилал бүрийн тоог тайлагна; лавлах screenshot-ийг viewport-оор тайрагдахгүй (өндөр 2400) авна.
+13. **Хуучин хувилбарыг дарахгүй.** Дахин хөрвүүлэлт шинэ section-д (`… (v4.2) · fixed`); алдаатай нь Archive руу, устгахгүй.
