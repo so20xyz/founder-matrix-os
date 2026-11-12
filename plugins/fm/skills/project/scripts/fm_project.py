@@ -19,6 +19,9 @@ Usage:
     fm_project.py move  <vault> "<Name>" <active|planning|on-hold|waiting|archive> [--status completed|cancelled] [--apply]
     fm_project.py status-css <vault>                              only regenerate the status CSS snippet
     fm_project.py board <vault> [<board name>] [--stale-days 14]  legacy kanban hygiene report (read-only; boards archived, Tasks.base replaces them)
+    fm_project.py sync  <vault> "<Name>" [--since YYYY-MM-DD] [--days 1] [--repo owner/name] [--no-gh]
+                     project GTD report (read-only): log lines, open tasks (missing owner/priority flagged),
+                     inbox items naming the project, open PRs of the repo (frontmatter `repo:` or --repo, via gh)
 
 `move` is a dry run unless --apply (archive / un-archive also lists every file whose links would be rewritten).
 Pure standard library, Python 3.9+, macOS / Windows / Linux.
@@ -502,6 +505,117 @@ def cmd_board(vault: Path, args: List[str]) -> None:
     _out("Санал (done / reschedule / archive / keep)-ийг хэрэглэгчээр батлуулсны дараа л самбарт хэрэгжүүл.")
 
 
+def _task_folder(vault: Path) -> Path:
+    for f in (vault / "01-GTD" / "Tasks", vault / "00-GTD" / "Tasks", vault / "02-GTD" / "tasks"):
+        if f.is_dir():
+            return f
+    return vault / "01-GTD" / "Tasks"
+
+
+def _prio_rank(p: str) -> int:
+    return {"🔴": 0, "high": 0, "🟡": 1, "medium": 1, "🟢": 2, "low": 2}.get(p.strip().strip('"'), 3)
+
+
+def cmd_sync(vault: Path, args: List[str]) -> None:
+    """Project GTD report, read-only (itge.e 2026-11-12: Project agent = the project's GTD, one window)."""
+    pos = _positional(args)
+    if not pos:
+        _die('Хэрэглээ: fm_project.py sync <vault> "<Нэр>" [--since YYYY-MM-DD] [--days 1] [--repo owner/name] [--no-gh]')
+    note = locate(vault, pos[0])
+    name = note.stem
+    d = fm_dict(split_note(read_text(note))[0])
+    today = datetime.date.today()
+    since_s = _opt(args, "--since")
+    try:
+        since = (datetime.date.fromisoformat(since_s) if since_s
+                 else today - datetime.timedelta(days=int(_opt(args, "--days", "1") or 1)))
+    except ValueError:
+        _die("--since YYYY-MM-DD, --days тоо байх ёстой")
+    keys = {name.lower()} | {a.strip().strip('"').lower() for a in re.findall(r"[^\[\],]+", d.get("aliases", ""))
+                             if a.strip()}
+    _out("# 📁 %s — sync (%s → %s)" % (name, since.isoformat(), today.isoformat()))
+    proj_tasks = []  # (path, frontmatter) of every task whose project: links here
+    for t in sorted(_task_folder(vault).glob("*.md")):
+        td = fm_dict(split_note(read_text(t))[0])
+        m = re.search(r"\[\[([^\]|#]+)", td.get("project", ""))
+        if td.get("type") == "task" and m and Path(m.group(1)).name.lower() == name.lower():
+            proj_tasks.append((t, td))
+    # a log line belongs here if it names the project (or alias) or links one of its tasks
+    log_keys = keys | {"[[01-gtd/tasks/%s" % t.stem.lower() for t, _ in proj_tasks}
+
+    # 1. log lines that mention the project
+    _out("\n## Лог")
+    n = 0
+    day = since
+    while day <= today:
+        lp = vault / "_system" / "logs" / ("%s.md" % day.isoformat())
+        if lp.is_file():
+            for line in read_text(lp).splitlines():
+                if line.lstrip().startswith("- ") and any(k in line.lower() for k in log_keys):
+                    _out("- %s %s" % (day.isoformat(), re.sub(r"\s+", " ", line.strip()[2:])[:220]))
+                    n += 1
+        day += datetime.timedelta(days=1)
+    if not n:
+        _out("- (шинэ мөр алга)")
+
+    # 2. open tasks of this project; flag missing owner / priority
+    _out("\n## Нээлттэй task")
+    rows = []
+    for t, td in proj_tasks:
+        if td.get("status") not in OPEN_TASK:
+            continue
+        owner = td.get("owner", "").strip().strip('"')
+        prio = td.get("priority", "").strip().strip('"')
+        flags = [f for f, ok in (("⚠️ эзэнгүй", owner), ("⚠️ priority-гүй", prio)) if not ok]
+        rows.append((td.get("status") != "in-progress", _prio_rank(prio), td.get("due", "") or "~", t.stem,
+                     td.get("status", ""), owner or "—", prio or "—", td.get("due", ""), flags))
+    for _, _, _, stem, st, owner, prio, due, flags in sorted(rows):
+        _out("- [[%s]] · %s · %s · %s%s%s" % (stem, st, owner, prio, (" · due " + due) if due else "",
+                                           (" · " + " ".join(flags)) if flags else ""))
+    if not rows:
+        _out("- (нээлттэй task алга)")
+    _out("Нийт %d · эзэн/priority дутуу %d" % (len(rows), sum(1 for r in rows if r[8])))
+
+    # 3. inbox items naming the project -> propose task or log
+    _out("\n## Inbox (санал: task эсвэл лог)")
+    inbox = vault / "01-GTD" / "Inbox"
+    hits = 0
+    if inbox.is_dir():
+        for f in sorted(inbox.rglob("*.md")):
+            if any(k in read_text(f).lower() or k in f.stem.lower() for k in keys):
+                _out("- [[%s]] → task уу, лог уу?" % f.relative_to(vault).with_suffix("").as_posix())
+                hits += 1
+    if not hits:
+        _out("- (төсөлтэй холбоотой inbox алга)")
+
+    # 4. open PRs of the project repo
+    repo = _opt(args, "--repo") or d.get("repo", "").strip().strip('"')
+    _out("\n## Repo PR")
+    if not repo:
+        _out("- (repo тодорхойгүй — төслийн frontmatter-т `repo: owner/name` нэм эсвэл --repo)")
+    elif "--no-gh" in args or not shutil.which("gh"):
+        _out("- %s: gh алга (--no-gh) — `gh pr list -R %s`-ийг agent өөрөө ажиллуулна" % (repo, repo))
+    else:
+        import json
+        import subprocess
+        try:
+            p = subprocess.run(["gh", "pr", "list", "-R", repo, "--state", "open", "--json",
+                                "number,title,author,createdAt,url"], capture_output=True, timeout=60)
+            prs = json.loads(p.stdout.decode("utf-8", "replace") or "[]") if p.returncode == 0 else None
+        except (OSError, ValueError, subprocess.SubprocessError):
+            prs = None
+        if prs is None:
+            _out("- %s: gh алдаа — эрх, сүлжээг шалга" % repo)
+        elif not prs:
+            _out("- %s: нээлттэй PR алга" % repo)
+        for pr in prs or []:
+            _out("- #%s %s · %s · %s · %s" % (pr["number"], pr["title"], (pr.get("author") or {}).get("login", "?"),
+                                          pr.get("createdAt", "")[:10], pr.get("url", "")))
+
+    _out("\n## Linked session")
+    _out('- agent: `mcp__ccd_session_mgmt__list_sessions {"linked": true}` → ажиллаж/хүлээж буй сешн бүрийг нэг мөрөөр нэм')
+
+
 def main(argv: List[str]) -> None:
     for stream in (sys.stdout, sys.stderr):  # Windows consoles default to cp1252/cp437
         try:
@@ -515,9 +629,9 @@ def main(argv: List[str]) -> None:
     if not vault.is_dir():
         _die("Vault олдсонгүй: %s" % vault)
     handlers = {"list": cmd_list, "new": cmd_new, "move": cmd_move, "board": cmd_board,
-                "status-css": cmd_status_css}
+                "status-css": cmd_status_css, "sync": cmd_sync}
     if cmd not in handlers:
-        _die("Үл мэдэх команд: %s (list|new|move|board|status-css)" % cmd)
+        _die("Үл мэдэх команд: %s (list|new|move|board|status-css|sync)" % cmd)
     handlers[cmd](vault, argv[3:])
 
 

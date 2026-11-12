@@ -1,7 +1,7 @@
 ---
 name: project
 description: Төсөл үүсгэх, шинэчлэх, төлөв солих (Active / Planning / On-hold / Archive), төсөл хаах шалгах жагсаалт, kanban самбарын цэгцлэл (hygiene). «төсөл», «шинэ төсөл», «төсөл үүсгэ», «төслийн төлөв», «төслийг зогсоо», «төсөл хаа», «архивла», «on-hold болго», «төслүүдийг харуул», «самбар цэгцэл», «board hygiene», «хуучирсан картууд» гэвэл энэ skill-ийг ашигла.
-argument-hint: "[нэр] [new|status|close|hygiene]"
+argument-hint: "[нэр] [new|status|close|hygiene|sync]"
 ---
 
 # /fm:update project — төсөл ба самбар
@@ -105,6 +105,19 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" move "${use
 ### Долоо хоногийн task hygiene (itge.e 2026-10-26)
 
 Даваа бүр 09:00 (scheduled task) идэвхтэй төсөл бүрт: `project:`-оор шүүсэн нээлттэй task бүрийг commit, Output, шийдвэрийн атомтай тулга → нотолгоотойг `completed` + «## Үр дүн», орлогдсоныг `cancelled` + холбоос, тодорхойгүйг нэг «Асуулт - …» task (`waiting_on: me`). Тайлан = `02-Projects/<Төсөл>/Output/<огноо> - Task хяналт (hygiene).md` (хүснэгт: Task · Өмнө → Дараа · Нотолгоо), дүгнэлтийг төслийн `Chat/<огноо>.app.md`-д нэг мөр. Устгахгүй; Discord #gtd-д бичихгүй. Арга → [[04-Resources/Atomic/decisions/2026-10-26 - Task hygiene дүрэм]].
+
+## 6. Төслийн GTD — sync (itge.e 2026-11-12)
+
+Project agent = төслийнхөө GTD ба itge.e-тэй ярих **ганц цонх** (дүрэм: `03-Areas/AI Team/ai-workers/Project.md` → «🧭 Дүрэм (2026-11-12)»). Төслийн сешнд «sync», «төлөв юу байна», `/fm:update project sync` гэвэл:
+
+1. Тайлан (зөвхөн уншина; `--days N` эсвэл `--since YYYY-MM-DD`, анхдагч 1 хоног):
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/project/scripts/fm_project.py" sync "${user_config.vault_path}" "<Нэр>" [--repo owner/name]
+   ```
+   Гаргана: төсөл эсвэл түүний task-ийг дурдсан **лог** мөр · **нээлттэй task** (▶ in-progress → priority → due; `⚠️ эзэнгүй`, `⚠️ priority-гүй` тэмдэглэнэ) · төслийг дурдсан **Inbox** · repo-гийн **нээлттэй PR** (`repo:` frontmatter эсвэл `--repo`, `gh`-ээр).
+2. **Linked session** — `mcp__ccd_session_mgmt__list_sessions {"linked": true}` (ToolSearch): ажиллаж эсвэл хариу хүлээж буй fork/side session бүрийг нэг мөрөөр; хариу хүлээж буйг эхэнд.
+3. Нэг товч тайлан (≤12 мөр): шинэ юу болсон · хүлээгдэж буй шийдвэр · дараагийн алхам. **Санал** — Inbox бүрийг task (эзэн, priority-тэй) эсвэл лог болгох; эзэн/priority дутуу task-д утга; шинэ PR-ыг шалгах (сурагчийн PR → нууц, аюултай код). 2+ шийдвэр бол сонголтот картаар (`AskUserQuestion`) асуу; батлагдсаныг л бич (`/fm:update task`, `/fm:update log`).
+4. Fork/side session/subagent-д ажил өгөхдөө brief-ийн төгсгөлд `BRIEF.md`-ийн загварыг нэм (асуулт эх сешн рүү, ≤10 мөр тайлан, зөв `local_…` id).
 
 ## Хориг
 

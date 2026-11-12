@@ -154,6 +154,25 @@ def main():
     return 1 if failed else 0
 
 
+def test_sync_reports_logs_tasks_inbox():
+    import datetime
+    v = vault()
+    assert run("new", v, "Alpha")[0] == 0
+    proj = 'project: "[[02-Projects/Alpha/Alpha]]"\n'
+    w(v, "01-GTD/Tasks/A1.md", "---\ntype: task\nstatus: next-action\n" + proj + "---\n")
+    w(v, "01-GTD/Tasks/A2.md", "---\ntype: task\nstatus: in-progress\nowner: architect\npriority: high\n" + proj + "---\n")
+    w(v, "01-GTD/Tasks/B1.md", '---\ntype: task\nstatus: next-action\nowner: x\npriority: low\nproject: "[[02-Projects/Beta/Beta]]"\n---\n')
+    w(v, "_system/logs/%s.md" % datetime.date.today().isoformat(),
+      "# log\n- **10:00** · arch → [[01-GTD/Tasks/A2]] done\n- **11:00** · other → unrelated\n")
+    w(v, "01-GTD/Inbox/idea.md", "about Alpha launch\n")
+    rc, out, err = run("sync", v, "Alpha", "--no-gh", "--repo", "o/r")
+    assert rc == 0, err
+    assert "A2]] done" in out and "unrelated" not in out, out
+    assert "[[A1]]" in out and "эзэнгүй" in out and "priority-гүй" in out, out
+    assert "B1" not in out, out
+    assert out.index("[[A2]]") < out.index("[[A1]]"), out  # in-progress first
+    assert "01-GTD/Inbox/idea" in out and "o/r" in out, out
+
 if __name__ == "__main__":
     for stream in (sys.stdout, sys.stderr):
         try:

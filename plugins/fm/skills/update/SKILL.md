@@ -15,6 +15,7 @@ argument-hint: "[daily [дүгнэлт] | weekly | хурдан] [нэг өгү�
 | «inbox цэгцэл» · `/fm:update inbox` | `update inbox` | `../inbox/GUIDE.md` |
 | «хүн нэм», «хүний note» · `/fm:update people` | `update people` | `../people/GUIDE.md` |
 | «төсөл үүсгэ / хаа / төлөв» · `/fm:update project` | `update project` | `../project/GUIDE.md` |
+| Төслийн сешнд «sync», «төслийн төлөв» · `/fm:update project sync` | `update project sync` | `../project/GUIDE.md` §6 (+ fork-ийн brief: `../project/BRIEF.md`) |
 
 GUIDE доторх `/fm:update save` г.м. хуучин нэрийг дээрх алхмаар ойлго. Скриптүүд хуучин замдаа (`skills/<нэр>/scripts/`).
 
