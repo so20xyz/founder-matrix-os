@@ -1,3 +1,10 @@
+## fm 0.10.24 · 2026-11-12 · Project agent = төслийн GTD, ганц цонх
+
+- itge.e: «төслийн agent өөрөө төслийнхөө GTD болж явдаг бол гоё», «fork бүрт орж хариулахгүй».
+- `fm_project.py sync <vault> "<Нэр>"`: лог, нээлттэй task (эзэн, priority дутууг ⚠️), Inbox, repo-гийн PR (`--repo`, `gh`). `/fm:update project sync`, GUIDE §6.
+- `skills/project/BRIEF.md`: fork, side session-ийн brief загвар — асуулт эх Project сешн рүү, ≤10 мөр тайлан, Desktop-ийн `local_…` id ба Claude Code-ийн sid-ийн ялгаа.
+- SessionStart (`fm_context.py`): registry-д `folder`-тэй project сешнд sync-ийн товч тайлан (4 сек, 1.8 KB, `gh`-гүй). Тест: `test_hooks`, `test_project`.
+
 ## fm 0.10.23 · 2026-11-09 · CE хаалганы тэмдэг, шинэ routine-ийг upgrade-д санал болгох
 
 - Soyol: «Context Engineer бүх сешнтэй хамгийн түрүүнд холбогдож байх ёстой». Claude Flow-д CE → сешн холбоос харагдахгүй байсан.
