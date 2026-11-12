@@ -17,7 +17,7 @@
 | Agent (6) | `project`, `gtd`, `wiki`, `architect`, `creative`, `finance` (хуучин `area`/`resource`/`research`/`developer` slug alias хэвээр) — vault дахь дүрийн тэмдэглэл рүү заадаг нимгэн заагч |
 | Hook | SessionStart: `_system/BOOT.md` + дүрийн дүрэм (≤10 KB). PostToolUse: тэмдэглэлийн lint; token болон хувийн санхүүг буруу газар бичихийг **блоклоно** |
 | Script | `fm_doctor.py` (компьютерын шаардлага, албан ёсны суулгагч), `fm_setup.py`, `fm_onboard.py`, `fm_context.py`, `fm_lint.py` |
-| Tools | `tools/relay`, `tools/figma`, `tools/framer`, `tools/notion`, `tools/watch` — хэрэгслийн skill-үүдийн код (`${CLAUDE_PLUGIN_ROOT}/tools/...`) |
+| Tools | `tools/relay`, `tools/figma`, `tools/framer`, `tools/notion`, `tools/watch`, `tools/meter` (PC нөөцийн хэмжүүр: `python tools/meter/meter.py --label X -- <команд>`, баримт `docs/tools/meter.md`) — хэрэгслийн skill-үүдийн код (`${CLAUDE_PLUGIN_ROOT}/tools/...`) |
 | Vault загвар | `vault-template/`: PARA хавтсууд, BOOT, `_system/fm/`, 7 Agent-ийн тэмдэглэл, загварууд, Bases, хувийн санхүү, `Official skills` лавлагаа |
 
 Албан ёсны skill-уудыг (superpowers, kepano obsidian, document-skills, finance, exa) fm **хуулдаггүй** — `/fm:setup` эх сурвалжаас нь суулгана ([THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)).
