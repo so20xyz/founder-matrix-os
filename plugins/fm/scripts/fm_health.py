@@ -122,6 +122,7 @@ def check_hook_text():
     add("⚠" if stale else "✅", "hook text paths", "; ".join(sorted(set(stale))[:4]) if stale else "бүгд бий")
 
 
+# fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
 def check_goom_sync():
     """Vault -> Second Brain sync (itge.e 2026-11-02: goom-tick 7 цаг гацаж, токен дуусан ч хэн ч мэдээгүй)."""
     import base64, time
@@ -136,6 +137,7 @@ def check_goom_sync():
     if log.exists():
         age = int((time.time() - log.stat().st_mtime) // 60)
         add("❌" if age > 10 else "✅", "goom-tick", f"сүүлд {age} мин өмнө ажилласан" + (" — гацсан байж магадгүй (Task Scheduler goom-tick)" if age > 10 else ""))
+# fm:end-private
 
 
 def check_strays():
@@ -170,6 +172,7 @@ def check_task_flow():
     add("⚠" if pct < 50 else "✅", "task flow", f"төсөлтэй {len(rows)} task-ийн {pct}% нь өмнөх task руугаа холбоостой (зорилт ≥50%)")
 
 
+# fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
 def check_goom():
     """Second Brain chat dispatcher (Mac: LaunchAgent com.fmos.goom-dispatch via tools/watchdog/fm_goom_agent.py)."""
     import subprocess, time
@@ -201,9 +204,15 @@ def check_goom():
                 oldest = m if oldest is None else min(oldest, m)
         age = int((now - oldest) // 60) if oldest else 0
         add("⚠" if age > 5 else "✅", "goom queue", f"хамгийн хуучин queued run {age} мин" + (" — dispatcher авахгүй байна" if age > 5 else "") if oldest else "queued run алга")
+# fm:end-private
 
 
-for f in (check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text, check_goom_sync, check_task_flow, check_strays, check_goom):
+CHECKS = [check_broadcast, check_boot_size, check_hooks, check_plugin_cache, check_memory, check_drive_dupes, check_registry, check_hook_text, check_task_flow, check_strays]
+# fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
+CHECKS[8:8] = [check_goom_sync]
+CHECKS.append(check_goom)
+# fm:end-private
+for f in CHECKS:
     try: f()
     except Exception as e: add("❌", f.__name__, f"шалгалт унав: {e}")
 

@@ -15,7 +15,7 @@ steps), agents, tools, vault-template. Writes .claude-plugin/marketplace.json at
 pushes with the maintainer's own `gh` login. Never touches anything outside `dir` and the marketplace file.
 Dry run unless --apply; syncs only when plugin.json's version changed (or --force).
 """
-import argparse, json, shutil, subprocess, sys, tempfile
+import argparse, json, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -50,7 +50,9 @@ def build(dst: Path, spec: dict):
     (dst / ".claude-plugin" / "plugin.json").write_text(json.dumps(pj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     ign = shutil.ignore_patterns("node_modules", "__pycache__", "*.pyc", ".DS_Store")
     # itge.e's own infrastructure (Second Brain OS app, dispatcher, Discord harvest) never goes to a student copy
-    ign_scripts = shutil.ignore_patterns("node_modules", "__pycache__", "*.pyc", "fm_goom_*", "goom-tick.ps1", "fm_harvest*", "fm_agents.py")
+    ign_scripts = shutil.ignore_patterns("node_modules", "__pycache__", "*.pyc", "fm_goom_*", "goom-tick.ps1", "fm_harvest*", "fm_agents.py",
+                                         # goom-only helpers (fm_goom_dispatch / fm_goom_sync-ийн импорт)
+                                         "fm_runner_adapters.py", "fm_headless_guard.py", "fm_vault_fix.py", "fm_downstream.py")
     for x in ALWAYS:
         s = PLUGIN / x
         if s.is_dir():
@@ -74,7 +76,40 @@ def build(dst: Path, spec: dict):
     if spec.get("vault_template", True):
         shutil.copytree(PLUGIN / "vault-template", dst / "vault-template", ignore=ign)
     prune_hooks(dst)
+    strip_private(dst)
     return sorted(dict.fromkeys(skills))
+
+
+PRIVATE_RE = re.compile(r"^[ \t]*(?:#|<!--)[ \t]*fm:private\b.*?^[ \t]*(?:#|<!--)[ \t]*fm:end-private\b[^\n]*\n?", re.M | re.S)
+
+
+def strip_private(dst: Path):
+    """Drop `# fm:private … # fm:end-private` blocks (itge.e's own app code inside shared scripts)."""
+    n = 0
+    for f in dst.rglob("*"):
+        if f.suffix not in (".py", ".md", ".ps1", ".sh") or not f.is_file():
+            continue
+        t = f.read_text(encoding="utf-8", errors="ignore")
+        if "fm:private" in t:
+            f.write_text(PRIVATE_RE.sub("", t), encoding="utf-8")
+            n += 1
+    return n
+
+
+def leaks(root: Path, word="goom"):
+    """Files under root (outside .git) whose name or text still mentions the private app."""
+    bad = []
+    for f in root.rglob("*"):
+        if ".git" in f.relative_to(root).parts or not f.is_file():
+            continue
+        rel = f.relative_to(root).as_posix()
+        try:
+            hit = word in rel.lower() or word.encode() in f.read_bytes().lower()
+        except OSError:
+            continue
+        if hit:
+            bad.append(rel)
+    return bad
 
 
 def prune_hooks(dst: Path):
@@ -125,6 +160,9 @@ def sync(spec, apply, force):
                               "plugins": [{"name": "fm", "source": "./" + sub,
                                            "description": "Second Brain суурь (founder-matrix-os " + ver + "-ийн шүүсэн хуулбар)"}]},
                              ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    bad = leaks(r)
+    if bad:  # itge.e 2026-11-13: downstream-д goomnet-ийн ул мөр байх ёсгүй — push хийхгүй
+        return f"STOP {name}: 'goom' үлдсэн {len(bad)} файл — " + ", ".join(bad[:12])
     git(r, "add", "-A", sub, ".claude-plugin/marketplace.json")
     diff = git(r, "status", "--short")
     if not diff.strip():

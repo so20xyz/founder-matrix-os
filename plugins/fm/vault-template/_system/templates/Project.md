@@ -37,7 +37,7 @@ risks:
 open-questions:
   << Шийдэгдээгүй асуудлууд, нэг мөрөөр. Жишээ: >>
   - << нээлттэй асуулт >>
-# ── Зөвхөн project-type: website (бусад төрөлд энэ гурван мөрийг устга). Нэг мөрийн flow хэлбэр — fm_goom_sync үүрлэсэн олон мөрийг уншдаггүй.
+# ── Зөвхөн project-type: website (бусад төрөлд энэ гурван мөрийг устга). Нэг мөрийн flow хэлбэр — vault sync үүрлэсэн олон мөрийг уншдаггүй.
 links: {"staging": "", "prod": "", "figma": "", "framer": "", "repo": ""}
 launch: [{"item": "domain", "done": false}, {"item": "SSL", "done": false}, {"item": "analytics", "done": false}, {"item": "SEO meta", "done": false}, {"item": "OG images", "done": false}, {"item": "404", "done": false}, {"item": "performance", "done": false}, {"item": "client sign-off", "done": false}]
 pages:   # "02-Projects/<P>/Data/pages.csv" — page,path,stage[brief|wireframe|design|build|qa|live],owner,figma,url,seo_title,updated,task

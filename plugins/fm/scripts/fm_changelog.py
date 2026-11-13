@@ -199,9 +199,11 @@ def announce_completed(ev, vault, today=None):
     title = cell(h1.group(1) if h1 else Path(rel).stem, 120)
     done = _section_first_item(text, ("Хүргэсэн", "Үр дүн"))
     msg = f"✅ Дууссан: {title}" + (f" — {done}" if done else "") + f" · [[{rel[:-3]}]]"
+    # fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
     import fm_goom_chat as gc
     store, _ = gc.vault_lib()
     store.append_message(vault, ROLE_CHANNEL[role], gc.ROLES.get(role, role), msg, gc.vault_device())
+    # fm:end-private
     seen.add(rel)
     try:
         seen_f.parent.mkdir(parents=True, exist_ok=True)

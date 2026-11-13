@@ -365,10 +365,14 @@ def notify_producer(vault, task_text, r):
     role = next((w for w in re.findall(r"[a-z]+", (o.group(1) if o else "").lower()) if w in fc.ROLE_CHANNEL), None)
     if not role:
         return None
+    # fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
     import fm_goom_chat as gc
     store, _ = gc.vault_lib()
+    # fm:end-private
     msg = f"❌ Шалгалт унав: [[{r['task'][:-3]}]] — {summary_line(r)}. Засаад task-аа дахин completed болго."
+    # fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
     store.append_message(vault, fc.ROLE_CHANNEL[role], "🧪 fm_eval", msg, gc.vault_device())
+    # fm:end-private
     return msg
 
 

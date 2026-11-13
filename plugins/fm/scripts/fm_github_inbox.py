@@ -25,7 +25,9 @@ MERGED = {"save": "update", "log": "update", "task": "update", "inbox": "update"
           "project": "update", "sync": "setup", "role": "setup", "vault": "setup", "refs": "research"}
 
 AREA_RULES = [  # (regex, шошго) — эхний таарсан нь
+    # fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
     (r"(^|/)scripts/fm_goom_|goomnet|(^|/)goom", "Goomnet"),
+    # fm:end-private
     (r"(^|/)hooks/", "сешн hook, task самбар"),
     (r"(^|/)tools/relay/", "relay, Discord"),
     (r"(^|/)tools/figma/", "Figma bridge"),
@@ -59,8 +61,11 @@ def group_files(files):
     return groups
 
 
-def goom_affected(paths):
+def app_affected(paths):
+    # fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
     return [p for p in paths if re.search(r"fm_goom_|goom", p, re.I)]
+    # fm:end-private
+    return []
 
 
 def vault_touch(diff):
@@ -145,9 +150,11 @@ def render_impact(imp):
         out.append("Өөрчлөлт нь vault руу бичдэг кодод хүрч байна: " + "; ".join(imp["vault"]) + ". Merge хийсний дараа vault-д шинэ бичлэг, бүтэц гарч болзошгүй тул шалгана уу.")
     else:
         out.append("Vault руу бичдэг кодод шууд хүрэхгүй байна.")
+    g = app_affected([f["path"] for f in imp["files"]])
+    # fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
     out += ["", "### Goomnet", ""]
-    g = goom_affected([f["path"] for f in imp["files"]])
     out.append("Нөлөөлнө: " + ", ".join(f"`{p}`" for p in g) + "." if g else "Нөлөөгүй.")
+    # fm:end-private
     conflicts = sorted({f["path"] for f in imp["files"]} & imp.get("dirty", set()))
     if conflicts:
         out += ["", "⚠️ локал өөрчлөлттэй зөрчилдөж магадгүй: " + ", ".join(f"`{p}`" for p in conflicts)]

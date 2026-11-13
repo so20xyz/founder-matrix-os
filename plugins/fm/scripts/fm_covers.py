@@ -3,7 +3,7 @@
 
   python fm_covers.py "<vault>"            # dry-run: юу хийхийг тоолно
   python fm_covers.py "<vault>" --apply    # бичнэ
-  fm_goom_sync.py --apply нь ensure()-г 04-Resources/references-д дуудна (шинэ GTD лавлагаа бүрд нэг удаа).
+  Vault sync нь ensure()-г 04-Resources/references-д дуудна (шинэ GTD лавлагаа бүрд нэг удаа).
 
 Дараалал (note бүрт, эхний амжилттай нь):
   1 эвдэрсэн зам засах — хуучин vault-ийн угтвар (08-Studio/ → 03-Areas/Studio/, 05-Resources/ → 04-Resources/),
@@ -192,7 +192,7 @@ def ensure(vault, roots=None, apply=False, images=None, log=None):
         url = get(fm, "url")
         is_placeholder = "/_cat-" in cur
         if roots is not None and not cur and "github.com/" in url:
-            stats["ok"] += 1  # Goomnet draws the GitHub repo card itself
+            stats["ok"] += 1  # the app draws the GitHub repo card itself
             continue
         retry = is_placeholder and url.startswith("http") and url not in failed
         good = resolve(vault, cur, images) if not retry else None

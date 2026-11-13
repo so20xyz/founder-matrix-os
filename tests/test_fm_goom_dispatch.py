@@ -662,8 +662,8 @@ def test_agent_prompts_owner_and_finance_lines():
     for f in ad.glob("*.md"):
         t = f.read_text(encoding="utf-8")
         assert "**itge.e** (латинаар)" not in t, f.name
-        if f.stem in headless:   # dispatcher-ийн асаадаг дүрүүд эзний нэрийг goom.json-оос авна
-            assert "goom.json `owner_name`" in t, f.name
+        if f.stem in headless:   # эзний нэр ~/.fmos/config.json-ийн member (downstream-д goom.json байхгүй)
+            assert "`~/.fmos/config.json`-ийн `member`" in t, f.name
         opened = re.search(r"finances/.{0,40}нээлттэй", t)
         assert bool(opened) == (f.stem == "finance"), f.name   # H2: зөвхөн finance.md өөрийн дүрэмтэй
 

@@ -150,6 +150,7 @@ ITEMS = [
         "windows": {"command": "winget install --id OpenJS.NodeJS.LTS -e --source winget",
                     "interactive": False, "note": ""},
     },
+    # fm:private (itge.e-ийн дотоод апп — downstream-д fm_downstream.py тайрна)
     {
         "id": "python312", "name": "Python 3.12 (goom)", "level": "optional", "min_version": "3.12",
         "why": "Second Brain чат dispatcher, vault→DB sync (fm_goom_*.py) 3.12+ шаарддаг; системийн python3 хуучин байж болно.",
@@ -161,6 +162,7 @@ ITEMS = [
         "windows": {"command": "winget install --id Python.Python.3.12 -e --source winget",
                     "interactive": False, "note": ""},
     },
+    # fm:end-private
     {
         "id": "ffmpeg", "name": "ffmpeg", "level": "optional",
         "why": "Бичлэгээс дуу, кадр гаргах.",
