@@ -14,7 +14,7 @@ argument-hint: "[daily [дүгнэлт] | weekly | хурдан] [нэг өгү�
 | «task үүсгэ / авлаа / дууслаа», «миний таскууд» · `/fm:update task` | `update task` | `../task/GUIDE.md` |
 | «inbox цэгцэл» · `/fm:update inbox` | `update inbox` | `../inbox/GUIDE.md` |
 | «хүн нэм», «хүний note» · `/fm:update people` | `update people` | `../people/GUIDE.md` |
-| «төсөл үүсгэ / хаа / төлөв» · `/fm:update project` | `update project` | `../project/GUIDE.md` |
+| «төсөл үүсгэ / хаа / төлөв» · `/fm:update project` | `update project` | `../project/GUIDE.md` (дэд сешн бүрийг `fm:update` хийсэн эсэхийг шалгаад archive: §6.2) |
 | Төслийн сешнд «sync», «төслийн төлөв» · `/fm:update project sync` | `update project sync` | `../project/GUIDE.md` §6 (+ fork-ийн brief: `../project/BRIEF.md`) |
 
 GUIDE доторх `/fm:update save` г.м. хуучин нэрийг дээрх алхмаар ойлго. Скриптүүд хуучин замдаа (`skills/<нэр>/scripts/`).

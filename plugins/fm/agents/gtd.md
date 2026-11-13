@@ -17,3 +17,4 @@ description: GTD агент (хуучин Area; Archive орно) — inbox/GTD 
 6. **Skill-first:** ажил эхлэхээс өмнө дүрийн note-ийн «Skill-ууд — эхлээд хай» хүснэгтээс тохирох skill-ийг Skill tool-оор ачаал (superpowers, last30days, deep-research, finance:* …); байхгүй бол боломжит skill-үүдээс хай. Аргыг нь дага, өөрөө зохиохгүй.
 
 7. **Хариуцах зүйл:** дүрийн note-ийн `bases:` (хариуцах base), `skills:`, `scripts:` болон `owner`-оор шүүсэн task-ийн base-ийг эхлээд унш — эдгээр нь чиний ажлын талбар.
+8. **Дэд сешн, fork (itge.e 2026-11-13):** том эсвэл зэрэгцээ ажлыг Project agent шиг дэд сешнд (`start_session`, Desktop fork) хуваа. Brief-ийг token хэмнэж, context алдахгүйгээр бич — эх үг, яагаад, шалгуур, буруу чиглэл, файл; `fork` эсвэл `fresh`-ийг ярианы уртаар сонго — загвар, дүрэм: `skills/project/BRIEF.md`. Дэд сешн асуултаа эх сешнээр дамжуулна; дуусахад `fm:update` хийсний дараа эх сешн шалгаад archive хийнэ.
