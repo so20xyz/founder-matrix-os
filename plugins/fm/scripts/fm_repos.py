@@ -5,7 +5,7 @@ GitHub (gh) дээрх owner-уудын repo + локал CodeBase-ийн clone/
 Байгаа note-д (frontmatter `repo:` таарвал) зөвхөн доорх ашиглалтын түлхүүрүүдийг шинэчилнэ; тааралгүй GitHub repo-д
 шинэ note үүсгэнэ. Worktree, хуулбарууд тусдаа note болохгүй — эх repo-гийн `local_copies`-д тоологдоно.
 
-    fm_repos.py scan  <vault> [--owners A,B] [--code D:/CodeBase]          # dry run: юу өөрчлөгдөхийг хэвлэнэ
+    fm_repos.py scan  <vault> [--owners A,B] [--code ~/Documents/CodeBase] # dry run: юу өөрчлөгдөхийг хэвлэнэ
     fm_repos.py scan  <vault> ... --apply
 
 Шинэчлэх түлхүүр: github, visibility, last_push, local_path, local_copies, branch, last_commit, scanned.
@@ -87,13 +87,13 @@ def main():
     ap.add_argument("cmd", choices=["scan"])
     ap.add_argument("vault")
     ap.add_argument("--owners", default="Atlas322,rollingbd,MantleOI")
-    ap.add_argument("--code", default="D:/CodeBase")
+    ap.add_argument("--code", default="~/Documents/CodeBase")
     ap.add_argument("--apply", action="store_true")
     a = ap.parse_args()
     vault = Path(a.vault)
     tools = vault / TOOLS
     gh = github(a.owners.split(","))
-    loc = local(a.code)
+    loc = local(str(Path(a.code).expanduser()))
     notes = {}
     for p in tools.glob("*.md"):
         fm, _ = split_fm(p.read_text(encoding="utf-8"))

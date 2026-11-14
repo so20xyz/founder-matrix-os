@@ -326,6 +326,7 @@ Sidebar-ийн хэрэгсэл (`ccd_sidebar`, `ccd_session`) байхгүй о
 | 🧠 Harvester (`harvester.md`) — чатыг автоматаар атом болгоно | 2 цаг тутам | `~/.fmos/config.json` бий (Discord хэрэггүй) |
 | 🆘 Гишүүний дэмжлэг (`support.md`) — GitHub-ийн issue, PR-ыг inbox-д оруулж, хариугүй хоцорсныг нэрлэнэ | Өдөрт 2 удаа 09:00, 17:00 | `~/.fmos/config.json` бий + `gh` нэвтэрсэн |
 | 🧪 Context Engineer (`context-engineer.md`) — сешнүүдийг review хийж шошголох карт бэлдэнэ | Баасан 16:00 | `~/.fmos/config.json` бий |
+| 🧪 Evals (`evals-weekly.md`) — Wiki-ийн гаралтыг шүүгчээр үнэлж, долоо хоногийн evals тайлан гаргана | Баасан 16:30 | — |
 
 **Нэг машин эсвэл машин бүр (`scope`):** `one-device` (vault руу бичдэг — daily, weekly, санхүү) зөвхөн **гол машин** дээр; `per-device` (Harvester, Context Engineer) машин бүрт. Хоёр дахь төхөөрөмж дээр (registry-д өөр `device`-ийн сешн аль хэдийн бий, эсвэл гишүүн «энэ 2 дахь компьютер» гэвэл) зөвхөн `per-device`-ийг санал болго; `one-device`-ийг гол машин руу заа — давхар ажиллавал Drive-д `файл (1).md` үүснэ.
 
