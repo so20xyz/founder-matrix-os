@@ -425,18 +425,30 @@ def msg_claim(msg_id):
     """Хоёр машинд ижил сешнтэй сувгийн хүний мессеж (жишээ нь #gtd): аль dispatcher сэрээхийг #sys-dispatch-ийн
     claim-аар шийднэ — эхний claim ялна (itge.e 2026-10-15: PC, Mac хоёр GTD нэг мессежийг зэрэг авсан).
     True = энэ машин сэрээнэ. Сүлжээний алдаанд True (хуучин зан төлөв — мессеж алдагдахгүй)."""
-    key = "m:" + str(msg_id)
+    return bus_once("m:" + str(msg_id))[0]
+
+
+def bus_once(key, sid="dispatch"):
+    """Аль машин нэг үйлдлийг (key) хийхийг #sys-dispatch-ийн эхний claim-аар шийднэ → (win, ялсан машин).
+    m:<msg id> = msg_claim, u:<sha> = selfupdate-ийн «🔄» мэдэгдэл (Soyol 2026-11-14: Mac, PC хоёулаа илгээдэг байв).
+    Сүлжээний алдаанд (True, DEVICE): үйлдэл давхардаж болно, алдагдахгүй."""
     try:
         t0 = time.time()
-        cid, msg = _dispatch_post({"op": "claim", "task": key, "device": DEVICE, "sid": "dispatch", "ts": round(t0, 3)})
+        cid, msg = _dispatch_post({"op": "claim", "task": key, "device": DEVICE, "sid": sid, "ts": round(t0, 3)})
         mine = str(msg["id"])
         time.sleep(CLAIM_WAIT)
-        claims = _read_claims(cid, key, _snowflake_at(t0 - CLAIM_WINDOW), mine, {mine: (DEVICE, "dispatch")})
+        claims = _read_claims(cid, key, _snowflake_at(t0 - CLAIM_WINDOW), mine, {mine: (DEVICE, sid)})
         first = min(claims, key=int)
-        return claims[first][0] == DEVICE
+        return claims[first][0] == DEVICE, claims[first][0]
     except Exception as e:
-        regstore.log(f"msg_claim {msg_id}: {type(e).__name__}")
-        return True
+        regstore.log(f"bus_once {key}: {type(e).__name__}")
+        return True, DEVICE
+
+
+def d_once(key, sid):
+    """relay.py once <key> --sid SID — prints WIN | LOSE <device>, exit 0 either way (network error → WIN)."""
+    win, dev = bus_once(key, sid or "once")
+    print("WIN" if win else f"LOSE {dev}", flush=True)
 
 
 def _release(rel, claim_id, sid):

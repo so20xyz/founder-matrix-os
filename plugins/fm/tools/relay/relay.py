@@ -24,6 +24,8 @@ Commands:
   relay.py watch --sid SID           continuous: new Discord lines + «[task-offer] <task path>» (inbox task of this role)
   relay.py claim "<task path>" --sid SID   #sys-dispatch, first claim wins → prints WIN | LOSE <device>; WIN → in-progress
                                      (🔒 task: only from a private session, bus carries the opaque id «p:<hex>»)
+  relay.py once <key> --sid SID      #sys-dispatch, first claim on <key> wins → prints WIN | LOSE <device> (error → WIN);
+                                     selfupdate: «u:<sha>» so only one machine announces a repo update
   relay.py release "<task path>" --sid SID   requeue: {"op":"release"} on #sys-dispatch (earlier claims stop counting),
                                      clears claimed:/started: in the note, status in-progress → inbox
                                      → prints RELEASED | RELEASE missing | private | error
@@ -695,6 +697,10 @@ def main():
         if len(a) < 2:
             sys.stderr.write('usage: relay.py claim "<task path>" --sid <sid>\n'); print("LOSE error"); return
         return d_claim(a[1], sid)
+    if a[0] == "once":
+        if len(a) < 2:
+            sys.stderr.write("usage: relay.py once <key> --sid <sid>\n"); print("WIN"); return
+        return d_once(a[1], sid)
     if a[0] == "release":
         if len(a) < 2:
             sys.stderr.write('usage: relay.py release "<task path>" --sid <sid>\n'); print("RELEASE error"); return

@@ -1,3 +1,11 @@
+## fm 0.10.25 · 2026-11-14 · Repo шинэчлэлт: юу, хэн өөрчилсөн
+
+- Soyol: гишүүн бүрийн нэмсэн ажлыг бүгд харах, бүгдийн өөрчлөлтийн нэгдсэн тойм. «🔄 Mac repo шинэчлэгдлээ: 7159cb8 → 91ba1f8 (2 commit)» агуулгагүй байсан, Mac, PC хоёулаа илгээдэг байсан.
+- `scripts/fm_repo_digest.py`: шинэ commit-уудыг (`--no-merges`) зохиогчоор бүлэглэнэ (`👤 BD (2)` · `• гарчиг`), `plugin.json`-ийн хувилбар өссөн бол `📦 fm 0.10.24 → 0.10.25 · <CHANGELOG-ийн гарчиг>`. Discord-д 1900 тэмдэгтээр таслана (`… +N commit`).
+- `tools/watchdog/fm_selfupdate.py`: fast-forward-ын дараа энэ мессежийг илгээнэ; модуль байхгүй бол хуучин нэг мөр.
+- `relay.py once <key>`: #sys-dispatch-д эхний claim ялна (`msg_claim`-ийн ерөнхий хэлбэр `bus_once`). selfupdate `u:<sha>`-аар асууж, ялсан нэг машин л мэдэгдэнэ. Сүлжээний алдаанд WIN (мэдэгдэл алдагдахгүй). GitHub Actions ашиглахгүй.
+- `/fm:update weekly` 6г: `fm_repo_digest.py weekly --days 7` — зохиогч бүрийн merge хийсэн PR, шууд commit, fm хувилбарын өсөлт. Тест: `test_repo_digest` (13), `test_relay_once` (4), `test_selfupdate_digest` (6); squash-merge `(#N)` ч PR болж тоологдоно.
+
 ## fm 0.10.24 · 2026-11-12 · Project agent = төслийн GTD, ганц цонх
 
 - itge.e: «төслийн agent өөрөө төслийнхөө GTD болж явдаг бол гоё», «fork бүрт орж хариулахгүй».

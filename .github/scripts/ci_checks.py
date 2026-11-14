@@ -38,6 +38,9 @@ TESTS = [
     "tests/test_ce_regress.py",
     "tests/test_ce_role.py",
     "tests/test_fm_sync_version.py",
+    "tests/test_repo_digest.py",
+    "tests/test_relay_once.py",
+    "tests/test_selfupdate_digest.py",
     "plugins/auto-research-tools/tests/test_refresh_catalog.py",
     "tools/relay/tests/test_relay_config.py",
 ]
