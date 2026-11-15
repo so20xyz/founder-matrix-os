@@ -7,7 +7,8 @@ services started from it — on origin too:
 
   fetch → nothing new: done
         → fast-forward possible and no local edits: merge --ff-only, `npm ci` where a package-lock changed,
-          restart the services whose files changed, one «🔄» post
+          restart the services whose files changed, one «🔄» post listing the new commits by author
+          (fm_repo_digest) — only from the machine that wins `relay.py once u:<sha>` (Mac and PC both pulled it)
         → only unpushed local commits (origin is an ancestor): nothing to pull, no post
         → diverged history or local edits: touch nothing, one «⚠» post per new origin commit (Soyol decides)
 
@@ -84,15 +85,37 @@ def _save(st):
         pass
 
 
-def update(post, log, repo=REPO, force=False, restart=restart_service, every=EVERY):
-    """One self-update pass. post(text) → Discord, log(line) → watchdog log. Returns a short status word."""
+def claim_once(key, repo=REPO):
+    """Only one machine announces an update: `relay.py once <key>` (first claim on #sys-dispatch wins).
+    True = this machine posts. No relay in the clone, a timeout or any error → True (a notice is never lost)."""
+    relay = Path(repo) / "tools" / "relay" / "relay.py"
+    if not relay.is_file(): return True
+    r = _run([sys.executable, str(relay), "once", key, "--sid", "selfupdate"], timeout=60)
+    return not r.stdout.strip().startswith("LOSE")
+
+
+def digest(repo, head, up, first_line):
+    """first_line + the new commits grouped by author (+ the fm CHANGELOG headline when plugin.json's version moved),
+    via plugins/fm/scripts/fm_repo_digest.py of the clone just updated. Missing or failing → first_line alone."""
     try:
-        return _update(post, log, Path(repo), force, restart, every)
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("fm_repo_digest", Path(repo) / "plugins/fm/scripts/fm_repo_digest.py")
+        rd = importlib.util.module_from_spec(spec); spec.loader.exec_module(rd)
+        return rd.render_update(first_line, rd.commits(repo, f"{head}..{up}"), rd.fm_bump(repo, head, up))
+    except Exception:
+        return first_line
+
+
+def update(post, log, repo=REPO, force=False, restart=restart_service, every=EVERY, claim=None):
+    """One self-update pass. post(text) → Discord, log(line) → watchdog log, claim(key) → True when this machine
+    announces (default claim_once). Returns a short status word."""
+    try:
+        return _update(post, log, Path(repo), force, restart, every, claim or (lambda k: claim_once(k, repo)))
     except Exception as e:
         log(f"selfupdate error: {e!r}"); return "error"
 
 
-def _update(post, log, repo, force, restart, every):
+def _update(post, log, repo, force, restart, every, claim):
     st = _load()
     if not force and time.time() - st.get("t", 0) < every: return "skip"
     st["t"] = time.time(); _save(st)
@@ -139,7 +162,10 @@ def _update(post, log, repo, force, restart, every):
             notes.append(f"{task} дахин асав" if ok else f"{task} дахин асаж чадсангүй ⚠")
     st.pop("warned", None); _save(st)
     msg = f"🔄 {DEVICE} repo шинэчлэгдлээ: {head[:7]} → {up[:7]} ({n} commit)" + (" · " + " · ".join(notes) if notes else "")
-    log(msg); post(msg)
+    log(msg)
+    if claim(f"u:{up}"): post(digest(repo, head, up, msg))
+    elif any("⚠" in x for x in notes): post(msg)  # the winner announced the commits; this machine's own ⚠ still goes out
+    else: log(f"selfupdate: {up[:7]}-г өөр машин мэдэгдсэн — post хийсэнгүй")
     return "updated"
 
 
